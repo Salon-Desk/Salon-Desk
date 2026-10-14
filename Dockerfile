@@ -34,7 +34,13 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl nginx supervisor \
-    postgresql postgresql-client \
+    postgresql postgresql-client postgresql-server-dev-15 \
+    build-essential git \
+    && git clone --depth 1 --branch v0.8.0 https://github.com/pgvector/pgvector.git /tmp/pgvector \
+    && make -C /tmp/pgvector \
+    && make -C /tmp/pgvector install \
+    && rm -rf /tmp/pgvector \
+    && apt-get purge -y --auto-remove build-essential git postgresql-server-dev-15 \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /var/log/supervisor /run/nginx \
     && rm -f /etc/nginx/sites-enabled/default

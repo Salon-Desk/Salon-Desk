@@ -16,6 +16,12 @@ done
 
 export DATABASE_URL="${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD:-postgres}@127.0.0.1:5432/${POSTGRES_DB}}"
 
+echo "Ensuring pgvector extension..."
+psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1 -v ON_ERROR_STOP=1 \
+  -c "CREATE EXTENSION IF NOT EXISTS vector;" || {
+  echo "WARNING: could not create pgvector extension — RAG vector search may fail"
+}
+
 echo "Running database migrations..."
 alembic upgrade head
 

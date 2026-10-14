@@ -26,6 +26,7 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
   su - postgres -s /bin/bash -c "'$PG_BIN/pg_ctl' -D '$PGDATA' -o '-c listen_addresses=127.0.0.1' -w start"
   su - postgres -s /bin/bash -c "'$PG_BIN/psql' -v ON_ERROR_STOP=1 -c \"ALTER USER postgres PASSWORD '${POSTGRES_PASSWORD}';\""
   su - postgres -s /bin/bash -c "'$PG_BIN/createdb' -O postgres '${POSTGRES_DB}'" || true
+  su - postgres -s /bin/bash -c "'$PG_BIN/psql' -v ON_ERROR_STOP=1 -d '${POSTGRES_DB}' -c 'CREATE EXTENSION IF NOT EXISTS vector;'" || true
   su - postgres -s /bin/bash -c "'$PG_BIN/pg_ctl' -D '$PGDATA' -m fast -w stop"
 fi
 
