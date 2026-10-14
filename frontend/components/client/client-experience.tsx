@@ -35,6 +35,7 @@ import { AiConcierge } from "./ai-concierge";
 import { BookingsPanel } from "./bookings-panel";
 import { CatalogFilters, type ServiceSort } from "./catalog-filters";
 import { CatalogHero } from "./catalog-hero";
+import { ClientFooter } from "./client-footer";
 import { ClientHeader, type ClientTab } from "./client-header";
 import { type AuthStep, PaypalAuthModal } from "./paypal-auth-modal";
 import { ProtocolModal } from "./protocol-modal";
@@ -225,7 +226,7 @@ export function ClientExperience() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900 selection:bg-amber-500/20">
+    <div className="flex min-h-screen flex-col bg-[#fbfbfa] font-sans text-stone-900 selection:bg-amber-500/20">
       {toastMessage && (
         <Toast
           message={toastMessage}
@@ -238,17 +239,11 @@ export function ClientExperience() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         activeHoldsCount={activeHolds.length}
-        buyerPersona={buyerPersona}
-        onTogglePersona={() =>
-          setBuyerPersona((current) => (current === "hana" ? "guest" : "hana"))
-        }
         conciergeOpen={concierge.isOpen}
         onToggleConcierge={() => concierge.setIsOpen((open) => !open)}
-        onReset={handleReset}
-        isResetting={isResetting}
       />
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 pb-28 md:pb-12">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 pb-28 md:pb-16">
         {activeTab === "catalog" ? (
           <div>
             <CatalogHero />
@@ -261,11 +256,11 @@ export function ClientExperience() {
               onSortChange={setSortBy}
             />
             {filteredServices.length === 0 ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
-                <p className="text-sm font-semibold text-slate-800">
+              <div className="rounded-3xl bg-stone-100/60 p-12 text-center">
+                <p className="text-sm font-semibold text-stone-900">
                   No services match your search
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-stone-500">
                   Try adjusting your search query or selecting a different
                   category.
                 </p>
@@ -275,13 +270,13 @@ export function ClientExperience() {
                     setSelectedCategory(SERVICE_CATEGORIES[0]);
                     setSearchQuery("");
                   }}
-                  className="mt-4 rounded-xl bg-amber-500 px-4 py-2 font-bold text-xs text-slate-950 transition-colors hover:bg-amber-600 cursor-pointer"
+                  className="mt-4 rounded-full bg-stone-950 px-5 py-2 font-bold text-xs text-white transition-colors hover:bg-stone-800 cursor-pointer"
                 >
                   Reset Filters
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 sm:gap-y-14">
                 {filteredServices.map((service) => (
                   <ServiceCard
                     key={service.id}
@@ -305,18 +300,27 @@ export function ClientExperience() {
         )}
       </main>
 
-      {/* Mobile Floating Action Dock */}
+      <ClientFooter
+        buyerPersona={buyerPersona}
+        onTogglePersona={() =>
+          setBuyerPersona((current) => (current === "hana" ? "guest" : "hana"))
+        }
+        onReset={handleReset}
+        isResetting={isResetting}
+      />
+
+      {/* Mobile Floating Action Dock - Minimalist Pill */}
       <nav
         aria-label="Mobile quick actions"
-        className="fixed bottom-3 inset-x-3 z-30 md:hidden flex items-center justify-between gap-1 rounded-2xl border border-slate-200/90 bg-white/95 p-1.5 shadow-2xl backdrop-blur-xl"
+        className="fixed bottom-4 inset-x-4 z-30 md:hidden flex items-center justify-between gap-1 rounded-full bg-stone-950/90 text-white p-1.5 backdrop-blur-xl"
       >
         <button
           type="button"
           onClick={() => setActiveTab("catalog")}
-          className={`flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
+          className={`flex-1 flex items-center justify-center py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer ${
             activeTab === "catalog"
-              ? "bg-slate-900 text-white shadow-xs"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-white text-stone-950"
+              : "text-stone-400 hover:text-white"
           }`}
         >
           <span>Catalog</span>
@@ -325,25 +329,25 @@ export function ClientExperience() {
         <button
           type="button"
           onClick={() => concierge.setIsOpen(true)}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full bg-amber-500 text-stone-950 font-bold text-xs cursor-pointer active:scale-95 transition-all"
         >
-          <Sparkles className="h-4 w-4 text-slate-950" />
+          <Sparkles className="h-3.5 w-3.5" />
           <span>Ask AI</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("my-bookings")}
-          className={`flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
+          className={`flex-1 flex items-center justify-center py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer ${
             activeTab === "my-bookings"
-              ? "bg-slate-900 text-white shadow-xs"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-white text-stone-950"
+              : "text-stone-400 hover:text-white"
           }`}
         >
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1.5">
             Bookings
             {activeHolds.length > 0 && (
-              <span className="h-4 min-w-4 px-1 rounded-full bg-amber-500 text-slate-950 font-mono text-[9px] font-bold flex items-center justify-center">
+              <span className="h-4 min-w-4 px-1 rounded-full bg-amber-500 text-stone-950 font-mono text-[9px] font-bold flex items-center justify-center">
                 {activeHolds.length}
               </span>
             )}
