@@ -5,6 +5,7 @@ export {
   type ButtonSize,
   type ButtonVariant,
   buttonClasses,
+  buttonVariants,
   IconButton,
 } from "./button";
 export { Card, type CardProps, IconChip, Panel } from "./card";

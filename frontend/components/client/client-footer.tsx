@@ -147,7 +147,7 @@ export function ClientFooter({
         {/* Bottom Micro-Bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500">
           <div>
-            © {new Date().getFullYear()} Crown & Blade Atelier. Powered by{" "}
+            © 2026 Crown & Blade Atelier. Powered by{" "}
             <span className="font-semibold text-stone-800">SalonDesk</span>.
           </div>
           <div className="text-[11px] text-stone-400">

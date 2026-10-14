@@ -1,9 +1,69 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #f59e0b;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #334155;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #fffbeb;
+  --accent-foreground: #78350f;
+  --destructive: #e11d48;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #f59e0b;
+  --radius: 0.75rem;
+  --form-label-text: 0.75rem;
+  --form-field-gap: 0.375rem;
+  --form-control-min-h: 2.75rem;
+  --form-control-radius: 0.75rem;
+  --form-control-px: 0.75rem;
+  --form-control-py: 0.5rem;
+  --form-control-text: 0.875rem;
+  --form-shell-gap: 0.5rem;
+  --form-shell-px: 0.75rem;
+  --form-shell-py: 0.25rem;
+  --form-icon-size: 1rem;
+}
+
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-text-color: var(--foreground);
+  --color-light-text-color: #cbd5e1;
+  --color-text-main-gray: #94a3b8;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 @utility scrollbar-none {
@@ -11,6 +71,18 @@
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-slate-300) transparent;
 }
 
 @utility custom-scrollbar {
