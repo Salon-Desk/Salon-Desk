@@ -332,23 +332,9 @@ export function ClientExperience() {
           prompt={concierge.prompt}
           onPromptChange={concierge.setPrompt}
           isThinking={concierge.isThinking}
-          isListening={concierge.isListening}
-          isSpeaking={concierge.isSpeaking}
-          volumeLevel={concierge.volumeLevel}
           messages={concierge.messages}
           messagesEndRef={concierge.messagesEndRef}
           onSend={concierge.send}
-          onVoiceTrigger={concierge.triggerVoice}
-          onToggleListen={() => {
-            if (concierge.isListening) {
-              concierge.setIsListening(false)
-              return
-            }
-            concierge.setIsListening(true)
-            window.setTimeout(() => {
-              concierge.triggerVoice('Book Precision Fade tomorrow at 2:00 PM with Marcus')
-            }, 2500)
-          }}
           onAuthorize={({ service, stylist, slot }) => openCheckout(service, stylist, slot)}
           onClose={() => concierge.setIsOpen(false)}
         />

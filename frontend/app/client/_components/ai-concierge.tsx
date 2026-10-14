@@ -3,31 +3,14 @@
 import { Bot, Clock, Lock, Mic, Send, Sparkles, User, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
+import { VoiceAgentView } from '@/components/chat'
 import { Button } from '@/components/ui'
 import { INITIAL_STAFF } from '@/lib/data/catalog'
 import { DEFAULT_TIME_SLOT } from '@/lib/data/service-content'
+import { features } from '@/lib/features'
 import type { SalonService, StaffMember } from '@/types'
 
 import type { ConciergeMessage } from '../_hooks/use-ai-concierge'
-
-const WAVEFORM_BARS = [
-  'w1',
-  'w2',
-  'w3',
-  'w4',
-  'w5',
-  'w6',
-  'w7',
-  'w8',
-  'w9',
-  'w10',
-  'w11',
-  'w12',
-  'w13',
-  'w14',
-  'w15',
-  'w16',
-] as const
 
 interface AiConciergeProps {
   mode: 'voice' | 'chat'
@@ -35,14 +18,9 @@ interface AiConciergeProps {
   prompt: string
   onPromptChange: (value: string) => void
   isThinking: boolean
-  isListening: boolean
-  isSpeaking: boolean
-  volumeLevel: number
   messages: ConciergeMessage[]
   messagesEndRef: React.RefObject<HTMLDivElement | null>
   onSend: (prompt?: string, service?: SalonService) => void
-  onVoiceTrigger: (text: string) => void
-  onToggleListen: () => void
   onAuthorize: (opts: { service: SalonService; stylist?: StaffMember; slot?: string }) => void
   onClose: () => void
 }
@@ -53,14 +31,9 @@ export function AiConcierge({
   prompt,
   onPromptChange,
   isThinking,
-  isListening,
-  isSpeaking,
-  volumeLevel,
   messages,
   messagesEndRef,
   onSend,
-  onVoiceTrigger,
-  onToggleListen,
   onAuthorize,
   onClose,
 }: AiConciergeProps) {
@@ -71,6 +44,10 @@ export function AiConcierge({
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
+
+  const showModeToggle = features.agentChat && features.voiceAgent
+  const voiceEnabled = features.voiceAgent
+  const activeMode = mode === 'voice' && voiceEnabled ? 'voice' : 'chat'
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end sm:flex-row sm:justify-end bg-stone-950/30 backdrop-blur-xs animate-in fade-in duration-200">
@@ -87,12 +64,10 @@ export function AiConcierge({
         aria-label="AI Concierge"
         className="relative z-10 flex h-[90vh] sm:h-full w-full max-w-full sm:max-w-md flex-col rounded-t-3xl sm:rounded-none bg-[#fbfbfa] text-stone-900 sm:border-l sm:border-stone-200/50 overflow-hidden animate-in slide-in-from-bottom-8 sm:slide-in-from-right-8 duration-300"
       >
-        {/* Mobile Drag Indicator Handle */}
         <div className="pt-3 pb-1 sm:hidden flex justify-center">
           <div className="h-1 w-10 rounded-full bg-stone-300" />
         </div>
 
-        {/* Minimal Editorial Header */}
         <header className="flex items-center justify-between border-b border-stone-200/60 bg-white/80 px-5 py-3.5 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-stone-900">
@@ -105,38 +80,43 @@ export function AiConcierge({
               <h2 className="font-serif text-sm font-medium tracking-tight text-stone-950">
                 Atelier Concierge
               </h2>
-              <p className="text-[10px] text-stone-500 font-normal">Gemini 2.5 • Instant booking</p>
+              <p className="text-[10px] text-stone-500 font-normal">
+                {activeMode === 'voice'
+                  ? 'LiveKit voice · Instant booking'
+                  : 'Gemini 2.5 · Instant booking'}
+              </p>
             </div>
           </div>
 
-          {/* Minimal Mode Toggle & Close Button */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-full bg-stone-100 p-0.5">
-              <button
-                type="button"
-                onClick={() => onModeChange('chat')}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
-                  mode === 'chat'
-                    ? 'bg-stone-950 text-white shadow-xs'
-                    : 'text-stone-500 hover:text-stone-950'
-                }`}
-              >
-                <Bot className="h-3.5 w-3.5" />
-                <span>Chat</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onModeChange('voice')}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
-                  mode === 'voice'
-                    ? 'bg-stone-950 text-white shadow-xs'
-                    : 'text-stone-500 hover:text-stone-950'
-                }`}
-              >
-                <Mic className="h-3.5 w-3.5" />
-                <span>Voice</span>
-              </button>
-            </div>
+            {showModeToggle && (
+              <div className="flex items-center rounded-full bg-stone-100 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => onModeChange('chat')}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
+                    activeMode === 'chat'
+                      ? 'bg-stone-950 text-white shadow-xs'
+                      : 'text-stone-500 hover:text-stone-950'
+                  }`}
+                >
+                  <Bot className="h-3.5 w-3.5" />
+                  <span>Chat</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onModeChange('voice')}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
+                    activeMode === 'voice'
+                      ? 'bg-stone-950 text-white shadow-xs'
+                      : 'text-stone-500 hover:text-stone-950'
+                  }`}
+                >
+                  <Mic className="h-3.5 w-3.5" />
+                  <span>Voice</span>
+                </button>
+              </div>
+            )}
 
             <button
               type="button"
@@ -149,14 +129,11 @@ export function AiConcierge({
           </div>
         </header>
 
-        {/* Content Body */}
-        {mode === 'voice' ? (
-          <VoiceSurface
-            isListening={isListening}
-            isSpeaking={isSpeaking}
-            volumeLevel={volumeLevel}
-            onVoiceTrigger={onVoiceTrigger}
-            onToggleListen={onToggleListen}
+        {activeMode === 'voice' ? (
+          <VoiceAgentView
+            language={features.defaultLanguage}
+            onClose={onClose}
+            onSwitchToText={features.agentChat ? () => onModeChange('chat') : onClose}
           />
         ) : (
           <ChatSurface
@@ -167,99 +144,9 @@ export function AiConcierge({
             onPromptChange={onPromptChange}
             onSend={onSend}
             onAuthorize={onAuthorize}
+            onTryVoice={voiceEnabled ? () => onModeChange('voice') : undefined}
           />
         )}
-      </div>
-    </div>
-  )
-}
-
-function VoiceSurface({
-  isListening,
-  isSpeaking,
-  volumeLevel,
-  onVoiceTrigger,
-  onToggleListen,
-}: {
-  isListening: boolean
-  isSpeaking: boolean
-  volumeLevel: number
-  onVoiceTrigger: (text: string) => void
-  onToggleListen: () => void
-}) {
-  const status = isSpeaking ? 'Speaking...' : isListening ? 'Listening...' : 'Tap to Speak'
-
-  return (
-    <div className="flex flex-1 flex-col items-center justify-between p-6 bg-gradient-to-b from-[#fbfbfa] via-white to-amber-50/15 text-stone-900 overflow-y-auto">
-      {/* Top Status */}
-      <div className="pt-2 text-center">
-        <span
-          className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
-            isListening
-              ? 'bg-rose-50 text-rose-700 animate-pulse'
-              : isSpeaking
-                ? 'bg-amber-50 text-amber-800 animate-pulse'
-                : 'bg-stone-100 text-stone-600'
-          }`}
-        >
-          <span className="h-2 w-2 rounded-full bg-current" />
-          {status}
-        </span>
-      </div>
-
-      {/* Dynamic Sound Waveform Bars */}
-      <div className="my-6 flex h-24 items-center justify-center gap-1.5 px-4">
-        {WAVEFORM_BARS.map((bar, index) => {
-          const barHeight =
-            isListening || isSpeaking
-              ? Math.max(12, Math.min(84, ((index % 5) + 1) * volumeLevel * 2.8))
-              : 8
-          return (
-            <div
-              key={bar}
-              style={{ height: `${barHeight}px` }}
-              className="w-1.5 rounded-full bg-gradient-to-t from-stone-950 to-amber-600 transition-all duration-150"
-            />
-          )
-        })}
-      </div>
-
-      {/* Clean Quick Prompts */}
-      <div className="w-full max-w-xs space-y-2 mb-6">
-        <p className="text-[11px] font-medium text-stone-400 uppercase tracking-widest text-center mb-1">
-          Suggested Requests
-        </p>
-        <button
-          type="button"
-          onClick={() => onVoiceTrigger('Book Precision Fade tomorrow with Marcus')}
-          className="w-full rounded-2xl bg-stone-100 hover:bg-stone-200/70 px-4 py-2.5 text-left text-xs text-stone-800 transition-colors cursor-pointer truncate"
-        >
-          &quot;Book Precision Fade tomorrow with Marcus&quot;
-        </button>
-        <button
-          type="button"
-          onClick={() => onVoiceTrigger('Book Signature Balayage this Saturday')}
-          className="w-full rounded-2xl bg-stone-100 hover:bg-stone-200/70 px-4 py-2.5 text-left text-xs text-stone-800 transition-colors cursor-pointer truncate"
-        >
-          &quot;Book Signature Balayage this Saturday&quot;
-        </button>
-      </div>
-
-      {/* Central Mic Button */}
-      <div className="mb-4 text-center flex flex-col items-center gap-3">
-        <button
-          type="button"
-          onClick={onToggleListen}
-          aria-label={isListening ? 'Stop listening' : 'Start speaking'}
-          className={`flex h-20 w-20 items-center justify-center rounded-full transition-all duration-300 cursor-pointer ${
-            isListening
-              ? 'bg-rose-500 text-white ring-8 ring-rose-500/20 scale-105'
-              : 'bg-stone-950 text-white hover:bg-amber-600 hover:scale-105 shadow-lg shadow-stone-950/15'
-          }`}
-        >
-          <Mic className="h-8 w-8" />
-        </button>
-        <p className="text-[11px] text-stone-400">Tap microphone to speak or interrupt</p>
       </div>
     </div>
   )
@@ -273,6 +160,7 @@ function ChatSurface({
   onPromptChange,
   onSend,
   onAuthorize,
+  onTryVoice,
 }: {
   messages: ConciergeMessage[]
   messagesEndRef: React.RefObject<HTMLDivElement | null>
@@ -281,12 +169,12 @@ function ChatSurface({
   onPromptChange: (value: string) => void
   onSend: (prompt?: string) => void
   onAuthorize: (opts: { service: SalonService; stylist?: StaffMember; slot?: string }) => void
+  onTryVoice?: () => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   return (
     <div className="flex flex-1 flex-col justify-between overflow-hidden bg-[#fbfbfa]">
-      {/* Messages Thread */}
       <div className="flex-1 space-y-3.5 overflow-y-auto p-4 sm:p-5">
         {messages.map((msg) => {
           const isUser = msg.sender === 'user'
@@ -302,7 +190,6 @@ function ChatSurface({
                 <p className="whitespace-pre-wrap">{msg.text}</p>
               </div>
 
-              {/* Minimal Clean Proposal Card */}
               {!isUser && msg.hasProposal && msg.proposedService && (
                 <ProposalCard message={msg} onAuthorize={onAuthorize} />
               )}
@@ -310,7 +197,6 @@ function ChatSurface({
           )
         })}
 
-        {/* Thinking Indicator */}
         {isThinking && (
           <div className="flex w-fit items-center gap-2 rounded-full bg-stone-100 px-4 py-2 text-xs text-stone-600">
             <Sparkles className="h-3.5 w-3.5 animate-spin text-amber-600" />
@@ -321,7 +207,18 @@ function ChatSurface({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Borderless Suggestion Chips */}
+      {onTryVoice && (
+        <div className="border-t border-stone-200/50 bg-amber-50/50 px-4 py-2.5">
+          <button
+            type="button"
+            onClick={onTryVoice}
+            className="w-full rounded-2xl bg-stone-950 px-3 py-2 text-xs font-medium text-white hover:bg-amber-600 cursor-pointer"
+          >
+            Try Voice Agent
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 overflow-x-auto border-t border-stone-200/50 bg-white/70 px-4 py-2.5 scrollbar-none snap-x">
         <button
           type="button"
@@ -346,7 +243,6 @@ function ChatSurface({
         </button>
       </div>
 
-      {/* Floating Pill Input Bar */}
       <div className="border-t border-stone-200/50 bg-white p-3 sm:p-4">
         <form
           onSubmit={(e) => {
@@ -393,13 +289,11 @@ function ProposalCard({
 
   return (
     <div className="mt-3 w-full max-w-[94%] rounded-3xl bg-amber-50/70 p-4 sm:p-5 text-stone-900 border border-amber-200/40">
-      {/* Title & Price */}
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <h4 className="font-serif text-base text-stone-950 truncate font-normal">{service.name}</h4>
         <span className="font-semibold text-base text-stone-950 shrink-0">${service.price}</span>
       </div>
 
-      {/* Time & Stylist info */}
       <div className="mb-4 flex items-center justify-between text-xs text-stone-700 bg-white/80 rounded-2xl px-3 py-2">
         <span className="flex items-center gap-1.5 text-stone-800 font-medium">
           <User className="h-3.5 w-3.5 text-amber-600" />
@@ -411,7 +305,6 @@ function ProposalCard({
         </span>
       </div>
 
-      {/* Direct One-Click Button */}
       <Button
         variant="primary"
         fullWidth

@@ -12,6 +12,9 @@ export const NEXT_PUBLIC_GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREM
 export const NEXT_PUBLIC_CLIENT_SITE_URL =
   process.env.NEXT_PUBLIC_CLIENT_SITE_URL || NEXT_PUBLIC_SITE_URL
 
+/** LiveKit Cloud URL (same project as the voice worker). Token still comes from the API. */
+export const NEXT_PUBLIC_LIVEKIT_URL = process.env.NEXT_PUBLIC_LIVEKIT_URL || ''
+
 /** Build an absolute URL on the client/portal site. */
 export function withClientSiteUrl(path: string): string {
   const base = NEXT_PUBLIC_CLIENT_SITE_URL.replace(/\/$/, '')

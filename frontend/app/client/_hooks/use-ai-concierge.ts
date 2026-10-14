@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { INITIAL_SERVICES, INITIAL_STAFF } from '@/lib/data/catalog'
 import { DEFAULT_TIME_SLOT } from '@/lib/data/service-content'
+import { features } from '@/lib/features'
 import { formatClockTime } from '@/lib/format'
 import { createSequentialId } from '@/lib/ids'
 import type { SalonService, StaffMember } from '@/types'
@@ -30,14 +31,17 @@ const WELCOME: ConciergeMessage = {
   hasProposal: true,
 }
 
+function initialMode(): 'voice' | 'chat' {
+  if (features.agentChat) return 'chat'
+  if (features.voiceAgent) return 'voice'
+  return 'chat'
+}
+
 export function useAiConcierge() {
   const [isOpen, setIsOpen] = useState(false)
-  const [mode, setMode] = useState<'voice' | 'chat'>('chat')
+  const [mode, setMode] = useState<'voice' | 'chat'>(initialMode)
   const [prompt, setPrompt] = useState('')
   const [isThinking, setIsThinking] = useState(false)
-  const [isListening, setIsListening] = useState(false)
-  const [isSpeaking, setIsSpeaking] = useState(false)
-  const [volumeLevel, setVolumeLevel] = useState(4)
   const [messages, setMessages] = useState<ConciergeMessage[]>([WELCOME])
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -46,17 +50,6 @@ export function useAiConcierge() {
     if (!isOpen || mode !== 'chat' || messageCount < 1) return
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [isOpen, mode, messageCount])
-
-  useEffect(() => {
-    if (!isListening && !isSpeaking) return
-    const interval = setInterval(() => {
-      setVolumeLevel(Math.floor(2 + Math.random() * 8))
-    }, 150)
-    return () => {
-      clearInterval(interval)
-      setVolumeLevel(2)
-    }
-  }, [isListening, isSpeaking])
 
   const send = useCallback(
     async (customPrompt?: string, serviceOverride?: SalonService) => {
@@ -117,16 +110,6 @@ export function useAiConcierge() {
     [prompt],
   )
 
-  const triggerVoice = useCallback(
-    (text: string) => {
-      setIsListening(false)
-      setIsSpeaking(true)
-      void send(text)
-      setTimeout(() => setIsSpeaking(false), 2800)
-    },
-    [send],
-  )
-
   return {
     isOpen,
     setIsOpen,
@@ -135,13 +118,8 @@ export function useAiConcierge() {
     prompt,
     setPrompt,
     isThinking,
-    isListening,
-    setIsListening,
-    isSpeaking,
-    volumeLevel,
     messages,
     messagesEndRef,
     send,
-    triggerVoice,
   }
 }
