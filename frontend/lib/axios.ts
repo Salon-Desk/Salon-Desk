@@ -7,14 +7,21 @@ import { getItemFromLocalDb } from './localDb'
 import { NEXT_PUBLIC_BASE_URL } from './secreate'
 
 const isServer = typeof window === 'undefined'
-const apiBaseUrl = (
+const configuredApiUrl = (
   NEXT_PUBLIC_BASE_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   'http://localhost:8000'
 ).replace(/\/$/, '')
 
-// FastAPI has CORS enabled for http://localhost:3000, so we can connect directly or via relative proxy
-const baseURL = isServer ? apiBaseUrl : apiBaseUrl || ''
+/** Browser: same-origin when unset/localhost so host nginx can proxy /api/v1. */
+function resolveBrowserBaseUrl(url: string): string {
+  if (!url || /^(https?:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?$/i.test(url)) {
+    return ''
+  }
+  return url
+}
+
+const baseURL = isServer ? configuredApiUrl : resolveBrowserBaseUrl(configuredApiUrl)
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 15_000
 export const UPLOAD_REQUEST_TIMEOUT_MS = 90_000

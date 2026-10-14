@@ -16,7 +16,17 @@ RUN corepack enable && corepack prepare pnpm@11.22.0 --activate
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/.npmrc ./
 RUN pnpm install --frozen-lockfile --config.dangerously-allow-all-builds=true
 COPY frontend/ .
-ENV NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_API_URL=
+ARG NEXT_PUBLIC_SITE_URL=
+ARG NEXT_PUBLIC_LIVEKIT_URL=
+ARG NEXT_PUBLIC_ENABLE_AGENT_CHAT=true
+ARG NEXT_PUBLIC_ENABLE_VOICE_AGENT=true
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    NEXT_PUBLIC_LIVEKIT_URL=$NEXT_PUBLIC_LIVEKIT_URL \
+    NEXT_PUBLIC_ENABLE_AGENT_CHAT=$NEXT_PUBLIC_ENABLE_AGENT_CHAT \
+    NEXT_PUBLIC_ENABLE_VOICE_AGENT=$NEXT_PUBLIC_ENABLE_VOICE_AGENT \
+    NEXT_TELEMETRY_DISABLED=1
 RUN pnpm run build
 
 FROM debian:bookworm-slim AS runner
