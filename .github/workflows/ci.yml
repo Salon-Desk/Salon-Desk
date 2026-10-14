@@ -36,19 +36,24 @@ jobs:
         run: |
           docker run -d --name salondesk-ci \
             -e POSTGRES_PASSWORD=ci-test \
+            -e SKIP_SEED=1 \
             -e CORS_ORIGINS='["http://localhost"]' \
             -p 8080:80 \
             salondesk:ci
           for i in $(seq 1 60); do
-            if curl -sf http://127.0.0.1:8080/health >/dev/null; then
-              echo "Health check passed"
-              docker logs salondesk-ci --tail 50
+            code=$(curl -s -o /tmp/sd-health.json -w "%{http_code}" http://127.0.0.1:8080/health || echo "000")
+            if [ "$code" = "200" ]; then
+              echo "Health check passed (HTTP $code)"
+              cat /tmp/sd-health.json || true
+              docker logs salondesk-ci --tail 80
               exit 0
             fi
+            echo "attempt $i/60: /health -> HTTP ${code}"
             sleep 5
           done
           echo "Health check failed"
           docker logs salondesk-ci
+          docker exec salondesk-ci sh -c 'ss -tlnp; curl -sv http://127.0.0.1:8000/health; curl -sv http://127.0.0.1/health' || true
           exit 1
 
       - name: Stop smoke test container
