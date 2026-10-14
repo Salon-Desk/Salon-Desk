@@ -146,10 +146,7 @@ export function SalonsTab({
                       </Button>
                     ) : null}
 
-                    <IconButton
-                      title="Edit"
-                      onClick={() => onEdit(salon)}
-                    >
+                    <IconButton title="Edit" onClick={() => onEdit(salon)}>
                       <Edit2 className="h-3.5 w-3.5" />
                     </IconButton>
 

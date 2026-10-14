@@ -2,7 +2,6 @@
 
 import {
   Activity,
-  Bot,
   Calendar,
   FileText,
   Lock,
@@ -22,7 +21,10 @@ import {
 import { ROUTES } from "@/lib/constants";
 import type { MerchantSalonInfo } from "@/lib/data/merchant";
 import type { MerchantTab } from "../_types/merchant-types";
-import { MERCHANT_TAB_GROUPS } from "../_types/merchant-types";
+import {
+  MERCHANT_TAB_GROUPS,
+  MERCHANT_TAB_ROUTES,
+} from "../_types/merchant-types";
 
 interface MerchantSidebarProps {
   salon: MerchantSalonInfo;
@@ -33,7 +35,7 @@ interface MerchantSidebarProps {
   servicesCount: number;
   pendingChangeRequests: number;
   isResetting: boolean;
-  onTabChange: (tab: MerchantTab) => void;
+  onTabChange?: (tab: MerchantTab) => void;
   onOpenCopilot: () => void;
   onLockSession: () => void;
   onResetDemo: () => void;
@@ -58,174 +60,168 @@ export function MerchantSidebar({
   const tabs: SidebarTab<MerchantTab>[] = [
     {
       id: "dashboard",
-      label: "Dashboard & KPIs",
+      label: "Dashboard",
       icon: Activity,
       group: "Salon Operations",
       badge: activeHoldsCount,
       isAlert: true,
+      href: MERCHANT_TAB_ROUTES.dashboard,
     },
     {
       id: "calendar",
-      label: "Calendar & Schedule",
+      label: "Calendar",
       icon: Calendar,
       group: "Salon Operations",
       badge: activeHoldsCount,
       isAlert: true,
+      href: MERCHANT_TAB_ROUTES.calendar,
     },
     {
       id: "appointments",
-      label: "Appointments & Ledger",
+      label: "Appointments",
       icon: FileText,
       group: "Salon Operations",
       badge: bookingsCount,
+      href: MERCHANT_TAB_ROUTES.appointments,
     },
     {
       id: "staff",
-      label: "Staff & Stylists",
+      label: "Staff",
       icon: Users,
       group: "Salon Configuration",
       badge: staffCount,
+      href: MERCHANT_TAB_ROUTES.staff,
     },
     {
       id: "services",
-      label: "Services & Pricing",
+      label: "Services",
       icon: Scissors,
       group: "Salon Configuration",
       badge: servicesCount,
+      href: MERCHANT_TAB_ROUTES.services,
     },
     {
       id: "settings",
-      label: "PayPal & Policy Settings",
+      label: "Settings",
       icon: Settings,
       group: "Salon Configuration",
       badge: pendingChangeRequests,
       isAlert: true,
+      href: MERCHANT_TAB_ROUTES.settings,
     },
   ];
 
+  const handleNavChange = (tab: MerchantTab) => {
+    onTabChange?.(tab);
+    onCloseMobile?.();
+  };
+
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between border-slate-200 border-b p-4">
+    <div className="flex h-full flex-col overflow-hidden bg-white/95 backdrop-blur-md">
+      {/* Brand Header */}
+      <div className="flex shrink-0 items-center justify-between border-slate-200/80 border-b p-4">
         <div className="flex items-center gap-2.5">
           <Logo size="sm" showTagline={false} linkToHome theme="light" />
-          <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 font-bold font-mono text-[10px] text-amber-800 uppercase tracking-wider">
-            Salon
+          <span className="rounded-md border border-amber-300/80 bg-amber-50 px-2 py-0.5 font-bold font-mono text-[10px] text-amber-900 uppercase tracking-wider">
+            Merchant
           </span>
         </div>
         {onCloseMobile ? (
           <button
             type="button"
             onClick={onCloseMobile}
-            className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+            aria-label="Close menu"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         ) : null}
       </div>
 
-      <div className="flex shrink-0 items-center justify-between border-slate-200 border-b bg-slate-50 px-4 py-3 text-xs">
+      {/* Salon Identification Badge */}
+      <div className="flex shrink-0 items-center justify-between border-slate-200/80 border-b bg-slate-50/60 px-4 py-2.5 text-xs">
         <div className="flex min-w-0 items-center gap-2 truncate">
-          <div className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
           <div className="min-w-0 truncate text-left">
-            <div className="truncate font-bold text-slate-900 text-xs">
+            <div className="truncate font-semibold text-slate-900 text-xs">
               {salon.name}
-            </div>
-            <div className="truncate font-mono text-[10px] text-slate-500">
-              {salon.city}
             </div>
           </div>
         </div>
-        <span className="shrink-0 rounded border border-amber-200 bg-amber-100 px-1.5 py-0.5 font-bold font-mono text-[9px] text-amber-900">
-          VIP {salon.commissionRate}%
+        <span className="shrink-0 font-mono text-[10px] text-amber-900 font-semibold bg-amber-100/70 px-1.5 py-0.5 rounded">
+          {salon.commissionRate}% VIP
         </span>
       </div>
 
+      {/* Navigation */}
       <ConsoleSidebarNav
         tabs={tabs}
         activeTab={activeTab}
-        onChange={onTabChange}
+        onChange={handleNavChange}
         groups={MERCHANT_TAB_GROUPS}
       />
 
-      <div className="space-y-5 px-3 pb-3">
-        <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3.5">
-          <div className="flex items-center justify-between font-bold text-slate-900 text-xs">
-            <span className="flex items-center gap-1.5 text-amber-800">
-              <Bot className="h-4 w-4 text-amber-600" />
-              Owner AI Assistant
-            </span>
-            <span className="rounded bg-amber-100 px-1.5 py-0.5 font-bold font-mono text-[9px] text-amber-900">
-              v1.11
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-600 leading-snug">
-            Ask questions or propose goodwill partial refunds using PayPal Agent
-            Toolkit.
-          </p>
-          <button
-            type="button"
-            onClick={onOpenCopilot}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 px-2.5 py-1.5 font-bold text-white text-xs shadow-xs transition-colors hover:from-amber-600 hover:to-amber-700"
-          >
-            <Sparkles className="h-3.5 w-3.5 fill-white" />
-            Open Assistant
-          </button>
-        </div>
+      {/* Copilot Action & Cross-Portal Links */}
+      <div className="space-y-3 px-3 pb-3">
+        <button
+          type="button"
+          onClick={onOpenCopilot}
+          className="flex w-full items-center justify-between rounded-xl border border-amber-200/90 bg-amber-50/70 px-3 py-2 text-xs font-semibold text-amber-900 shadow-xs transition-all hover:bg-amber-100/80 hover:border-amber-300"
+        >
+          <span className="flex items-center gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+            <span>AI Copilot</span>
+          </span>
+          <span className="font-mono text-[10px] text-amber-700 font-normal">
+            Assistant
+          </span>
+        </button>
 
-        <div className="space-y-1 border-slate-200 border-t pt-3">
-          <span className="block px-3 pb-1 font-extrabold text-[10px] text-slate-500 uppercase tracking-wider">
-            Ecosystem Jump
+        {/* Portal Switcher */}
+        <div className="space-y-0.5 border-slate-200/80 border-t pt-2.5">
+          <span className="block px-3 pb-1 font-bold text-[10px] text-slate-400 uppercase tracking-wider">
+            Portals
           </span>
           <Link
             href={ROUTES.admin}
-            className="flex items-center justify-between rounded-lg px-3 py-1.5 font-medium text-slate-600 text-xs transition-colors hover:bg-slate-50 hover:text-slate-900"
+            className="flex items-center justify-between rounded-lg px-3 py-1.5 font-medium text-slate-600 text-xs transition-colors hover:bg-slate-100/80 hover:text-slate-900"
           >
             <span>Platform Admin</span>
-            <span className="font-mono font-semibold text-[10px] text-amber-800">
-              /admin →
-            </span>
+            <span className="font-mono text-[10px] text-slate-400">/admin</span>
           </Link>
           <Link
             href={ROUTES.client}
-            className="flex items-center justify-between rounded-lg px-3 py-1.5 font-medium text-slate-600 text-xs transition-colors hover:bg-slate-50 hover:text-slate-900"
+            className="flex items-center justify-between rounded-lg px-3 py-1.5 font-medium text-slate-600 text-xs transition-colors hover:bg-slate-100/80 hover:text-slate-900"
           >
-            <span>Client Experience</span>
-            <span className="font-mono font-semibold text-[10px] text-sky-700">
-              /client →
+            <span>Client Booking</span>
+            <span className="font-mono text-[10px] text-slate-400">
+              /client
             </span>
-          </Link>
-          <Link
-            href={ROUTES.hub}
-            className="flex items-center justify-between rounded-lg px-3 py-1.5 font-medium text-slate-600 text-xs transition-colors hover:bg-slate-50 hover:text-slate-900"
-          >
-            <span>App Hub Gateway</span>
-            <span className="font-mono text-[10px] text-slate-500">/ →</span>
           </Link>
         </div>
       </div>
 
-      <div className="mt-auto shrink-0 space-y-2.5 border-slate-200 border-t bg-slate-50 p-3.5">
+      {/* User Footer */}
+      <div className="mt-auto shrink-0 space-y-2 border-slate-200/80 border-t bg-slate-50/60 p-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-amber-300 bg-amber-100 font-bold text-amber-800 text-xs">
-                ST
-              </div>
-              <span className="absolute right-0 bottom-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-amber-100 font-bold text-amber-900 text-xs">
+              {salon.ownerName.charAt(0)}
             </div>
             <div className="overflow-hidden text-left">
-              <div className="truncate font-bold text-slate-900 text-xs">
+              <div className="truncate font-semibold text-slate-900 text-xs">
                 {salon.ownerName}
               </div>
-              <div className="truncate font-mono font-semibold text-[10px] text-amber-800">
-                Salon Owner
-              </div>
+              <div className="text-[10px] text-slate-400">Owner</div>
             </div>
           </div>
           <button
             type="button"
             onClick={onLockSession}
-            className="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 shadow-xs transition-colors hover:bg-slate-100 hover:text-slate-900"
+            className="rounded-lg border border-slate-200 bg-white p-1 text-slate-400 shadow-xs transition-colors hover:bg-slate-100 hover:text-slate-700"
             title="Lock Session"
           >
             <Lock className="h-3.5 w-3.5" />
@@ -236,12 +232,12 @@ export function MerchantSidebar({
           type="button"
           onClick={onResetDemo}
           disabled={isResetting}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 text-xs shadow-xs transition-colors hover:bg-slate-100 hover:text-amber-800 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium text-slate-600 text-xs shadow-xs transition-all hover:bg-slate-100 hover:text-slate-900 disabled:opacity-60"
         >
           <RotateCcw
-            className={`h-3.5 w-3.5 ${isResetting ? "animate-spin" : ""}`}
+            className={`h-3 w-3 ${isResetting ? "animate-spin" : ""}`}
           />
-          Reset Salon Demo Data
+          Reset Demo Data
         </button>
       </div>
     </div>

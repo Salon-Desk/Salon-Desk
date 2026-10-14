@@ -31,3 +31,5 @@ export function computeAdminMetrics(state: AdminDashboardState) {
     pendingCrCount,
   };
 }
+
+export type AdminMetrics = ReturnType<typeof computeAdminMetrics>;

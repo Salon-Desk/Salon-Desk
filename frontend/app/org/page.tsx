@@ -1,5 +1,6 @@
-import { MerchantConsole } from "@/app/merchant";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/lib/constants";
 
 export default function OrgPage() {
-  return <MerchantConsole />;
+  redirect(ROUTES.merchant);
 }

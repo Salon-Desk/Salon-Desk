@@ -23,6 +23,16 @@ export interface ServiceFormState {
   description: string;
 }
 
+export const DEFAULT_SERVICE_FORM: ServiceFormState = {
+  name: "",
+  category: "Braids & Locs",
+  durationMin: 120,
+  price: 120,
+  holdDeposit: 120,
+  noShowFee: 30,
+  description: "",
+};
+
 const SERVICE_CATEGORIES: SalonService["category"][] = [
   "Braids & Locs",
   "Styling & Color",

@@ -102,8 +102,7 @@ export function RequestsTab({
                       <strong>{cr.currentData.policyHours}h</strong>
                     </div>
                     <div className="text-slate-700">
-                      No-show:{" "}
-                      <strong>${cr.currentData.noShowFee}.00</strong>
+                      No-show: <strong>${cr.currentData.noShowFee}.00</strong>
                     </div>
                     <div className="text-slate-700">
                       Hold: <strong>{cr.currentData.holdPercent}%</strong>

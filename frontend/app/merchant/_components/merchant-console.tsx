@@ -7,7 +7,6 @@ import { AuthGate } from "@/components/layout/auth-gate";
 import { ConsoleShell } from "@/components/layout/console-shell";
 import { Toast } from "@/components/ui";
 import { useDemoReset, useMerchantStore, useToast } from "@/hooks";
-import { useMerchantSettlement } from "../_hooks/use-merchant-settlement";
 import { SANDBOX_CREDENTIALS } from "@/lib/constants";
 import { createPaypalDebugId, createSequentialId } from "@/lib/ids";
 import type {
@@ -17,6 +16,8 @@ import type {
   SalonService,
   StaffMember,
 } from "@/types";
+import { useMerchantSettlement } from "../_hooks/use-merchant-settlement";
+import type { MerchantTab } from "../_types/merchant-types";
 import { AppointmentsTab } from "./appointments-tab";
 import { CalendarTab } from "./calendar-tab";
 import { ConsentModal } from "./consent-modal";
@@ -24,7 +25,6 @@ import { CopilotDrawer, type RefundProposal } from "./copilot-drawer";
 import { DashboardTab } from "./dashboard-tab";
 import { MerchantHeader } from "./merchant-header";
 import { MerchantSidebar } from "./merchant-sidebar";
-import type { MerchantTab } from "../_types/merchant-types";
 import {
   DeleteServiceModal,
   ServiceFormModal,

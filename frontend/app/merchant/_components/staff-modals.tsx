@@ -22,6 +22,16 @@ export interface StaffFormState {
   status: "ACTIVE" | "ON_LEAVE";
 }
 
+export const DEFAULT_STAFF_FORM: StaffFormState = {
+  name: "",
+  role: "Senior Braider & Texture Specialist",
+  workingHours: "9:00 AM - 6:00 PM",
+  breakPeriod: "1:00 PM - 2:00 PM",
+  specialties: "Knotless Braids, Silk Press, Locs Retwist",
+  maxSimultaneousClients: 2,
+  status: "ACTIVE",
+};
+
 interface StaffFormModalProps {
   editingStaff: StaffMember | null;
   form: StaffFormState;

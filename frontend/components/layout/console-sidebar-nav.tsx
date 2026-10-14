@@ -1,6 +1,5 @@
-"use client";
-
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export interface SidebarTab<T extends string> {
@@ -10,12 +9,13 @@ export interface SidebarTab<T extends string> {
   group: string;
   badge?: number;
   isAlert?: boolean;
+  href?: string;
 }
 
 interface ConsoleSidebarNavProps<T extends string> {
   tabs: readonly SidebarTab<T>[];
   activeTab: T;
-  onChange: (tab: T) => void;
+  onChange?: (tab: T) => void;
   groups: readonly string[];
 }
 
@@ -40,29 +40,27 @@ export function ConsoleSidebarNav<T extends string>({
               {items.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = tab.id === activeTab;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => onChange(tab.id)}
-                    className={cn(
-                      "flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 font-semibold text-xs transition-colors",
-                      isActive
-                        ? "bg-amber-50 text-amber-900 shadow-xs"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
-                    )}
-                  >
+                const itemClasses = cn(
+                  "flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 font-semibold text-xs transition-colors",
+                  isActive
+                    ? "bg-amber-50 text-amber-900 shadow-xs"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                );
+                const itemContent = (
+                  <>
                     <Icon
                       className={cn(
-                        "h-4 w-4",
+                        "h-4 w-4 shrink-0",
                         isActive ? "text-amber-600" : "text-slate-400",
                       )}
                     />
-                    <span className="flex-1 text-left">{tab.label}</span>
+                    <span className="flex-1 text-left truncate">
+                      {tab.label}
+                    </span>
                     {tab.badge !== undefined && tab.badge > 0 && (
                       <span
                         className={cn(
-                          "rounded-full px-1.5 py-0.5 font-black text-[10px]",
+                          "rounded-full px-1.5 py-0.5 font-black text-[10px] shrink-0",
                           tab.isAlert
                             ? "bg-rose-500 text-white"
                             : "bg-amber-500 text-slate-950",
@@ -71,6 +69,30 @@ export function ConsoleSidebarNav<T extends string>({
                         {tab.badge}
                       </span>
                     )}
+                  </>
+                );
+
+                if (tab.href) {
+                  return (
+                    <Link
+                      key={tab.id}
+                      href={tab.href}
+                      onClick={() => onChange?.(tab.id)}
+                      className={itemClasses}
+                    >
+                      {itemContent}
+                    </Link>
+                  );
+                }
+
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => onChange?.(tab.id)}
+                    className={itemClasses}
+                  >
+                    {itemContent}
                   </button>
                 );
               })}

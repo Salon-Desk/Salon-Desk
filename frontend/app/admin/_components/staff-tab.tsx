@@ -108,9 +108,7 @@ export function StaffTab({
 
                       <IconButton
                         title={
-                          isCurrent
-                            ? "Cannot delete signed-in user"
-                            : "Delete"
+                          isCurrent ? "Cannot delete signed-in user" : "Delete"
                         }
                         tone="danger"
                         disabled={isCurrent}

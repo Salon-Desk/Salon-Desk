@@ -166,7 +166,9 @@ export function OverviewTab({
 
         <Card padding="md" className="space-y-3 lg:col-span-2">
           <div className="flex items-center justify-between">
-            <h2 className="font-bold text-slate-900 text-sm">Recent activity</h2>
+            <h2 className="font-bold text-slate-900 text-sm">
+              Recent activity
+            </h2>
             <span className="flex items-center gap-1.5 font-medium text-[10px] text-emerald-700">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               Live
