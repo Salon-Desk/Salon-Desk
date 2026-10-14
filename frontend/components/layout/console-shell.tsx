@@ -12,8 +12,9 @@ interface ConsoleShellProps {
 }
 
 /**
- * Shared chrome for the merchant and admin consoles: a desktop sidebar that
- * becomes a drawer on mobile, a sticky header, and a scrollable main pane.
+ * Shared chrome for the merchant and admin consoles:
+ * An executive dark obsidian sidebar with crisp active states,
+ * a glassmorphic sticky header, and an elevated ambient main canvas.
  */
 export function ConsoleShell({
   sidebar,
@@ -23,19 +24,19 @@ export function ConsoleShell({
   onCloseMobileSidebar,
 }: ConsoleShellProps) {
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen bg-[#F8FAFC] text-slate-900 antialiased selection:bg-amber-500/20 selection:text-amber-900">
       {isMobileSidebarOpen && (
         <button
           type="button"
           aria-label="Close navigation"
-          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden transition-opacity"
           onClick={onCloseMobileSidebar}
         />
       )}
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-slate-200 border-r bg-white transition-transform lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-800/80 bg-[#0B0F17] text-slate-100 transition-transform lg:static lg:translate-x-0",
           isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >

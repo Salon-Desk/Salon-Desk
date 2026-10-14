@@ -121,12 +121,12 @@ export function AdminSidebar({
   };
 
   return (
-    <div className="flex h-full flex-col bg-white/95 backdrop-blur-md overflow-hidden">
+    <div className="flex h-full flex-col bg-[#0B0F17] text-slate-200 overflow-hidden">
       {/* Brand Header */}
-      <div className="flex shrink-0 items-center justify-between border-slate-200/80 border-b p-4">
+      <div className="flex shrink-0 items-center justify-between border-slate-800/80 border-b px-4 py-3.5">
         <div className="flex items-center gap-2.5">
-          <Logo size="sm" showTagline={false} linkToHome theme="light" />
-          <span className="rounded-md border border-slate-700 bg-slate-900 px-2 py-0.5 font-bold font-mono text-[10px] text-white uppercase tracking-wider">
+          <Logo size="sm" showTagline={false} linkToHome theme="dark" />
+          <span className="rounded-full border border-slate-700 bg-slate-800/80 px-2 py-0.5 font-bold font-mono text-[9px] text-slate-300 uppercase tracking-wider">
             Admin
           </span>
         </div>
@@ -134,7 +134,7 @@ export function AdminSidebar({
           <button
             type="button"
             onClick={onCloseMobile}
-            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Close menu"
           >
             <X className="h-4 w-4" />
@@ -143,20 +143,20 @@ export function AdminSidebar({
       </div>
 
       {/* Network Status Indicator */}
-      <div className="flex shrink-0 items-center justify-between border-slate-200/80 border-b bg-slate-50/60 px-4 py-2.5 text-xs">
+      <div className="mx-3 mt-3 flex shrink-0 items-center justify-between rounded-xl border border-slate-800/90 bg-slate-900/60 px-3 py-2 text-xs">
         <div className="flex min-w-0 items-center gap-2 truncate">
           <span className="relative flex h-2 w-2 shrink-0">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
           <div className="min-w-0 truncate text-left">
-            <div className="truncate font-semibold text-slate-900 text-xs">
+            <div className="truncate font-semibold text-slate-100 text-xs">
               Orders v2 Network
             </div>
           </div>
         </div>
-        <span className="shrink-0 font-mono text-[10px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
-          Sandbox
+        <span className="shrink-0 font-mono text-[9px] text-emerald-400 font-semibold bg-emerald-500/15 border border-emerald-500/25 px-1.5 py-0.5 rounded">
+          Live Sandbox
         </span>
       </div>
 
@@ -166,43 +166,44 @@ export function AdminSidebar({
         activeTab={activeTab}
         onChange={handleNavChange}
         groups={ADMIN_NAV_GROUPS}
+        theme="dark"
       />
 
       {/* Cross-Portal Switcher Links */}
-      <div className="space-y-0.5 border-slate-200/80 border-t px-3 py-3">
-        <span className="block px-3 pb-1 font-bold text-[10px] text-slate-400 uppercase tracking-wider">
+      <div className="space-y-1 border-slate-800/80 border-t px-3 py-3">
+        <span className="block px-2 pb-0.5 font-bold text-[10px] text-slate-500 uppercase tracking-wider">
           Portals
         </span>
         <Link
           href={ROUTES.merchant}
-          className="flex items-center justify-between rounded-lg px-3 py-1.5 font-medium text-slate-600 text-xs transition-colors hover:bg-slate-100/80 hover:text-slate-900"
+          className="flex items-center justify-between rounded-lg px-2.5 py-1.5 font-medium text-slate-400 text-xs transition-colors hover:bg-white/[0.06] hover:text-white"
         >
           <span>Merchant Console</span>
-          <span className="font-mono text-[10px] text-slate-400">
+          <span className="font-mono text-[10px] text-slate-500">
             /merchant
           </span>
         </Link>
         <Link
           href={ROUTES.client}
-          className="flex items-center justify-between rounded-lg px-3 py-1.5 font-medium text-slate-600 text-xs transition-colors hover:bg-slate-100/80 hover:text-slate-900"
+          className="flex items-center justify-between rounded-lg px-2.5 py-1.5 font-medium text-slate-400 text-xs transition-colors hover:bg-white/[0.06] hover:text-white"
         >
           <span>Client Booking</span>
-          <span className="font-mono text-[10px] text-slate-400">/client</span>
+          <span className="font-mono text-[10px] text-slate-500">/client</span>
         </Link>
       </div>
 
       {/* User Footer & Reset Demo */}
-      <div className="mt-auto shrink-0 space-y-2 border-slate-200/80 border-t bg-slate-50/60 p-3">
+      <div className="mt-auto shrink-0 space-y-2 border-slate-800/80 border-t bg-slate-900/40 p-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-slate-900 font-bold text-white text-xs">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-800 font-bold text-white text-xs">
               {initials}
             </div>
             <div className="min-w-0 text-left">
-              <div className="truncate font-semibold text-slate-900 text-xs">
+              <div className="truncate font-semibold text-slate-200 text-xs">
                 {displayName}
               </div>
-              <div className="truncate text-[10px] text-slate-400">
+              <div className="truncate text-[10px] text-slate-500">
                 {currentUser.role}
               </div>
             </div>
@@ -210,7 +211,7 @@ export function AdminSidebar({
           <button
             type="button"
             onClick={onLockSession}
-            className="shrink-0 rounded-lg border border-slate-200 bg-white p-1 text-slate-400 shadow-xs transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="shrink-0 rounded-lg border border-slate-800 bg-slate-800/80 p-1 text-slate-400 shadow-xs transition-colors hover:bg-slate-700 hover:text-white"
             title="Lock session"
             aria-label="Lock session"
           >
@@ -222,7 +223,7 @@ export function AdminSidebar({
           type="button"
           onClick={onResetDemo}
           disabled={isResetting}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium text-slate-600 text-xs shadow-xs transition-all hover:bg-slate-100 hover:text-slate-900 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-800/80 bg-slate-900/80 px-2.5 py-1.5 font-medium text-slate-400 text-xs transition-all hover:bg-slate-800 hover:text-slate-200 disabled:opacity-60"
         >
           <RotateCcw
             className={`h-3 w-3 ${isResetting ? "animate-spin" : ""}`}

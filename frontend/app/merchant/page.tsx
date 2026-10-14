@@ -33,15 +33,15 @@ export default function MerchantDashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
-      {/* Refined Executive Greeting */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs sm:p-7">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-amber-400/10 blur-3xl" />
-        <div className="relative z-10 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      {/* Modern Executive Greeting Card */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-gradient-to-br from-white via-slate-50/50 to-amber-50/20 p-6 shadow-xs sm:p-7">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-amber-400/10 blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col justify-between gap-5 md:flex-row md:items-center">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/80 bg-emerald-50 px-2.5 py-0.5 font-medium text-emerald-800 text-[11px]">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/80 bg-emerald-50 px-2.5 py-0.5 font-semibold text-emerald-800 text-[11px]">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                PayPal Orders v2 Rails
+                PayPal Orders v2 Rails Active
               </span>
               <span className="text-slate-300 text-xs">·</span>
               <span className="font-mono text-slate-500 text-xs">
@@ -52,30 +52,33 @@ export default function MerchantDashboardPage() {
               Welcome back, {state.salon.ownerName.split(" ")[0]}
             </h1>
             <p className="text-slate-600 text-xs sm:text-sm">
-              {activeHoldsCount} active client authorization holds totaling{" "}
               <span className="font-bold text-slate-900">
+                {activeHoldsCount} active holds
+              </span>{" "}
+              totaling{" "}
+              <span className="font-bold text-amber-900">
                 {formatUsd(activeHoldsVolume)}
               </span>{" "}
-              protected today.
+              in protected authorization volume today.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
               href={ROUTES.merchantCalendar}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 font-medium text-slate-700 text-xs shadow-xs transition-colors hover:bg-slate-50 hover:text-slate-900"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 font-medium text-slate-700 text-xs shadow-xs transition-all hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300"
             >
-              <CalendarIcon className="h-3.5 w-3.5 text-slate-400" />
+              <CalendarIcon className="h-3.5 w-3.5 text-slate-500" />
               <span>Calendar</span>
             </Link>
             <Button
               variant="primary"
               size="sm"
               onClick={() => setIsCopilotOpen(true)}
-              className="rounded-xl px-3.5 py-2 text-xs font-semibold shadow-xs"
+              className="rounded-xl px-4 py-2 text-xs font-semibold shadow-xs"
             >
-              <Sparkles className="h-3.5 w-3.5 mr-1" />
-              <span>Copilot</span>
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              <span>AI Copilot</span>
             </Button>
           </div>
         </div>
@@ -126,7 +129,7 @@ export default function MerchantDashboardPage() {
                 Today&apos;s Appointments
               </h2>
               <p className="text-slate-500 text-xs">
-                {todayBookings.length} scheduled services
+                {todayBookings.length} scheduled client services
               </p>
             </div>
             <Link
@@ -147,25 +150,30 @@ export default function MerchantDashboardPage() {
               todayBookings.map((b) => (
                 <div
                   key={b.id}
-                  className="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5 transition-all hover:border-amber-300 hover:bg-white hover:shadow-xs sm:flex-row sm:items-center"
+                  className="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 transition-all hover:border-amber-300 hover:shadow-xs sm:flex-row sm:items-center"
                 >
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900 text-sm">
-                        {b.clientName}
-                      </span>
-                      <HoldStateBadge status={b.status} />
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-900 font-bold text-xs border border-amber-200/60">
+                      {b.clientName.charAt(0)}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-slate-500 text-xs">
-                      <span className="font-medium text-slate-800">
-                        {b.serviceName}
-                      </span>
-                      <span>·</span>
-                      <span className="font-medium text-slate-700">
-                        {b.appointmentTime}
-                      </span>
-                      <span>·</span>
-                      <span>{b.stylistName}</span>
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm">
+                          {b.clientName}
+                        </span>
+                        <HoldStateBadge status={b.status} />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-slate-500 text-xs">
+                        <span className="font-medium text-slate-800">
+                          {b.serviceName}
+                        </span>
+                        <span>·</span>
+                        <span className="font-medium text-slate-700">
+                          {b.appointmentTime}
+                        </span>
+                        <span>·</span>
+                        <span>{b.stylistName}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -174,7 +182,7 @@ export default function MerchantDashboardPage() {
                       <div className="font-bold text-slate-900 text-sm">
                         {formatUsd(b.servicePrice)}
                       </div>
-                      <div className="font-mono text-[11px] text-amber-800">
+                      <div className="font-mono text-[11px] text-amber-800 font-medium">
                         Hold {formatUsd(b.holdAmount)}
                       </div>
                     </div>
@@ -191,7 +199,7 @@ export default function MerchantDashboardPage() {
                       <button
                         type="button"
                         onClick={() => setInspectConsentBooking(b)}
-                        className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors h-8 w-8 flex items-center justify-center"
+                        className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 transition-colors h-8 w-8 flex items-center justify-center"
                         title="View signed client authorization receipt"
                       >
                         <ShieldCheck className="h-4 w-4 text-emerald-600" />
@@ -237,11 +245,10 @@ export default function MerchantDashboardPage() {
                   Cancellation Terms
                 </span>
                 <div className="font-semibold text-slate-900 text-xs">
-                  ≥ {state.salon.cancellationPolicyHours} hours free
-                  cancellation
+                  ≥ {state.salon.cancellationPolicyHours} hours free notice
                 </div>
                 <div className="text-slate-500 text-[11px]">
-                  Standard no-show: {formatUsd(state.salon.defaultNoShowFee)}
+                  No-show retention: {formatUsd(state.salon.defaultNoShowFee)}
                 </div>
               </div>
 
@@ -263,7 +270,7 @@ export default function MerchantDashboardPage() {
 
           <Link
             href={ROUTES.merchantSettings}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 font-medium text-slate-700 text-xs shadow-xs transition-colors hover:bg-slate-50 hover:text-slate-900"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 font-medium text-slate-700 text-xs shadow-xs transition-colors hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300"
           >
             <span>Manage Settings</span>
             <ExternalLink className="h-3.5 w-3.5 text-slate-400" />

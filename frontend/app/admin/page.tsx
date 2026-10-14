@@ -60,29 +60,30 @@ export default function AdminOverviewPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
-      {/* Executive Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 p-6 text-white shadow-xs sm:p-7">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl" />
-        <div className="relative z-10 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      {/* Executive Dark Mesh Banner */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-800/90 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-6 text-white shadow-xs sm:p-7">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 h-72 w-72 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col justify-between gap-5 md:flex-row md:items-center">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-2.5 py-0.5 font-medium text-emerald-300 text-[11px]">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-2.5 py-0.5 font-semibold text-emerald-300 text-[11px] backdrop-blur-sm">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Network Live · Orders v2 Rails
               </span>
               <span className="text-slate-600 text-xs">·</span>
-              <span className="text-slate-400 text-xs">
+              <span className="font-mono text-slate-400 text-xs">
                 {state.organizations.length} partner salons
               </span>
             </div>
             <h1 className="font-extrabold text-2xl text-white tracking-tight sm:text-3xl">
-              Platform Overview
+              Platform Master Console
             </h1>
-            <p className="text-slate-400 text-xs sm:text-sm">
+            <p className="text-slate-300 text-xs sm:text-sm">
               <span className="text-amber-300 font-bold">
                 {formatUsd(metrics.totalVolume)}
               </span>{" "}
-              total volume · Zero card chargebacks via authorization holds.
+              total network volume · Zero card chargebacks via authorization
+              holds.
             </p>
           </div>
 
@@ -90,17 +91,17 @@ export default function AdminOverviewPage() {
             {metrics.pendingCrCount > 0 ? (
               <Link
                 href={ROUTES.adminRequests}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 font-medium text-white text-xs shadow-xs transition-colors hover:bg-slate-700"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2 font-medium text-white text-xs shadow-xs transition-colors hover:bg-slate-700"
               >
                 <Sliders className="h-3.5 w-3.5 text-amber-400" />
-                <span>{metrics.pendingCrCount} Approvals Pending</span>
+                <span>{metrics.pendingCrCount} Pending Approvals</span>
               </Link>
             ) : null}
             <Button
               variant="primary"
               size="sm"
               onClick={() => setIsAddSalonOpen(true)}
-              className="rounded-xl px-3.5 py-2 font-semibold text-xs shadow-xs"
+              className="rounded-xl px-4 py-2 font-semibold text-xs shadow-xs"
             >
               <Plus className="h-3.5 w-3.5 mr-1" />
               <span>Add Salon</span>
