@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Activity,
@@ -11,35 +11,31 @@ import {
   Sparkles,
   Users,
   X,
-} from "lucide-react";
-import Link from "next/link";
-import { Logo } from "@/components/brand/logo";
-import {
-  ConsoleSidebarNav,
-  type SidebarTab,
-} from "@/components/layout/console-sidebar-nav";
-import { ROUTES } from "@/lib/constants";
-import type { MerchantSalonInfo } from "@/lib/data/merchant";
-import type { MerchantTab } from "../_types/merchant-types";
-import {
-  MERCHANT_TAB_GROUPS,
-  MERCHANT_TAB_ROUTES,
-} from "../_types/merchant-types";
+} from 'lucide-react'
+import Link from 'next/link'
+
+import { Logo } from '@/components/brand/logo'
+import { ConsoleSidebarNav, type SidebarTab } from '@/components/layout/console-sidebar-nav'
+import { ROUTES } from '@/lib/constants'
+import type { MerchantSalonInfo } from '@/lib/data/merchant'
+
+import type { MerchantTab } from '../_types/merchant-types'
+import { MERCHANT_TAB_GROUPS, MERCHANT_TAB_ROUTES } from '../_types/merchant-types'
 
 interface MerchantSidebarProps {
-  salon: MerchantSalonInfo;
-  activeTab: MerchantTab;
-  activeHoldsCount: number;
-  bookingsCount: number;
-  staffCount: number;
-  servicesCount: number;
-  pendingChangeRequests: number;
-  isResetting: boolean;
-  onTabChange?: (tab: MerchantTab) => void;
-  onOpenCopilot: () => void;
-  onLockSession: () => void;
-  onResetDemo: () => void;
-  onCloseMobile?: () => void;
+  salon: MerchantSalonInfo
+  activeTab: MerchantTab
+  activeHoldsCount: number
+  bookingsCount: number
+  staffCount: number
+  servicesCount: number
+  pendingChangeRequests: number
+  isResetting: boolean
+  onTabChange?: (tab: MerchantTab) => void
+  onOpenCopilot: () => void
+  onLockSession: () => void
+  onResetDemo: () => void
+  onCloseMobile?: () => void
 }
 
 export function MerchantSidebar({
@@ -59,62 +55,62 @@ export function MerchantSidebar({
 }: MerchantSidebarProps) {
   const tabs: SidebarTab<MerchantTab>[] = [
     {
-      id: "dashboard",
-      label: "Dashboard",
+      id: 'dashboard',
+      label: 'Dashboard',
       icon: Activity,
-      group: "Salon Operations",
+      group: 'Salon Operations',
       badge: activeHoldsCount,
       isAlert: true,
       href: MERCHANT_TAB_ROUTES.dashboard,
     },
     {
-      id: "calendar",
-      label: "Calendar",
+      id: 'calendar',
+      label: 'Calendar',
       icon: Calendar,
-      group: "Salon Operations",
+      group: 'Salon Operations',
       badge: activeHoldsCount,
       isAlert: true,
       href: MERCHANT_TAB_ROUTES.calendar,
     },
     {
-      id: "appointments",
-      label: "Appointments",
+      id: 'appointments',
+      label: 'Appointments',
       icon: FileText,
-      group: "Salon Operations",
+      group: 'Salon Operations',
       badge: bookingsCount,
       href: MERCHANT_TAB_ROUTES.appointments,
     },
     {
-      id: "staff",
-      label: "Staff",
+      id: 'staff',
+      label: 'Staff',
       icon: Users,
-      group: "Salon Configuration",
+      group: 'Salon Configuration',
       badge: staffCount,
       href: MERCHANT_TAB_ROUTES.staff,
     },
     {
-      id: "services",
-      label: "Services",
+      id: 'services',
+      label: 'Services',
       icon: Scissors,
-      group: "Salon Configuration",
+      group: 'Salon Configuration',
       badge: servicesCount,
       href: MERCHANT_TAB_ROUTES.services,
     },
     {
-      id: "settings",
-      label: "Settings",
+      id: 'settings',
+      label: 'Settings',
       icon: Settings,
-      group: "Salon Configuration",
+      group: 'Salon Configuration',
       badge: pendingChangeRequests,
       isAlert: true,
       href: MERCHANT_TAB_ROUTES.settings,
     },
-  ];
+  ]
 
   const handleNavChange = (tab: MerchantTab) => {
-    onTabChange?.(tab);
-    onCloseMobile?.();
-  };
+    onTabChange?.(tab)
+    onCloseMobile?.()
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#0B0F17] text-slate-200">
@@ -146,9 +142,7 @@ export function MerchantSidebar({
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
           <div className="min-w-0 truncate text-left">
-            <div className="truncate font-semibold text-slate-100 text-xs">
-              {salon.name}
-            </div>
+            <div className="truncate font-semibold text-slate-100 text-xs">{salon.name}</div>
           </div>
         </div>
         <span className="shrink-0 font-mono text-[9px] text-amber-300 font-bold bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded">
@@ -198,9 +192,7 @@ export function MerchantSidebar({
             className="flex items-center justify-between rounded-lg px-2.5 py-1.5 font-medium text-slate-400 text-xs transition-colors hover:bg-white/[0.06] hover:text-white"
           >
             <span>Client Booking</span>
-            <span className="font-mono text-[10px] text-slate-500">
-              /client
-            </span>
+            <span className="font-mono text-[10px] text-slate-500">/client</span>
           </Link>
         </div>
       </div>
@@ -213,9 +205,7 @@ export function MerchantSidebar({
               {salon.ownerName.charAt(0)}
             </div>
             <div className="overflow-hidden text-left">
-              <div className="truncate font-semibold text-slate-200 text-xs">
-                {salon.ownerName}
-              </div>
+              <div className="truncate font-semibold text-slate-200 text-xs">{salon.ownerName}</div>
               <div className="text-[10px] text-slate-500">Owner</div>
             </div>
           </div>
@@ -235,12 +225,10 @@ export function MerchantSidebar({
           disabled={isResetting}
           className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-800/80 bg-slate-900/80 px-2.5 py-1.5 font-medium text-slate-400 text-xs transition-all hover:bg-slate-800 hover:text-slate-200 disabled:opacity-60"
         >
-          <RotateCcw
-            className={`h-3 w-3 ${isResetting ? "animate-spin" : ""}`}
-          />
+          <RotateCcw className={`h-3 w-3 ${isResetting ? 'animate-spin' : ''}`} />
           Reset Demo Data
         </button>
       </div>
     </div>
-  );
+  )
 }

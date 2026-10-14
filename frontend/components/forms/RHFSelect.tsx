@@ -1,35 +1,35 @@
-"use client";
+'use client'
 
-import { useEffect } from "react";
-import { Controller, useFormContext } from "react-hook-form";
+import { useEffect } from 'react'
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
-  FormFieldError,
-  FormFieldLabel,
-  FormFieldRoot,
   formControlSelectContentClassName,
   formControlSelectItemClassName,
   formControlSelectShellClassName,
   formControlSelectTriggerClassName,
   formControlSelectValueClassName,
+  FormFieldError,
   formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
+  FormFieldLabel,
+  FormFieldRoot,
+} from '@/components/forms/form-field-parts'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 interface RHFSelectProps {
-  name: string;
-  label?: string;
-  options: { value: string; label: string }[];
-  isLoading?: boolean;
-  isRequired?: boolean;
-  defaultValue?: string;
+  name: string
+  label?: string
+  options: { value: string; label: string }[]
+  isLoading?: boolean
+  isRequired?: boolean
+  defaultValue?: string
 }
 
 export default function RHFSelect({
@@ -40,53 +40,44 @@ export default function RHFSelect({
   isRequired = true,
   defaultValue,
 }: RHFSelectProps) {
-  const { control, clearErrors, setValue } = useFormContext();
-  const { controlId, errorId } = formFieldHtmlIds(name);
+  const { control, clearErrors, setValue } = useFormContext()
+  const { controlId, errorId } = formFieldHtmlIds(name)
 
   useEffect(() => {
     if (options.length > 0 && defaultValue) {
-      setValue(name, defaultValue, { shouldValidate: false });
+      setValue(name, defaultValue, { shouldValidate: false })
     } else if (options.length > 0 && isRequired && !defaultValue) {
-      const firstValidOption = options.find(
-        (option) => option.value.trim() !== "",
-      );
+      const firstValidOption = options.find((option) => option.value.trim() !== '')
       if (firstValidOption) {
-        setValue(name, firstValidOption.value, { shouldValidate: false });
+        setValue(name, firstValidOption.value, { shouldValidate: false })
       }
     }
-  }, [options, name, setValue, isRequired, defaultValue]);
+  }, [options, name, setValue, isRequired, defaultValue])
 
-  const validOptions = options.filter((option) => option.value.trim() !== "");
+  const validOptions = options.filter((option) => option.value.trim() !== '')
 
   return (
     <Controller
       control={control}
       name={name}
-      defaultValue={
-        defaultValue ||
-        (validOptions.length > 0 ? validOptions[0].value : undefined)
-      }
+      defaultValue={defaultValue || (validOptions.length > 0 ? validOptions[0].value : undefined)}
       render={({ field, fieldState: { error } }) => (
         <FormFieldRoot>
           {label ? (
-            <FormFieldLabel
-              htmlFor={controlId}
-              label={label}
-              isRequired={isRequired}
-            />
+            <FormFieldLabel htmlFor={controlId} label={label} isRequired={isRequired} />
           ) : null}
 
           <div
             className={cn(
               formControlSelectShellClassName({ hasError: !!error }),
-              "m-0 overflow-hidden bg-background p-0 shadow-none",
+              'm-0 overflow-hidden bg-background p-0 shadow-none',
             )}
           >
             <Select
               value={field.value ? field.value : undefined}
               onValueChange={(value) => {
-                field.onChange(value);
-                clearErrors(name);
+                field.onChange(value)
+                clearErrors(name)
               }}
             >
               <SelectTrigger
@@ -95,16 +86,10 @@ export default function RHFSelect({
                 aria-describedby={error ? errorId : undefined}
                 className={formControlSelectTriggerClassName}
               >
-                <SelectValue
-                  placeholder="Select..."
-                  className={formControlSelectValueClassName}
-                />
+                <SelectValue placeholder="Select..." className={formControlSelectValueClassName} />
               </SelectTrigger>
 
-              <SelectContent
-                className={formControlSelectContentClassName}
-                position="popper"
-              >
+              <SelectContent className={formControlSelectContentClassName} position="popper">
                 {isLoading ? (
                   <SelectItem
                     disabled
@@ -114,11 +99,7 @@ export default function RHFSelect({
                     Loading...
                   </SelectItem>
                 ) : validOptions.length === 0 ? (
-                  <SelectItem
-                    disabled
-                    value="__empty__"
-                    className={formControlSelectItemClassName}
-                  >
+                  <SelectItem disabled value="__empty__" className={formControlSelectItemClassName}>
                     No options available
                   </SelectItem>
                 ) : (
@@ -136,11 +117,9 @@ export default function RHFSelect({
             </Select>
           </div>
 
-          {error ? (
-            <FormFieldError id={errorId} message={error.message ?? ""} />
-          ) : null}
+          {error ? <FormFieldError id={errorId} message={error.message ?? ''} /> : null}
         </FormFieldRoot>
       )}
     />
-  );
+  )
 }

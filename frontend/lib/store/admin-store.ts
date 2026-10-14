@@ -5,7 +5,7 @@ import {
   INITIAL_COMMISSION_TRANSACTIONS,
   INITIAL_PLATFORM_USERS,
   INITIAL_TAXONOMY_CATEGORIES,
-} from "@/lib/data/admin";
+} from '@/lib/data/admin'
 import type {
   ChangeRequest,
   CommissionOverride,
@@ -13,19 +13,20 @@ import type {
   Organization,
   PlatformUser,
   TaxonomyCategory,
-} from "@/types";
-import { createPersistentStore } from "./create-persistent-store";
+} from '@/types'
+
+import { createPersistentStore } from './create-persistent-store'
 
 export interface AdminDashboardState {
-  organizations: Organization[];
-  changeRequests: ChangeRequest[];
-  globalRate: { percentage: number; flatFee: number };
-  commissionOverrides: CommissionOverride[];
-  commissionTransactions: CommissionTransaction[];
-  categories: TaxonomyCategory[];
-  platformUsers: PlatformUser[];
-  authenticated: boolean;
-  currentUser: PlatformUser;
+  organizations: Organization[]
+  changeRequests: ChangeRequest[]
+  globalRate: { percentage: number; flatFee: number }
+  commissionOverrides: CommissionOverride[]
+  commissionTransactions: CommissionTransaction[]
+  categories: TaxonomyCategory[]
+  platformUsers: PlatformUser[]
+  authenticated: boolean
+  currentUser: PlatformUser
 }
 
 export function seedAdminState(): AdminDashboardState {
@@ -40,10 +41,10 @@ export function seedAdminState(): AdminDashboardState {
     // Pre-authenticated so reviewers land straight in the dashboard.
     authenticated: true,
     currentUser: INITIAL_PLATFORM_USERS[0],
-  };
+  }
 }
 
 export const adminStore = createPersistentStore<AdminDashboardState>(
-  "salondesk:admin-dashboard:v2",
+  'salondesk:admin-dashboard:v2',
   seedAdminState,
-);
+)

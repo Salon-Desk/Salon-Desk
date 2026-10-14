@@ -1,2 +1,18 @@
 .env
 temp
+docs
+
+# OpenAPI / Postman generator scratch (tempfile is used; keep these out if created locally)
+*.openapi.tmp.json
+.openapi-tmp/
+
+# Root husky / pnpm tooling
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+backend/.venv/

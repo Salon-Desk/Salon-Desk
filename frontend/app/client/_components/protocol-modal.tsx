@@ -1,21 +1,17 @@
-"use client";
+'use client'
 
-import { Button, Modal } from "@/components/ui";
-import { SERVICE_PROTOCOLS } from "@/lib/data/service-content";
-import type { SalonService } from "@/types";
+import { Button, Modal } from '@/components/ui'
+import { SERVICE_PROTOCOLS } from '@/lib/data/service-content'
+import type { SalonService } from '@/types'
 
 interface ProtocolModalProps {
-  service: SalonService;
-  onClose: () => void;
-  onBook: (service: SalonService) => void;
+  service: SalonService
+  onClose: () => void
+  onBook: (service: SalonService) => void
 }
 
-export function ProtocolModal({
-  service,
-  onClose,
-  onBook,
-}: ProtocolModalProps) {
-  const protocol = SERVICE_PROTOCOLS[service.id];
+export function ProtocolModal({ service, onClose, onBook }: ProtocolModalProps) {
+  const protocol = SERVICE_PROTOCOLS[service.id]
 
   return (
     <Modal
@@ -24,9 +20,7 @@ export function ProtocolModal({
       title={`${service.category} Protocol`}
       description={service.name}
     >
-      <p className="mb-4 text-slate-600 text-xs leading-relaxed">
-        {service.description}
-      </p>
+      <p className="mb-4 text-slate-600 text-xs leading-relaxed">{service.description}</p>
 
       <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <h4 className="mb-2.5 font-bold text-slate-800 text-xs uppercase tracking-wider">
@@ -44,9 +38,7 @@ export function ProtocolModal({
 
       <div className="mb-6 space-y-3 text-xs">
         <div>
-          <span className="block font-bold text-slate-900">
-            Featured Formulations:
-          </span>
+          <span className="block font-bold text-slate-900">Featured Formulations:</span>
           <span className="text-slate-600">{protocol?.products}</span>
         </div>
         <div>
@@ -59,5 +51,5 @@ export function ProtocolModal({
         Proceed to Book & Authorize Hold
       </Button>
     </Modal>
-  );
+  )
 }

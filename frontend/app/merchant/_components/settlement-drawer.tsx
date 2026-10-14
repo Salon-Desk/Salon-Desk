@@ -1,31 +1,19 @@
-"use client";
+'use client'
 
-import {
-  AlertTriangle,
-  Check,
-  RefreshCw,
-  Scissors,
-  ShieldCheck,
-  XCircle,
-} from "lucide-react";
-import {
-  Button,
-  DetailRow,
-  Drawer,
-  HoldStateBadge,
-  Panel,
-} from "@/components/ui";
-import { formatUsd } from "@/lib/format";
-import type { Booking } from "@/types";
+import { AlertTriangle, Check, RefreshCw, Scissors, ShieldCheck, XCircle } from 'lucide-react'
+
+import { Button, DetailRow, Drawer, HoldStateBadge, Panel } from '@/components/ui'
+import { formatUsd } from '@/lib/format'
+import type { Booking } from '@/types'
 
 interface SettlementDrawerProps {
-  booking: Booking;
-  isSettlementProcessing: boolean;
-  onClose: () => void;
-  onMarkShow: (booking: Booking) => void;
-  onMarkNoShow: (booking: Booking) => void;
-  onCancelAndVoid: (booking: Booking) => void;
-  onReauthorizeHold: (booking: Booking) => void;
+  booking: Booking
+  isSettlementProcessing: boolean
+  onClose: () => void
+  onMarkShow: (booking: Booking) => void
+  onMarkNoShow: (booking: Booking) => void
+  onCancelAndVoid: (booking: Booking) => void
+  onReauthorizeHold: (booking: Booking) => void
 }
 
 export function SettlementDrawer({
@@ -51,12 +39,12 @@ export function SettlementDrawer({
           <Button
             variant="success"
             fullWidth
-            disabled={isSettlementProcessing || booking.status === "CAPTURED"}
+            disabled={isSettlementProcessing || booking.status === 'CAPTURED'}
             onClick={() => onMarkShow(booking)}
           >
             <Check className="h-4 w-4" />
-            {booking.status === "CAPTURED"
-              ? "Full Ticket Already Captured"
+            {booking.status === 'CAPTURED'
+              ? 'Full Ticket Already Captured'
               : `Mark Show & Capture Full (${formatUsd(booking.servicePrice)})`}
           </Button>
 
@@ -65,18 +53,18 @@ export function SettlementDrawer({
             fullWidth
             disabled={
               isSettlementProcessing ||
-              booking.status === "NO_SHOW_CAPTURED" ||
-              booking.status === "CAPTURED"
+              booking.status === 'NO_SHOW_CAPTURED' ||
+              booking.status === 'CAPTURED'
             }
             onClick={() => onMarkNoShow(booking)}
           >
             <AlertTriangle className="h-4 w-4" />
-            {booking.status === "NO_SHOW_CAPTURED"
-              ? "No-Show Fee Captured ($30.00)"
+            {booking.status === 'NO_SHOW_CAPTURED'
+              ? 'No-Show Fee Captured ($30.00)'
               : `Mark No-Show (Fee Only ${formatUsd(booking.noShowFee)} · Release Rest)`}
           </Button>
 
-          {booking.status === "HELD" ? (
+          {booking.status === 'HELD' ? (
             <Button
               variant="secondary"
               fullWidth
@@ -92,9 +80,7 @@ export function SettlementDrawer({
             variant="secondary"
             fullWidth
             disabled={
-              isSettlementProcessing ||
-              booking.status === "VOIDED" ||
-              booking.status === "CAPTURED"
+              isSettlementProcessing || booking.status === 'VOIDED' || booking.status === 'CAPTURED'
             }
             onClick={() => onCancelAndVoid(booking)}
           >
@@ -111,18 +97,14 @@ export function SettlementDrawer({
             <span>Status:</span>
             <HoldStateBadge status={booking.status} />
           </div>
-          <span className="font-bold font-mono text-[10px]">
-            Ref: {booking.id}
-          </span>
+          <span className="font-bold font-mono text-[10px]">Ref: {booking.id}</span>
         </Panel>
 
         <Panel className="space-y-2 bg-white">
           <div className="font-bold font-mono text-[10px] text-slate-500 uppercase">
             Client Details
           </div>
-          <div className="font-bold text-slate-900 text-sm">
-            {booking.clientName}
-          </div>
+          <div className="font-bold text-slate-900 text-sm">{booking.clientName}</div>
           <div className="text-slate-600">{booking.clientEmail}</div>
           <div className="font-mono text-slate-600">{booking.clientPhone}</div>
         </Panel>
@@ -131,15 +113,9 @@ export function SettlementDrawer({
           <div className="font-bold font-mono text-[10px] text-slate-500 uppercase">
             Service &amp; Stylist
           </div>
-          <div className="font-bold text-slate-900 text-sm">
-            {booking.serviceName}
-          </div>
-          <div className="font-semibold text-amber-800">
-            Stylist: {booking.stylistName}
-          </div>
-          <div className="text-slate-600">
-            Scheduled: {booking.appointmentTime}
-          </div>
+          <div className="font-bold text-slate-900 text-sm">{booking.serviceName}</div>
+          <div className="font-semibold text-amber-800">Stylist: {booking.stylistName}</div>
+          <div className="text-slate-600">Scheduled: {booking.appointmentTime}</div>
         </Panel>
 
         <Panel className="space-y-2 bg-white font-mono">
@@ -157,17 +133,8 @@ export function SettlementDrawer({
             tone="amber"
             emphasis="bold"
           />
-          <DetailRow
-            label="No-Show Cutoff Fee"
-            value={formatUsd(booking.noShowFee)}
-            tone="rose"
-          />
-          <DetailRow
-            label="Upfront Debited Today"
-            value="$0.00"
-            tone="emerald"
-            emphasis="bold"
-          />
+          <DetailRow label="No-Show Cutoff Fee" value={formatUsd(booking.noShowFee)} tone="rose" />
+          <DetailRow label="Upfront Debited Today" value="$0.00" tone="emerald" emphasis="bold" />
         </Panel>
 
         <Panel className="space-y-1.5 border-amber-200 bg-amber-50/70 font-mono text-[11px]">
@@ -175,14 +142,10 @@ export function SettlementDrawer({
             PayPal Authorization Record
           </div>
           <div className="truncate text-slate-700">
-            Auth ID:{" "}
-            <span className="font-bold text-slate-900">
-              {booking.paypalAuthId}
-            </span>
+            Auth ID: <span className="font-bold text-slate-900">{booking.paypalAuthId}</span>
           </div>
           <div className="truncate text-slate-700">
-            Idempotency Key:{" "}
-            <span className="text-slate-600">{booking.idempotencyKey}</span>
+            Idempotency Key: <span className="text-slate-600">{booking.idempotencyKey}</span>
           </div>
           <div className="truncate text-[10px] text-slate-500">
             Consent Hash: {booking.consentHash}
@@ -191,13 +154,11 @@ export function SettlementDrawer({
 
         {booking.settlementNote ? (
           <Panel className="space-y-1 bg-white text-[11px] text-slate-700">
-            <span className="block font-bold text-amber-800">
-              Settlement Record:
-            </span>
+            <span className="block font-bold text-amber-800">Settlement Record:</span>
             <p>{booking.settlementNote}</p>
           </Panel>
         ) : null}
       </div>
     </Drawer>
-  );
+  )
 }

@@ -1,35 +1,37 @@
-"use client";
+'use client'
 
-import { Edit2, Lock, Plus, Trash2, Unlock } from "lucide-react";
+import { Edit2, Lock, Plus, Trash2, Unlock } from 'lucide-react'
+
 import {
   Button,
   IconButton,
   OrganizationStatusBadge,
   SearchInput,
   SegmentedControl,
-} from "@/components/ui";
-import type { Organization } from "@/types";
-import type { SalonStatusFilter } from "../_types/admin-types";
+} from '@/components/ui'
+import type { Organization } from '@/types'
+
+import type { SalonStatusFilter } from '../_types/admin-types'
 
 interface SalonsTabProps {
-  salons: Organization[];
-  search: string;
-  onSearchChange: (value: string) => void;
-  statusFilter: SalonStatusFilter;
-  onStatusFilterChange: (value: SalonStatusFilter) => void;
-  onAddSalon: () => void;
-  onApprove: (orgId: string) => void;
-  onEdit: (salon: Organization) => void;
-  onSuspend: (salon: Organization) => void;
-  onDelete: (salon: Organization) => void;
+  salons: Organization[]
+  search: string
+  onSearchChange: (value: string) => void
+  statusFilter: SalonStatusFilter
+  onStatusFilterChange: (value: SalonStatusFilter) => void
+  onAddSalon: () => void
+  onApprove: (orgId: string) => void
+  onEdit: (salon: Organization) => void
+  onSuspend: (salon: Organization) => void
+  onDelete: (salon: Organization) => void
 }
 
 const FILTER_OPTIONS = [
-  { value: "ALL" as const, label: "All" },
-  { value: "APPROVED" as const, label: "Active" },
-  { value: "PENDING_REVIEW" as const, label: "Pending" },
-  { value: "SUSPENDED" as const, label: "Suspended" },
-];
+  { value: 'ALL' as const, label: 'All' },
+  { value: 'APPROVED' as const, label: 'Active' },
+  { value: 'PENDING_REVIEW' as const, label: 'Pending' },
+  { value: 'SUSPENDED' as const, label: 'Suspended' },
+]
 
 export function SalonsTab({
   salons,
@@ -83,33 +85,25 @@ export function SalonsTab({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {salons.map((salon) => (
-              <tr
-                key={salon.id}
-                className="transition-colors hover:bg-slate-50"
-              >
+              <tr key={salon.id} className="transition-colors hover:bg-slate-50">
                 <td className="px-4 py-3.5">
                   <div className="font-bold text-slate-900">{salon.name}</div>
                   <div className="text-[11px] text-slate-500">
                     {salon.address}
-                    {salon.city ? `, ${salon.city}` : ""}
+                    {salon.city ? `, ${salon.city}` : ''}
                   </div>
                 </td>
 
                 <td className="px-4 py-3.5 text-slate-700">
                   <div className="font-medium">{salon.ownerName}</div>
-                  <div className="font-mono text-[11px] text-slate-500">
-                    {salon.email}
-                  </div>
+                  <div className="font-mono text-[11px] text-slate-500">{salon.email}</div>
                 </td>
 
                 <td className="px-4 py-3.5 font-mono text-slate-700">
                   <div className="flex items-center gap-1.5">
                     <span>{salon.paypalMerchantId}</span>
                     {salon.verified ? (
-                      <span
-                        className="font-bold text-emerald-700"
-                        title="Verified"
-                      >
+                      <span className="font-bold text-emerald-700" title="Verified">
                         ✓
                       </span>
                     ) : null}
@@ -136,12 +130,8 @@ export function SalonsTab({
 
                 <td className="px-4 py-3.5 text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    {salon.status === "PENDING_REVIEW" ? (
-                      <Button
-                        variant="success"
-                        size="sm"
-                        onClick={() => onApprove(salon.id)}
-                      >
+                    {salon.status === 'PENDING_REVIEW' ? (
+                      <Button variant="success" size="sm" onClick={() => onApprove(salon.id)}>
                         Approve
                       </Button>
                     ) : null}
@@ -151,28 +141,22 @@ export function SalonsTab({
                     </IconButton>
 
                     <IconButton
-                      title={
-                        salon.status === "SUSPENDED" ? "Reinstate" : "Suspend"
-                      }
+                      title={salon.status === 'SUSPENDED' ? 'Reinstate' : 'Suspend'}
                       className={
-                        salon.status === "SUSPENDED"
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                          : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                        salon.status === 'SUSPENDED'
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                          : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
                       }
                       onClick={() => onSuspend(salon)}
                     >
-                      {salon.status === "SUSPENDED" ? (
+                      {salon.status === 'SUSPENDED' ? (
                         <Unlock className="h-3.5 w-3.5" />
                       ) : (
                         <Lock className="h-3.5 w-3.5" />
                       )}
                     </IconButton>
 
-                    <IconButton
-                      title="Delete"
-                      tone="danger"
-                      onClick={() => onDelete(salon)}
-                    >
+                    <IconButton title="Delete" tone="danger" onClick={() => onDelete(salon)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </IconButton>
                   </div>
@@ -183,5 +167,5 @@ export function SalonsTab({
         </table>
       </div>
     </div>
-  );
+  )
 }

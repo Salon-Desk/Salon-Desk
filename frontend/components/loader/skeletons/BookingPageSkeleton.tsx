@@ -1,19 +1,19 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 import {
   SkeletonPaginationRow,
   SkeletonTableBodyRow,
   SkeletonTableFrame,
   SkeletonTableHeaderRow,
-} from "./shared";
+} from './shared'
 
 export type BookingPageSkeletonProps = {
-  className?: string;
-  filterFields?: number;
-  tableRows?: number;
-  tableColumns?: number;
-};
+  className?: string
+  filterFields?: number
+  tableRows?: number
+  tableColumns?: number
+}
 
 const BookingPageSkeleton = ({
   className,
@@ -21,7 +21,7 @@ const BookingPageSkeleton = ({
   tableColumns = 6,
 }: BookingPageSkeletonProps) => {
   return (
-    <div className={cn("flex flex-col gap-4 rounded-4xl p-4", className)}>
+    <div className={cn('flex flex-col gap-4 rounded-4xl p-4', className)}>
       <div className="flex flex-col gap-4 rounded-2xl bg-background p-4 shadow-[0px_0px_24px_0px_#0000000A]">
         {/* header */}
         <div className="flex items-start justify-between">
@@ -74,7 +74,7 @@ const BookingPageSkeleton = ({
         <SkeletonPaginationRow />
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default BookingPageSkeleton;
+export default BookingPageSkeleton

@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from '@/components/ui/skeleton'
 
 const TransactionDetailSkeleton = () => {
   return (
@@ -56,7 +56,7 @@ const TransactionDetailSkeleton = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default TransactionDetailSkeleton;
+export default TransactionDetailSkeleton

@@ -1,36 +1,29 @@
-"use client";
+'use client'
 
-import { ShieldCheck, Sparkles } from "lucide-react";
-import { usePathname } from "next/navigation";
-import { type ReactNode, useState } from "react";
-import { AuthGate } from "@/components/layout/auth-gate";
-import { ConsoleShell } from "@/components/layout/console-shell";
-import { Toast } from "@/components/ui";
-import { SANDBOX_CREDENTIALS } from "@/lib/constants";
-import { ConsentModal } from "./_components/consent-modal";
-import { CopilotDrawer } from "./_components/copilot-drawer";
-import { MerchantHeader } from "./_components/merchant-header";
-import { MerchantSidebar } from "./_components/merchant-sidebar";
-import {
-  DeleteServiceModal,
-  ServiceFormModal,
-} from "./_components/service-modals";
-import {
-  PaypalChangeModal,
-  PolicyChangeModal,
-} from "./_components/settings-modals";
-import { SettlementDrawer } from "./_components/settlement-drawer";
-import { DeleteStaffModal, StaffFormModal } from "./_components/staff-modals";
-import {
-  MerchantProvider,
-  useMerchantContext,
-} from "./_context/merchant-context";
-import { getMerchantTabFromPathname } from "./_types/merchant-types";
+import { ShieldCheck, Sparkles } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { type ReactNode, useState } from 'react'
+
+import { AuthGate } from '@/components/layout/auth-gate'
+import { ConsoleShell } from '@/components/layout/console-shell'
+import { Toast } from '@/components/ui'
+import { SANDBOX_CREDENTIALS } from '@/lib/constants'
+
+import { ConsentModal } from './_components/consent-modal'
+import { CopilotDrawer } from './_components/copilot-drawer'
+import { MerchantHeader } from './_components/merchant-header'
+import { MerchantSidebar } from './_components/merchant-sidebar'
+import { DeleteServiceModal, ServiceFormModal } from './_components/service-modals'
+import { PaypalChangeModal, PolicyChangeModal } from './_components/settings-modals'
+import { SettlementDrawer } from './_components/settlement-drawer'
+import { DeleteStaffModal, StaffFormModal } from './_components/staff-modals'
+import { MerchantProvider, useMerchantContext } from './_context/merchant-context'
+import { getMerchantTabFromPathname } from './_types/merchant-types'
 
 function MerchantLayoutInner({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-  const currentTab = getMerchantTabFromPathname(pathname);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const pathname = usePathname()
+  const currentTab = getMerchantTabFromPathname(pathname)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
   const {
     state,
@@ -87,7 +80,7 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
     handleLockSession,
     handleResetDemoData,
     handleToggleDrift,
-  } = useMerchantContext();
+  } = useMerchantContext()
 
   if (!state.authenticated) {
     return (
@@ -98,7 +91,7 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
         password={SANDBOX_CREDENTIALS.merchantAccount.password}
         onSignIn={handleSignIn}
       />
-    );
+    )
   }
 
   return (
@@ -122,9 +115,7 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
             <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-400" />
             <span>Idempotency Guarantee Enforced</span>
           </div>
-          <p className="text-[11px] text-emerald-100 leading-snug">
-            {idempotencyToast}
-          </p>
+          <p className="text-[11px] text-emerald-100 leading-snug">{idempotencyToast}</p>
         </output>
       ) : null}
 
@@ -247,7 +238,7 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
         />
       ) : null}
     </>
-  );
+  )
 }
 
 export default function MerchantLayout({ children }: { children: ReactNode }) {
@@ -255,5 +246,5 @@ export default function MerchantLayout({ children }: { children: ReactNode }) {
     <MerchantProvider>
       <MerchantLayoutInner>{children}</MerchantLayoutInner>
     </MerchantProvider>
-  );
+  )
 }

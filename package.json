@@ -1,0 +1,15 @@
+{
+  "name": "salon-desk",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "lint-staged": "lint-staged",
+    "validate:frontend": "pnpm --dir frontend validate",
+    "validate:backend": "cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest",
+    "validate": "pnpm validate:frontend && pnpm validate:backend"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0"
+  }
+}

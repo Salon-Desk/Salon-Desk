@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Calendar as CalendarIcon,
@@ -8,12 +8,14 @@ import {
   ExternalLink,
   ShieldCheck,
   Sparkles,
-} from "lucide-react";
-import Link from "next/link";
-import { Button, Card, HoldStateBadge, StatCard } from "@/components/ui";
-import { ROUTES } from "@/lib/constants";
-import { formatUsd } from "@/lib/format";
-import { useMerchantContext } from "./_context/merchant-context";
+} from 'lucide-react'
+import Link from 'next/link'
+
+import { Button, Card, HoldStateBadge, StatCard } from '@/components/ui'
+import { ROUTES } from '@/lib/constants'
+import { formatUsd } from '@/lib/format'
+
+import { useMerchantContext } from './_context/merchant-context'
 
 export default function MerchantDashboardPage() {
   const {
@@ -25,11 +27,9 @@ export default function MerchantDashboardPage() {
     setSelectedBooking,
     setInspectConsentBooking,
     setIsCopilotOpen,
-  } = useMerchantContext();
+  } = useMerchantContext()
 
-  const todayBookings = state.bookings.filter((b) =>
-    b.appointmentTime.includes("Today"),
-  );
+  const todayBookings = state.bookings.filter((b) => b.appointmentTime.includes('Today'))
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
@@ -44,22 +44,16 @@ export default function MerchantDashboardPage() {
                 PayPal Orders v2 Rails Active
               </span>
               <span className="text-slate-300 text-xs">·</span>
-              <span className="font-mono text-slate-500 text-xs">
-                {state.salon.name}
-              </span>
+              <span className="font-mono text-slate-500 text-xs">{state.salon.name}</span>
             </div>
             <h1 className="font-extrabold text-2xl text-slate-900 tracking-tight sm:text-3xl">
-              Welcome back, {state.salon.ownerName.split(" ")[0]}
+              Welcome back, {state.salon.ownerName.split(' ')[0]}
             </h1>
             <p className="text-slate-600 text-xs sm:text-sm">
-              <span className="font-bold text-slate-900">
-                {activeHoldsCount} active holds
-              </span>{" "}
-              totaling{" "}
-              <span className="font-bold text-amber-900">
-                {formatUsd(activeHoldsVolume)}
-              </span>{" "}
-              in protected authorization volume today.
+              <span className="font-bold text-slate-900">{activeHoldsCount} active holds</span>{' '}
+              totaling{' '}
+              <span className="font-bold text-amber-900">{formatUsd(activeHoldsVolume)}</span> in
+              protected authorization volume today.
             </p>
           </div>
 
@@ -125,9 +119,7 @@ export default function MerchantDashboardPage() {
         <Card padding="lg" className="space-y-4 rounded-3xl lg:col-span-2">
           <div className="flex items-center justify-between border-slate-100 border-b pb-3">
             <div>
-              <h2 className="font-bold text-slate-900 text-sm">
-                Today&apos;s Appointments
-              </h2>
+              <h2 className="font-bold text-slate-900 text-sm">Today&apos;s Appointments</h2>
               <p className="text-slate-500 text-xs">
                 {todayBookings.length} scheduled client services
               </p>
@@ -158,19 +150,13 @@ export default function MerchantDashboardPage() {
                     </div>
                     <div className="min-w-0 space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 text-sm">
-                          {b.clientName}
-                        </span>
+                        <span className="font-bold text-slate-900 text-sm">{b.clientName}</span>
                         <HoldStateBadge status={b.status} />
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-slate-500 text-xs">
-                        <span className="font-medium text-slate-800">
-                          {b.serviceName}
-                        </span>
+                        <span className="font-medium text-slate-800">{b.serviceName}</span>
                         <span>·</span>
-                        <span className="font-medium text-slate-700">
-                          {b.appointmentTime}
-                        </span>
+                        <span className="font-medium text-slate-700">{b.appointmentTime}</span>
                         <span>·</span>
                         <span>{b.stylistName}</span>
                       </div>
@@ -213,24 +199,17 @@ export default function MerchantDashboardPage() {
         </Card>
 
         {/* Account Verification & Settings Summary */}
-        <Card
-          padding="lg"
-          className="flex flex-col justify-between space-y-4 rounded-3xl"
-        >
+        <Card padding="lg" className="flex flex-col justify-between space-y-4 rounded-3xl">
           <div className="space-y-4">
             <div className="border-slate-100 border-b pb-3">
-              <h2 className="font-bold text-slate-900 text-sm">
-                Account &amp; Policy
-              </h2>
+              <h2 className="font-bold text-slate-900 text-sm">Account &amp; Policy</h2>
               <p className="text-slate-500 text-xs">Connected credentials</p>
             </div>
 
             <div className="space-y-3">
               <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500 font-medium">
-                    PayPal Merchant ID
-                  </span>
+                  <span className="text-slate-500 font-medium">PayPal Merchant ID</span>
                   <span className="font-semibold text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                     Active
                   </span>
@@ -241,9 +220,7 @@ export default function MerchantDashboardPage() {
               </div>
 
               <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 space-y-1">
-                <span className="text-slate-500 text-[11px] font-medium">
-                  Cancellation Terms
-                </span>
+                <span className="text-slate-500 text-[11px] font-medium">Cancellation Terms</span>
                 <div className="font-semibold text-slate-900 text-xs">
                   ≥ {state.salon.cancellationPolicyHours} hours free notice
                 </div>
@@ -254,9 +231,7 @@ export default function MerchantDashboardPage() {
 
               <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500 font-medium">
-                    Platform Take-Rate
-                  </span>
+                  <span className="text-slate-500 font-medium">Platform Take-Rate</span>
                   <span className="font-mono font-bold text-emerald-700">
                     {state.salon.commissionRate}%
                   </span>
@@ -278,5 +253,5 @@ export default function MerchantDashboardPage() {
         </Card>
       </div>
     </div>
-  );
+  )
 }

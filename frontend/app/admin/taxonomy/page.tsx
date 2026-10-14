@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Crown,
@@ -12,9 +12,11 @@ import {
   Scissors,
   Sparkles,
   Trash2,
-} from "lucide-react";
-import { Badge, Button, Card, IconButton } from "@/components/ui";
-import { useAdminContext } from "../_context/admin-context";
+} from 'lucide-react'
+
+import { Badge, Button, Card, IconButton } from '@/components/ui'
+
+import { useAdminContext } from '../_context/admin-context'
 
 const ICON_MAP: Record<string, typeof Scissors> = {
   Scissors,
@@ -23,7 +25,7 @@ const ICON_MAP: Record<string, typeof Scissors> = {
   Flower2,
   Crown,
   HeartHandshake,
-};
+}
 
 export default function AdminTaxonomyPage() {
   const {
@@ -32,7 +34,7 @@ export default function AdminTaxonomyPage() {
     openEditCategory,
     handleToggleCategoryStatus,
     setDeletingCategory,
-  } = useAdminContext();
+  } = useAdminContext()
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300">
@@ -43,8 +45,7 @@ export default function AdminTaxonomyPage() {
             Service Categories &amp; Taxonomy
           </h1>
           <p className="text-slate-500 text-xs">
-            {state.categories.length} discovery classifications across partner
-            salons.
+            {state.categories.length} discovery classifications across partner salons.
           </p>
         </div>
 
@@ -62,8 +63,8 @@ export default function AdminTaxonomyPage() {
       {/* Categories Grid */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {state.categories.map((cat) => {
-          const isActive = cat.status === "ACTIVE";
-          const Icon = ICON_MAP[cat.iconName] ?? Scissors;
+          const isActive = cat.status === 'ACTIVE'
+          const Icon = ICON_MAP[cat.iconName] ?? Scissors
 
           return (
             <Card
@@ -79,29 +80,21 @@ export default function AdminTaxonomyPage() {
                       <Icon className="h-4 w-4" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-base text-slate-900">
-                        {cat.name}
-                      </h3>
+                      <h3 className="font-bold text-base text-slate-900">{cat.name}</h3>
                       <span className="font-mono text-[10px] text-slate-400">
                         #{cat.displayOrder} · /{cat.slug}
                       </span>
                     </div>
                   </div>
 
-                  <Badge tone={isActive ? "emerald" : "slate"}>
-                    {cat.status}
-                  </Badge>
+                  <Badge tone={isActive ? 'emerald' : 'slate'}>{cat.status}</Badge>
                 </div>
 
-                <p className="mb-3 text-slate-500 text-xs leading-relaxed">
-                  {cat.description}
-                </p>
+                <p className="mb-3 text-slate-500 text-xs leading-relaxed">{cat.description}</p>
 
                 <div className="rounded-xl border border-slate-200/70 bg-slate-50/60 px-3 py-2 text-xs text-slate-600 flex items-center justify-between">
                   <span>Services Linked:</span>
-                  <span className="font-bold text-slate-900">
-                    {cat.servicesCount}
-                  </span>
+                  <span className="font-bold text-slate-900">{cat.servicesCount}</span>
                 </div>
               </div>
 
@@ -143,9 +136,9 @@ export default function AdminTaxonomyPage() {
                 </div>
               </div>
             </Card>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

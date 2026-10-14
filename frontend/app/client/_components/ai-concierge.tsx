@@ -1,52 +1,50 @@
-"use client";
+'use client'
 
-import { Bot, Clock, Lock, Mic, Send, Sparkles, User, X } from "lucide-react";
-import { useEffect, useRef } from "react";
-import { Button } from "@/components/ui";
-import type { ConciergeMessage } from "../_hooks/use-ai-concierge";
-import { INITIAL_STAFF } from "@/lib/data/catalog";
-import { DEFAULT_TIME_SLOT } from "@/lib/data/service-content";
-import type { SalonService, StaffMember } from "@/types";
+import { Bot, Clock, Lock, Mic, Send, Sparkles, User, X } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+
+import { Button } from '@/components/ui'
+import { INITIAL_STAFF } from '@/lib/data/catalog'
+import { DEFAULT_TIME_SLOT } from '@/lib/data/service-content'
+import type { SalonService, StaffMember } from '@/types'
+
+import type { ConciergeMessage } from '../_hooks/use-ai-concierge'
 
 const WAVEFORM_BARS = [
-  "w1",
-  "w2",
-  "w3",
-  "w4",
-  "w5",
-  "w6",
-  "w7",
-  "w8",
-  "w9",
-  "w10",
-  "w11",
-  "w12",
-  "w13",
-  "w14",
-  "w15",
-  "w16",
-] as const;
+  'w1',
+  'w2',
+  'w3',
+  'w4',
+  'w5',
+  'w6',
+  'w7',
+  'w8',
+  'w9',
+  'w10',
+  'w11',
+  'w12',
+  'w13',
+  'w14',
+  'w15',
+  'w16',
+] as const
 
 interface AiConciergeProps {
-  mode: "voice" | "chat";
-  onModeChange: (mode: "voice" | "chat") => void;
-  prompt: string;
-  onPromptChange: (value: string) => void;
-  isThinking: boolean;
-  isListening: boolean;
-  isSpeaking: boolean;
-  volumeLevel: number;
-  messages: ConciergeMessage[];
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  onSend: (prompt?: string, service?: SalonService) => void;
-  onVoiceTrigger: (text: string) => void;
-  onToggleListen: () => void;
-  onAuthorize: (opts: {
-    service: SalonService;
-    stylist?: StaffMember;
-    slot?: string;
-  }) => void;
-  onClose: () => void;
+  mode: 'voice' | 'chat'
+  onModeChange: (mode: 'voice' | 'chat') => void
+  prompt: string
+  onPromptChange: (value: string) => void
+  isThinking: boolean
+  isListening: boolean
+  isSpeaking: boolean
+  volumeLevel: number
+  messages: ConciergeMessage[]
+  messagesEndRef: React.RefObject<HTMLDivElement | null>
+  onSend: (prompt?: string, service?: SalonService) => void
+  onVoiceTrigger: (text: string) => void
+  onToggleListen: () => void
+  onAuthorize: (opts: { service: SalonService; stylist?: StaffMember; slot?: string }) => void
+  onClose: () => void
 }
 
 export function AiConcierge({
@@ -68,11 +66,11 @@ export function AiConcierge({
 }: AiConciergeProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end sm:flex-row sm:justify-end bg-stone-950/30 backdrop-blur-xs animate-in fade-in duration-200">
@@ -107,9 +105,7 @@ export function AiConcierge({
               <h2 className="font-serif text-sm font-medium tracking-tight text-stone-950">
                 Atelier Concierge
               </h2>
-              <p className="text-[10px] text-stone-500 font-normal">
-                Gemini 2.5 • Instant booking
-              </p>
+              <p className="text-[10px] text-stone-500 font-normal">Gemini 2.5 • Instant booking</p>
             </div>
           </div>
 
@@ -118,11 +114,11 @@ export function AiConcierge({
             <div className="flex items-center rounded-full bg-stone-100 p-0.5">
               <button
                 type="button"
-                onClick={() => onModeChange("chat")}
+                onClick={() => onModeChange('chat')}
                 className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
-                  mode === "chat"
-                    ? "bg-stone-950 text-white shadow-xs"
-                    : "text-stone-500 hover:text-stone-950"
+                  mode === 'chat'
+                    ? 'bg-stone-950 text-white shadow-xs'
+                    : 'text-stone-500 hover:text-stone-950'
                 }`}
               >
                 <Bot className="h-3.5 w-3.5" />
@@ -130,11 +126,11 @@ export function AiConcierge({
               </button>
               <button
                 type="button"
-                onClick={() => onModeChange("voice")}
+                onClick={() => onModeChange('voice')}
                 className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
-                  mode === "voice"
-                    ? "bg-stone-950 text-white shadow-xs"
-                    : "text-stone-500 hover:text-stone-950"
+                  mode === 'voice'
+                    ? 'bg-stone-950 text-white shadow-xs'
+                    : 'text-stone-500 hover:text-stone-950'
                 }`}
               >
                 <Mic className="h-3.5 w-3.5" />
@@ -154,7 +150,7 @@ export function AiConcierge({
         </header>
 
         {/* Content Body */}
-        {mode === "voice" ? (
+        {mode === 'voice' ? (
           <VoiceSurface
             isListening={isListening}
             isSpeaking={isSpeaking}
@@ -175,7 +171,7 @@ export function AiConcierge({
         )}
       </div>
     </div>
-  );
+  )
 }
 
 function VoiceSurface({
@@ -185,17 +181,13 @@ function VoiceSurface({
   onVoiceTrigger,
   onToggleListen,
 }: {
-  isListening: boolean;
-  isSpeaking: boolean;
-  volumeLevel: number;
-  onVoiceTrigger: (text: string) => void;
-  onToggleListen: () => void;
+  isListening: boolean
+  isSpeaking: boolean
+  volumeLevel: number
+  onVoiceTrigger: (text: string) => void
+  onToggleListen: () => void
 }) {
-  const status = isSpeaking
-    ? "Speaking..."
-    : isListening
-      ? "Listening..."
-      : "Tap to Speak";
+  const status = isSpeaking ? 'Speaking...' : isListening ? 'Listening...' : 'Tap to Speak'
 
   return (
     <div className="flex flex-1 flex-col items-center justify-between p-6 bg-gradient-to-b from-[#fbfbfa] via-white to-amber-50/15 text-stone-900 overflow-y-auto">
@@ -204,10 +196,10 @@ function VoiceSurface({
         <span
           className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
             isListening
-              ? "bg-rose-50 text-rose-700 animate-pulse"
+              ? 'bg-rose-50 text-rose-700 animate-pulse'
               : isSpeaking
-                ? "bg-amber-50 text-amber-800 animate-pulse"
-                : "bg-stone-100 text-stone-600"
+                ? 'bg-amber-50 text-amber-800 animate-pulse'
+                : 'bg-stone-100 text-stone-600'
           }`}
         >
           <span className="h-2 w-2 rounded-full bg-current" />
@@ -220,18 +212,15 @@ function VoiceSurface({
         {WAVEFORM_BARS.map((bar, index) => {
           const barHeight =
             isListening || isSpeaking
-              ? Math.max(
-                  12,
-                  Math.min(84, ((index % 5) + 1) * volumeLevel * 2.8),
-                )
-              : 8;
+              ? Math.max(12, Math.min(84, ((index % 5) + 1) * volumeLevel * 2.8))
+              : 8
           return (
             <div
               key={bar}
               style={{ height: `${barHeight}px` }}
               className="w-1.5 rounded-full bg-gradient-to-t from-stone-950 to-amber-600 transition-all duration-150"
             />
-          );
+          )
         })}
       </div>
 
@@ -242,18 +231,14 @@ function VoiceSurface({
         </p>
         <button
           type="button"
-          onClick={() =>
-            onVoiceTrigger("Book Precision Fade tomorrow with Marcus")
-          }
+          onClick={() => onVoiceTrigger('Book Precision Fade tomorrow with Marcus')}
           className="w-full rounded-2xl bg-stone-100 hover:bg-stone-200/70 px-4 py-2.5 text-left text-xs text-stone-800 transition-colors cursor-pointer truncate"
         >
           &quot;Book Precision Fade tomorrow with Marcus&quot;
         </button>
         <button
           type="button"
-          onClick={() =>
-            onVoiceTrigger("Book Signature Balayage this Saturday")
-          }
+          onClick={() => onVoiceTrigger('Book Signature Balayage this Saturday')}
           className="w-full rounded-2xl bg-stone-100 hover:bg-stone-200/70 px-4 py-2.5 text-left text-xs text-stone-800 transition-colors cursor-pointer truncate"
         >
           &quot;Book Signature Balayage this Saturday&quot;
@@ -265,21 +250,19 @@ function VoiceSurface({
         <button
           type="button"
           onClick={onToggleListen}
-          aria-label={isListening ? "Stop listening" : "Start speaking"}
+          aria-label={isListening ? 'Stop listening' : 'Start speaking'}
           className={`flex h-20 w-20 items-center justify-center rounded-full transition-all duration-300 cursor-pointer ${
             isListening
-              ? "bg-rose-500 text-white ring-8 ring-rose-500/20 scale-105"
-              : "bg-stone-950 text-white hover:bg-amber-600 hover:scale-105 shadow-lg shadow-stone-950/15"
+              ? 'bg-rose-500 text-white ring-8 ring-rose-500/20 scale-105'
+              : 'bg-stone-950 text-white hover:bg-amber-600 hover:scale-105 shadow-lg shadow-stone-950/15'
           }`}
         >
           <Mic className="h-8 w-8" />
         </button>
-        <p className="text-[11px] text-stone-400">
-          Tap microphone to speak or interrupt
-        </p>
+        <p className="text-[11px] text-stone-400">Tap microphone to speak or interrupt</p>
       </div>
     </div>
-  );
+  )
 }
 
 function ChatSurface({
@@ -291,36 +274,29 @@ function ChatSurface({
   onSend,
   onAuthorize,
 }: {
-  messages: ConciergeMessage[];
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  isThinking: boolean;
-  prompt: string;
-  onPromptChange: (value: string) => void;
-  onSend: (prompt?: string) => void;
-  onAuthorize: (opts: {
-    service: SalonService;
-    stylist?: StaffMember;
-    slot?: string;
-  }) => void;
+  messages: ConciergeMessage[]
+  messagesEndRef: React.RefObject<HTMLDivElement | null>
+  isThinking: boolean
+  prompt: string
+  onPromptChange: (value: string) => void
+  onSend: (prompt?: string) => void
+  onAuthorize: (opts: { service: SalonService; stylist?: StaffMember; slot?: string }) => void
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null)
 
   return (
     <div className="flex flex-1 flex-col justify-between overflow-hidden bg-[#fbfbfa]">
       {/* Messages Thread */}
       <div className="flex-1 space-y-3.5 overflow-y-auto p-4 sm:p-5">
         {messages.map((msg) => {
-          const isUser = msg.sender === "user";
+          const isUser = msg.sender === 'user'
           return (
-            <div
-              key={msg.id}
-              className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
-            >
+            <div key={msg.id} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
               <div
                 className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm leading-relaxed ${
                   isUser
-                    ? "rounded-tr-xs bg-stone-950 text-white font-normal"
-                    : "rounded-tl-xs bg-stone-100 text-stone-900 font-normal"
+                    ? 'rounded-tr-xs bg-stone-950 text-white font-normal'
+                    : 'rounded-tl-xs bg-stone-100 text-stone-900 font-normal'
                 }`}
               >
                 <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -331,7 +307,7 @@ function ChatSurface({
                 <ProposalCard message={msg} onAuthorize={onAuthorize} />
               )}
             </div>
-          );
+          )
         })}
 
         {/* Thinking Indicator */}
@@ -349,21 +325,21 @@ function ChatSurface({
       <div className="flex items-center gap-2 overflow-x-auto border-t border-stone-200/50 bg-white/70 px-4 py-2.5 scrollbar-none snap-x">
         <button
           type="button"
-          onClick={() => onSend("Book Precision Fade with Marcus")}
+          onClick={() => onSend('Book Precision Fade with Marcus')}
           className="snap-start shrink-0 rounded-full bg-stone-100 hover:bg-stone-200/80 px-3 py-1.5 text-xs font-normal text-stone-800 transition-colors cursor-pointer"
         >
           Fade with Marcus
         </button>
         <button
           type="button"
-          onClick={() => onSend("Book Balayage this Saturday")}
+          onClick={() => onSend('Book Balayage this Saturday')}
           className="snap-start shrink-0 rounded-full bg-stone-100 hover:bg-stone-200/80 px-3 py-1.5 text-xs font-normal text-stone-800 transition-colors cursor-pointer"
         >
           Balayage this Saturday
         </button>
         <button
           type="button"
-          onClick={() => onSend("How does the $0 hold work?")}
+          onClick={() => onSend('How does the $0 hold work?')}
           className="snap-start shrink-0 rounded-full bg-stone-100 hover:bg-stone-200/80 px-3 py-1.5 text-xs font-normal text-stone-800 transition-colors cursor-pointer"
         >
           How $0 hold works
@@ -374,8 +350,8 @@ function ChatSurface({
       <div className="border-t border-stone-200/50 bg-white p-3 sm:p-4">
         <form
           onSubmit={(e) => {
-            e.preventDefault();
-            onSend();
+            e.preventDefault()
+            onSend()
           }}
           className="flex items-center gap-2 rounded-full bg-stone-100 p-1 pl-4"
         >
@@ -399,36 +375,28 @@ function ChatSurface({
         </form>
       </div>
     </div>
-  );
+  )
 }
 
 function ProposalCard({
   message,
   onAuthorize,
 }: {
-  message: ConciergeMessage;
-  onAuthorize: (opts: {
-    service: SalonService;
-    stylist?: StaffMember;
-    slot?: string;
-  }) => void;
+  message: ConciergeMessage
+  onAuthorize: (opts: { service: SalonService; stylist?: StaffMember; slot?: string }) => void
 }) {
-  const service = message.proposedService;
-  if (!service) return null;
+  const service = message.proposedService
+  if (!service) return null
 
-  const stylist = message.proposedStylist || INITIAL_STAFF[0];
-  const slot = message.proposedSlot || DEFAULT_TIME_SLOT;
+  const stylist = message.proposedStylist || INITIAL_STAFF[0]
+  const slot = message.proposedSlot || DEFAULT_TIME_SLOT
 
   return (
     <div className="mt-3 w-full max-w-[94%] rounded-3xl bg-amber-50/70 p-4 sm:p-5 text-stone-900 border border-amber-200/40">
       {/* Title & Price */}
       <div className="mb-2 flex items-baseline justify-between gap-2">
-        <h4 className="font-serif text-base text-stone-950 truncate font-normal">
-          {service.name}
-        </h4>
-        <span className="font-semibold text-base text-stone-950 shrink-0">
-          ${service.price}
-        </span>
+        <h4 className="font-serif text-base text-stone-950 truncate font-normal">{service.name}</h4>
+        <span className="font-semibold text-base text-stone-950 shrink-0">${service.price}</span>
       </div>
 
       {/* Time & Stylist info */}
@@ -465,5 +433,5 @@ function ProposalCard({
         <span>Free 24h cancel</span>
       </div>
     </div>
-  );
+  )
 }

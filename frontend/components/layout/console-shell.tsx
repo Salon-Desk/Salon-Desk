@@ -1,14 +1,15 @@
-"use client";
+'use client'
 
-import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from 'react'
+
+import { cn } from '@/lib/utils'
 
 interface ConsoleShellProps {
-  sidebar: ReactNode;
-  header: ReactNode;
-  children: ReactNode;
-  isMobileSidebarOpen: boolean;
-  onCloseMobileSidebar: () => void;
+  sidebar: ReactNode
+  header: ReactNode
+  children: ReactNode
+  isMobileSidebarOpen: boolean
+  onCloseMobileSidebar: () => void
 }
 
 /**
@@ -36,8 +37,8 @@ export function ConsoleShell({
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-800/80 bg-[#0B0F17] text-slate-100 transition-transform lg:static lg:translate-x-0",
-          isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full",
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-800/80 bg-[#0B0F17] text-slate-100 transition-transform lg:static lg:translate-x-0',
+          isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
         {sidebar}
@@ -45,10 +46,8 @@ export function ConsoleShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {header}
-        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
     </div>
-  );
+  )
 }

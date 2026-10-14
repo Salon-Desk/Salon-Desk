@@ -1,12 +1,13 @@
-"use client";
+'use client'
 
-import { Shield } from "lucide-react";
-import { Modal } from "@/components/ui";
-import type { Booking } from "@/types";
+import { Shield } from 'lucide-react'
+
+import { Modal } from '@/components/ui'
+import type { Booking } from '@/types'
 
 interface ReceiptModalProps {
-  booking: Booking;
-  onClose: () => void;
+  booking: Booking
+  onClose: () => void
 }
 
 export function ReceiptModal({ booking, onClose }: ReceiptModalProps) {
@@ -33,16 +34,12 @@ export function ReceiptModal({ booking, onClose }: ReceiptModalProps) {
 
         <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
           <span className="text-stone-500 font-sans">PayPal Auth ID</span>
-          <span className="font-medium text-stone-800">
-            {booking.paypalAuthId}
-          </span>
+          <span className="font-medium text-stone-800">{booking.paypalAuthId}</span>
         </div>
 
         <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
           <span className="text-stone-500 font-sans">Idempotency Key</span>
-          <span className="font-medium text-stone-800">
-            {booking.idempotencyKey}
-          </span>
+          <span className="font-medium text-stone-800">{booking.idempotencyKey}</span>
         </div>
 
         <div className="pt-1">
@@ -63,5 +60,5 @@ export function ReceiptModal({ booking, onClose }: ReceiptModalProps) {
         Close Receipt
       </button>
     </Modal>
-  );
+  )
 }

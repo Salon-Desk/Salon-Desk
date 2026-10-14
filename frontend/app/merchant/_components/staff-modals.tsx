@@ -1,6 +1,7 @@
-"use client";
+'use client'
 
-import type { FormEvent } from "react";
+import type { FormEvent } from 'react'
+
 import {
   Button,
   ConfirmDialog,
@@ -9,41 +10,41 @@ import {
   NumberField,
   SelectField,
   TextField,
-} from "@/components/ui";
-import type { StaffMember } from "@/types";
+} from '@/components/ui'
+import type { StaffMember } from '@/types'
 
 export interface StaffFormState {
-  name: string;
-  role: string;
-  workingHours: string;
-  breakPeriod: string;
-  specialties: string;
-  maxSimultaneousClients: number;
-  status: "ACTIVE" | "ON_LEAVE";
+  name: string
+  role: string
+  workingHours: string
+  breakPeriod: string
+  specialties: string
+  maxSimultaneousClients: number
+  status: 'ACTIVE' | 'ON_LEAVE'
 }
 
 export const DEFAULT_STAFF_FORM: StaffFormState = {
-  name: "",
-  role: "Senior Braider & Texture Specialist",
-  workingHours: "9:00 AM - 6:00 PM",
-  breakPeriod: "1:00 PM - 2:00 PM",
-  specialties: "Knotless Braids, Silk Press, Locs Retwist",
+  name: '',
+  role: 'Senior Braider & Texture Specialist',
+  workingHours: '9:00 AM - 6:00 PM',
+  breakPeriod: '1:00 PM - 2:00 PM',
+  specialties: 'Knotless Braids, Silk Press, Locs Retwist',
   maxSimultaneousClients: 2,
-  status: "ACTIVE",
-};
+  status: 'ACTIVE',
+}
 
 interface StaffFormModalProps {
-  editingStaff: StaffMember | null;
-  form: StaffFormState;
-  onChange: (next: StaffFormState) => void;
-  onClose: () => void;
-  onSubmit: (event: FormEvent) => void;
+  editingStaff: StaffMember | null
+  form: StaffFormState
+  onChange: (next: StaffFormState) => void
+  onClose: () => void
+  onSubmit: (event: FormEvent) => void
 }
 
 interface DeleteStaffModalProps {
-  staff: StaffMember;
-  onClose: () => void;
-  onConfirm: () => void;
+  staff: StaffMember
+  onClose: () => void
+  onConfirm: () => void
 }
 
 export function StaffFormModal({
@@ -57,11 +58,7 @@ export function StaffFormModal({
     <Modal
       onClose={onClose}
       size="md"
-      title={
-        editingStaff
-          ? `Edit Stylist: ${editingStaff.name}`
-          : "Add New Salon Stylist"
-      }
+      title={editingStaff ? `Edit Stylist: ${editingStaff.name}` : 'Add New Salon Stylist'}
     >
       <form onSubmit={onSubmit} className="space-y-3 text-xs">
         <TextField
@@ -106,19 +103,15 @@ export function StaffFormModal({
             value={form.maxSimultaneousClients}
             min={1}
             max={4}
-            onChange={(maxSimultaneousClients) =>
-              onChange({ ...form, maxSimultaneousClients })
-            }
+            onChange={(maxSimultaneousClients) => onChange({ ...form, maxSimultaneousClients })}
           />
           <SelectField
             label="Availability Status"
             value={form.status}
-            onChange={(status) =>
-              onChange({ ...form, status: status as StaffFormState["status"] })
-            }
+            onChange={(status) => onChange({ ...form, status: status as StaffFormState['status'] })}
             options={[
-              { value: "ACTIVE", label: "ACTIVE (On Schedule)" },
-              { value: "ON_LEAVE", label: "ON_LEAVE" },
+              { value: 'ACTIVE', label: 'ACTIVE (On Schedule)' },
+              { value: 'ON_LEAVE', label: 'ON_LEAVE' },
             ]}
           />
         </div>
@@ -128,19 +121,15 @@ export function StaffFormModal({
             Cancel
           </Button>
           <Button type="submit" variant="primary">
-            {editingStaff ? "Update Stylist" : "Save Stylist"}
+            {editingStaff ? 'Update Stylist' : 'Save Stylist'}
           </Button>
         </FormActions>
       </form>
     </Modal>
-  );
+  )
 }
 
-export function DeleteStaffModal({
-  staff,
-  onClose,
-  onConfirm,
-}: DeleteStaffModalProps) {
+export function DeleteStaffModal({ staff, onClose, onConfirm }: DeleteStaffModalProps) {
   return (
     <ConfirmDialog
       title={`Remove Stylist: ${staff.name}`}
@@ -149,5 +138,5 @@ export function DeleteStaffModal({
       onConfirm={onConfirm}
       onClose={onClose}
     />
-  );
+  )
 }

@@ -1,44 +1,36 @@
-"use client";
+'use client'
 
-import {
-  ChevronUp,
-  Info,
-  Key,
-  Layers,
-  RotateCcw,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
-import { useState } from "react";
-import { Button, CopyableValue, Toast } from "@/components/ui";
-import { useClipboard, useDemoReset } from "@/hooks";
-import { SANDBOX_CREDENTIALS } from "@/lib/constants";
-import { adminStore, clientStore, merchantStore } from "@/lib/store";
-import { SandboxModal } from "./sandbox-modal";
+import { ChevronUp, Info, Key, Layers, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+
+import { Button, CopyableValue, Toast } from '@/components/ui'
+import { useClipboard, useDemoReset } from '@/hooks'
+import { SANDBOX_CREDENTIALS } from '@/lib/constants'
+import { adminStore, clientStore, merchantStore } from '@/lib/store'
+
+import { SandboxModal } from './sandbox-modal'
 
 interface DemoToolbarProps {
-  onResetSuccess?: () => void;
+  onResetSuccess?: () => void
 }
 
 export function DemoToolbar({ onResetSuccess }: DemoToolbarProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const { copiedKey, copy } = useClipboard();
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [showTooltip, setShowTooltip] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const { copiedKey, copy } = useClipboard()
   const { isResetting, reset } = useDemoReset(() => {
-    clientStore.reset();
-    merchantStore.reset();
-    adminStore.reset();
-  });
+    clientStore.reset()
+    merchantStore.reset()
+    adminStore.reset()
+  })
 
   const handleReset = async () => {
-    const stats = await reset();
-    onResetSuccess?.();
-    const holds = stats?.activeHoldsCount ?? 2;
-    setToastMessage(
-      `Sandbox Re-seeded: ${holds} Active Holds & Demo Data Restored!`,
-    );
-  };
+    const stats = await reset()
+    onResetSuccess?.()
+    const holds = stats?.activeHoldsCount ?? 2
+    setToastMessage(`Sandbox Re-seeded: ${holds} Active Holds & Demo Data Restored!`)
+  }
 
   return (
     <>
@@ -68,10 +60,7 @@ export function DemoToolbar({ onResetSuccess }: DemoToolbarProps) {
 
             {/* Hover dismisses the credentials popover once the pointer leaves both trigger and panel. */}
             {/* biome-ignore lint/a11y/noStaticElementInteractions: popover grouping */}
-            <div
-              className="relative"
-              onMouseLeave={() => setShowTooltip(false)}
-            >
+            <div className="relative" onMouseLeave={() => setShowTooltip(false)}>
               <button
                 type="button"
                 onClick={() => setShowTooltip((open) => !open)}
@@ -81,7 +70,7 @@ export function DemoToolbar({ onResetSuccess }: DemoToolbarProps) {
                 <Key className="h-3.5 w-3.5 text-amber-600" />
                 <span>Sandbox Credentials</span>
                 <ChevronUp
-                  className={`h-3 w-3 text-slate-500 transition-transform ${showTooltip ? "rotate-180" : ""}`}
+                  className={`h-3 w-3 text-slate-500 transition-transform ${showTooltip ? 'rotate-180' : ''}`}
                 />
               </button>
 
@@ -94,8 +83,8 @@ export function DemoToolbar({ onResetSuccess }: DemoToolbarProps) {
                     <button
                       type="button"
                       onClick={() => {
-                        setShowTooltip(false);
-                        setIsModalOpen(true);
+                        setShowTooltip(false)
+                        setIsModalOpen(true)
                       }}
                       className="font-semibold text-[10px] text-sky-600 hover:underline"
                     >
@@ -131,9 +120,7 @@ export function DemoToolbar({ onResetSuccess }: DemoToolbarProps) {
 
                   <div className="flex items-start gap-1 rounded border border-amber-200 bg-amber-50 p-1.5 text-[10px] text-amber-800">
                     <Info className="mt-0.5 h-3 w-3 shrink-0 text-amber-600" />
-                    <span>
-                      Uses intent: AUTHORIZE (Funds held, zero deducted upfront)
-                    </span>
+                    <span>Uses intent: AUTHORIZE (Funds held, zero deducted upfront)</span>
                   </div>
                 </div>
               )}
@@ -142,15 +129,14 @@ export function DemoToolbar({ onResetSuccess }: DemoToolbarProps) {
 
           <div className="hidden items-center gap-2 text-[11px] text-slate-600 xl:flex">
             <span className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-100 px-2 py-0.5">
-              <Layers className="h-3 w-3 text-blue-600" />{" "}
-              {SANDBOX_CREDENTIALS.techStack.framework}
+              <Layers className="h-3 w-3 text-blue-600" /> {SANDBOX_CREDENTIALS.techStack.framework}
             </span>
             <span className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-100 px-2 py-0.5">
-              <ShieldCheck className="h-3 w-3 text-amber-600" />{" "}
+              <ShieldCheck className="h-3 w-3 text-amber-600" />{' '}
               {SANDBOX_CREDENTIALS.techStack.paypalApi}
             </span>
             <span className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-100 px-2 py-0.5">
-              <Sparkles className="h-3 w-3 text-emerald-600" />{" "}
+              <Sparkles className="h-3 w-3 text-emerald-600" />{' '}
               {SANDBOX_CREDENTIALS.techStack.agentToolkit}
             </span>
             <span className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-100 px-2 py-0.5">
@@ -165,14 +151,8 @@ export function DemoToolbar({ onResetSuccess }: DemoToolbarProps) {
               disabled={isResetting}
               className="w-full sm:w-auto"
             >
-              <RotateCcw
-                className={`h-3.5 w-3.5 ${isResetting ? "animate-spin" : ""}`}
-              />
-              <span>
-                {isResetting
-                  ? "Resetting Sandbox..."
-                  : "Reset Demo Environment"}
-              </span>
+              <RotateCcw className={`h-3.5 w-3.5 ${isResetting ? 'animate-spin' : ''}`} />
+              <span>{isResetting ? 'Resetting Sandbox...' : 'Reset Demo Environment'}</span>
             </Button>
           </div>
         </div>
@@ -180,5 +160,5 @@ export function DemoToolbar({ onResetSuccess }: DemoToolbarProps) {
 
       {isModalOpen && <SandboxModal onClose={() => setIsModalOpen(false)} />}
     </>
-  );
+  )
 }

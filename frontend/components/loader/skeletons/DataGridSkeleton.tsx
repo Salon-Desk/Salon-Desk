@@ -1,1 +1,1 @@
-export { default } from "./TableSkeleton";
+export { default } from './TableSkeleton'

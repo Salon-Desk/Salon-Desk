@@ -1,22 +1,14 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 export type DetailPageSkeletonProps = {
-  className?: string;
-  tabCount?: number;
-};
+  className?: string
+  tabCount?: number
+}
 
-const DetailPageSkeleton = ({
-  className,
-  tabCount = 2,
-}: DetailPageSkeletonProps) => {
+const DetailPageSkeleton = ({ className, tabCount = 2 }: DetailPageSkeletonProps) => {
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-4 rounded-4xl bg-background p-4 sm:p-6",
-        className,
-      )}
-    >
+    <div className={cn('flex flex-col gap-4 rounded-4xl bg-background p-4 sm:p-6', className)}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2 rounded-full border border-border bg-muted/40 p-1">
           {Array.from({ length: tabCount }).map((_, i) => (
@@ -50,7 +42,7 @@ const DetailPageSkeleton = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default DetailPageSkeleton;
+export default DetailPageSkeleton

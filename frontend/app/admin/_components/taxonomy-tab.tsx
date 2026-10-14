@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Crown,
@@ -10,16 +10,17 @@ import {
   Scissors,
   Sparkles,
   Trash2,
-} from "lucide-react";
-import { Badge, Button, Card } from "@/components/ui";
-import type { TaxonomyCategory } from "@/types";
+} from 'lucide-react'
+
+import { Badge, Button, Card } from '@/components/ui'
+import type { TaxonomyCategory } from '@/types'
 
 interface TaxonomyTabProps {
-  categories: TaxonomyCategory[];
-  onAddCategory: () => void;
-  onEditCategory: (category: TaxonomyCategory) => void;
-  onToggleStatus: (catId: string) => void;
-  onDeleteCategory: (category: TaxonomyCategory) => void;
+  categories: TaxonomyCategory[]
+  onAddCategory: () => void
+  onEditCategory: (category: TaxonomyCategory) => void
+  onToggleStatus: (catId: string) => void
+  onDeleteCategory: (category: TaxonomyCategory) => void
 }
 
 const ICON_MAP: Record<string, typeof Scissors> = {
@@ -29,7 +30,7 @@ const ICON_MAP: Record<string, typeof Scissors> = {
   Flower2,
   Crown,
   HeartHandshake,
-};
+}
 
 export function TaxonomyTab({
   categories,
@@ -49,8 +50,8 @@ export function TaxonomyTab({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {categories.map((cat) => {
-          const isActive = cat.status === "ACTIVE";
-          const Icon = ICON_MAP[cat.iconName] ?? Scissors;
+          const isActive = cat.status === 'ACTIVE'
+          const Icon = ICON_MAP[cat.iconName] ?? Scissors
 
           return (
             <Card
@@ -69,20 +70,14 @@ export function TaxonomyTab({
                       <span className="font-mono text-[10px] text-slate-500 uppercase">
                         #{cat.displayOrder}
                       </span>
-                      <h3 className="font-bold text-base text-slate-900">
-                        {cat.name}
-                      </h3>
+                      <h3 className="font-bold text-base text-slate-900">{cat.name}</h3>
                     </div>
                   </div>
 
-                  <Badge tone={isActive ? "emerald" : "slate"}>
-                    {cat.status}
-                  </Badge>
+                  <Badge tone={isActive ? 'emerald' : 'slate'}>{cat.status}</Badge>
                 </div>
 
-                <p className="mb-3 text-slate-600 text-xs leading-relaxed">
-                  {cat.description}
-                </p>
+                <p className="mb-3 text-slate-600 text-xs leading-relaxed">{cat.description}</p>
 
                 <div className="font-mono text-[11px] text-slate-500">
                   /{cat.slug} · {cat.servicesCount} services
@@ -95,7 +90,7 @@ export function TaxonomyTab({
                   onClick={() => onToggleStatus(cat.id)}
                   className="font-semibold text-slate-600 text-xs transition-colors hover:text-slate-900"
                 >
-                  {isActive ? "Hide" : "Activate"}
+                  {isActive ? 'Hide' : 'Activate'}
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -118,9 +113,9 @@ export function TaxonomyTab({
                 </div>
               </div>
             </Card>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

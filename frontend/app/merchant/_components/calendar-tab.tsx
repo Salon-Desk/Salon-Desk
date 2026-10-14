@@ -1,36 +1,31 @@
-"use client";
+'use client'
 
-import { Clock } from "lucide-react";
-import { useState } from "react";
-import { HoldStateBadge } from "@/components/ui";
-import { formatUsd } from "@/lib/format";
-import type { Booking, StaffMember } from "@/types";
+import { Clock } from 'lucide-react'
+import { useState } from 'react'
 
-type CalendarDay = "TODAY" | "TOMORROW";
+import { HoldStateBadge } from '@/components/ui'
+import { formatUsd } from '@/lib/format'
+import type { Booking, StaffMember } from '@/types'
+
+type CalendarDay = 'TODAY' | 'TOMORROW'
 
 interface CalendarTabProps {
-  staff: StaffMember[];
-  bookings: Booking[];
-  onSelectBooking: (booking: Booking) => void;
+  staff: StaffMember[]
+  bookings: Booking[]
+  onSelectBooking: (booking: Booking) => void
 }
 
-export function CalendarTab({
-  staff,
-  bookings,
-  onSelectBooking,
-}: CalendarTabProps) {
-  const [calendarDay, setCalendarDay] = useState<CalendarDay>("TODAY");
+export function CalendarTab({ staff, bookings, onSelectBooking }: CalendarTabProps) {
+  const [calendarDay, setCalendarDay] = useState<CalendarDay>('TODAY')
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-200">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="font-bold text-slate-900 text-xl">
-            Visual Appointment Schedule
-          </h2>
+          <h2 className="font-bold text-slate-900 text-xl">Visual Appointment Schedule</h2>
           <p className="text-slate-600 text-xs">
-            Hold-colored appointment timeline. Click any slot to trigger HITL
-            settlement (Mark Show, Mark No-Show, or Void).
+            Hold-colored appointment timeline. Click any slot to trigger HITL settlement (Mark Show,
+            Mark No-Show, or Void).
           </p>
         </div>
 
@@ -38,22 +33,22 @@ export function CalendarTab({
           <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-xs">
             <button
               type="button"
-              onClick={() => setCalendarDay("TODAY")}
+              onClick={() => setCalendarDay('TODAY')}
               className={`rounded-lg px-3 py-1.5 font-bold text-xs transition-colors ${
-                calendarDay === "TODAY"
-                  ? "bg-amber-500 text-white shadow-xs"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                calendarDay === 'TODAY'
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
               Today (Wed)
             </button>
             <button
               type="button"
-              onClick={() => setCalendarDay("TOMORROW")}
+              onClick={() => setCalendarDay('TOMORROW')}
               className={`rounded-lg px-3 py-1.5 font-bold text-xs transition-colors ${
-                calendarDay === "TOMORROW"
-                  ? "bg-amber-500 text-white shadow-xs"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                calendarDay === 'TOMORROW'
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
               Tomorrow (Thu)
@@ -85,10 +80,7 @@ export function CalendarTab({
         <div className="min-w-[900px]">
           <div className="grid grid-cols-4 border-slate-200 border-b bg-slate-50">
             {staff.map((stylist) => (
-              <div
-                key={stylist.id}
-                className="border-slate-200 border-r p-4 last:border-r-0"
-              >
+              <div key={stylist.id} className="border-slate-200 border-r p-4 last:border-r-0">
                 <div className="flex items-center gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -97,12 +89,8 @@ export function CalendarTab({
                     className="h-10 w-10 rounded-full border-2 border-amber-300 object-cover"
                   />
                   <div>
-                    <div className="font-bold text-slate-900 text-sm">
-                      {stylist.name}
-                    </div>
-                    <div className="text-[11px] text-slate-500">
-                      {stylist.role}
-                    </div>
+                    <div className="font-bold text-slate-900 text-sm">{stylist.name}</div>
+                    <div className="text-[11px] text-slate-500">{stylist.role}</div>
                     <div className="font-mono font-semibold text-[10px] text-amber-800">
                       ★ {stylist.rating.toFixed(1)} · {stylist.workingHours}
                     </div>
@@ -117,12 +105,12 @@ export function CalendarTab({
               const stylistBookings = bookings.filter(
                 (b) =>
                   b.stylistId === stylist.id &&
-                  (calendarDay === "TODAY"
-                    ? b.appointmentTime.includes("Today") ||
-                      b.appointmentTime.includes("AM") ||
-                      b.appointmentTime.includes("PM")
-                    : b.appointmentTime.includes("Tomorrow")),
-              );
+                  (calendarDay === 'TODAY'
+                    ? b.appointmentTime.includes('Today') ||
+                      b.appointmentTime.includes('AM') ||
+                      b.appointmentTime.includes('PM')
+                    : b.appointmentTime.includes('Tomorrow')),
+              )
 
               return (
                 <div key={stylist.id} className="space-y-3">
@@ -132,10 +120,10 @@ export function CalendarTab({
                     </div>
                   ) : (
                     stylistBookings.map((b) => {
-                      const isHeld = b.status === "HELD";
-                      const isCaptured = b.status === "CAPTURED";
-                      const isNoShow = b.status === "NO_SHOW_CAPTURED";
-                      const isReauth = b.status === "REAUTHORIZED";
+                      const isHeld = b.status === 'HELD'
+                      const isCaptured = b.status === 'CAPTURED'
+                      const isNoShow = b.status === 'NO_SHOW_CAPTURED'
+                      const isReauth = b.status === 'REAUTHORIZED'
 
                       return (
                         <button
@@ -144,14 +132,14 @@ export function CalendarTab({
                           onClick={() => onSelectBooking(b)}
                           className={`group relative w-full cursor-pointer overflow-hidden rounded-xl border p-4 text-left shadow-xs transition-all ${
                             isHeld
-                              ? "border-amber-300 bg-amber-50/80 hover:border-amber-500"
+                              ? 'border-amber-300 bg-amber-50/80 hover:border-amber-500'
                               : isReauth
-                                ? "border-sky-300 bg-sky-50 hover:border-sky-500"
+                                ? 'border-sky-300 bg-sky-50 hover:border-sky-500'
                                 : isCaptured
-                                  ? "border-emerald-300 bg-emerald-50 hover:border-emerald-500"
+                                  ? 'border-emerald-300 bg-emerald-50 hover:border-emerald-500'
                                   : isNoShow
-                                    ? "border-rose-300 bg-rose-50 hover:border-rose-500"
-                                    : "border-slate-200 bg-slate-100 opacity-60"
+                                    ? 'border-rose-300 bg-rose-50 hover:border-rose-500'
+                                    : 'border-slate-200 bg-slate-100 opacity-60'
                           }`}
                         >
                           <div className="mb-2 flex items-center justify-between text-xs">
@@ -180,10 +168,7 @@ export function CalendarTab({
 
                           {isHeld && b.honorPeriodEndsInHours ? (
                             <div className="mt-2 flex items-center gap-1 font-medium font-mono text-[10px] text-amber-800">
-                              <span>
-                                ⚡ Honor period ends in{" "}
-                                {b.honorPeriodEndsInHours}h
-                              </span>
+                              <span>⚡ Honor period ends in {b.honorPeriodEndsInHours}h</span>
                             </div>
                           ) : null}
 
@@ -199,15 +184,15 @@ export function CalendarTab({
                             </div>
                           ) : null}
                         </button>
-                      );
+                      )
                     })
                   )}
                 </div>
-              );
+              )
             })}
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

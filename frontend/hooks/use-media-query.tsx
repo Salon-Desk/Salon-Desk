@@ -1,9 +1,9 @@
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from 'react'
 
 function subscribe(query: string, onStoreChange: () => void) {
-  const media = matchMedia(query);
-  media.addEventListener("change", onStoreChange);
-  return () => media.removeEventListener("change", onStoreChange);
+  const media = matchMedia(query)
+  media.addEventListener('change', onStoreChange)
+  return () => media.removeEventListener('change', onStoreChange)
 }
 
 export function useMediaQuery(query: string) {
@@ -11,5 +11,5 @@ export function useMediaQuery(query: string) {
     (onStoreChange) => subscribe(query, onStoreChange),
     () => matchMedia(query).matches,
     () => false,
-  );
+  )
 }

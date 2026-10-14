@@ -1,37 +1,26 @@
-"use client";
+'use client'
 
-import {
-  Code2,
-  ExternalLink,
-  KeyRound,
-  Shield,
-  Store,
-  User,
-} from "lucide-react";
-import { useState } from "react";
-import {
-  Button,
-  CopyableValue,
-  Modal,
-  SegmentedControl,
-} from "@/components/ui";
-import { useClipboard } from "@/hooks";
+import { Code2, ExternalLink, KeyRound, Shield, Store, User } from 'lucide-react'
+import { useState } from 'react'
+
+import { Button, CopyableValue, Modal, SegmentedControl } from '@/components/ui'
+import { useClipboard } from '@/hooks'
 import {
   SAMPLE_AUTHORIZATION_PAYLOAD,
   SAMPLE_NO_SHOW_CAPTURE_PAYLOAD,
   SANDBOX_CREDENTIALS,
-} from "@/lib/constants";
+} from '@/lib/constants'
 
 interface SandboxModalProps {
-  onClose: () => void;
+  onClose: () => void
 }
 
-type SandboxTab = "credentials" | "payload";
+type SandboxTab = 'credentials' | 'payload'
 
 export function SandboxModal({ onClose }: SandboxModalProps) {
-  const { copiedKey, copy } = useClipboard();
-  const [activeTab, setActiveTab] = useState<SandboxTab>("credentials");
-  const { buyerAccount, merchantAccount } = SANDBOX_CREDENTIALS;
+  const { copiedKey, copy } = useClipboard()
+  const [activeTab, setActiveTab] = useState<SandboxTab>('credentials')
+  const { buyerAccount, merchantAccount } = SANDBOX_CREDENTIALS
 
   return (
     <Modal
@@ -43,7 +32,7 @@ export function SandboxModal({ onClose }: SandboxModalProps) {
       footer={
         <>
           <span className="mr-auto text-slate-500 text-xs">
-            PayPal Sandbox developer portal:{" "}
+            PayPal Sandbox developer portal:{' '}
             <a
               href="https://developer.paypal.com"
               target="_blank"
@@ -63,12 +52,12 @@ export function SandboxModal({ onClose }: SandboxModalProps) {
         value={activeTab}
         onChange={setActiveTab}
         options={[
-          { value: "credentials", label: "Sandbox Accounts", icon: User },
-          { value: "payload", label: "Authorization Payloads", icon: Code2 },
+          { value: 'credentials', label: 'Sandbox Accounts', icon: User },
+          { value: 'payload', label: 'Authorization Payloads', icon: Code2 },
         ]}
       />
 
-      {activeTab === "credentials" ? (
+      {activeTab === 'credentials' ? (
         <div className="mt-5 space-y-5">
           <CredentialCard
             icon={<User className="h-4 w-4 text-sky-600" />}
@@ -105,13 +94,12 @@ export function SandboxModal({ onClose }: SandboxModalProps) {
                 Fintech Rule: Authorization Hold Model
               </span>
               <p className="leading-relaxed">
-                All customer checkout flows enforce{" "}
+                All customer checkout flows enforce{' '}
                 <code className="rounded bg-amber-100 px-1 py-0.5 font-bold font-mono text-amber-900">
                   intent: &apos;AUTHORIZE&apos;
                 </code>
-                . No money leaves the client&apos;s account at booking time.
-                Funds are securely locked on their card and captured only upon
-                service completion or no-show penalty.
+                . No money leaves the client&apos;s account at booking time. Funds are securely
+                locked on their card and captured only upon service completion or no-show penalty.
               </p>
             </div>
           </div>
@@ -133,7 +121,7 @@ export function SandboxModal({ onClose }: SandboxModalProps) {
         </div>
       )}
     </Modal>
-  );
+  )
 }
 
 function CredentialCard({
@@ -149,32 +137,30 @@ function CredentialCard({
   copiedKey,
   onCopy,
 }: {
-  icon: React.ReactNode;
-  title: string;
-  badge: string;
-  badgeTone: "sky" | "amber";
-  email: string;
-  password: string;
-  footerLeft: string;
-  footerRight: string;
-  copyKeyPrefix: string;
-  copiedKey: string | null;
-  onCopy: (value: string, key: string) => void;
+  icon: React.ReactNode
+  title: string
+  badge: string
+  badgeTone: 'sky' | 'amber'
+  email: string
+  password: string
+  footerLeft: string
+  footerRight: string
+  copyKeyPrefix: string
+  copiedKey: string | null
+  onCopy: (value: string, key: string) => void
 }) {
   return (
     <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {icon}
-          <span className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-            {title}
-          </span>
+          <span className="font-bold text-slate-900 text-xs uppercase tracking-wider">{title}</span>
         </div>
         <span
           className={`rounded border px-2 py-0.5 font-semibold text-[11px] ${
-            badgeTone === "sky"
-              ? "border-sky-200 bg-sky-100 text-sky-700"
-              : "border-amber-200 bg-amber-100 text-amber-800"
+            badgeTone === 'sky'
+              ? 'border-sky-200 bg-sky-100 text-sky-700'
+              : 'border-amber-200 bg-amber-100 text-amber-800'
           }`}
         >
           {badge}
@@ -207,7 +193,7 @@ function CredentialCard({
         <span>{footerRight}</span>
       </div>
     </div>
-  );
+  )
 }
 
 function PayloadBlock({
@@ -216,16 +202,16 @@ function PayloadBlock({
   tone,
   payload,
 }: {
-  title: string;
-  hint: string;
-  tone: "sky" | "emerald";
-  payload: unknown;
+  title: string
+  hint: string
+  tone: 'sky' | 'emerald'
+  payload: unknown
 }) {
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between">
         <span
-          className={`font-bold text-xs ${tone === "sky" ? "text-sky-700" : "text-emerald-700"}`}
+          className={`font-bold text-xs ${tone === 'sky' ? 'text-sky-700' : 'text-emerald-700'}`}
         >
           {title}
         </span>
@@ -235,5 +221,5 @@ function PayloadBlock({
         {JSON.stringify(payload, null, 2)}
       </pre>
     </div>
-  );
+  )
 }

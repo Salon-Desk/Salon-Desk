@@ -1,28 +1,23 @@
-"use client";
+'use client'
 
-import {
-  CheckCircle2,
-  Clock,
-  Copy,
-  CreditCard,
-  ExternalLink,
-  Sliders,
-} from "lucide-react";
-import { useState } from "react";
-import { Button, Card } from "@/components/ui";
-import { formatUsd } from "@/lib/format";
-import { useMerchantContext } from "../_context/merchant-context";
+import { CheckCircle2, Clock, Copy, CreditCard, ExternalLink, Sliders } from 'lucide-react'
+import { useState } from 'react'
+
+import { Button, Card } from '@/components/ui'
+import { formatUsd } from '@/lib/format'
+
+import { useMerchantContext } from '../_context/merchant-context'
 
 export default function MerchantSettingsPage() {
-  const { state, openChangePaypal, openChangePolicy } = useMerchantContext();
+  const { state, openChangePaypal, openChangePolicy } = useMerchantContext()
 
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false)
 
   const handleCopyMerchantId = () => {
-    navigator.clipboard.writeText(state.salon.paypalMerchantId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+    navigator.clipboard.writeText(state.salon.paypalMerchantId)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
@@ -32,8 +27,7 @@ export default function MerchantSettingsPage() {
           Settings &amp; Policies
         </h1>
         <p className="text-slate-500 text-xs">
-          PayPal merchant credentials, cancellation terms, and compliance
-          requests.
+          PayPal merchant credentials, cancellation terms, and compliance requests.
         </p>
       </div>
 
@@ -50,12 +44,8 @@ export default function MerchantSettingsPage() {
                 <CreditCard className="h-4 w-4 text-amber-700" />
               </div>
               <div>
-                <h2 className="font-bold text-slate-900 text-sm">
-                  PayPal Account
-                </h2>
-                <span className="text-slate-500 text-[11px]">
-                  Direct Payouts
-                </span>
+                <h2 className="font-bold text-slate-900 text-sm">PayPal Account</h2>
+                <span className="text-slate-500 text-[11px]">Direct Payouts</span>
               </div>
             </div>
             <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 font-medium text-[10px] text-emerald-800">
@@ -67,9 +57,7 @@ export default function MerchantSettingsPage() {
             <div className="flex justify-between items-center">
               <span className="font-sans text-slate-500">Merchant ID:</span>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-slate-900">
-                  {state.salon.paypalMerchantId}
-                </span>
+                <span className="font-bold text-slate-900">{state.salon.paypalMerchantId}</span>
                 <button
                   type="button"
                   onClick={handleCopyMerchantId}
@@ -86,9 +74,7 @@ export default function MerchantSettingsPage() {
             </div>
             <div className="flex justify-between items-center border-slate-200/60 border-t pt-2">
               <span className="font-sans text-slate-500">API Protocol:</span>
-              <span className="text-slate-700 font-sans font-medium text-xs">
-                PayPal Orders v2
-              </span>
+              <span className="text-slate-700 font-sans font-medium text-xs">PayPal Orders v2</span>
             </div>
             <div className="flex justify-between items-center border-slate-200/60 border-t pt-2">
               <span className="font-sans text-slate-500">Take-Rate:</span>
@@ -120,12 +106,8 @@ export default function MerchantSettingsPage() {
                 <Clock className="h-4 w-4 text-amber-700" />
               </div>
               <div>
-                <h2 className="font-bold text-slate-900 text-sm">
-                  Cancellation Policy
-                </h2>
-                <span className="text-slate-500 text-[11px]">
-                  Enforced on PayPal
-                </span>
+                <h2 className="font-bold text-slate-900 text-sm">Cancellation Policy</h2>
+                <span className="text-slate-500 text-[11px]">Enforced on PayPal</span>
               </div>
             </div>
             <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 font-medium text-[10px] text-slate-700">
@@ -148,9 +130,7 @@ export default function MerchantSettingsPage() {
             </div>
             <div className="flex justify-between items-center border-slate-200/60 border-t pt-2">
               <span className="text-slate-500">Authorization Model:</span>
-              <span className="font-medium text-emerald-700">
-                Non-Debit Pre-Auth
-              </span>
+              <span className="font-medium text-emerald-700">Non-Debit Pre-Auth</span>
             </div>
           </div>
 
@@ -173,12 +153,8 @@ export default function MerchantSettingsPage() {
       >
         <div className="flex items-center justify-between border-slate-100 border-b pb-3">
           <div>
-            <h2 className="font-bold text-slate-900 text-sm">
-              Change Request History
-            </h2>
-            <p className="text-slate-500 text-xs">
-              Platform operator compliance reviews
-            </p>
+            <h2 className="font-bold text-slate-900 text-sm">Change Request History</h2>
+            <p className="text-slate-500 text-xs">Platform operator compliance reviews</p>
           </div>
           <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 font-mono text-[11px] text-slate-600">
             {state.changeRequests.length} requests
@@ -198,23 +174,19 @@ export default function MerchantSettingsPage() {
               >
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-semibold text-slate-800">
-                      {cr.id}
-                    </span>
+                    <span className="font-mono font-semibold text-slate-800">{cr.id}</span>
                     <span className="text-slate-300">·</span>
                     <span className="font-medium text-slate-900">
-                      {cr.type === "PAYPAL_ACCOUNT"
-                        ? "PayPal Account Transition"
-                        : "Cancellation Policy Modification"}
+                      {cr.type === 'PAYPAL_ACCOUNT'
+                        ? 'PayPal Account Transition'
+                        : 'Cancellation Policy Modification'}
                     </span>
                   </div>
-                  <div className="text-[11px] text-slate-500">
-                    Submitted {cr.submittedAt}
-                  </div>
+                  <div className="text-[11px] text-slate-500">Submitted {cr.submittedAt}</div>
                 </div>
 
                 <span className="self-start sm:self-auto rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 font-medium text-[10px] text-amber-900">
-                  {cr.status.replace("_", " ")}
+                  {cr.status.replace('_', ' ')}
                 </span>
               </div>
             ))
@@ -222,5 +194,5 @@ export default function MerchantSettingsPage() {
         </div>
       </Card>
     </div>
-  );
+  )
 }

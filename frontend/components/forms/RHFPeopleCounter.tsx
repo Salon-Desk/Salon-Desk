@@ -1,28 +1,28 @@
-"use client";
+'use client'
 
-import { Minus, Plus } from "lucide-react";
-import Image from "next/image";
-import { Controller, useFormContext } from "react-hook-form";
+import { Minus, Plus } from 'lucide-react'
+import Image from 'next/image'
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
-  FormFieldError,
-  FormFieldRoot,
   formControlCounterButtonMinusClassName,
   formControlCounterButtonPlusClassName,
   formControlCounterControlsClassName,
   formControlCounterRowClassName,
   formControlCounterValueClassName,
+  FormFieldError,
   formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
-import { resolveImageSrc } from "@/lib/util/remoteImage";
+  FormFieldRoot,
+} from '@/components/forms/form-field-parts'
+import { resolveImageSrc } from '@/lib/util/remoteImage'
 
 interface RHFPeopleCounterProps {
-  name: string;
-  label: string;
-  description: string;
-  icon: string;
-  min?: number;
-  max?: number;
+  name: string
+  label: string
+  description: string
+  icon: string
+  min?: number
+  max?: number
 }
 
 const RHFPeopleCounter = ({
@@ -33,8 +33,8 @@ const RHFPeopleCounter = ({
   min = 0,
   max = 20,
 }: RHFPeopleCounterProps) => {
-  const { control, clearErrors } = useFormContext();
-  const { errorId } = formFieldHtmlIds(name);
+  const { control, clearErrors } = useFormContext()
+  const { errorId } = formFieldHtmlIds(name)
 
   return (
     <Controller
@@ -42,21 +42,21 @@ const RHFPeopleCounter = ({
       control={control}
       defaultValue={0}
       render={({ field, fieldState: { error } }) => {
-        const value = field.value ?? 0;
+        const value = field.value ?? 0
 
         const increase = () => {
           if (value < max) {
-            field.onChange(value + 1);
-            clearErrors(name);
+            field.onChange(value + 1)
+            clearErrors(name)
           }
-        };
+        }
 
         const decrease = () => {
           if (value > min) {
-            field.onChange(value - 1);
-            clearErrors(name);
+            field.onChange(value - 1)
+            clearErrors(name)
           }
-        };
+        }
 
         return (
           <FormFieldRoot className="min-w-0 flex-1 sm:min-w-[220px]">
@@ -75,9 +75,7 @@ const RHFPeopleCounter = ({
                 />
 
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <p className="truncate text-xs font-bold text-foreground sm:text-sm">
-                    {label}
-                  </p>
+                  <p className="truncate text-xs font-bold text-foreground sm:text-sm">{label}</p>
                   <p className="truncate text-xs font-bold text-muted-foreground sm:text-sm">
                     {description}
                   </p>
@@ -109,10 +107,10 @@ const RHFPeopleCounter = ({
               <FormFieldError id={errorId} message={String(error.message)} />
             ) : null}
           </FormFieldRoot>
-        );
+        )
       }}
     />
-  );
-};
+  )
+}
 
-export default RHFPeopleCounter;
+export default RHFPeopleCounter

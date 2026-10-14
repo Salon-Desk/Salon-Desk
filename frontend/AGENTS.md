@@ -16,13 +16,13 @@ Next.js 16 App Router demo for salon booking with PayPal authorization holds (cl
 
 ## Commands
 
-| Script              | Purpose                        |
-| ------------------- | ------------------------------ |
-| `pnpm dev`          | Dev server (Next default port) |
-| `pnpm build`        | Production build               |
-| `pnpm start`        | Production server              |
-| `pnpm lint`         | Biome check                    |
-| `pnpm format`       | Biome format write             |
+| Script        | Purpose                        |
+| ------------- | ------------------------------ |
+| `pnpm dev`    | Dev server (Next default port) |
+| `pnpm build`  | Production build               |
+| `pnpm start`  | Production server              |
+| `pnpm lint`   | Biome check                    |
+| `pnpm format` | Biome format write             |
 
 Match Biome (`biome.json`): 2-space indent, project formatter settings.
 
@@ -81,31 +81,31 @@ public/              Static assets
 
 App-wide — import from any route or feature:
 
-| Area               | Path                                      | Use                                                              |
-| ------------------ | ----------------------------------------- | ---------------------------------------------------------------- |
-| Primitives         | `components/ui/`                          | Buttons, inputs, dialogs, tables                                 |
-| Forms              | `components/forms/`                       | `RHF*`, `FormProvider`, pickers, file upload                     |
-| Actions & feedback | `components/button/`, `loader/`, `empty/` | `PrimaryButton`, spinners, skeletons, empty/error states         |
-| Overlays & dialogs | `components/dialog/`, `drawer/`, `table/` | Responsive dialogs, drawers, data grids, pagination              |
-| Tabs               | `components/tab/`                         | Shared tab patterns                                              |
-| App shell          | `components/layout/`                      | Console shell, auth gate, portal nav                             |
-| Brand              | `components/brand/`                       | Logo                                                             |
+| Area               | Path                                      | Use                                                      |
+| ------------------ | ----------------------------------------- | -------------------------------------------------------- |
+| Primitives         | `components/ui/`                          | Buttons, inputs, dialogs, tables                         |
+| Forms              | `components/forms/`                       | `RHF*`, `FormProvider`, pickers, file upload             |
+| Actions & feedback | `components/button/`, `loader/`, `empty/` | `PrimaryButton`, spinners, skeletons, empty/error states |
+| Overlays & dialogs | `components/dialog/`, `drawer/`, `table/` | Responsive dialogs, drawers, data grids, pagination      |
+| Tabs               | `components/tab/`                         | Shared tab patterns                                      |
+| App shell          | `components/layout/`                      | Console shell, auth gate, portal nav                     |
+| Brand              | `components/brand/`                       | Logo                                                     |
 
 ## Feature layout standard (`app/<feature>/`)
 
 Every portal feature (`client`, `merchant`, `admin`, and hub via `app/_components`) uses **underscore-prefixed internal folders**:
 
-| Folder         | Purpose                                                          |
-| -------------- | ---------------------------------------------------------------- |
-| `_components/` | Feature-internal React UI; composed by the route page            |
-| `_constants/`  | Feature-specific defaults, seeds, static local config            |
-| `_hooks/`      | Feature-specific custom React hooks                              |
-| `_libs/`       | Feature-specific getters, transformers, data helpers             |
-| `_schemas/`    | Feature Zod schemas (reuse `@/lib/schema/common`)                |
-| `_types/`      | Feature-local TypeScript types                                   |
-| `_utils/`      | Pure helpers scoped to this feature                              |
-| `index.ts`     | Public API barrel (entry components, hooks, constants, types)    |
-| `page.tsx`     | Thin route: import and render the feature entry component only   |
+| Folder         | Purpose                                                        |
+| -------------- | -------------------------------------------------------------- |
+| `_components/` | Feature-internal React UI; composed by the route page          |
+| `_constants/`  | Feature-specific defaults, seeds, static local config          |
+| `_hooks/`      | Feature-specific custom React hooks                            |
+| `_libs/`       | Feature-specific getters, transformers, data helpers           |
+| `_schemas/`    | Feature Zod schemas (reuse `@/lib/schema/common`)              |
+| `_types/`      | Feature-local TypeScript types                                 |
+| `_utils/`      | Pure helpers scoped to this feature                            |
+| `index.ts`     | Public API barrel (entry components, hooks, constants, types)  |
+| `page.tsx`     | Thin route: import and render the feature entry component only |
 
 Hub landing lives at `app/` with `_components/` next to `page.tsx` (same rules, no nested route segment).
 

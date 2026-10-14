@@ -1,30 +1,24 @@
-"use client";
+'use client'
 
-import {
-  CheckCircle2,
-  Copy,
-  Edit2,
-  Lock,
-  Plus,
-  Trash2,
-  Unlock,
-} from "lucide-react";
-import { useState } from "react";
+import { CheckCircle2, Copy, Edit2, Lock, Plus, Trash2, Unlock } from 'lucide-react'
+import { useState } from 'react'
+
 import {
   Button,
   IconButton,
   OrganizationStatusBadge,
   SearchInput,
   SegmentedControl,
-} from "@/components/ui";
-import { useAdminContext } from "../_context/admin-context";
+} from '@/components/ui'
+
+import { useAdminContext } from '../_context/admin-context'
 
 const FILTER_OPTIONS = [
-  { value: "ALL" as const, label: "All" },
-  { value: "APPROVED" as const, label: "Active" },
-  { value: "PENDING_REVIEW" as const, label: "Pending" },
-  { value: "SUSPENDED" as const, label: "Suspended" },
-];
+  { value: 'ALL' as const, label: 'All' },
+  { value: 'APPROVED' as const, label: 'Active' },
+  { value: 'PENDING_REVIEW' as const, label: 'Pending' },
+  { value: 'SUSPENDED' as const, label: 'Suspended' },
+]
 
 export default function AdminSalonsPage() {
   const {
@@ -38,15 +32,15 @@ export default function AdminSalonsPage() {
     setSuspendingSalon,
     setDeletingSalon,
     handleApproveSalon,
-  } = useAdminContext();
+  } = useAdminContext()
 
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300">
@@ -57,8 +51,7 @@ export default function AdminSalonsPage() {
             Partner Salons
           </h1>
           <p className="text-slate-500 text-xs">
-            {filteredSalons.length} onboarded salons · PayPal merchant
-            integrations
+            {filteredSalons.length} onboarded salons · PayPal merchant integrations
           </p>
         </div>
 
@@ -111,47 +104,29 @@ export default function AdminSalonsPage() {
           <tbody className="divide-y divide-slate-100">
             {filteredSalons.length === 0 ? (
               <tr>
-                <td
-                  colSpan={7}
-                  className="px-5 py-12 text-center text-slate-400 text-xs"
-                >
+                <td colSpan={7} className="px-5 py-12 text-center text-slate-400 text-xs">
                   No partner salons found.
                 </td>
               </tr>
             ) : (
               filteredSalons.map((salon) => (
-                <tr
-                  key={salon.id}
-                  className="transition-colors hover:bg-slate-50/60"
-                >
+                <tr key={salon.id} className="transition-colors hover:bg-slate-50/60">
                   <td className="px-5 py-3.5">
-                    <div className="font-bold text-slate-900 text-sm">
-                      {salon.name}
-                    </div>
-                    <div className="text-[11px] text-slate-400">
-                      {salon.city || salon.address}
-                    </div>
+                    <div className="font-bold text-slate-900 text-sm">{salon.name}</div>
+                    <div className="text-[11px] text-slate-400">{salon.city || salon.address}</div>
                   </td>
 
                   <td className="px-5 py-3.5 text-slate-700">
-                    <div className="font-medium text-slate-900">
-                      {salon.ownerName}
-                    </div>
-                    <div className="text-[11px] text-slate-400 font-mono">
-                      {salon.email}
-                    </div>
+                    <div className="font-medium text-slate-900">{salon.ownerName}</div>
+                    <div className="text-[11px] text-slate-400 font-mono">{salon.email}</div>
                   </td>
 
                   <td className="px-5 py-3.5 font-mono text-slate-700">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-slate-800">
-                        {salon.paypalMerchantId}
-                      </span>
+                      <span className="font-semibold text-slate-800">{salon.paypalMerchantId}</span>
                       <button
                         type="button"
-                        onClick={() =>
-                          handleCopy(salon.id, salon.paypalMerchantId)
-                        }
+                        onClick={() => handleCopy(salon.id, salon.paypalMerchantId)}
                         className="text-slate-400 hover:text-slate-700 transition-colors"
                         title="Copy Merchant ID"
                       >
@@ -165,9 +140,7 @@ export default function AdminSalonsPage() {
                   </td>
 
                   <td className="px-5 py-3.5 font-medium text-slate-700">
-                    <span className="font-mono text-xs">
-                      ≥ {salon.cancellationPolicyHours}h
-                    </span>
+                    <span className="font-mono text-xs">≥ {salon.cancellationPolicyHours}h</span>
                   </td>
 
                   <td className="px-5 py-3.5">
@@ -176,9 +149,7 @@ export default function AdminSalonsPage() {
                         {salon.customCommissionRate}% VIP
                       </span>
                     ) : (
-                      <span className="font-mono text-slate-500 text-[11px]">
-                        2.5% std
-                      </span>
+                      <span className="font-mono text-slate-500 text-[11px]">2.5% std</span>
                     )}
                   </td>
 
@@ -188,7 +159,7 @@ export default function AdminSalonsPage() {
 
                   <td className="px-5 py-3.5 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {salon.status === "PENDING_REVIEW" ? (
+                      {salon.status === 'PENDING_REVIEW' ? (
                         <Button
                           variant="success"
                           size="sm"
@@ -208,19 +179,15 @@ export default function AdminSalonsPage() {
                       </IconButton>
 
                       <IconButton
-                        title={
-                          salon.status === "SUSPENDED"
-                            ? "Reinstate Salon"
-                            : "Suspend Salon"
-                        }
+                        title={salon.status === 'SUSPENDED' ? 'Reinstate Salon' : 'Suspend Salon'}
                         className={`rounded-xl h-7 w-7 ${
-                          salon.status === "SUSPENDED"
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
+                          salon.status === 'SUSPENDED'
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                            : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100'
                         }`}
                         onClick={() => setSuspendingSalon(salon)}
                       >
-                        {salon.status === "SUSPENDED" ? (
+                        {salon.status === 'SUSPENDED' ? (
                           <Unlock className="h-3 w-3" />
                         ) : (
                           <Lock className="h-3 w-3" />
@@ -244,5 +211,5 @@ export default function AdminSalonsPage() {
         </table>
       </div>
     </div>
-  );
+  )
 }

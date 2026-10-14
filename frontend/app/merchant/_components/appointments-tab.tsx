@@ -1,7 +1,8 @@
-"use client";
+'use client'
 
-import { Activity, KeyRound } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Activity, KeyRound } from 'lucide-react'
+import { useMemo, useState } from 'react'
+
 import {
   Button,
   Card,
@@ -10,18 +11,18 @@ import {
   HoldStateBadge,
   LedgerActionBadge,
   SearchInput,
-} from "@/components/ui";
-import { formatUsd } from "@/lib/format";
-import { HOLD_STATE_FILTER_LABEL, HOLD_STATES } from "@/lib/status";
-import type { AuditLedgerEntry, Booking, HoldState } from "@/types";
+} from '@/components/ui'
+import { formatUsd } from '@/lib/format'
+import { HOLD_STATE_FILTER_LABEL, HOLD_STATES } from '@/lib/status'
+import type { AuditLedgerEntry, Booking, HoldState } from '@/types'
 
-type AppointmentFilter = "ALL" | HoldState;
+type AppointmentFilter = 'ALL' | HoldState
 
 interface AppointmentsTabProps {
-  bookings: Booking[];
-  auditLedger: AuditLedgerEntry[];
-  onSelectBooking: (booking: Booking) => void;
-  onInspectConsent: (booking: Booking) => void;
+  bookings: Booking[]
+  auditLedger: AuditLedgerEntry[]
+  onSelectBooking: (booking: Booking) => void
+  onInspectConsent: (booking: Booking) => void
 }
 
 export function AppointmentsTab({
@@ -30,49 +31,43 @@ export function AppointmentsTab({
   onSelectBooking,
   onInspectConsent,
 }: AppointmentsTabProps) {
-  const [appointmentSearch, setAppointmentSearch] = useState("");
-  const [appointmentFilter, setAppointmentFilter] =
-    useState<AppointmentFilter>("ALL");
+  const [appointmentSearch, setAppointmentSearch] = useState('')
+  const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('ALL')
 
   const filteredAppointments = useMemo(
     () =>
       bookings.filter((b) => {
-        const matchesFilter =
-          appointmentFilter === "ALL" || b.status === appointmentFilter;
-        const query = appointmentSearch.toLowerCase();
+        const matchesFilter = appointmentFilter === 'ALL' || b.status === appointmentFilter
+        const query = appointmentSearch.toLowerCase()
         const matchesSearch =
           b.clientName.toLowerCase().includes(query) ||
           b.id.toLowerCase().includes(query) ||
           b.serviceName.toLowerCase().includes(query) ||
-          b.stylistName.toLowerCase().includes(query);
-        return matchesFilter && matchesSearch;
+          b.stylistName.toLowerCase().includes(query)
+        return matchesFilter && matchesSearch
       }),
     [appointmentFilter, appointmentSearch, bookings],
-  );
+  )
 
   const bookingColumns: Column<Booking>[] = [
     {
-      key: "id",
-      header: "Booking Ref",
-      cell: (b) => (
-        <span className="font-bold font-mono text-amber-700">{b.id}</span>
-      ),
+      key: 'id',
+      header: 'Booking Ref',
+      cell: (b) => <span className="font-bold font-mono text-amber-700">{b.id}</span>,
     },
     {
-      key: "client",
-      header: "Client & Contact",
+      key: 'client',
+      header: 'Client & Contact',
       cell: (b) => (
         <div>
           <div className="font-bold text-slate-900">{b.clientName}</div>
-          <div className="font-mono text-[11px] text-slate-500">
-            {b.clientPhone}
-          </div>
+          <div className="font-mono text-[11px] text-slate-500">{b.clientPhone}</div>
         </div>
       ),
     },
     {
-      key: "service",
-      header: "Service & Stylist",
+      key: 'service',
+      header: 'Service & Stylist',
       cell: (b) => (
         <div>
           <div className="font-medium text-slate-900">{b.serviceName}</div>
@@ -83,32 +78,28 @@ export function AppointmentsTab({
       ),
     },
     {
-      key: "slot",
-      header: "Scheduled Slot",
+      key: 'slot',
+      header: 'Scheduled Slot',
       cell: (b) => <span className="text-slate-700">{b.appointmentTime}</span>,
     },
     {
-      key: "hold",
-      header: "Hold Amount",
+      key: 'hold',
+      header: 'Hold Amount',
       cell: (b) => (
         <div className="font-mono">
-          <div className="font-bold text-slate-900">
-            {formatUsd(b.servicePrice)}
-          </div>
-          <div className="text-[11px] text-amber-800">
-            Hold: {formatUsd(b.holdAmount)}
-          </div>
+          <div className="font-bold text-slate-900">{formatUsd(b.servicePrice)}</div>
+          <div className="text-[11px] text-amber-800">Hold: {formatUsd(b.holdAmount)}</div>
         </div>
       ),
     },
     {
-      key: "status",
-      header: "Status",
+      key: 'status',
+      header: 'Status',
       cell: (b) => <HoldStateBadge status={b.status} />,
     },
     {
-      key: "consent",
-      header: "Consent Receipt",
+      key: 'consent',
+      header: 'Consent Receipt',
       cell: (b) => (
         <Button
           variant="secondary"
@@ -122,91 +113,69 @@ export function AppointmentsTab({
       ),
     },
     {
-      key: "actions",
-      header: "Actions",
-      align: "right",
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
       cell: (b) => (
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => onSelectBooking(b)}
-        >
+        <Button variant="secondary" size="sm" onClick={() => onSelectBooking(b)}>
           Settle / Details →
         </Button>
       ),
     },
-  ];
+  ]
 
   const ledgerColumns: Column<AuditLedgerEntry>[] = [
     {
-      key: "id",
-      header: "Ledger ID",
+      key: 'id',
+      header: 'Ledger ID',
+      cell: (entry) => <span className="font-bold text-amber-700">{entry.id}</span>,
+    },
+    {
+      key: 'booking',
+      header: 'Booking Ref',
+      cell: (entry) => <span className="text-slate-600">{entry.bookingId}</span>,
+    },
+    {
+      key: 'client',
+      header: 'Client',
       cell: (entry) => (
-        <span className="font-bold text-amber-700">{entry.id}</span>
+        <span className="font-medium font-sans text-slate-900">{entry.clientName}</span>
       ),
     },
     {
-      key: "booking",
-      header: "Booking Ref",
-      cell: (entry) => (
-        <span className="text-slate-600">{entry.bookingId}</span>
-      ),
-    },
-    {
-      key: "client",
-      header: "Client",
-      cell: (entry) => (
-        <span className="font-medium font-sans text-slate-900">
-          {entry.clientName}
-        </span>
-      ),
-    },
-    {
-      key: "action",
-      header: "Action",
+      key: 'action',
+      header: 'Action',
       cell: (entry) => <LedgerActionBadge action={entry.action} />,
     },
     {
-      key: "amount",
-      header: "Amount",
-      cell: (entry) => (
-        <span className="font-bold text-slate-900">
-          {formatUsd(entry.amount)}
-        </span>
-      ),
+      key: 'amount',
+      header: 'Amount',
+      cell: (entry) => <span className="font-bold text-slate-900">{formatUsd(entry.amount)}</span>,
     },
     {
-      key: "debug",
-      header: "PayPal Debug ID",
-      cell: (entry) => (
-        <span className="text-[11px] text-slate-500">
-          {entry.paypalDebugId}
-        </span>
-      ),
+      key: 'debug',
+      header: 'PayPal Debug ID',
+      cell: (entry) => <span className="text-[11px] text-slate-500">{entry.paypalDebugId}</span>,
     },
     {
-      key: "time",
-      header: "Timestamp",
+      key: 'time',
+      header: 'Timestamp',
       cell: (entry) => (
-        <span className="font-sans text-[11px] text-slate-500">
-          {entry.timestamp}
-        </span>
+        <span className="font-sans text-[11px] text-slate-500">{entry.timestamp}</span>
       ),
     },
-  ];
+  ]
 
-  const filterOptions: AppointmentFilter[] = ["ALL", ...HOLD_STATES];
+  const filterOptions: AppointmentFilter[] = ['ALL', ...HOLD_STATES]
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-200">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h2 className="font-bold text-slate-900 text-xl">
-            Appointments &amp; Audit Ledger
-          </h2>
+          <h2 className="font-bold text-slate-900 text-xl">Appointments &amp; Audit Ledger</h2>
           <p className="text-slate-600 text-xs">
-            Real-time transaction table with server-signed Ed25519 consent
-            receipts, sha256 hashes, and PayPal debug IDs.
+            Real-time transaction table with server-signed Ed25519 consent receipts, sha256 hashes,
+            and PayPal debug IDs.
           </p>
         </div>
 
@@ -226,22 +195,18 @@ export function AppointmentsTab({
                 onClick={() => setAppointmentFilter(st)}
                 className={`rounded px-2.5 py-1 font-semibold text-[11px] transition-colors ${
                   appointmentFilter === st
-                    ? "border border-amber-300 bg-amber-100 text-amber-900"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    ? 'border border-amber-300 bg-amber-100 text-amber-900'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
-                {st === "ALL" ? "All" : HOLD_STATE_FILTER_LABEL[st]}
+                {st === 'ALL' ? 'All' : HOLD_STATE_FILTER_LABEL[st]}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      <DataTable
-        columns={bookingColumns}
-        rows={filteredAppointments}
-        rowKey={(b) => b.id}
-      />
+      <DataTable columns={bookingColumns} rows={filteredAppointments} rowKey={(b) => b.id} />
 
       <Card padding="lg" className="space-y-4">
         <div className="flex items-center justify-between">
@@ -266,5 +231,5 @@ export function AppointmentsTab({
         />
       </Card>
     </div>
-  );
+  )
 }

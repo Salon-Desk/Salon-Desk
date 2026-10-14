@@ -21,3 +21,26 @@ class SlotParseResult(BaseModel):
     stylist_hint: str | None = None
     notes: str | None = None
     confidence: float = Field(ge=0, le=1, default=0.0)
+
+
+class BookingAssistantRequest(BaseModel):
+    message: str = Field(min_length=1)
+    history: list[ChatMessage] = Field(default_factory=list)
+
+
+class BookingAssistantResponse(BaseModel):
+    provider: str
+    model: str
+    reply: str
+    parsed: SlotParseResult | None = None
+
+
+class OwnerCopilotRequest(BaseModel):
+    message: str = Field(min_length=1)
+    history: list[ChatMessage] = Field(default_factory=list)
+
+
+class OwnerCopilotResponse(BaseModel):
+    provider: str
+    model: str
+    reply: str

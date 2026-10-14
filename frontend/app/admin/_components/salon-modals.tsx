@@ -1,39 +1,29 @@
-"use client";
+'use client'
 
-import { AlertTriangle, Building2, Trash2 } from "lucide-react";
-import {
-  Button,
-  FormActions,
-  Modal,
-  TextareaField,
-  TextField,
-} from "@/components/ui";
-import type { Organization } from "@/types";
+import { AlertTriangle, Building2, Trash2 } from 'lucide-react'
+
+import { Button, FormActions, Modal, TextareaField, TextField } from '@/components/ui'
+import type { Organization } from '@/types'
 
 export interface SalonFormState {
-  name: string;
-  category: string;
-  ownerName: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  paypalMerchantId: string;
+  name: string
+  category: string
+  ownerName: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  paypalMerchantId: string
 }
 
 interface AddSalonModalProps {
-  form: SalonFormState;
-  onChange: (form: SalonFormState) => void;
-  onClose: () => void;
-  onSubmit: (event: React.FormEvent) => void;
+  form: SalonFormState
+  onChange: (form: SalonFormState) => void
+  onClose: () => void
+  onSubmit: (event: React.FormEvent) => void
 }
 
-export function AddSalonModal({
-  form,
-  onChange,
-  onClose,
-  onSubmit,
-}: AddSalonModalProps) {
+export function AddSalonModal({ form, onChange, onClose, onSubmit }: AddSalonModalProps) {
   return (
     <Modal
       onClose={onClose}
@@ -85,9 +75,7 @@ export function AddSalonModal({
           label="PayPal Merchant Sandbox ID"
           mono
           value={form.paypalMerchantId}
-          onChange={(paypalMerchantId) =>
-            onChange({ ...form, paypalMerchantId })
-          }
+          onChange={(paypalMerchantId) => onChange({ ...form, paypalMerchantId })}
           placeholder="e.g. MERCHANT_SAFFRON_8801"
         />
 
@@ -99,22 +87,17 @@ export function AddSalonModal({
         </FormActions>
       </form>
     </Modal>
-  );
+  )
 }
 
 interface EditSalonModalProps {
-  salon: Organization;
-  onChange: (salon: Organization) => void;
-  onClose: () => void;
-  onSubmit: (event: React.FormEvent) => void;
+  salon: Organization
+  onChange: (salon: Organization) => void
+  onClose: () => void
+  onSubmit: (event: React.FormEvent) => void
 }
 
-export function EditSalonModal({
-  salon,
-  onChange,
-  onClose,
-  onSubmit,
-}: EditSalonModalProps) {
+export function EditSalonModal({ salon, onChange, onClose, onSubmit }: EditSalonModalProps) {
   return (
     <Modal onClose={onClose} title={`Edit Salon: ${salon.name}`}>
       <form onSubmit={onSubmit} className="space-y-3.5 text-xs">
@@ -147,11 +130,7 @@ export function EditSalonModal({
         <TextField
           label="Custom Commission Rate Override (%)"
           mono
-          value={
-            salon.customCommissionRate !== undefined
-              ? String(salon.customCommissionRate)
-              : ""
-          }
+          value={salon.customCommissionRate !== undefined ? String(salon.customCommissionRate) : ''}
           placeholder="Leave empty for standard 2.5%"
           onChange={(raw) =>
             onChange({
@@ -169,15 +148,15 @@ export function EditSalonModal({
         </FormActions>
       </form>
     </Modal>
-  );
+  )
 }
 
 interface SuspendSalonModalProps {
-  salon: Organization;
-  suspensionReason: string;
-  onReasonChange: (value: string) => void;
-  onClose: () => void;
-  onConfirm: () => void;
+  salon: Organization
+  suspensionReason: string
+  onReasonChange: (value: string) => void
+  onClose: () => void
+  onConfirm: () => void
 }
 
 export function SuspendSalonModal({
@@ -187,29 +166,27 @@ export function SuspendSalonModal({
   onClose,
   onConfirm,
 }: SuspendSalonModalProps) {
-  const isSuspended = salon.status === "SUSPENDED";
+  const isSuspended = salon.status === 'SUSPENDED'
 
   return (
     <Modal
       onClose={onClose}
       size="sm"
       icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
-      title={isSuspended ? "Reinstate Salon Account" : "Suspend Salon Account"}
+      title={isSuspended ? 'Reinstate Salon Account' : 'Suspend Salon Account'}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
           <Button
-            variant={isSuspended ? "success" : "danger"}
+            variant={isSuspended ? 'success' : 'danger'}
             className={
-              isSuspended
-                ? undefined
-                : "border-rose-600 bg-rose-600 text-white hover:bg-rose-700"
+              isSuspended ? undefined : 'border-rose-600 bg-rose-600 text-white hover:bg-rose-700'
             }
             onClick={onConfirm}
           >
-            Confirm {isSuspended ? "Reinstatement" : "Suspension"}
+            Confirm {isSuspended ? 'Reinstatement' : 'Suspension'}
           </Button>
         </>
       }
@@ -232,20 +209,16 @@ export function SuspendSalonModal({
         </div>
       )}
     </Modal>
-  );
+  )
 }
 
 interface DeleteSalonModalProps {
-  salon: Organization;
-  onClose: () => void;
-  onConfirm: () => void;
+  salon: Organization
+  onClose: () => void
+  onConfirm: () => void
 }
 
-export function DeleteSalonModal({
-  salon,
-  onClose,
-  onConfirm,
-}: DeleteSalonModalProps) {
+export function DeleteSalonModal({ salon, onClose, onConfirm }: DeleteSalonModalProps) {
   return (
     <Modal
       onClose={onClose}
@@ -262,8 +235,8 @@ export function DeleteSalonModal({
             variant="danger"
             className="border-rose-600 bg-rose-600 text-white hover:bg-rose-700"
             onClick={() => {
-              onConfirm();
-              onClose();
+              onConfirm()
+              onClose()
             }}
           >
             Delete &amp; Offboard
@@ -272,10 +245,9 @@ export function DeleteSalonModal({
       }
     >
       <p className="text-slate-600 text-xs leading-relaxed">
-        Are you sure you want to delete{" "}
-        <strong className="text-slate-900">{salon.name}</strong>? All pending
-        authorization holds will be voided and staff access terminated.
+        Are you sure you want to delete <strong className="text-slate-900">{salon.name}</strong>?
+        All pending authorization holds will be voided and staff access terminated.
       </p>
     </Modal>
-  );
+  )
 }

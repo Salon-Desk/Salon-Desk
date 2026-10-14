@@ -1,22 +1,18 @@
-"use client";
+'use client'
 
-import { ArrowUpDown, Search, X } from "lucide-react";
-import { SERVICE_CATEGORIES } from "@/lib/data/catalog";
+import { ArrowUpDown, Search, X } from 'lucide-react'
 
-export type ServiceSort =
-  | "popular"
-  | "price-asc"
-  | "price-desc"
-  | "duration"
-  | "rating";
+import { SERVICE_CATEGORIES } from '@/lib/data/catalog'
+
+export type ServiceSort = 'popular' | 'price-asc' | 'price-desc' | 'duration' | 'rating'
 
 interface CatalogFiltersProps {
-  category: string;
-  onCategoryChange: (category: string) => void;
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
-  sortBy: ServiceSort;
-  onSortChange: (sort: ServiceSort) => void;
+  category: string
+  onCategoryChange: (category: string) => void
+  searchQuery: string
+  onSearchChange: (value: string) => void
+  sortBy: ServiceSort
+  onSortChange: (sort: ServiceSort) => void
 }
 
 export function CatalogFilters({
@@ -33,7 +29,7 @@ export function CatalogFilters({
         {/* Category Pills - Borderless & Shadowless */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none snap-x">
           {SERVICE_CATEGORIES.map((cat) => {
-            const isSelected = category === cat;
+            const isSelected = category === cat
             return (
               <button
                 key={cat}
@@ -41,13 +37,13 @@ export function CatalogFilters({
                 onClick={() => onCategoryChange(cat)}
                 className={`snap-start shrink-0 rounded-full px-3.5 py-1.5 text-xs transition-all duration-200 cursor-pointer ${
                   isSelected
-                    ? "bg-stone-950 font-bold text-white scale-102"
-                    : "bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900"
+                    ? 'bg-stone-950 font-bold text-white scale-102'
+                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900'
                 }`}
               >
                 {cat}
               </button>
-            );
+            )
           })}
         </div>
 
@@ -65,7 +61,7 @@ export function CatalogFilters({
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => onSearchChange("")}
+                onClick={() => onSearchChange('')}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-stone-400 hover:text-stone-600 cursor-pointer"
               >
                 <X className="h-3 w-3" />
@@ -90,5 +86,5 @@ export function CatalogFilters({
         </div>
       </div>
     </div>
-  );
+  )
 }

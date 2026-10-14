@@ -13,7 +13,7 @@ export const PhoneIcon = ({ className }: { className?: string }) => (
   >
     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
   </svg>
-);
+)
 
 export const ArrowUpRightIcon = () => (
   <svg
@@ -30,7 +30,7 @@ export const ArrowUpRightIcon = () => (
     <path d="M7 17L17 7" />
     <path d="M7 7h10v10" />
   </svg>
-);
+)
 
 export const ArrowRightIcon = ({ className }: { className?: string }) => (
   <svg
@@ -48,7 +48,7 @@ export const ArrowRightIcon = ({ className }: { className?: string }) => (
     <path d="M3.333 8h9.334" />
     <path d="M8.667 4l4 4-4 4" />
   </svg>
-);
+)
 
 export const PlusIcon = ({ className }: { className?: string }) => (
   <svg
@@ -66,7 +66,7 @@ export const PlusIcon = ({ className }: { className?: string }) => (
     <path d="M8 3.333v9.334" />
     <path d="M3.333 8h9.334" />
   </svg>
-);
+)
 
 export const TrashIcon = ({ className }: { className?: string }) => (
   <svg
@@ -87,7 +87,7 @@ export const TrashIcon = ({ className }: { className?: string }) => (
     <path d="M6.667 7.333v4" />
     <path d="M9.333 7.333v4" />
   </svg>
-);
+)
 
 export const SearchIcon = () => (
   <svg
@@ -104,7 +104,7 @@ export const SearchIcon = () => (
     <circle cx="11" cy="11" r="8" />
     <path d="m21 21-4.3-4.3" />
   </svg>
-);
+)
 
 export const UserIcon = ({ className }: { className?: string }) => (
   <svg
@@ -122,7 +122,7 @@ export const UserIcon = ({ className }: { className?: string }) => (
     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
     <circle cx="12" cy="7" r="4" />
   </svg>
-);
+)
 
 export const CartIcon = ({ className }: { className?: string }) => (
   <svg
@@ -141,7 +141,7 @@ export const CartIcon = ({ className }: { className?: string }) => (
     <circle cx="19" cy="21" r="1" />
     <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
   </svg>
-);
+)
 
 export const TruckIcon = () => (
   <svg
@@ -161,7 +161,7 @@ export const TruckIcon = () => (
     <circle cx="17" cy="18" r="2" />
     <circle cx="7" cy="18" r="2" />
   </svg>
-);
+)
 
 export const ShieldIcon = () => (
   <svg
@@ -178,7 +178,7 @@ export const ShieldIcon = () => (
     <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
     <path d="m9 12 2 2 4-4" />
   </svg>
-);
+)
 
 export const StarIcon = () => (
   <svg
@@ -194,7 +194,7 @@ export const StarIcon = () => (
   >
     <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
   </svg>
-);
+)
 
 export const HeadsetIcon = () => (
   <svg
@@ -215,7 +215,7 @@ export const HeadsetIcon = () => (
     <rect x="2" y="11" width="4" height="6" rx="1" />
     <rect x="18" y="11" width="4" height="6" rx="1" />
   </svg>
-);
+)
 
 export const ShieldCheckIcon = ({ className }: { className?: string }) => (
   <svg
@@ -233,7 +233,7 @@ export const ShieldCheckIcon = ({ className }: { className?: string }) => (
     <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
     <path d="m9 12 2 2 4-4" />
   </svg>
-);
+)
 
 export const ChevronLeftIcon = ({ className }: { className?: string }) => (
   <svg
@@ -250,7 +250,7 @@ export const ChevronLeftIcon = ({ className }: { className?: string }) => (
   >
     <path d="M10 12L6 8L10 4" />
   </svg>
-);
+)
 
 export const ChevronRightIcon = ({ className }: { className?: string }) => (
   <svg
@@ -267,7 +267,7 @@ export const ChevronRightIcon = ({ className }: { className?: string }) => (
   >
     <path d="M6 12L10 8L6 4" />
   </svg>
-);
+)
 
 export const ChevronDownIcon = ({ className }: { className?: string }) => (
   <svg
@@ -284,4 +284,4 @@ export const ChevronDownIcon = ({ className }: { className?: string }) => (
   >
     <path d="M4 6L8 10L12 6" />
   </svg>
-);
+)

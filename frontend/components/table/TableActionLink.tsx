@@ -1,17 +1,17 @@
-"use client";
+'use client'
 
-import { Eye, type LucideIcon, SquarePen } from "lucide-react";
-import Link from "next/link";
+import { Eye, type LucideIcon, SquarePen } from 'lucide-react'
+import Link from 'next/link'
 
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 type TableActionLinkProps = {
-  href: string;
-  label: string;
-  icon?: LucideIcon;
-  className?: string;
-};
+  href: string
+  label: string
+  icon?: LucideIcon
+  className?: string
+}
 
 /** Primary circular “view” action used in data grids. */
 export function TableActionLink({
@@ -24,7 +24,7 @@ export function TableActionLink({
     <Button
       size="icon"
       className={cn(
-        "size-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90",
+        'size-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90',
         className,
       )}
       aria-label={label}
@@ -34,15 +34,15 @@ export function TableActionLink({
         <Icon className="size-4" />
       </Link>
     </Button>
-  );
+  )
 }
 
 type TableIconButtonProps = {
-  label: string;
-  icon?: LucideIcon;
-  onClick?: () => void;
-  className?: string;
-};
+  label: string
+  icon?: LucideIcon
+  onClick?: () => void
+  className?: string
+}
 
 export function TableIconButton({
   label,
@@ -55,7 +55,7 @@ export function TableIconButton({
       size="icon"
       variant="ghost"
       className={cn(
-        "size-8 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground",
+        'size-8 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground',
         className,
       )}
       aria-label={label}
@@ -64,5 +64,5 @@ export function TableIconButton({
     >
       <Icon className="size-4" />
     </Button>
-  );
+  )
 }

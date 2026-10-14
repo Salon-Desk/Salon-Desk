@@ -1,15 +1,15 @@
-"use client";
+'use client'
 
-import clsx from "clsx";
-import Image from "next/image";
-import type { ReactNode } from "react";
-import type { DropzoneInputProps, DropzoneRootProps } from "react-dropzone";
+import clsx from 'clsx'
+import Image from 'next/image'
+import type { ReactNode } from 'react'
+import type { DropzoneInputProps, DropzoneRootProps } from 'react-dropzone'
 
-import PrimaryButton from "@/components/button/PrimaryButton";
-import { formControlUploadButtonClassName } from "@/components/forms/form-field-parts";
-import { Spinner } from "@/components/ui/spinner";
-import { shouldUnoptimizeImage } from "@/lib/util/remoteImage";
-import { getPublicAbsoluteURL } from "@/lib/utils";
+import PrimaryButton from '@/components/button/PrimaryButton'
+import { formControlUploadButtonClassName } from '@/components/forms/form-field-parts'
+import { Spinner } from '@/components/ui/spinner'
+import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { getPublicAbsoluteURL } from '@/lib/utils'
 
 import {
   boxDescriptionClassName,
@@ -24,21 +24,21 @@ import {
   EMPTY_STATE_ICON_PATH,
   emptyStateClassName,
   emptyStateCopyClassName,
-} from "./constants";
+} from './constants'
 
 interface UploadDropzoneProps {
-  getRootProps: <T extends DropzoneRootProps>(props?: T) => T;
-  getInputProps: <T extends DropzoneInputProps>(props?: T) => T;
-  isDragActive: boolean;
-  isZoneBlocked: boolean;
-  borderVariant: "primary" | "destructive";
-  hasError: boolean;
-  errorMessage?: unknown;
-  errorId: string;
-  boxTitle?: string;
-  boxDescription?: string;
-  icon: ReactNode;
-  buttonText: string;
+  getRootProps: <T extends DropzoneRootProps>(props?: T) => T
+  getInputProps: <T extends DropzoneInputProps>(props?: T) => T
+  isDragActive: boolean
+  isZoneBlocked: boolean
+  borderVariant: 'primary' | 'destructive'
+  hasError: boolean
+  errorMessage?: unknown
+  errorId: string
+  boxTitle?: string
+  boxDescription?: string
+  icon: ReactNode
+  buttonText: string
 }
 
 export function UploadDropzone({
@@ -55,7 +55,7 @@ export function UploadDropzone({
   icon,
   buttonText,
 }: UploadDropzoneProps) {
-  const emptyStateIconSrc = getPublicAbsoluteURL(EMPTY_STATE_ICON_PATH);
+  const emptyStateIconSrc = getPublicAbsoluteURL(EMPTY_STATE_ICON_PATH)
 
   return (
     <div
@@ -65,7 +65,7 @@ export function UploadDropzone({
       className={clsx(
         dropzoneClassName,
         isDragActive && dropzoneDragActiveClassName,
-        borderVariant === "primary"
+        borderVariant === 'primary'
           ? dropzonePrimaryBorderClassName
           : dropzoneDestructiveBorderClassName,
         hasError && dropzoneErrorClassName,
@@ -88,9 +88,7 @@ export function UploadDropzone({
             />
             <div className={emptyStateCopyClassName}>
               {boxTitle && <p className={boxTitleClassName}>{boxTitle}</p>}
-              {boxDescription && (
-                <p className={boxDescriptionClassName}>{boxDescription}</p>
-              )}
+              {boxDescription && <p className={boxDescriptionClassName}>{boxDescription}</p>}
             </div>
             <PrimaryButton
               icon={icon}
@@ -103,5 +101,5 @@ export function UploadDropzone({
         )}
       </div>
     </div>
-  );
+  )
 }

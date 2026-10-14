@@ -1,17 +1,18 @@
-"use client";
+'use client'
 
-import { Edit2, Plus, Star, Trash2 } from "lucide-react";
-import { Button, Card, IconButton } from "@/components/ui";
-import { useMerchantContext } from "../_context/merchant-context";
+import { Edit2, Plus, Star, Trash2 } from 'lucide-react'
+
+import { Button, Card, IconButton } from '@/components/ui'
+
+import { useMerchantContext } from '../_context/merchant-context'
 
 export default function MerchantStaffPage() {
-  const { state, openAddStaff, openEditStaff, openDeleteStaff } =
-    useMerchantContext();
+  const { state, openAddStaff, openEditStaff, openDeleteStaff } = useMerchantContext()
 
   const totalClientsCapacity = state.staff.reduce(
     (acc, s) => acc + (s.maxSimultaneousClients || 1),
     0,
-  );
+  )
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300">
@@ -22,8 +23,7 @@ export default function MerchantStaffPage() {
             Staff &amp; Stylists
           </h1>
           <p className="text-slate-500 text-xs">
-            {state.staff.length} active stylists · {totalClientsCapacity}{" "}
-            concurrent client capacity
+            {state.staff.length} active stylists · {totalClientsCapacity} concurrent client capacity
           </p>
         </div>
 
@@ -58,17 +58,13 @@ export default function MerchantStaffPage() {
                   <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white" />
                 </div>
                 <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 font-medium text-[11px] text-emerald-800">
-                  {stylist.status || "Active"}
+                  {stylist.status || 'Active'}
                 </span>
               </div>
 
               <div>
-                <h3 className="font-bold text-base text-slate-900">
-                  {stylist.name}
-                </h3>
-                <p className="text-xs font-medium text-amber-800">
-                  {stylist.role}
-                </p>
+                <h3 className="font-bold text-base text-slate-900">{stylist.name}</h3>
+                <p className="text-xs font-medium text-amber-800">{stylist.role}</p>
                 <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
                   <div className="flex items-center text-amber-500">
                     <Star className="h-3 w-3 fill-amber-400" />
@@ -111,9 +107,7 @@ export default function MerchantStaffPage() {
             </div>
 
             <div className="flex items-center justify-between border-slate-100 border-t pt-3">
-              <span className="font-mono text-[10px] text-slate-400">
-                {stylist.id}
-              </span>
+              <span className="font-mono text-[10px] text-slate-400">{stylist.id}</span>
               <div className="flex items-center gap-1.5">
                 <Button
                   variant="secondary"
@@ -137,5 +131,5 @@ export default function MerchantStaffPage() {
         ))}
       </div>
     </div>
-  );
+  )
 }

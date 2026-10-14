@@ -1,42 +1,75 @@
-import enum
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import BaseModel
-
-
-class BookingStatus(str, enum.Enum):
-    PENDING = "PENDING"
-    CONFIRMED = "CONFIRMED"
-    COMPLETED = "COMPLETED"
-    CANCELLED = "CANCELLED"
-    NO_SHOW = "NO_SHOW"
+from app.models.base import BaseModel, TimestampedModel
+from app.models.enums import BookingStatus
 
 
-class Booking(BaseModel):
-    __tablename__ = "bookings"
+class Booking(TimestampedModel):
+    __tablename__ = "booking"
 
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("organizations.id"), index=True
-    )
-    service_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("services.id"), index=True
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organization.id"),
+        nullable=False,
+        index=True,
     )
     client_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), index=True
+        UUID(as_uuid=True),
+        ForeignKey("user.id"),
+        nullable=False,
+        index=True,
     )
     stylist_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+        UUID(as_uuid=True),
+        ForeignKey("user.id"),
+        nullable=True,
+        index=True,
     )
-    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     status: Mapped[BookingStatus] = mapped_column(
-        Enum(BookingStatus, name="booking_status"),
+        Enum(
+            BookingStatus,
+            name="booking_status",
+            values_callable=lambda x: [e.value for e in x],
+        ),
         default=BookingStatus.PENDING,
+        nullable=False,
     )
-    customer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    cancellation_fee_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    cancellation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    total_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    commission_snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False)
     customer_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    organization = relationship("Organization")
+    client = relationship("User", foreign_keys=[client_id])
+    stylist = relationship("User", foreign_keys=[stylist_id])
+    booking_services = relationship("BookingService", back_populates="booking")
+
+
+class BookingService(BaseModel):
+    __tablename__ = "booking_service"
+
+    booking_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("booking.id"),
+        nullable=False,
+        index=True,
+    )
+    service_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("service.id"),
+        nullable=False,
+        index=True,
+    )
+    base_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+
+    booking = relationship("Booking", back_populates="booking_services")
+    service = relationship("Service")

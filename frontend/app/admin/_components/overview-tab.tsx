@@ -1,68 +1,63 @@
-"use client";
+'use client'
 
-import {
-  Building2,
-  CreditCard,
-  Percent,
-  Plus,
-  ShieldCheck,
-  Sliders,
-} from "lucide-react";
-import { Card, StatCard } from "@/components/ui";
-import { formatUsd } from "@/lib/format";
-import type { AdminTabId } from "../_types/admin-types";
+import { Building2, CreditCard, Percent, Plus, ShieldCheck, Sliders } from 'lucide-react'
+
+import { Card, StatCard } from '@/components/ui'
+import { formatUsd } from '@/lib/format'
+
+import type { AdminTabId } from '../_types/admin-types'
 
 interface OverviewTabProps {
-  totalVolume: number;
-  totalHolds: number;
-  activeCount: number;
-  pendingCount: number;
-  suspendedCount: number;
-  organizationCount: number;
-  pendingCrCount: number;
-  onNavigate: (tab: AdminTabId) => void;
-  onAddSalon: () => void;
-  onReviewPolicy: () => void;
-  onAddOverride: () => void;
+  totalVolume: number
+  totalHolds: number
+  activeCount: number
+  pendingCount: number
+  suspendedCount: number
+  organizationCount: number
+  pendingCrCount: number
+  onNavigate: (tab: AdminTabId) => void
+  onAddSalon: () => void
+  onReviewPolicy: () => void
+  onAddOverride: () => void
 }
 
 const ACTIVITY_FEED = [
   {
-    id: "ACT-1",
-    title: "Hold captured",
-    desc: "Crown & Blade · $65.00",
-    time: "12m",
-    tone: "emerald" as const,
+    id: 'ACT-1',
+    title: 'Hold captured',
+    desc: 'Crown & Blade · $65.00',
+    time: '12m',
+    tone: 'emerald' as const,
   },
   {
-    id: "ACT-2",
-    title: "Policy request",
-    desc: "Velvet Mane · 24h → 12h",
-    time: "45m",
-    tone: "amber" as const,
+    id: 'ACT-2',
+    title: 'Policy request',
+    desc: 'Velvet Mane · 24h → 12h',
+    time: '45m',
+    tone: 'amber' as const,
   },
   {
-    id: "ACT-3",
-    title: "No-show retained",
-    desc: "Brandon Walsh · $20.00",
-    time: "2h",
-    tone: "rose" as const,
+    id: 'ACT-3',
+    title: 'No-show retained',
+    desc: 'Brandon Walsh · $20.00',
+    time: '2h',
+    tone: 'rose' as const,
   },
   {
-    id: "ACT-4",
-    title: "Merchant verified",
-    desc: "Selam Hair Studio",
-    time: "5h",
-    tone: "sky" as const,
+    id: 'ACT-4',
+    title: 'Merchant verified',
+    desc: 'Selam Hair Studio',
+    time: '5h',
+    tone: 'sky' as const,
   },
-];
+]
 
 const TONE_DOT = {
-  emerald: "bg-emerald-500",
-  amber: "bg-amber-500",
-  rose: "bg-rose-500",
-  sky: "bg-sky-500",
-} as const;
+  emerald: 'bg-emerald-500',
+  amber: 'bg-amber-500',
+  rose: 'bg-rose-500',
+  sky: 'bg-sky-500',
+} as const
 
 export function OverviewTab({
   totalVolume,
@@ -77,8 +72,8 @@ export function OverviewTab({
   onReviewPolicy,
   onAddOverride,
 }: OverviewTabProps) {
-  const holdVolume = totalVolume * 0.28;
-  const commissionEarned = totalVolume * 0.025;
+  const holdVolume = totalVolume * 0.28
+  const commissionEarned = totalVolume * 0.025
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -124,8 +119,8 @@ export function OverviewTab({
             <button
               type="button"
               onClick={() => {
-                onNavigate("salons");
-                onAddSalon();
+                onNavigate('salons')
+                onAddSalon()
               }}
               className="flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left font-semibold text-slate-800 text-xs transition-colors hover:border-amber-300 hover:bg-amber-50"
             >
@@ -135,8 +130,8 @@ export function OverviewTab({
             <button
               type="button"
               onClick={() => {
-                onNavigate("requests");
-                onReviewPolicy();
+                onNavigate('requests')
+                onReviewPolicy()
               }}
               className="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left font-semibold text-slate-800 text-xs transition-colors hover:border-amber-300 hover:bg-amber-50"
             >
@@ -153,8 +148,8 @@ export function OverviewTab({
             <button
               type="button"
               onClick={() => {
-                onNavigate("commission");
-                onAddOverride();
+                onNavigate('commission')
+                onAddOverride()
               }}
               className="flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left font-semibold text-slate-800 text-xs transition-colors hover:border-amber-300 hover:bg-amber-50"
             >
@@ -166,9 +161,7 @@ export function OverviewTab({
 
         <Card padding="md" className="space-y-3 lg:col-span-2">
           <div className="flex items-center justify-between">
-            <h2 className="font-bold text-slate-900 text-sm">
-              Recent activity
-            </h2>
+            <h2 className="font-bold text-slate-900 text-sm">Recent activity</h2>
             <span className="flex items-center gap-1.5 font-medium text-[10px] text-emerald-700">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               Live
@@ -182,26 +175,18 @@ export function OverviewTab({
                 className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
               >
                 <div className="flex min-w-0 items-center gap-2.5">
-                  <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${TONE_DOT[evt.tone]}`}
-                  />
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${TONE_DOT[evt.tone]}`} />
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-900 text-xs">
-                      {evt.title}
-                    </p>
-                    <p className="truncate text-[11px] text-slate-500">
-                      {evt.desc}
-                    </p>
+                    <p className="font-semibold text-slate-900 text-xs">{evt.title}</p>
+                    <p className="truncate text-[11px] text-slate-500">{evt.desc}</p>
                   </div>
                 </div>
-                <span className="shrink-0 font-mono text-[10px] text-slate-400">
-                  {evt.time}
-                </span>
+                <span className="shrink-0 font-mono text-[10px] text-slate-400">{evt.time}</span>
               </li>
             ))}
           </ul>
         </Card>
       </div>
     </div>
-  );
+  )
 }

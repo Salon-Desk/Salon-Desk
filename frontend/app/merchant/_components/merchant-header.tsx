@@ -1,26 +1,29 @@
-"use client";
+'use client'
 
-import { ArrowLeft, Menu, Sparkles } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { PortalSwitcher } from "@/components/layout/portal-switcher";
-import { Button } from "@/components/ui";
-import { ROUTES } from "@/lib/constants";
+import { ArrowLeft, Menu, Sparkles } from 'lucide-react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+
+import { UserMenu } from '@/components/auth/user-menu'
+import { PortalSwitcher } from '@/components/layout/portal-switcher'
+import { Button } from '@/components/ui'
+import { ROUTES } from '@/lib/constants'
+
 import {
   getMerchantTabFromPathname,
   MERCHANT_TAB_TITLES,
   type MerchantTab,
-} from "../_types/merchant-types";
+} from '../_types/merchant-types'
 
 interface MerchantHeaderProps {
-  activeTab?: MerchantTab;
-  lastReconciledAt: string;
-  simulatedDrift: boolean;
-  isResetting: boolean;
-  onOpenMobileSidebar: () => void;
-  onToggleDrift: () => void;
-  onOpenCopilot: () => void;
-  onResetDemo: () => void;
+  activeTab?: MerchantTab
+  lastReconciledAt: string
+  simulatedDrift: boolean
+  isResetting: boolean
+  onOpenMobileSidebar: () => void
+  onToggleDrift: () => void
+  onOpenCopilot: () => void
+  onResetDemo: () => void
 }
 
 export function MerchantHeader({
@@ -33,8 +36,8 @@ export function MerchantHeader({
   onOpenCopilot,
   onResetDemo,
 }: MerchantHeaderProps) {
-  const pathname = usePathname();
-  const currentTab = explicitTab || getMerchantTabFromPathname(pathname);
+  const pathname = usePathname()
+  const currentTab = explicitTab || getMerchantTabFromPathname(pathname)
 
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-slate-200/80 border-b bg-white/80 px-4 shadow-xs backdrop-blur-md sm:px-6">
@@ -64,15 +67,15 @@ export function MerchantHeader({
           title="Toggle settlement drift simulation"
           className={`hidden items-center gap-2 rounded-xl border px-3 py-1.5 font-medium text-xs transition-all shadow-xs sm:inline-flex ${
             simulatedDrift
-              ? "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100/70"
-              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              ? 'border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100/70'
+              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
           }`}
         >
           <span
             className={`h-2 w-2 rounded-full ${
               simulatedDrift
-                ? "animate-ping bg-amber-500"
-                : "bg-emerald-500 ring-2 ring-emerald-200"
+                ? 'animate-ping bg-amber-500'
+                : 'bg-emerald-500 ring-2 ring-emerald-200'
             }`}
           />
           <span className="font-mono text-[11px]">{lastReconciledAt}</span>
@@ -86,11 +89,9 @@ export function MerchantHeader({
           <span className="hidden sm:inline">Hub</span>
         </Link>
 
-        <PortalSwitcher
-          current="merchant"
-          onReset={onResetDemo}
-          isResetting={isResetting}
-        />
+        <PortalSwitcher current="merchant" onReset={onResetDemo} isResetting={isResetting} />
+
+        <UserMenu portal="merchant" />
 
         <Button
           variant="primary"
@@ -103,5 +104,5 @@ export function MerchantHeader({
         </Button>
       </div>
     </header>
-  );
+  )
 }

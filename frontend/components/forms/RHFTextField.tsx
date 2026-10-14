@@ -1,30 +1,29 @@
-"use client";
+'use client'
 
-import { Globe, Hash, Mail, Phone, User } from "lucide-react";
-import { Controller, useFormContext } from "react-hook-form";
+import { Globe, Hash, Mail, Phone, User } from 'lucide-react'
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
-  FormFieldError,
-  FormFieldLabel,
-  FormFieldRoot,
   formControlInputClassName,
   formControlLeftIconClassName,
+  FormFieldError,
   formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
+  FormFieldLabel,
+  FormFieldRoot,
+} from '@/components/forms/form-field-parts'
 
 interface RHFTextFieldProps {
-  name: string;
-  label: string;
-  isRequired?: boolean;
-  showRequiredMarker?: boolean;
-  showOptionalHint?: boolean;
-  labelClassName?: string;
-  leftIcon?: "mail" | "user" | "phone" | "globe" | "hash";
-  type?: React.HTMLInputTypeAttribute;
+  name: string
+  label: string
+  isRequired?: boolean
+  showRequiredMarker?: boolean
+  showOptionalHint?: boolean
+  labelClassName?: string
+  leftIcon?: 'mail' | 'user' | 'phone' | 'globe' | 'hash'
+  type?: React.HTMLInputTypeAttribute
 }
 
-type CombinedProps = RHFTextFieldProps &
-  Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">;
+type CombinedProps = RHFTextFieldProps & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>
 
 const iconMap = {
   mail: Mail,
@@ -32,7 +31,7 @@ const iconMap = {
   phone: Phone,
   globe: Globe,
   hash: Hash,
-};
+}
 
 const RHFTextField = ({
   name,
@@ -42,14 +41,14 @@ const RHFTextField = ({
   showOptionalHint = true,
   labelClassName,
   leftIcon,
-  type = "text",
+  type = 'text',
   className,
   ...other
 }: CombinedProps) => {
-  const { control, clearErrors } = useFormContext();
-  const Icon = leftIcon ? iconMap[leftIcon] : null;
-  const hasIcon = !!Icon;
-  const { controlId, errorId } = formFieldHtmlIds(name);
+  const { control, clearErrors } = useFormContext()
+  const Icon = leftIcon ? iconMap[leftIcon] : null
+  const hasIcon = !!Icon
+  const { controlId, errorId } = formFieldHtmlIds(name)
 
   return (
     <Controller
@@ -57,13 +56,13 @@ const RHFTextField = ({
       control={control}
       render={({ field, fieldState: { error } }) => {
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-          let value: string | number = e.target.value;
-          if (type === "number") {
-            value = e.target.value ? parseFloat(e.target.value) : "";
+          let value: string | number = e.target.value
+          if (type === 'number') {
+            value = e.target.value ? parseFloat(e.target.value) : ''
           }
-          field.onChange(value);
-          clearErrors(name);
-        };
+          field.onChange(value)
+          clearErrors(name)
+        }
 
         return (
           <FormFieldRoot>
@@ -79,9 +78,7 @@ const RHFTextField = ({
             ) : null}
 
             <div className="relative w-full">
-              {hasIcon && Icon && (
-                <Icon className={formControlLeftIconClassName} aria-hidden />
-              )}
+              {hasIcon && Icon && <Icon className={formControlLeftIconClassName} aria-hidden />}
 
               <input
                 id={controlId}
@@ -90,7 +87,7 @@ const RHFTextField = ({
                 aria-invalid={!!error}
                 aria-describedby={error ? errorId : undefined}
                 {...field}
-                value={field.value ?? ""}
+                value={field.value ?? ''}
                 onChange={handleChange}
                 className={formControlInputClassName({
                   hasError: !!error,
@@ -101,14 +98,12 @@ const RHFTextField = ({
               />
             </div>
 
-            {error ? (
-              <FormFieldError id={errorId} message={error.message ?? ""} />
-            ) : null}
+            {error ? <FormFieldError id={errorId} message={error.message ?? ''} /> : null}
           </FormFieldRoot>
-        );
+        )
       }}
     />
-  );
-};
+  )
+}
 
-export default RHFTextField;
+export default RHFTextField

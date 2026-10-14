@@ -8,7 +8,7 @@ import {
   type SortingState,
   useReactTable,
   type VisibilityState,
-} from "@tanstack/react-table";
+} from '@tanstack/react-table'
 import {
   ArrowDown,
   ArrowUp,
@@ -20,27 +20,20 @@ import {
   Settings,
   SquarePen,
   Trash2,
-} from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import {
-  type ChangeEvent,
-  Fragment,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+} from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { type ChangeEvent, Fragment, useEffect, useMemo, useRef, useState } from 'react'
 
-import PageSkeletonLoader from "@/components/loader/PageSkeletonLoader";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import PageSkeletonLoader from '@/components/loader/PageSkeletonLoader'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu'
 import {
   Table,
   TableBody,
@@ -48,71 +41,70 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { TableItemPerPageList } from "@/constant/table";
-import { isRemoteImageSrc, resolveImageSrc } from "@/lib/util/remoteImage";
-import { cn } from "@/lib/utils";
-import type { DataGridProps } from "@/types/table";
+} from '@/components/ui/table'
+import { TableItemPerPageList } from '@/constant/table'
+import { isRemoteImageSrc, resolveImageSrc } from '@/lib/util/remoteImage'
+import { cn } from '@/lib/utils'
+import type { DataGridProps } from '@/types/table'
 
-import PrimaryButton from "../button/PrimaryButton";
-import { RefreshButton } from "../button/RefreshButton";
-import EmptyState from "../empty/EmptyState";
-import { renderPageNumbers } from "./Pagination";
+import PrimaryButton from '../button/PrimaryButton'
+import { RefreshButton } from '../button/RefreshButton'
+import EmptyState from '../empty/EmptyState'
+import { renderPageNumbers } from './Pagination'
 
 type RowWithAvatar = {
-  avatar?: string;
-  avatarUrl?: string;
-};
+  avatar?: string
+  avatarUrl?: string
+}
 
 const tableSelectCheckboxClassName =
-  "after:hidden size-4 rounded-md border-border bg-background text-primary-foreground shadow-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground";
+  'after:hidden size-4 rounded-md border-border bg-background text-primary-foreground shadow-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground'
 
 const getAvatarSource = (row: unknown): string | null => {
-  if (!row || typeof row !== "object") {
-    return null;
+  if (!row || typeof row !== 'object') {
+    return null
   }
-  const avatarRow = row as RowWithAvatar;
-  return avatarRow.avatarUrl ?? avatarRow.avatar ?? null;
-};
+  const avatarRow = row as RowWithAvatar
+  return avatarRow.avatarUrl ?? avatarRow.avatar ?? null
+}
 
 /** Server-paginated grids often only receive the current page's rows in `data`. */
 function resolveTotalItems(
   totalItemsProp: number | undefined,
   options: {
-    manualPagination: boolean;
-    currentPage: number;
-    totalPages: number;
-    pageSize: number;
-    dataLength: number;
+    manualPagination: boolean
+    currentPage: number
+    totalPages: number
+    pageSize: number
+    dataLength: number
   },
 ): number {
   if (totalItemsProp !== undefined) {
-    return totalItemsProp;
+    return totalItemsProp
   }
 
-  const { manualPagination, currentPage, totalPages, pageSize, dataLength } =
-    options;
+  const { manualPagination, currentPage, totalPages, pageSize, dataLength } = options
 
   if (!manualPagination) {
-    return dataLength;
+    return dataLength
   }
 
   if (totalPages <= 0) {
-    return dataLength;
+    return dataLength
   }
 
   if (currentPage === totalPages) {
-    return (totalPages - 1) * pageSize + dataLength;
+    return (totalPages - 1) * pageSize + dataLength
   }
 
-  return totalPages * pageSize;
+  return totalPages * pageSize
 }
 
 export function BasicDataGrid<T>({
   data,
   columns,
   title,
-  searchPlaceholder = "Search...",
+  searchPlaceholder = 'Search...',
   showSearch = true,
   showColumnSelector = false,
   showPagination = true,
@@ -132,7 +124,7 @@ export function BasicDataGrid<T>({
   showFilter = false,
   onAddClick,
   showAddButton = false,
-  buttonTitle = "Add",
+  buttonTitle = 'Add',
   showActions = true,
   onView,
   onEdit,
@@ -146,62 +138,60 @@ export function BasicDataGrid<T>({
   isLoading = false,
   className,
 }: DataGridProps<T>) {
-  const [itemsPerPageState, setItemsPerPageState] = useState(itemsPerPage);
-  const randomNum = useRef(Math.floor(Math.random() * 1000) + 1);
+  const [itemsPerPageState, setItemsPerPageState] = useState(itemsPerPage)
+  const randomNum = useRef(Math.floor(Math.random() * 1000) + 1)
   const [sorting, setSorting] = useState<SortingState>(
     initialSort ? [{ id: initialSort.id, desc: initialSort.desc }] : [],
-  );
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
-  const [globalFilter, setGlobalFilter] = useState("");
-  const [searchQuery, setSearchQuery] = useState(initialSearchValue ?? "");
-  const onRowSelectionChangeCallback = useRef(onRowSelectionChange);
-  onRowSelectionChangeCallback.current = onRowSelectionChange;
+  )
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = useState({})
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [searchQuery, setSearchQuery] = useState(initialSearchValue ?? '')
+  const onRowSelectionChangeCallback = useRef(onRowSelectionChange)
+  onRowSelectionChangeCallback.current = onRowSelectionChange
   useEffect(() => {
-    setItemsPerPageState(itemsPerPage);
-  }, [itemsPerPage]);
+    setItemsPerPageState(itemsPerPage)
+  }, [itemsPerPage])
 
   useEffect(() => {
-    setSearchQuery(initialSearchValue ?? "");
-  }, [initialSearchValue]);
+    setSearchQuery(initialSearchValue ?? '')
+  }, [initialSearchValue])
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
+    const value = e.target.value
+    setSearchQuery(value)
     if (onSearch) {
-      onSearch(value);
-      return;
+      onSearch(value)
+      return
     }
-    setGlobalFilter(value);
-  };
+    setGlobalFilter(value)
+  }
 
   const handleItemsPerPageChange = (value: number) => {
-    setItemsPerPageState(value);
+    setItemsPerPageState(value)
     if (onItemPerPageChange) {
-      onItemPerPageChange(value);
+      onItemPerPageChange(value)
     }
     if (onPageChange) {
-      onPageChange(1);
+      onPageChange(1)
     }
-  };
+  }
 
   const tanstackColumns = useMemo<ColumnDef<T>[]>(() => {
-    const result: ColumnDef<T>[] = [];
+    const result: ColumnDef<T>[] = []
 
     if (showRowSelection) {
       result.push({
-        id: "select",
-        sortingFn: "textCaseSensitive",
+        id: 'select',
+        sortingFn: 'textCaseSensitive',
         header: ({ table }) => (
           <Checkbox
             checked={
               table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() ? "indeterminate" : false)
+              (table.getIsSomePageRowsSelected() ? 'indeterminate' : false)
             }
-            onCheckedChange={(value) =>
-              table.toggleAllPageRowsSelected(!!value)
-            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
             aria-label="Select all"
             className={tableSelectCheckboxClassName}
           />
@@ -216,64 +206,59 @@ export function BasicDataGrid<T>({
         ),
         enableSorting: false,
         enableHiding: false,
-      });
+      })
     }
 
     columns.forEach((column) => {
       result.push({
         id: column.id,
-        sortingFn: "textCaseSensitive",
+        sortingFn: 'textCaseSensitive',
         accessorKey: column.accessorKey as string,
         header: ({ column: col }) => {
           if (!column.sortable) {
-            return <span className="">{column.header}</span>;
+            return <span className="">{column.header}</span>
           }
           return (
             <Button
               variant="ghost"
               onClick={() => {
-                const isSorted = col.getIsSorted();
-                let newSort: { id: string; desc: boolean } | null = null;
+                const isSorted = col.getIsSorted()
+                let newSort: { id: string; desc: boolean } | null = null
 
-                if (isSorted === "asc") {
-                  newSort = { id: column.id, desc: true };
-                } else if (isSorted === "desc") {
-                  newSort = null;
+                if (isSorted === 'asc') {
+                  newSort = { id: column.id, desc: true }
+                } else if (isSorted === 'desc') {
+                  newSort = null
                 } else {
-                  newSort = { id: column.id, desc: false };
+                  newSort = { id: column.id, desc: false }
                 }
 
-                setSorting(
-                  newSort ? [{ id: newSort.id, desc: newSort.desc }] : [],
-                );
+                setSorting(newSort ? [{ id: newSort.id, desc: newSort.desc }] : [])
 
                 if (onSortChange) {
-                  onSortChange(newSort);
+                  onSortChange(newSort)
                 }
               }}
               className={`px-2 hover:bg-accent h-7 ${
-                col.getIsSorted() ? "text-primary" : "text-muted-foreground"
+                col.getIsSorted() ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
-              <span className="font-medium tracking-wide text-xs uppercase">
-                {column.header}
-              </span>
-              {col.getIsSorted() === "asc" ? (
+              <span className="font-medium tracking-wide text-xs uppercase">{column.header}</span>
+              {col.getIsSorted() === 'asc' ? (
                 <ArrowUp className="ml-1.5 h-3 w-3 text-primary" />
-              ) : col.getIsSorted() === "desc" ? (
+              ) : col.getIsSorted() === 'desc' ? (
                 <ArrowDown className="ml-1.5 h-3 w-3 text-primary" />
               ) : (
                 <ArrowUpDown className="ml-1.5 h-3 w-3 text-muted-foreground" />
               )}
             </Button>
-          );
+          )
         },
         cell: ({ row }) => {
           if (column.cell) {
-            return column.cell(row.original);
+            return column.cell(row.original)
           }
-          const avatarSrc =
-            column.id === "name" ? getAvatarSource(row.original) : null;
+          const avatarSrc = column.id === 'name' ? getAvatarSource(row.original) : null
           if (avatarSrc) {
             return (
               <div className="flex items-center gap-2">
@@ -285,13 +270,11 @@ export function BasicDataGrid<T>({
                   className="w-9 h-9 rounded-full object-cover border border-border"
                   unoptimized={isRemoteImageSrc(avatarSrc)}
                 />
-                <span className="text-sm text-foreground">
-                  {String(row.getValue(column.id))}
-                </span>
+                <span className="text-sm text-foreground">{String(row.getValue(column.id))}</span>
               </div>
-            );
+            )
           }
-          if (rowClickPath && column.id === "name") {
+          if (rowClickPath && column.id === 'name') {
             return (
               <Link
                 href={rowClickPath(row.original)}
@@ -299,18 +282,14 @@ export function BasicDataGrid<T>({
               >
                 {String(row.getValue(column.id))}
               </Link>
-            );
+            )
           }
-          return (
-            <div className="text-sm text-foreground">
-              {String(row.getValue(column.id))}
-            </div>
-          );
+          return <div className="text-sm text-foreground">{String(row.getValue(column.id))}</div>
         },
         enableSorting: column.sortable,
         enableHiding: column.filterable,
-      });
-    });
+      })
+    })
 
     if (showActions) {
       result.push({
@@ -318,7 +297,7 @@ export function BasicDataGrid<T>({
 
         header: () => (
           <span className="text-primary/80 font-medium tracking-wide text-xs uppercase">
-            {"Actions"}
+            {'Actions'}
           </span>
         ),
         enableHiding: false,
@@ -370,10 +349,10 @@ export function BasicDataGrid<T>({
             )}
           </div>
         ),
-      });
+      })
     }
 
-    return result;
+    return result
   }, [
     columns,
     showRowSelection,
@@ -384,7 +363,7 @@ export function BasicDataGrid<T>({
     onDelete,
     onSuspend,
     onSortChange,
-  ]);
+  ])
 
   const table = useReactTable({
     data,
@@ -393,9 +372,7 @@ export function BasicDataGrid<T>({
       pagination: {
         pageSize: itemsPerPage,
       },
-      sorting: initialSort
-        ? [{ id: initialSort.id, desc: initialSort.desc }]
-        : [],
+      sorting: initialSort ? [{ id: initialSort.id, desc: initialSort.desc }] : [],
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -423,24 +400,22 @@ export function BasicDataGrid<T>({
     manualSorting: true,
     manualPagination: Boolean(onPageChange),
     ...(onPageChange ? { pageCount: totalPages } : {}),
-  });
+  })
 
   useEffect(() => {
     if (onRowSelectionChangeCallback.current) {
-      const selectedRows = table
-        .getSelectedRowModel()
-        .flatRows.map((row) => row.original);
-      onRowSelectionChangeCallback.current(selectedRows);
+      const selectedRows = table.getSelectedRowModel().flatRows.map((row) => row.original)
+      onRowSelectionChangeCallback.current(selectedRows)
     }
-  }, [table.getSelectedRowModel]);
+  }, [table.getSelectedRowModel])
 
   const handlePageChange = (page: number) => {
     if (onPageChange) {
-      onPageChange(page);
+      onPageChange(page)
     } else {
-      table.setPageIndex(page - 1);
+      table.setPageIndex(page - 1)
     }
-  };
+  }
 
   const resolvedTotalItems = resolveTotalItems(totalItemsProp, {
     manualPagination: Boolean(onPageChange),
@@ -448,12 +423,12 @@ export function BasicDataGrid<T>({
     totalPages,
     pageSize: itemsPerPageState,
     dataLength: data.length,
-  });
+  })
 
   return (
     <div
       className={cn(
-        "mx-auto w-full space-y-6 rounded-2xl bg-background px-3 pb-4 pt-2 lg:px-4 xl:pb-5",
+        'mx-auto w-full space-y-6 rounded-2xl bg-background px-3 pb-4 pt-2 lg:px-4 xl:pb-5',
         className,
       )}
     >
@@ -488,13 +463,7 @@ export function BasicDataGrid<T>({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          {refetch && (
-            <RefreshButton
-              onClick={() => refetch()}
-              isLoading={isFetching}
-              size="sm"
-            />
-          )}
+          {refetch && <RefreshButton onClick={() => refetch()} isLoading={isFetching} size="sm" />}
           {showColumnSelector && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -503,13 +472,10 @@ export function BasicDataGrid<T>({
                   className="h-9 gap-2 border-border bg-secondary/20 text-foreground hover:border-primary/40 hover:bg-accent/45"
                 >
                   <Settings className="h-3.5 w-3.5" />
-                  <span className="text-sm">{"Customize"}</span>
+                  <span className="text-sm">{'Customize'}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="bg-popover border-border"
-              >
+              <DropdownMenuContent align="end" className="bg-popover border-border">
                 {table
                   .getAllColumns()
                   .filter((column) => column.getCanHide())
@@ -519,13 +485,11 @@ export function BasicDataGrid<T>({
                         key={column.id}
                         className="capitalize text-popover-foreground focus:bg-accent focus:text-accent-foreground"
                         checked={column.getIsVisible()}
-                        onCheckedChange={(value) =>
-                          column.toggleVisibility(!!value)
-                        }
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
                       >
-                        {column.id.replace(/_/g, " ")}
+                        {column.id.replace(/_/g, ' ')}
                       </DropdownMenuCheckboxItem>
-                    );
+                    )
                   })}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -550,14 +514,11 @@ export function BasicDataGrid<T>({
                   className="h-9 rounded-full gap-2 border-border bg-card px-4 text-foreground hover:border-primary/35 hover:bg-accent/35 shadow-none"
                 >
                   <span className="text-sm font-normal">
-                    {itemsPerPageState} {"per page"}
+                    {itemsPerPageState} {'per page'}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="bg-popover border-border"
-              >
+              <DropdownMenuContent align="end" className="bg-popover border-border">
                 {TableItemPerPageList.map((num) => (
                   <DropdownMenuCheckboxItem
                     key={num}
@@ -603,10 +564,7 @@ export function BasicDataGrid<T>({
                     key={header.id}
                     className="h-11 px-4 py-4 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
                   >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
+                    {flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -627,17 +585,14 @@ export function BasicDataGrid<T>({
               table.getRowModel().rows.map((row, index) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
+                  data-state={row.getIsSelected() && 'selected'}
                   className={`border-b-0 transition-colors duration-150 hover:bg-accent/35 ${
-                    index % 2 === 0 ? "bg-transparent" : "bg-muted/22"
+                    index % 2 === 0 ? 'bg-transparent' : 'bg-muted/22'
                   }`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="py-3 px-4">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -647,7 +602,7 @@ export function BasicDataGrid<T>({
                 <TableCell colSpan={tanstackColumns.length} className="p-4">
                   <EmptyState
                     icon={<Search />}
-                    title={"No results found"}
+                    title={'No results found'}
                     className="w-full border-0 bg-muted/10"
                   />
                 </TableCell>
@@ -669,5 +624,5 @@ export function BasicDataGrid<T>({
         </div>
       )}
     </div>
-  );
+  )
 }

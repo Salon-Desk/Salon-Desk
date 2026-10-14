@@ -1,15 +1,16 @@
-"use client";
+'use client'
 
-import { Plus, Trash2 } from "lucide-react";
-import { Badge, Button, IconButton } from "@/components/ui";
-import type { PlatformUser } from "@/types";
+import { Plus, Trash2 } from 'lucide-react'
+
+import { Badge, Button, IconButton } from '@/components/ui'
+import type { PlatformUser } from '@/types'
 
 interface StaffTabProps {
-  users: PlatformUser[];
-  currentUserId: string;
-  onInvite: () => void;
-  onToggleStatus: (userId: string) => void;
-  onDelete: (user: PlatformUser) => void;
+  users: PlatformUser[]
+  currentUserId: string
+  onInvite: () => void
+  onToggleStatus: (userId: string) => void
+  onDelete: (user: PlatformUser) => void
 }
 
 export function StaffTab({
@@ -42,8 +43,8 @@ export function StaffTab({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {users.map((u) => {
-              const isActive = u.status === "ACTIVE";
-              const isCurrent = u.id === currentUserId;
+              const isActive = u.status === 'ACTIVE'
+              const isCurrent = u.id === currentUserId
 
               return (
                 <tr key={u.id} className="transition-colors hover:bg-slate-50">
@@ -61,18 +62,16 @@ export function StaffTab({
                     </div>
                   </td>
 
-                  <td className="px-4 py-3.5 font-mono text-slate-700">
-                    {u.email}
-                  </td>
+                  <td className="px-4 py-3.5 font-mono text-slate-700">{u.email}</td>
 
                   <td className="px-4 py-3.5">
                     <Badge
                       tone={
-                        u.role === "Super Admin"
-                          ? "amber"
-                          : u.role === "Compliance Officer"
-                            ? "sky"
-                            : "slate"
+                        u.role === 'Super Admin'
+                          ? 'amber'
+                          : u.role === 'Compliance Officer'
+                            ? 'sky'
+                            : 'slate'
                       }
                     >
                       {u.role}
@@ -80,9 +79,7 @@ export function StaffTab({
                   </td>
 
                   <td className="px-4 py-3.5">
-                    <Badge tone={isActive ? "emerald" : "rose"}>
-                      {u.status}
-                    </Badge>
+                    <Badge tone={isActive ? 'emerald' : 'rose'}>{u.status}</Badge>
                   </td>
 
                   <td className="px-4 py-3.5 font-mono text-[11px] text-slate-500">
@@ -97,22 +94,20 @@ export function StaffTab({
                         disabled={isCurrent}
                         className={`rounded border px-2.5 py-1 font-semibold text-[11px] shadow-xs transition-colors ${
                           isCurrent
-                            ? "cursor-not-allowed border-slate-200 text-slate-400 opacity-40"
+                            ? 'cursor-not-allowed border-slate-200 text-slate-400 opacity-40'
                             : isActive
-                              ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
-                              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              ? 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                              : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                         }`}
                       >
-                        {isActive ? "Revoke" : "Reactivate"}
+                        {isActive ? 'Revoke' : 'Reactivate'}
                       </button>
 
                       <IconButton
-                        title={
-                          isCurrent ? "Cannot delete signed-in user" : "Delete"
-                        }
+                        title={isCurrent ? 'Cannot delete signed-in user' : 'Delete'}
                         tone="danger"
                         disabled={isCurrent}
-                        className={isCurrent ? "opacity-30" : undefined}
+                        className={isCurrent ? 'opacity-30' : undefined}
                         onClick={() => onDelete(u)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -120,11 +115,11 @@ export function StaffTab({
                     </div>
                   </td>
                 </tr>
-              );
+              )
             })}
           </tbody>
         </table>
       </div>
     </div>
-  );
+  )
 }

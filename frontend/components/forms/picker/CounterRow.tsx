@@ -1,21 +1,21 @@
-"use client";
+'use client'
 
-import { Minus, Plus } from "lucide-react";
-import Image from "next/image";
+import { Minus, Plus } from 'lucide-react'
+import Image from 'next/image'
 
-import { resolveImageSrc } from "@/lib/util/remoteImage";
-import { cn } from "@/lib/utils";
+import { resolveImageSrc } from '@/lib/util/remoteImage'
+import { cn } from '@/lib/utils'
 
 type CounterRowProps = {
-  label: string;
-  description: string;
-  icon: string;
-  value: number;
-  onChange: (val: number) => void;
-  min?: number;
-  max?: number;
-  className?: string;
-};
+  label: string
+  description: string
+  icon: string
+  value: number
+  onChange: (val: number) => void
+  min?: number
+  max?: number
+  className?: string
+}
 
 export function CounterRow({
   label,
@@ -30,7 +30,7 @@ export function CounterRow({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 rounded-2xl border border-border px-3 py-3 sm:px-4 sm:py-3.5",
+        'flex items-center justify-between gap-3 rounded-2xl border border-border px-3 py-3 sm:px-4 sm:py-3.5',
         className,
       )}
     >
@@ -77,5 +77,5 @@ export function CounterRow({
         </button>
       </div>
     </div>
-  );
+  )
 }

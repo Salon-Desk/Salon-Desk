@@ -1,25 +1,25 @@
-"use client";
+'use client'
 
-import { Controller, useFormContext } from "react-hook-form";
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
+  formControlCheckboxClassName,
   FormFieldError,
+  formFieldHtmlIds,
   FormFieldLabel,
   FormFieldRoot,
-  formControlCheckboxClassName,
-  formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
-import { cn } from "@/lib/utils";
+} from '@/components/forms/form-field-parts'
+import { cn } from '@/lib/utils'
 
 interface RHFCheckboxProps {
-  name: string;
-  label: string;
-  description?: string;
-  isRequired?: boolean;
-  className?: string;
-  isErrorVisible?: boolean;
-  disabled?: boolean;
-  isRequiredAstrictCaptionVisible?: boolean;
+  name: string
+  label: string
+  description?: string
+  isRequired?: boolean
+  className?: string
+  isErrorVisible?: boolean
+  disabled?: boolean
+  isRequiredAstrictCaptionVisible?: boolean
 }
 
 const RHFCheckbox = ({
@@ -32,30 +32,25 @@ const RHFCheckbox = ({
   isErrorVisible = true,
   isRequiredAstrictCaptionVisible = false,
 }: RHFCheckboxProps) => {
-  const { control, clearErrors, formState } = useFormContext();
-  const error = formState.errors[name];
+  const { control, clearErrors, formState } = useFormContext()
+  const error = formState.errors[name]
 
-  const { controlId, errorId } = formFieldHtmlIds(name);
+  const { controlId, errorId } = formFieldHtmlIds(name)
 
   const message =
-    error?.message !== undefined && error?.message !== null
-      ? String(error.message)
-      : "";
+    error?.message !== undefined && error?.message !== null ? String(error.message) : ''
 
   return (
     <Controller
       name={name}
       control={control}
       render={({ field }) => {
-        const checked = !!field.value;
+        const checked = !!field.value
 
         return (
-          <FormFieldRoot className={cn("w-full", className)}>
+          <FormFieldRoot className={cn('w-full', className)}>
             <div
-              className={cn(
-                "flex items-start justify-start",
-                label || description ? "gap-2" : "",
-              )}
+              className={cn('flex items-start justify-start', label || description ? 'gap-2' : '')}
             >
               <input
                 id={controlId}
@@ -65,13 +60,13 @@ const RHFCheckbox = ({
                 aria-invalid={!!error}
                 aria-describedby={error ? errorId : undefined}
                 onChange={(e) => {
-                  field.onChange(e.target.checked);
-                  clearErrors(name);
+                  field.onChange(e.target.checked)
+                  clearErrors(name)
                 }}
                 className={cn(
                   formControlCheckboxClassName,
-                  error && "border-destructive",
-                  disabled && "cursor-not-allowed opacity-50",
+                  error && 'border-destructive',
+                  disabled && 'cursor-not-allowed opacity-50',
                 )}
               />
 
@@ -85,8 +80,8 @@ const RHFCheckbox = ({
                       isRequired={isRequired}
                       showRequiredMarker={isRequiredAstrictCaptionVisible}
                       className={cn(
-                        "cursor-pointer font-normal text-sm",
-                        disabled && "cursor-not-allowed opacity-50",
+                        'cursor-pointer font-normal text-sm',
+                        disabled && 'cursor-not-allowed opacity-50',
                       )}
                     />
                   ) : null}
@@ -95,8 +90,8 @@ const RHFCheckbox = ({
                     <label
                       htmlFor={controlId}
                       className={cn(
-                        "block cursor-pointer text-xs text-muted-foreground sm:text-sm",
-                        disabled && "cursor-not-allowed opacity-50",
+                        'block cursor-pointer text-xs text-muted-foreground sm:text-sm',
+                        disabled && 'cursor-not-allowed opacity-50',
                       )}
                     >
                       {description}
@@ -106,14 +101,12 @@ const RHFCheckbox = ({
               ) : null}
             </div>
 
-            {isErrorVisible && message ? (
-              <FormFieldError id={errorId} message={message} />
-            ) : null}
+            {isErrorVisible && message ? <FormFieldError id={errorId} message={message} /> : null}
           </FormFieldRoot>
-        );
+        )
       }}
     />
-  );
-};
+  )
+}
 
-export default RHFCheckbox;
+export default RHFCheckbox

@@ -1,10 +1,12 @@
-"use client";
+'use client'
 
-import { CheckCircle2, Copy, Percent, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { Button, Card, NumberField } from "@/components/ui";
-import { formatUsd } from "@/lib/format";
-import { useAdminContext } from "../_context/admin-context";
+import { CheckCircle2, Copy, Percent, Plus, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+
+import { Button, Card, NumberField } from '@/components/ui'
+import { formatUsd } from '@/lib/format'
+
+import { useAdminContext } from '../_context/admin-context'
 
 export default function AdminCommissionPage() {
   const {
@@ -14,20 +16,20 @@ export default function AdminCommissionPage() {
     handleSaveGlobalRate,
     setIsAddOverrideOpen,
     handleDeleteOverride,
-  } = useAdminContext();
+  } = useAdminContext()
 
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   const totalCommissionRevenue = state.commissionTransactions.reduce(
     (acc, tx) => acc + tx.platformCut,
     0,
-  );
+  )
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
@@ -65,9 +67,7 @@ export default function AdminCommissionPage() {
                 <Percent className="h-4 w-4 text-amber-700" />
               </div>
               <div>
-                <h2 className="font-bold text-slate-900 text-sm">
-                  Global Rate
-                </h2>
+                <h2 className="font-bold text-slate-900 text-sm">Global Rate</h2>
                 <span className="text-slate-400 text-[11px]">Default Tier</span>
               </div>
             </div>
@@ -102,10 +102,10 @@ export default function AdminCommissionPage() {
             />
 
             <div className="rounded-xl border border-slate-200/70 bg-slate-50/60 p-2.5 text-xs text-slate-600">
-              Deducted at capture:{" "}
+              Deducted at capture:{' '}
               <strong className="text-slate-900">
                 {globalRateInput.percentage}% + $
-                {parseFloat(globalRateInput.flatFee || "0").toFixed(2)}
+                {parseFloat(globalRateInput.flatFee || '0').toFixed(2)}
               </strong>
             </div>
 
@@ -126,12 +126,8 @@ export default function AdminCommissionPage() {
         >
           <div className="flex items-center justify-between border-slate-100 border-b pb-3">
             <div>
-              <h2 className="font-bold text-slate-900 text-sm">
-                VIP Partner Overrides
-              </h2>
-              <p className="text-slate-500 text-xs">
-                Custom negotiated commission agreements
-              </p>
+              <h2 className="font-bold text-slate-900 text-sm">VIP Partner Overrides</h2>
+              <p className="text-slate-500 text-xs">Custom negotiated commission agreements</p>
             </div>
             <Button
               variant="secondary"
@@ -161,16 +157,12 @@ export default function AdminCommissionPage() {
                       colSpan={4}
                       className="px-4 py-8 text-center text-slate-400 text-xs font-sans"
                     >
-                      No custom overrides configured. All partners use the
-                      global tier.
+                      No custom overrides configured. All partners use the global tier.
                     </td>
                   </tr>
                 ) : (
                   state.commissionOverrides.map((ov) => (
-                    <tr
-                      key={ov.salonId}
-                      className="transition-colors hover:bg-slate-50/60"
-                    >
+                    <tr key={ov.salonId} className="transition-colors hover:bg-slate-50/60">
                       <td className="px-4 py-3 font-semibold font-sans text-slate-900">
                         {ov.salonName}
                       </td>
@@ -179,9 +171,7 @@ export default function AdminCommissionPage() {
                           {ov.customRate}% VIP
                         </span>
                       </td>
-                      <td className="px-4 py-3 font-sans text-slate-600 text-xs">
-                        {ov.note}
-                      </td>
+                      <td className="px-4 py-3 font-sans text-slate-600 text-xs">{ov.note}</td>
                       <td className="px-4 py-3 text-right font-sans">
                         <button
                           type="button"
@@ -208,9 +198,7 @@ export default function AdminCommissionPage() {
       >
         <div className="flex items-center justify-between border-slate-100 border-b pb-3">
           <div>
-            <h2 className="font-bold text-slate-900 text-sm">
-              Fee Split Ledger
-            </h2>
+            <h2 className="font-bold text-slate-900 text-sm">Fee Split Ledger</h2>
             <p className="text-slate-500 text-xs">
               Platform fees retained on captured reservations
             </p>
@@ -236,19 +224,10 @@ export default function AdminCommissionPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {state.commissionTransactions.map((tx) => (
-                <tr
-                  key={tx.id}
-                  className="transition-colors hover:bg-slate-50/60"
-                >
-                  <td className="px-4 py-3 font-semibold text-slate-900 font-sans">
-                    {tx.id}
-                  </td>
-                  <td className="px-4 py-3 font-sans text-slate-700">
-                    {tx.salonName}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {formatUsd(tx.bookingAmount)}
-                  </td>
+                <tr key={tx.id} className="transition-colors hover:bg-slate-50/60">
+                  <td className="px-4 py-3 font-semibold text-slate-900 font-sans">{tx.id}</td>
+                  <td className="px-4 py-3 font-sans text-slate-700">{tx.salonName}</td>
+                  <td className="px-4 py-3 text-slate-700">{formatUsd(tx.bookingAmount)}</td>
                   <td className="px-4 py-3 text-amber-800 font-semibold">
                     {formatUsd(tx.capturedFee)}
                   </td>
@@ -260,9 +239,7 @@ export default function AdminCommissionPage() {
                   </td>
                   <td className="px-4 py-3 text-slate-500">
                     <div className="flex items-center gap-1">
-                      <span className="text-[11px] truncate max-w-[130px]">
-                        {tx.paypalRef}
-                      </span>
+                      <span className="text-[11px] truncate max-w-[130px]">{tx.paypalRef}</span>
                       <button
                         type="button"
                         onClick={() => handleCopy(tx.id, tx.paypalRef)}
@@ -277,9 +254,7 @@ export default function AdminCommissionPage() {
                       </button>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-[11px] text-slate-400 font-sans">
-                    {tx.timestamp}
-                  </td>
+                  <td className="px-4 py-3 text-[11px] text-slate-400 font-sans">{tx.timestamp}</td>
                 </tr>
               ))}
             </tbody>
@@ -287,5 +262,5 @@ export default function AdminCommissionPage() {
         </div>
       </Card>
     </div>
-  );
+  )
 }

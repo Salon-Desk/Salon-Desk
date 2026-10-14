@@ -38,10 +38,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "components/icons/**",
-        "components/forms/picker/PickerCloseButton.tsx"
-      ],
+      "includes": ["components/icons/**", "components/forms/picker/PickerCloseButton.tsx"],
       "linter": {
         "rules": {
           "a11y": {

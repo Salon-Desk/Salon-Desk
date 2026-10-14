@@ -1,74 +1,70 @@
-"use client";
-import { useState } from "react";
-import {
-  Controller,
-  type ControllerRenderProps,
-  useFormContext,
-} from "react-hook-form";
+'use client'
+import { useState } from 'react'
+import { Controller, type ControllerRenderProps, useFormContext } from 'react-hook-form'
 
 import {
+  formControlInputClassName,
   FormFieldError,
+  formFieldHtmlIds,
   FormFieldLabel,
   FormFieldRoot,
-  formControlInputClassName,
-  formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
+} from '@/components/forms/form-field-parts'
 
 interface IProps {
-  name: string;
-  label: string;
-  isRequired?: boolean;
-  placeholder?: string;
-  allowDecimal?: boolean;
-  emptyAsZero?: boolean;
+  name: string
+  label: string
+  isRequired?: boolean
+  placeholder?: string
+  allowDecimal?: boolean
+  emptyAsZero?: boolean
 }
 
 /** Strip anything that is not a digit (plus a single dot when decimals are allowed). */
 function sanitizeInput(value: string, allowDecimal: boolean): string {
   if (!allowDecimal) {
-    return value.replace(/\D/g, "");
+    return value.replace(/\D/g, '')
   }
 
-  const cleaned = value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
+  const cleaned = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')
   // Drop leading zeros ("020" → "20") while keeping "0" and "0.5" intact.
-  if (cleaned.length > 1 && cleaned.startsWith("0") && cleaned[1] !== ".") {
-    return cleaned.replace(/^0+/, "") || "0";
+  if (cleaned.length > 1 && cleaned.startsWith('0') && cleaned[1] !== '.') {
+    return cleaned.replace(/^0+/, '') || '0'
   }
-  return cleaned;
+  return cleaned
 }
 
 function formatGrouped(value: string | number): string {
-  const num = Number(value);
+  const num = Number(value)
   if (Number.isNaN(num)) {
-    return "";
+    return ''
   }
-  return new Intl.NumberFormat("en-US").format(num);
+  return new Intl.NumberFormat('en-US').format(num)
 }
 
 /** Render the form value as input text (used for the initial value and external updates). */
 function toDisplayValue(value: unknown, allowDecimal: boolean): string {
-  if (value === undefined || value === null || value === "") {
-    return "";
+  if (value === undefined || value === null || value === '') {
+    return ''
   }
   if (allowDecimal) {
-    return String(value);
+    return String(value)
   }
-  return formatGrouped(value as string | number);
+  return formatGrouped(value as string | number)
 }
 
 interface NumberFieldInputProps {
-  value: unknown;
-  onChange: (value: unknown) => void;
-  onBlur: () => void;
-  inputRef: ControllerRenderProps["ref"];
-  controlId: string;
-  errorId: string;
-  hasError: boolean;
-  allowDecimal: boolean;
-  emptyAsZero: boolean;
-  placeholder?: string;
-  inputProps: React.InputHTMLAttributes<HTMLInputElement>;
-  onValueCleared: () => void;
+  value: unknown
+  onChange: (value: unknown) => void
+  onBlur: () => void
+  inputRef: ControllerRenderProps['ref']
+  controlId: string
+  errorId: string
+  hasError: boolean
+  allowDecimal: boolean
+  emptyAsZero: boolean
+  placeholder?: string
+  inputProps: React.InputHTMLAttributes<HTMLInputElement>
+  onValueCleared: () => void
 }
 
 /**
@@ -90,72 +86,68 @@ const NumberFieldInput = ({
   inputProps,
   onValueCleared,
 }: NumberFieldInputProps) => {
-  const [draft, setDraft] = useState(() => toDisplayValue(value, allowDecimal));
-  const [lastEmitted, setLastEmitted] = useState(value);
-  const [prevValue, setPrevValue] = useState(value);
+  const [draft, setDraft] = useState(() => toDisplayValue(value, allowDecimal))
+  const [lastEmitted, setLastEmitted] = useState(value)
+  const [prevValue, setPrevValue] = useState(value)
 
   if (value !== prevValue) {
-    setPrevValue(value);
+    setPrevValue(value)
     if (value !== lastEmitted) {
-      setLastEmitted(value);
-      setDraft(toDisplayValue(value, allowDecimal));
+      setLastEmitted(value)
+      setDraft(toDisplayValue(value, allowDecimal))
     }
   }
 
   const selectWhenZero = (input: HTMLInputElement) => {
-    if (draft === "0") {
-      requestAnimationFrame(() => input.select());
+    if (draft === '0') {
+      requestAnimationFrame(() => input.select())
     }
-  };
+  }
 
   return (
     <input
       ref={inputRef}
       id={controlId}
       type="text"
-      inputMode={allowDecimal ? "decimal" : "numeric"}
+      inputMode={allowDecimal ? 'decimal' : 'numeric'}
       placeholder={placeholder}
       aria-invalid={hasError}
       aria-describedby={hasError ? errorId : undefined}
       {...inputProps}
       value={draft}
       onFocus={(e) => {
-        selectWhenZero(e.target);
-        inputProps.onFocus?.(e);
+        selectWhenZero(e.target)
+        inputProps.onFocus?.(e)
       }}
       onClick={(e) => {
-        selectWhenZero(e.currentTarget);
-        inputProps.onClick?.(e);
+        selectWhenZero(e.currentTarget)
+        inputProps.onClick?.(e)
       }}
       onChange={(e) => {
-        const sanitized = sanitizeInput(e.target.value, allowDecimal);
-        setDraft(
-          allowDecimal || sanitized === ""
-            ? sanitized
-            : formatGrouped(sanitized),
-        );
+        const sanitized = sanitizeInput(e.target.value, allowDecimal)
+        setDraft(allowDecimal || sanitized === '' ? sanitized : formatGrouped(sanitized))
 
         const nextValue =
-          sanitized === ""
+          sanitized === ''
             ? emptyAsZero
               ? 0
               : undefined
             : allowDecimal
               ? sanitized
-              : Number(sanitized);
+              : Number(sanitized)
 
-        setLastEmitted(nextValue);
-        onChange(nextValue);
-        onValueCleared();
+        setLastEmitted(nextValue)
+        onChange(nextValue)
+        onValueCleared()
       }}
       onBlur={(e) => {
-        onBlur();
-        inputProps.onBlur?.(e);
+        onBlur()
+        inputProps.onBlur?.(e)
       }}
       className={formControlInputClassName({ hasError })}
     />
-  );
-};
+  )
+}
 
 const RHFNumberField = ({
   name,
@@ -166,23 +158,19 @@ const RHFNumberField = ({
   emptyAsZero = false,
   ...other
 }: IProps & React.InputHTMLAttributes<HTMLInputElement>) => {
-  const { control, clearErrors } = useFormContext();
-  const { controlId, errorId } = formFieldHtmlIds(name);
+  const { control, clearErrors } = useFormContext()
+  const { controlId, errorId } = formFieldHtmlIds(name)
 
   return (
     <Controller
       name={name}
       control={control}
       render={({ field, fieldState: { error } }) => {
-        const { value, onChange, onBlur, ref } = field;
+        const { value, onChange, onBlur, ref } = field
         return (
           <FormFieldRoot>
             {label ? (
-              <FormFieldLabel
-                htmlFor={controlId}
-                label={label}
-                isRequired={isRequired}
-              />
+              <FormFieldLabel htmlFor={controlId} label={label} isRequired={isRequired} />
             ) : null}
 
             <NumberFieldInput
@@ -200,14 +188,12 @@ const RHFNumberField = ({
               onValueCleared={() => clearErrors(name)}
             />
 
-            {error ? (
-              <FormFieldError id={errorId} message={error.message ?? ""} />
-            ) : null}
+            {error ? <FormFieldError id={errorId} message={error.message ?? ''} /> : null}
           </FormFieldRoot>
-        );
+        )
       }}
     />
-  );
-};
+  )
+}
 
-export default RHFNumberField;
+export default RHFNumberField

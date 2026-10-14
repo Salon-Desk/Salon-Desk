@@ -1,59 +1,57 @@
-"use client";
+'use client'
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { type ReactNode, useEffect } from "react";
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { type ReactNode, useEffect } from 'react'
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils'
 
 export type TabItem = {
-  label: string;
-  value?: string;
-};
+  label: string
+  value?: string
+}
 
 type CustomTabWithoutContentProps = {
-  tabs: TabItem[];
-  activeTab: number;
-  onTabChange: (index: number) => void;
-  queryKey?: string;
-  rightSlot?: ReactNode;
-};
+  tabs: TabItem[]
+  activeTab: number
+  onTabChange: (index: number) => void
+  queryKey?: string
+  rightSlot?: ReactNode
+}
 
 const CustomTabWithoutContent = ({
   tabs,
   activeTab,
   onTabChange,
-  queryKey = "tab",
+  queryKey = 'tab',
   rightSlot,
 }: CustomTabWithoutContentProps) => {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
-    const param = searchParams.get(queryKey);
+    const param = searchParams.get(queryKey)
     if (!param) {
-      return;
+      return
     }
 
-    const index = tabs.findIndex(
-      (t) => (t.value ?? t.label.toLowerCase()) === param,
-    );
+    const index = tabs.findIndex((t) => (t.value ?? t.label.toLowerCase()) === param)
 
     if (index >= 0 && index !== activeTab) {
-      onTabChange(index);
+      onTabChange(index)
     }
-  }, [searchParams, queryKey, tabs, activeTab, onTabChange]);
+  }, [searchParams, queryKey, tabs, activeTab, onTabChange])
 
   const handleTabChange = (index: number) => {
-    onTabChange(index);
+    onTabChange(index)
 
-    const tabValue = tabs[index].value ?? tabs[index].label.toLowerCase();
+    const tabValue = tabs[index].value ?? tabs[index].label.toLowerCase()
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.set(queryKey, tabValue);
+    const params = new URLSearchParams(searchParams.toString())
+    params.set(queryKey, tabValue)
 
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  };
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
 
   return (
     <div className="flex w-full min-w-0 flex-col">
@@ -67,10 +65,10 @@ const CustomTabWithoutContent = ({
                   key={tab.value ?? tab.label}
                   onClick={() => handleTabChange(index)}
                   className={cn(
-                    "flex shrink-0 cursor-pointer items-center rounded-2xl border-b-2 border-transparent px-4 py-2.5 text-[16px] transition",
+                    'flex shrink-0 cursor-pointer items-center rounded-2xl border-b-2 border-transparent px-4 py-2.5 text-[16px] transition',
                     index === activeTab
-                      ? "bg-primary font-semibold text-white"
-                      : "border border-light-text bg-background font-normal text-foreground",
+                      ? 'bg-primary font-semibold text-white'
+                      : 'border border-light-text bg-background font-normal text-foreground',
                   )}
                 >
                   {tab.label}
@@ -83,7 +81,7 @@ const CustomTabWithoutContent = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default CustomTabWithoutContent;
+export default CustomTabWithoutContent

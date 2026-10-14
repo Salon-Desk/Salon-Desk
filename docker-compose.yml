@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: salondesk_db
     restart: unless-stopped
     environment:
@@ -22,6 +22,15 @@ services:
       retries: 10
       start_period: 10s
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: salondesk_ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
   api:
     build:
       context: ./backend
@@ -35,6 +44,8 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-salondesk}
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_BASE_URL: http://ollama:11434/v1
     ports:
       - "${API_PORT:-8000}:8000"
     healthcheck:
@@ -43,6 +54,25 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  voice-agent:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: salondesk_voice_agent
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-salondesk}
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_BASE_URL: http://ollama:11434/v1
+    entrypoint: ["python", "agent.py", "start"]
 
   web:
     build:
@@ -57,9 +87,9 @@ services:
       - .env
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "${WEB_PORT:-3000}:3000"
 
 volumes:
   pgdata:
+  ollama_data:

@@ -1,37 +1,28 @@
-"use client";
+'use client'
 
-import { Controller, useFormContext } from "react-hook-form";
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
-  FormFieldError,
-  FormFieldLabel,
-  FormFieldRoot,
   formControlOtpGroupClassName,
   formControlOtpSlotClassName,
+  FormFieldError,
   formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
-import { cn } from "@/lib/utils";
+  FormFieldLabel,
+  FormFieldRoot,
+} from '@/components/forms/form-field-parts'
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
+import { cn } from '@/lib/utils'
 
 interface RHFOTPProps {
-  name: string;
-  label?: string;
-  maxLength?: number;
-  isRequired?: boolean;
+  name: string
+  label?: string
+  maxLength?: number
+  isRequired?: boolean
 }
 
-const RHFOTP = ({
-  name,
-  label,
-  maxLength = 6,
-  isRequired = true,
-}: RHFOTPProps) => {
-  const { control } = useFormContext();
-  const { errorId } = formFieldHtmlIds(name);
+const RHFOTP = ({ name, label, maxLength = 6, isRequired = true }: RHFOTPProps) => {
+  const { control } = useFormContext()
+  const { errorId } = formFieldHtmlIds(name)
 
   return (
     <Controller
@@ -39,9 +30,7 @@ const RHFOTP = ({
       control={control}
       render={({ field, fieldState: { error } }) => (
         <FormFieldRoot>
-          {label ? (
-            <FormFieldLabel label={label} isRequired={isRequired} />
-          ) : null}
+          {label ? <FormFieldLabel label={label} isRequired={isRequired} /> : null}
 
           <div
             className="w-full min-w-0"
@@ -50,7 +39,7 @@ const RHFOTP = ({
           >
             <InputOTP
               maxLength={maxLength}
-              value={field.value || ""}
+              value={field.value || ''}
               onChange={field.onChange}
               containerClassName="w-full"
             >
@@ -67,7 +56,7 @@ const RHFOTP = ({
                     index={index}
                     className={cn(
                       formControlOtpSlotClassName,
-                      error ? "border-destructive" : "border-border",
+                      error ? 'border-destructive' : 'border-border',
                     )}
                   />
                 ))}
@@ -75,13 +64,11 @@ const RHFOTP = ({
             </InputOTP>
           </div>
 
-          {error ? (
-            <FormFieldError id={errorId} message={error.message ?? ""} />
-          ) : null}
+          {error ? <FormFieldError id={errorId} message={error.message ?? ''} /> : null}
         </FormFieldRoot>
       )}
     />
-  );
-};
+  )
+}
 
-export default RHFOTP;
+export default RHFOTP

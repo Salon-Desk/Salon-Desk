@@ -1,26 +1,26 @@
-import { getPublicAbsoluteURL } from "@/lib/utils";
+import { getPublicAbsoluteURL } from '@/lib/utils'
 
 export function isRemoteImageSrc(src?: string | null): boolean {
   if (!src) {
-    return false;
+    return false
   }
-  return /^(https?:|data:|blob:)/.test(src);
+  return /^(https?:|data:|blob:)/.test(src)
 }
 
 export function shouldUnoptimizeImage(src?: string | null): boolean {
   if (!src) {
-    return false;
+    return false
   }
-  return src.startsWith("blob:") || src.startsWith("data:");
+  return src.startsWith('blob:') || src.startsWith('data:')
 }
 
-export function resolveImageSrc(src?: string | null, fallback = ""): string {
-  const resolved = src?.trim() ? src : fallback;
+export function resolveImageSrc(src?: string | null, fallback = ''): string {
+  const resolved = src?.trim() ? src : fallback
   if (!resolved) {
-    return "";
+    return ''
   }
-  if (isRemoteImageSrc(resolved) || resolved.startsWith("/")) {
-    return getPublicAbsoluteURL(resolved);
+  if (isRemoteImageSrc(resolved) || resolved.startsWith('/')) {
+    return getPublicAbsoluteURL(resolved)
   }
-  return getPublicAbsoluteURL(`/${resolved}`);
+  return getPublicAbsoluteURL(`/${resolved}`)
 }

@@ -1,6 +1,7 @@
-"use client";
+'use client'
 
-import type { FormEvent } from "react";
+import type { FormEvent } from 'react'
+
 import {
   Button,
   ConfirmDialog,
@@ -10,49 +11,49 @@ import {
   SelectField,
   TextareaField,
   TextField,
-} from "@/components/ui";
-import type { SalonService } from "@/types";
+} from '@/components/ui'
+import type { SalonService } from '@/types'
 
 export interface ServiceFormState {
-  name: string;
-  category: SalonService["category"];
-  durationMin: number;
-  price: number;
-  holdDeposit: number;
-  noShowFee: number;
-  description: string;
+  name: string
+  category: SalonService['category']
+  durationMin: number
+  price: number
+  holdDeposit: number
+  noShowFee: number
+  description: string
 }
 
 export const DEFAULT_SERVICE_FORM: ServiceFormState = {
-  name: "",
-  category: "Braids & Locs",
+  name: '',
+  category: 'Braids & Locs',
   durationMin: 120,
   price: 120,
   holdDeposit: 120,
   noShowFee: 30,
-  description: "",
-};
+  description: '',
+}
 
-const SERVICE_CATEGORIES: SalonService["category"][] = [
-  "Braids & Locs",
-  "Styling & Color",
-  "Haircuts",
-  "Beard & Grooming",
-  "Spa & Facial",
-];
+const SERVICE_CATEGORIES: SalonService['category'][] = [
+  'Braids & Locs',
+  'Styling & Color',
+  'Haircuts',
+  'Beard & Grooming',
+  'Spa & Facial',
+]
 
 interface ServiceFormModalProps {
-  editingService: SalonService | null;
-  form: ServiceFormState;
-  onChange: (next: ServiceFormState) => void;
-  onClose: () => void;
-  onSubmit: (event: FormEvent) => void;
+  editingService: SalonService | null
+  form: ServiceFormState
+  onChange: (next: ServiceFormState) => void
+  onClose: () => void
+  onSubmit: (event: FormEvent) => void
 }
 
 interface DeleteServiceModalProps {
-  service: SalonService;
-  onClose: () => void;
-  onConfirm: () => void;
+  service: SalonService
+  onClose: () => void
+  onConfirm: () => void
 }
 
 export function ServiceFormModal({
@@ -66,11 +67,7 @@ export function ServiceFormModal({
     <Modal
       onClose={onClose}
       size="md"
-      title={
-        editingService
-          ? `Edit Service: ${editingService.name}`
-          : "Create New Salon Service"
-      }
+      title={editingService ? `Edit Service: ${editingService.name}` : 'Create New Salon Service'}
     >
       <form onSubmit={onSubmit} className="space-y-3 text-xs">
         <TextField
@@ -88,7 +85,7 @@ export function ServiceFormModal({
             onChange={(category) =>
               onChange({
                 ...form,
-                category: category as SalonService["category"],
+                category: category as SalonService['category'],
               })
             }
             options={SERVICE_CATEGORIES.map((category) => ({
@@ -110,9 +107,7 @@ export function ServiceFormModal({
             label="Price ($)"
             value={form.price}
             min={10}
-            onChange={(price) =>
-              onChange({ ...form, price, holdDeposit: price })
-            }
+            onChange={(price) => onChange({ ...form, price, holdDeposit: price })}
           />
           <NumberField
             label="Hold Deposit ($)"
@@ -141,19 +136,15 @@ export function ServiceFormModal({
             Cancel
           </Button>
           <Button type="submit" variant="primary">
-            {editingService ? "Update Service" : "Create Service"}
+            {editingService ? 'Update Service' : 'Create Service'}
           </Button>
         </FormActions>
       </form>
     </Modal>
-  );
+  )
 }
 
-export function DeleteServiceModal({
-  service,
-  onClose,
-  onConfirm,
-}: DeleteServiceModalProps) {
+export function DeleteServiceModal({ service, onClose, onConfirm }: DeleteServiceModalProps) {
   return (
     <ConfirmDialog
       title={`Delete Service: ${service.name}`}
@@ -162,5 +153,5 @@ export function DeleteServiceModal({
       onConfirm={onConfirm}
       onClose={onClose}
     />
-  );
+  )
 }

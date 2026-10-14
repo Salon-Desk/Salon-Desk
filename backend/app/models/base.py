@@ -9,7 +9,7 @@ from app.core.database import Base
 
 
 class BaseModel(Base):
-    """Shared base model with UUID primary key and timestamps."""
+    """Shared base with UUID primary key and created_at."""
 
     __abstract__ = True
 
@@ -23,6 +23,13 @@ class BaseModel(Base):
         server_default=func.now(),
         nullable=False,
     )
+
+
+class TimestampedModel(BaseModel):
+    """Base with created_at and updated_at."""
+
+    __abstract__ = True
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

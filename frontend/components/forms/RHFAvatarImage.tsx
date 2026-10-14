@@ -1,84 +1,81 @@
-"use client";
+'use client'
 
-import { RotateCcw, UploadIcon, X } from "lucide-react";
-import Image from "next/image";
-import { useCallback, useState } from "react";
-import { useDropzone } from "react-dropzone";
-import { Controller, useFormContext } from "react-hook-form";
+import { RotateCcw, UploadIcon, X } from 'lucide-react'
+import Image from 'next/image'
+import { useCallback, useState } from 'react'
+import { useDropzone } from 'react-dropzone'
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
+  formControlAvatarDropzoneClassName,
   FormFieldError,
+  formFieldHtmlIds,
   FormFieldLabel,
   FormFieldRoot,
-  formControlAvatarDropzoneClassName,
-  formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
-import { resolveImageSrc, shouldUnoptimizeImage } from "@/lib/util/remoteImage";
+} from '@/components/forms/form-field-parts'
+import { resolveImageSrc, shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 
 interface RHFAvatarImageProps {
-  name: string;
-  label?: string;
+  name: string
+  label?: string
 }
 
-const RHFAvatarImage = ({
-  name,
-  label = "Profile Picture",
-}: RHFAvatarImageProps) => {
-  const { control, setValue } = useFormContext();
-  const { controlId, errorId } = formFieldHtmlIds(name);
-  const [lastFile, setLastFile] = useState<File | null>(null);
+const RHFAvatarImage = ({ name, label = 'Profile Picture' }: RHFAvatarImageProps) => {
+  const { control, setValue } = useFormContext()
+  const { controlId, errorId } = formFieldHtmlIds(name)
+  const [lastFile, setLastFile] = useState<File | null>(null)
 
   /** DROP INPUT: only store file — do NOT upload */
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       if (!acceptedFiles?.length) {
-        return;
+        return
       }
-      const file = acceptedFiles[0];
-      setLastFile(file);
-      setValue(name, file); // hold file
+      const file = acceptedFiles[0]
+      setLastFile(file)
+      setValue(name, file) // hold file
     },
     [name, setValue],
-  );
+  )
 
   const dropzone = useDropzone({
     onDrop,
     multiple: false,
-    accept: { "image/*": [".png", ".jpg", ".jpeg"] },
-  });
+    accept: { 'image/*': ['.png', '.jpg', '.jpeg'] },
+  })
 
   /** REMOVE ONLY CLEARS THE FIELD */
   const handleRemove = () => {
-    setLastFile(null);
-    setValue(name, null);
-  };
+    setLastFile(null)
+    setValue(name, null)
+  }
 
   /** RELOAD VALUE FROM LAST FILE */
   const handleRetry = () => {
     if (lastFile) {
-      setValue(name, lastFile);
+      setValue(name, lastFile)
     }
-  };
+  }
 
   return (
     <Controller
       name={name}
       control={control}
       render={({ field, fieldState }) => {
-        const value = field.value as File | string | null;
+        const value = field.value as File | string | null
 
-        const isFile = value instanceof File;
-        const isUrl = typeof value === "string";
+        const isFile = value instanceof File
+        const isUrl = typeof value === 'string'
 
         const preview = (() => {
           if (isFile) {
-            return URL.createObjectURL(value);
+            return URL.createObjectURL(value)
           }
           if (isUrl) {
-            return value;
+            return value
           }
-          return null;
-        })();
+          return null
+        })()
 
         return (
           <FormFieldRoot className="relative flex flex-col items-center gap-3">
@@ -115,8 +112,8 @@ const RHFAvatarImage = ({
               <button
                 type="button"
                 onClick={(e) => {
-                  e.preventDefault();
-                  handleRemove();
+                  e.preventDefault()
+                  handleRemove()
                 }}
                 className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground sm:right-4 sm:top-3"
               >
@@ -152,10 +149,10 @@ const RHFAvatarImage = ({
               </button>
             )}
           </FormFieldRoot>
-        );
+        )
       }}
     />
-  );
-};
+  )
+}
 
-export default RHFAvatarImage;
+export default RHFAvatarImage

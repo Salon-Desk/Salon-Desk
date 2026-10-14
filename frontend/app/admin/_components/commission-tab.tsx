@@ -1,27 +1,19 @@
-"use client";
+'use client'
 
-import { Percent, Plus, Trash2 } from "lucide-react";
-import {
-  Button,
-  Card,
-  FormActions,
-  NumberField,
-  SectionHeading,
-} from "@/components/ui";
-import { formatUsd } from "@/lib/format";
-import type { CommissionOverride, CommissionTransaction } from "@/types";
+import { Percent, Plus, Trash2 } from 'lucide-react'
+
+import { Button, Card, FormActions, NumberField, SectionHeading } from '@/components/ui'
+import { formatUsd } from '@/lib/format'
+import type { CommissionOverride, CommissionTransaction } from '@/types'
 
 interface CommissionTabProps {
-  globalRateInput: { percentage: string; flatFee: string };
-  onGlobalRateInputChange: (next: {
-    percentage: string;
-    flatFee: string;
-  }) => void;
-  onSaveGlobalRate: (event: React.FormEvent) => void;
-  overrides: CommissionOverride[];
-  transactions: CommissionTransaction[];
-  onAddOverride: () => void;
-  onDeleteOverride: (salonId: string) => void;
+  globalRateInput: { percentage: string; flatFee: string }
+  onGlobalRateInputChange: (next: { percentage: string; flatFee: string }) => void
+  onSaveGlobalRate: (event: React.FormEvent) => void
+  overrides: CommissionOverride[]
+  transactions: CommissionTransaction[]
+  onAddOverride: () => void
+  onDeleteOverride: (salonId: string) => void
 }
 
 export function CommissionTab({
@@ -99,19 +91,10 @@ export function CommissionTab({
               </thead>
               <tbody className="divide-y divide-slate-100 font-mono">
                 {overrides.map((ov) => (
-                  <tr
-                    key={ov.salonId}
-                    className="transition-colors hover:bg-slate-50"
-                  >
-                    <td className="px-4 py-3 font-bold font-sans text-slate-900">
-                      {ov.salonName}
-                    </td>
-                    <td className="px-4 py-3 font-bold text-emerald-700">
-                      {ov.customRate}%
-                    </td>
-                    <td className="px-4 py-3 font-sans text-[11px] text-slate-600">
-                      {ov.note}
-                    </td>
+                  <tr key={ov.salonId} className="transition-colors hover:bg-slate-50">
+                    <td className="px-4 py-3 font-bold font-sans text-slate-900">{ov.salonName}</td>
+                    <td className="px-4 py-3 font-bold text-emerald-700">{ov.customRate}%</td>
+                    <td className="px-4 py-3 font-sans text-[11px] text-slate-600">{ov.note}</td>
                     <td className="px-4 py-3 text-right">
                       <button
                         type="button"
@@ -149,30 +132,16 @@ export function CommissionTab({
             <tbody className="divide-y divide-slate-100">
               {transactions.map((tx) => (
                 <tr key={tx.id} className="transition-colors hover:bg-slate-50">
-                  <td className="px-4 py-3 font-bold text-amber-700">
-                    {tx.id}
-                  </td>
-                  <td className="px-4 py-3 font-medium font-sans text-slate-900">
-                    {tx.salonName}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {formatUsd(tx.bookingAmount)}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {formatUsd(tx.capturedFee)}
-                  </td>
+                  <td className="px-4 py-3 font-bold text-amber-700">{tx.id}</td>
+                  <td className="px-4 py-3 font-medium font-sans text-slate-900">{tx.salonName}</td>
+                  <td className="px-4 py-3 text-slate-700">{formatUsd(tx.bookingAmount)}</td>
+                  <td className="px-4 py-3 text-slate-700">{formatUsd(tx.capturedFee)}</td>
                   <td className="px-4 py-3 font-bold text-emerald-700">
                     +{formatUsd(tx.platformCut)}
                   </td>
-                  <td className="px-4 py-3 font-bold text-slate-900">
-                    {formatUsd(tx.netPayout)}
-                  </td>
-                  <td className="px-4 py-3 text-[11px] text-slate-500">
-                    {tx.paypalRef}
-                  </td>
-                  <td className="px-4 py-3 font-sans text-[11px] text-slate-500">
-                    {tx.timestamp}
-                  </td>
+                  <td className="px-4 py-3 font-bold text-slate-900">{formatUsd(tx.netPayout)}</td>
+                  <td className="px-4 py-3 text-[11px] text-slate-500">{tx.paypalRef}</td>
+                  <td className="px-4 py-3 font-sans text-[11px] text-slate-500">{tx.timestamp}</td>
                 </tr>
               ))}
             </tbody>
@@ -180,5 +149,5 @@ export function CommissionTab({
         </div>
       </Card>
     </div>
-  );
+  )
 }

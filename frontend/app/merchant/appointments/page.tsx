@@ -1,13 +1,8 @@
-"use client";
+'use client'
 
-import {
-  Activity,
-  CheckCircle2,
-  Copy,
-  FileSpreadsheet,
-  ShieldCheck,
-} from "lucide-react";
-import { useMemo, useState } from "react";
+import { Activity, CheckCircle2, Copy, FileSpreadsheet, ShieldCheck } from 'lucide-react'
+import { useMemo, useState } from 'react'
+
 import {
   Button,
   Card,
@@ -16,52 +11,48 @@ import {
   HoldStateBadge,
   LedgerActionBadge,
   SearchInput,
-} from "@/components/ui";
-import { formatUsd } from "@/lib/format";
-import { HOLD_STATE_FILTER_LABEL, HOLD_STATES } from "@/lib/status";
-import type { AuditLedgerEntry, Booking, HoldState } from "@/types";
-import { useMerchantContext } from "../_context/merchant-context";
+} from '@/components/ui'
+import { formatUsd } from '@/lib/format'
+import { HOLD_STATE_FILTER_LABEL, HOLD_STATES } from '@/lib/status'
+import type { AuditLedgerEntry, Booking, HoldState } from '@/types'
 
-type AppointmentFilter = "ALL" | HoldState;
+import { useMerchantContext } from '../_context/merchant-context'
+
+type AppointmentFilter = 'ALL' | HoldState
 
 export default function MerchantAppointmentsPage() {
-  const { state, setSelectedBooking, setInspectConsentBooking } =
-    useMerchantContext();
+  const { state, setSelectedBooking, setInspectConsentBooking } = useMerchantContext()
 
-  const [appointmentSearch, setAppointmentSearch] = useState("");
-  const [appointmentFilter, setAppointmentFilter] =
-    useState<AppointmentFilter>("ALL");
-  const [activeView, setActiveView] = useState<"BOOKINGS" | "LEDGER">(
-    "BOOKINGS",
-  );
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [appointmentSearch, setAppointmentSearch] = useState('')
+  const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('ALL')
+  const [activeView, setActiveView] = useState<'BOOKINGS' | 'LEDGER'>('BOOKINGS')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   const filteredAppointments = useMemo(
     () =>
       state.bookings.filter((b) => {
-        const matchesFilter =
-          appointmentFilter === "ALL" || b.status === appointmentFilter;
-        const query = appointmentSearch.toLowerCase();
+        const matchesFilter = appointmentFilter === 'ALL' || b.status === appointmentFilter
+        const query = appointmentSearch.toLowerCase()
         const matchesSearch =
           b.clientName.toLowerCase().includes(query) ||
           b.id.toLowerCase().includes(query) ||
           b.serviceName.toLowerCase().includes(query) ||
-          b.stylistName.toLowerCase().includes(query);
-        return matchesFilter && matchesSearch;
+          b.stylistName.toLowerCase().includes(query)
+        return matchesFilter && matchesSearch
       }),
     [appointmentFilter, appointmentSearch, state.bookings],
-  );
+  )
 
   const bookingColumns: Column<Booking>[] = [
     {
-      key: "id",
-      header: "Booking Ref",
+      key: 'id',
+      header: 'Booking Ref',
       cell: (b) => (
         <div className="flex items-center gap-1.5 font-mono text-xs">
           <span className="font-semibold text-slate-800">{b.id}</span>
@@ -81,46 +72,36 @@ export default function MerchantAppointmentsPage() {
       ),
     },
     {
-      key: "client",
-      header: "Client",
+      key: 'client',
+      header: 'Client',
       cell: (b) => (
         <div>
           <div className="font-bold text-slate-900 text-xs">{b.clientName}</div>
-          <div className="font-mono text-[11px] text-slate-400">
-            {b.clientPhone}
-          </div>
+          <div className="font-mono text-[11px] text-slate-400">{b.clientPhone}</div>
         </div>
       ),
     },
     {
-      key: "service",
-      header: "Service & Stylist",
+      key: 'service',
+      header: 'Service & Stylist',
       cell: (b) => (
         <div>
-          <div className="font-medium text-slate-900 text-xs">
-            {b.serviceName}
-          </div>
+          <div className="font-medium text-slate-900 text-xs">{b.serviceName}</div>
           <div className="text-[11px] text-slate-500">{b.stylistName}</div>
         </div>
       ),
     },
     {
-      key: "slot",
-      header: "Time",
-      cell: (b) => (
-        <span className="font-medium text-slate-700 text-xs">
-          {b.appointmentTime}
-        </span>
-      ),
+      key: 'slot',
+      header: 'Time',
+      cell: (b) => <span className="font-medium text-slate-700 text-xs">{b.appointmentTime}</span>,
     },
     {
-      key: "hold",
-      header: "Protection Hold",
+      key: 'hold',
+      header: 'Protection Hold',
       cell: (b) => (
         <div>
-          <div className="font-bold text-slate-900 text-xs">
-            {formatUsd(b.servicePrice)}
-          </div>
+          <div className="font-bold text-slate-900 text-xs">{formatUsd(b.servicePrice)}</div>
           <div className="text-[11px] text-amber-800 font-mono font-medium">
             Hold: {formatUsd(b.holdAmount)}
           </div>
@@ -128,14 +109,14 @@ export default function MerchantAppointmentsPage() {
       ),
     },
     {
-      key: "status",
-      header: "Status",
+      key: 'status',
+      header: 'Status',
       cell: (b) => <HoldStateBadge status={b.status} />,
     },
     {
-      key: "actions",
-      header: "Actions",
-      align: "right",
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
       cell: (b) => (
         <div className="flex items-center justify-end gap-1.5">
           <button
@@ -157,58 +138,46 @@ export default function MerchantAppointmentsPage() {
         </div>
       ),
     },
-  ];
+  ]
 
   const ledgerColumns: Column<AuditLedgerEntry>[] = [
     {
-      key: "id",
-      header: "Ledger ID",
+      key: 'id',
+      header: 'Ledger ID',
       cell: (entry) => (
-        <span className="font-bold font-mono text-slate-800 text-xs">
-          {entry.id}
-        </span>
+        <span className="font-bold font-mono text-slate-800 text-xs">{entry.id}</span>
       ),
     },
     {
-      key: "booking",
-      header: "Booking Ref",
+      key: 'booking',
+      header: 'Booking Ref',
+      cell: (entry) => <span className="text-slate-500 font-mono text-xs">{entry.bookingId}</span>,
+    },
+    {
+      key: 'client',
+      header: 'Client',
       cell: (entry) => (
-        <span className="text-slate-500 font-mono text-xs">
-          {entry.bookingId}
-        </span>
+        <span className="font-medium text-slate-900 text-xs">{entry.clientName}</span>
       ),
     },
     {
-      key: "client",
-      header: "Client",
-      cell: (entry) => (
-        <span className="font-medium text-slate-900 text-xs">
-          {entry.clientName}
-        </span>
-      ),
-    },
-    {
-      key: "action",
-      header: "Action Rail",
+      key: 'action',
+      header: 'Action Rail',
       cell: (entry) => <LedgerActionBadge action={entry.action} />,
     },
     {
-      key: "amount",
-      header: "Volume",
+      key: 'amount',
+      header: 'Volume',
       cell: (entry) => (
-        <span className="font-bold text-slate-900 text-xs">
-          {formatUsd(entry.amount)}
-        </span>
+        <span className="font-bold text-slate-900 text-xs">{formatUsd(entry.amount)}</span>
       ),
     },
     {
-      key: "debug",
-      header: "PayPal Debug ID",
+      key: 'debug',
+      header: 'PayPal Debug ID',
       cell: (entry) => (
         <div className="flex items-center gap-1">
-          <span className="text-[11px] text-slate-500 font-mono">
-            {entry.paypalDebugId}
-          </span>
+          <span className="text-[11px] text-slate-500 font-mono">{entry.paypalDebugId}</span>
           <button
             type="button"
             onClick={() => handleCopy(entry.id, entry.paypalDebugId)}
@@ -225,17 +194,15 @@ export default function MerchantAppointmentsPage() {
       ),
     },
     {
-      key: "time",
-      header: "Timestamp",
+      key: 'time',
+      header: 'Timestamp',
       cell: (entry) => (
-        <span className="text-[11px] text-slate-400 font-mono">
-          {entry.timestamp}
-        </span>
+        <span className="text-[11px] text-slate-400 font-mono">{entry.timestamp}</span>
       ),
     },
-  ];
+  ]
 
-  const filterOptions: AppointmentFilter[] = ["ALL", ...HOLD_STATES];
+  const filterOptions: AppointmentFilter[] = ['ALL', ...HOLD_STATES]
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300">
@@ -254,11 +221,11 @@ export default function MerchantAppointmentsPage() {
         <div className="flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-xs">
           <button
             type="button"
-            onClick={() => setActiveView("BOOKINGS")}
+            onClick={() => setActiveView('BOOKINGS')}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium text-xs transition-all ${
-              activeView === "BOOKINGS"
-                ? "bg-slate-900 text-white shadow-xs font-semibold"
-                : "text-slate-600 hover:text-slate-900"
+              activeView === 'BOOKINGS'
+                ? 'bg-slate-900 text-white shadow-xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <FileSpreadsheet className="h-3.5 w-3.5" />
@@ -266,11 +233,11 @@ export default function MerchantAppointmentsPage() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveView("LEDGER")}
+            onClick={() => setActiveView('LEDGER')}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium text-xs transition-all ${
-              activeView === "LEDGER"
-                ? "bg-slate-900 text-white shadow-xs font-semibold"
-                : "text-slate-600 hover:text-slate-900"
+              activeView === 'LEDGER'
+                ? 'bg-slate-900 text-white shadow-xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Activity className="h-3.5 w-3.5" />
@@ -299,18 +266,18 @@ export default function MerchantAppointmentsPage() {
               onClick={() => setAppointmentFilter(st)}
               className={`rounded-lg px-2.5 py-1 font-medium text-xs transition-all ${
                 appointmentFilter === st
-                  ? "bg-slate-900 text-white font-semibold"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  ? 'bg-slate-900 text-white font-semibold'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
-              {st === "ALL" ? "All" : HOLD_STATE_FILTER_LABEL[st]}
+              {st === 'ALL' ? 'All' : HOLD_STATE_FILTER_LABEL[st]}
             </button>
           ))}
         </div>
       </div>
 
       {/* Tables */}
-      {activeView === "BOOKINGS" ? (
+      {activeView === 'BOOKINGS' ? (
         <DataTable
           columns={bookingColumns}
           rows={filteredAppointments}
@@ -338,5 +305,5 @@ export default function MerchantAppointmentsPage() {
         </Card>
       )}
     </div>
-  );
+  )
 }

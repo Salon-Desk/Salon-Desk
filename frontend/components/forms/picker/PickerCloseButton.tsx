@@ -1,14 +1,11 @@
-"use client";
+'use client'
 
 type PickerCloseButtonProps = {
-  onClose: () => void;
-  label?: string;
-};
+  onClose: () => void
+  label?: string
+}
 
-export function PickerCloseButton({
-  onClose,
-  label = "Close picker",
-}: PickerCloseButtonProps) {
+export function PickerCloseButton({ onClose, label = 'Close picker' }: PickerCloseButtonProps) {
   return (
     <button
       type="button"
@@ -32,5 +29,5 @@ export function PickerCloseButton({
         <line x1="6" y1="6" x2="18" y2="18" />
       </svg>
     </button>
-  );
+  )
 }

@@ -1,54 +1,50 @@
-"use client";
+'use client'
 
-import { Calendar } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Controller, useFormContext } from "react-hook-form";
+import { Calendar } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
-  FormFieldError,
-  FormFieldLabel,
-  FormFieldRoot,
   formControlInlineIconClassName,
   formControlPopoverTriggerClassName,
   formControlYearPickerContentClassName,
+  FormFieldError,
   formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+  FormFieldLabel,
+  FormFieldRoot,
+} from '@/components/forms/form-field-parts'
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 
 interface RHFYearPickerProps {
-  name: string;
-  label: string;
-  placeholder?: string;
-  isRequired?: boolean;
-  startYear?: number;
-  endYear?: number;
+  name: string
+  label: string
+  placeholder?: string
+  isRequired?: boolean
+  startYear?: number
+  endYear?: number
 }
 
 const RHFYearPicker = ({
   name,
   label,
-  placeholder = "Select Year",
+  placeholder = 'Select Year',
   isRequired = true,
   startYear = 2000,
   endYear = new Date().getFullYear() + 1,
 }: RHFYearPickerProps) => {
-  const { control, clearErrors } = useFormContext();
-  const [open, setOpen] = useState(false);
-  const { controlId, errorId } = formFieldHtmlIds(name);
+  const { control, clearErrors } = useFormContext()
+  const [open, setOpen] = useState(false)
+  const { controlId, errorId } = formFieldHtmlIds(name)
 
   const years = useMemo(() => {
-    const y: number[] = [];
+    const y: number[] = []
     for (let i = endYear; i >= startYear; i--) {
-      y.push(i);
+      y.push(i)
     }
-    return y;
-  }, [startYear, endYear]);
+    return y
+  }, [startYear, endYear])
 
   return (
     <Controller
@@ -56,11 +52,7 @@ const RHFYearPicker = ({
       name={name}
       render={({ field, fieldState: { error } }) => (
         <FormFieldRoot>
-          <FormFieldLabel
-            htmlFor={controlId}
-            label={label}
-            isRequired={isRequired}
-          />
+          <FormFieldLabel htmlFor={controlId} label={label} isRequired={isRequired} />
 
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
@@ -75,14 +67,12 @@ const RHFYearPicker = ({
                     hasError: !!error,
                     empty: !field.value,
                   }),
-                  "font-normal",
+                  'font-normal',
                 )}
               >
-                <span className="min-w-0 truncate">
-                  {field.value || placeholder}
-                </span>
+                <span className="min-w-0 truncate">{field.value || placeholder}</span>
                 <Calendar
-                  className={cn(formControlInlineIconClassName, "opacity-60")}
+                  className={cn(formControlInlineIconClassName, 'opacity-60')}
                   aria-hidden
                 />
               </Button>
@@ -101,15 +91,15 @@ const RHFYearPicker = ({
                     key={year}
                     type="button"
                     onClick={() => {
-                      field.onChange(String(year));
-                      clearErrors(name);
-                      setOpen(false);
+                      field.onChange(String(year))
+                      clearErrors(name)
+                      setOpen(false)
                     }}
                     className={cn(
-                      "rounded-md border px-2 py-2 text-center text-sm transition-colors",
+                      'rounded-md border px-2 py-2 text-center text-sm transition-colors',
                       field.value === year.toString()
-                        ? "border-primary bg-primary font-semibold text-primary-foreground"
-                        : "border-border bg-card hover:bg-accent",
+                        ? 'border-primary bg-primary font-semibold text-primary-foreground'
+                        : 'border-border bg-card hover:bg-accent',
                     )}
                   >
                     {year}
@@ -119,13 +109,11 @@ const RHFYearPicker = ({
             </PopoverContent>
           </Popover>
 
-          {error ? (
-            <FormFieldError id={errorId} message={error.message ?? ""} />
-          ) : null}
+          {error ? <FormFieldError id={errorId} message={error.message ?? ''} /> : null}
         </FormFieldRoot>
       )}
     />
-  );
-};
+  )
+}
 
-export default RHFYearPicker;
+export default RHFYearPicker

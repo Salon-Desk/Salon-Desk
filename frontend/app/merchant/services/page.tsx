@@ -1,38 +1,38 @@
-"use client";
+'use client'
 
-import { Clock, Edit2, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Button, Card, IconButton, SearchInput } from "@/components/ui";
-import { formatUsd } from "@/lib/format";
-import { useMerchantContext } from "../_context/merchant-context";
+import { Clock, Edit2, Plus, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+
+import { Button, Card, IconButton, SearchInput } from '@/components/ui'
+import { formatUsd } from '@/lib/format'
+
+import { useMerchantContext } from '../_context/merchant-context'
 
 export default function MerchantServicesPage() {
-  const { state, openAddService, openEditService, openDeleteService } =
-    useMerchantContext();
+  const { state, openAddService, openEditService, openDeleteService } = useMerchantContext()
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('ALL')
 
   const categories = useMemo(() => {
-    const cats = new Set<string>();
+    const cats = new Set<string>()
     state.services.forEach((s) => {
-      if (s.category) cats.add(s.category);
-    });
-    return ["ALL", ...Array.from(cats)];
-  }, [state.services]);
+      if (s.category) cats.add(s.category)
+    })
+    return ['ALL', ...Array.from(cats)]
+  }, [state.services])
 
   const filteredServices = useMemo(() => {
     return state.services.filter((s) => {
-      const matchesCat =
-        selectedCategory === "ALL" || s.category === selectedCategory;
-      const query = searchQuery.toLowerCase();
+      const matchesCat = selectedCategory === 'ALL' || s.category === selectedCategory
+      const query = searchQuery.toLowerCase()
       const matchesQuery =
         s.name.toLowerCase().includes(query) ||
         s.category.toLowerCase().includes(query) ||
-        s.description?.toLowerCase().includes(query);
-      return matchesCat && matchesQuery;
-    });
-  }, [selectedCategory, searchQuery, state.services]);
+        s.description?.toLowerCase().includes(query)
+      return matchesCat && matchesQuery
+    })
+  }, [selectedCategory, searchQuery, state.services])
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300">
@@ -78,11 +78,11 @@ export default function MerchantServicesPage() {
               onClick={() => setSelectedCategory(cat)}
               className={`rounded-lg px-2.5 py-1 font-medium text-xs transition-all ${
                 selectedCategory === cat
-                  ? "bg-slate-900 text-white font-semibold"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  ? 'bg-slate-900 text-white font-semibold'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
-              {cat === "ALL" ? "All" : cat}
+              {cat === 'ALL' ? 'All' : cat}
             </button>
           ))}
         </div>
@@ -107,20 +107,16 @@ export default function MerchantServicesPage() {
                 </span>
               </div>
 
-              <h3 className="mb-1 font-bold text-base text-slate-900">
-                {srv.name}
-              </h3>
+              <h3 className="mb-1 font-bold text-base text-slate-900">{srv.name}</h3>
               <p className="mb-3 line-clamp-2 text-slate-500 text-xs leading-relaxed">
-                {srv.description || "Styling service."}
+                {srv.description || 'Styling service.'}
               </p>
 
               {/* Price & Hold Box */}
               <div className="space-y-1.5 rounded-xl border border-slate-200/70 bg-slate-50/60 p-3 text-xs">
                 <div className="flex justify-between items-center text-slate-600">
                   <span>Price:</span>
-                  <span className="text-slate-900 font-bold">
-                    {formatUsd(srv.price)}
-                  </span>
+                  <span className="text-slate-900 font-bold">{formatUsd(srv.price)}</span>
                 </div>
                 <div className="flex justify-between items-center text-amber-900 font-medium border-slate-200/60 border-t pt-1">
                   <span>PayPal Hold:</span>
@@ -134,9 +130,7 @@ export default function MerchantServicesPage() {
             </div>
 
             <div className="flex items-center justify-between border-slate-100 border-t pt-3 text-xs">
-              <span className="font-mono text-[10px] text-slate-400">
-                {srv.id}
-              </span>
+              <span className="font-mono text-[10px] text-slate-400">{srv.id}</span>
               <div className="flex items-center gap-1.5">
                 <Button
                   variant="secondary"
@@ -160,5 +154,5 @@ export default function MerchantServicesPage() {
         ))}
       </div>
     </div>
-  );
+  )
 }

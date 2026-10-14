@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Button,
@@ -8,23 +8,23 @@ import {
   SelectField,
   TextareaField,
   TextField,
-} from "@/components/ui";
-import type { TaxonomyCategory } from "@/types";
+} from '@/components/ui'
+import type { TaxonomyCategory } from '@/types'
 
 export interface CategoryFormState {
-  name: string;
-  slug: string;
-  description: string;
-  iconName: string;
-  displayOrder: string;
+  name: string
+  slug: string
+  description: string
+  iconName: string
+  displayOrder: string
 }
 
 interface CategoryModalProps {
-  editingCategory: TaxonomyCategory | null;
-  form: CategoryFormState;
-  onChange: (form: CategoryFormState) => void;
-  onClose: () => void;
-  onSubmit: (event: React.FormEvent) => void;
+  editingCategory: TaxonomyCategory | null
+  form: CategoryFormState
+  onChange: (form: CategoryFormState) => void
+  onClose: () => void
+  onSubmit: (event: React.FormEvent) => void
 }
 
 export function CategoryModal({
@@ -39,9 +39,7 @@ export function CategoryModal({
       onClose={onClose}
       size="sm"
       title={
-        editingCategory
-          ? `Edit Category: ${editingCategory.name}`
-          : "Create Taxonomy Category"
+        editingCategory ? `Edit Category: ${editingCategory.name}` : 'Create Taxonomy Category'
       }
     >
       <form onSubmit={onSubmit} className="space-y-3.5 text-xs">
@@ -81,12 +79,12 @@ export function CategoryModal({
             value={form.iconName}
             onChange={(iconName) => onChange({ ...form, iconName })}
             options={[
-              { value: "Scissors", label: "Scissors" },
-              { value: "Sparkles", label: "Sparkles" },
-              { value: "Palette", label: "Palette" },
-              { value: "Flower2", label: "Flower / Spa" },
-              { value: "Crown", label: "Crown / Shave" },
-              { value: "HeartHandshake", label: "Heart / Bridal" },
+              { value: 'Scissors', label: 'Scissors' },
+              { value: 'Sparkles', label: 'Sparkles' },
+              { value: 'Palette', label: 'Palette' },
+              { value: 'Flower2', label: 'Flower / Spa' },
+              { value: 'Crown', label: 'Crown / Shave' },
+              { value: 'HeartHandshake', label: 'Heart / Bridal' },
             ]}
           />
         </div>
@@ -95,26 +93,20 @@ export function CategoryModal({
           <Button variant="ghost" type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit">
-            {editingCategory ? "Update Category" : "Create Category"}
-          </Button>
+          <Button type="submit">{editingCategory ? 'Update Category' : 'Create Category'}</Button>
         </FormActions>
       </form>
     </Modal>
-  );
+  )
 }
 
 interface DeleteCategoryModalProps {
-  category: TaxonomyCategory;
-  onClose: () => void;
-  onConfirm: () => void;
+  category: TaxonomyCategory
+  onClose: () => void
+  onConfirm: () => void
 }
 
-export function DeleteCategoryModal({
-  category,
-  onClose,
-  onConfirm,
-}: DeleteCategoryModalProps) {
+export function DeleteCategoryModal({ category, onClose, onConfirm }: DeleteCategoryModalProps) {
   return (
     <ConfirmDialog
       title={`Delete Category: ${category.name}`}
@@ -123,5 +115,5 @@ export function DeleteCategoryModal({
       onClose={onClose}
       onConfirm={onConfirm}
     />
-  );
+  )
 }

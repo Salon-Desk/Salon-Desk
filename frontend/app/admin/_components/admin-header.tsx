@@ -1,21 +1,21 @@
-"use client";
+'use client'
 
-import { ArrowLeft, Menu } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { PortalSwitcher } from "@/components/layout/portal-switcher";
-import { ROUTES } from "@/lib/constants";
-import {
-  ADMIN_TAB_TITLES,
-  getAdminTabFromPathname,
-} from "../_constants/admin-nav";
-import type { AdminTabId } from "../_types/admin-types";
+import { ArrowLeft, Menu } from 'lucide-react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+
+import { UserMenu } from '@/components/auth/user-menu'
+import { PortalSwitcher } from '@/components/layout/portal-switcher'
+import { ROUTES } from '@/lib/constants'
+
+import { ADMIN_TAB_TITLES, getAdminTabFromPathname } from '../_constants/admin-nav'
+import type { AdminTabId } from '../_types/admin-types'
 
 interface AdminHeaderProps {
-  activeTab?: AdminTabId;
-  onOpenMobileSidebar: () => void;
-  onResetDemo: () => void;
-  isResetting: boolean;
+  activeTab?: AdminTabId
+  onOpenMobileSidebar: () => void
+  onResetDemo: () => void
+  isResetting: boolean
 }
 
 export function AdminHeader({
@@ -24,8 +24,8 @@ export function AdminHeader({
   onResetDemo,
   isResetting,
 }: AdminHeaderProps) {
-  const pathname = usePathname();
-  const currentTab = explicitTab || getAdminTabFromPathname(pathname);
+  const pathname = usePathname()
+  const currentTab = explicitTab || getAdminTabFromPathname(pathname)
 
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-slate-200/80 border-b bg-white/80 px-4 shadow-xs backdrop-blur-md sm:px-6">
@@ -57,12 +57,10 @@ export function AdminHeader({
           <span className="hidden sm:inline">Hub</span>
         </Link>
 
-        <PortalSwitcher
-          current="admin"
-          onReset={onResetDemo}
-          isResetting={isResetting}
-        />
+        <PortalSwitcher current="admin" onReset={onResetDemo} isResetting={isResetting} />
+
+        <UserMenu portal="admin" />
       </div>
     </header>
-  );
+  )
 }

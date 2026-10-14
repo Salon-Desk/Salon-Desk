@@ -1,13 +1,7 @@
-export { useClipboard } from "./use-clipboard";
-export { type DemoResetStats, useDemoReset } from "./use-demo-reset";
-export { useIsMobile } from "./use-is-mobile";
-export {
-  type PersistentStoreHandle,
-  usePersistentStore,
-} from "./use-persistent-store";
-export {
-  useAdminStore,
-  useClientStore,
-  useMerchantStore,
-} from "./use-portal-stores";
-export { useToast } from "./use-toast";
+export { default as useFormSubmitHandler } from './formHandler'
+export { useClipboard } from './use-clipboard'
+export { type DemoResetStats, useDemoReset } from './use-demo-reset'
+export { useIsMobile } from './use-is-mobile'
+export { type PersistentStoreHandle, usePersistentStore } from './use-persistent-store'
+export { useAdminStore, useClientStore, useMerchantStore } from './use-portal-stores'
+export { useToast } from './use-toast'

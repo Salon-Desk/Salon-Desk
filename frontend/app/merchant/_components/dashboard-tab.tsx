@@ -1,21 +1,23 @@
-"use client";
+'use client'
 
-import { Clock, CreditCard, DollarSign, ShieldCheck } from "lucide-react";
-import { Button, Card, HoldStateBadge, StatCard } from "@/components/ui";
-import type { MerchantSalonInfo } from "@/lib/data/merchant";
-import { formatUsd } from "@/lib/format";
-import type { Booking } from "@/types";
-import type { MerchantTab } from "../_types/merchant-types";
+import { Clock, CreditCard, DollarSign, ShieldCheck } from 'lucide-react'
+
+import { Button, Card, HoldStateBadge, StatCard } from '@/components/ui'
+import type { MerchantSalonInfo } from '@/lib/data/merchant'
+import { formatUsd } from '@/lib/format'
+import type { Booking } from '@/types'
+
+import type { MerchantTab } from '../_types/merchant-types'
 
 interface DashboardTabProps {
-  salon: MerchantSalonInfo;
-  bookings: Booking[];
-  activeHoldsCount: number;
-  activeHoldsVolume: number;
-  capturedRevenue: number;
-  noShowRecovered: number;
-  onSelectBooking: (booking: Booking) => void;
-  onNavigateTab: (tab: MerchantTab) => void;
+  salon: MerchantSalonInfo
+  bookings: Booking[]
+  activeHoldsCount: number
+  activeHoldsVolume: number
+  capturedRevenue: number
+  noShowRecovered: number
+  onSelectBooking: (booking: Booking) => void
+  onNavigateTab: (tab: MerchantTab) => void
 }
 
 export function DashboardTab({
@@ -28,9 +30,7 @@ export function DashboardTab({
   onSelectBooking,
   onNavigateTab,
 }: DashboardTabProps) {
-  const todayBookings = bookings.filter((b) =>
-    b.appointmentTime.includes("Today"),
-  );
+  const todayBookings = bookings.filter((b) => b.appointmentTime.includes('Today'))
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8 animate-in fade-in duration-200">
@@ -76,15 +76,10 @@ export function DashboardTab({
                 Today&apos;s Upcoming Appointments
               </h3>
               <p className="text-slate-600 text-xs">
-                Protected by PayPal authorization holds. Settle or mark no-show
-                when client arrives.
+                Protected by PayPal authorization holds. Settle or mark no-show when client arrives.
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onNavigateTab("calendar")}
-            >
+            <Button variant="ghost" size="sm" onClick={() => onNavigateTab('calendar')}>
               Open Calendar →
             </Button>
           </div>
@@ -97,17 +92,13 @@ export function DashboardTab({
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 text-sm">
-                      {b.clientName}
-                    </span>
+                    <span className="font-bold text-slate-900 text-sm">{b.clientName}</span>
                     <HoldStateBadge status={b.status} />
                   </div>
                   <div className="text-slate-600 text-xs">
-                    {b.serviceName} ·{" "}
-                    <span className="font-semibold text-amber-800">
-                      {b.appointmentTime}
-                    </span>{" "}
-                    · Stylist: {b.stylistName}
+                    {b.serviceName} ·{' '}
+                    <span className="font-semibold text-amber-800">{b.appointmentTime}</span> ·
+                    Stylist: {b.stylistName}
                   </div>
                 </div>
 
@@ -120,11 +111,7 @@ export function DashboardTab({
                       Hold: {formatUsd(b.holdAmount)}
                     </div>
                   </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onSelectBooking(b)}
-                  >
+                  <Button variant="secondary" size="sm" onClick={() => onSelectBooking(b)}>
                     Settlement Drawer →
                   </Button>
                 </div>
@@ -146,9 +133,7 @@ export function DashboardTab({
                 </span>
                 <div className="flex items-center justify-between font-bold font-mono text-amber-800">
                   <span>{salon.paypalMerchantId}</span>
-                  <span className="font-bold text-[10px] text-emerald-700">
-                    VERIFIED ✓
-                  </span>
+                  <span className="font-bold text-[10px] text-emerald-700">VERIFIED ✓</span>
                 </div>
               </Card>
 
@@ -160,10 +145,8 @@ export function DashboardTab({
                   ≥ {salon.cancellationPolicyHours} hours free notice
                 </div>
                 <div className="text-[11px] text-slate-600">
-                  No-show fee:{" "}
-                  <strong className="text-slate-900">
-                    {formatUsd(salon.defaultNoShowFee)}
-                  </strong>
+                  No-show fee:{' '}
+                  <strong className="text-slate-900">{formatUsd(salon.defaultNoShowFee)}</strong>
                 </div>
               </Card>
 
@@ -171,9 +154,7 @@ export function DashboardTab({
                 <span className="font-mono text-[10px] text-slate-500 uppercase">
                   Platform Commission Tier
                 </span>
-                <div className="font-bold text-emerald-700">
-                  {salon.commissionRate}% VIP Rate
-                </div>
+                <div className="font-bold text-emerald-700">{salon.commissionRate}% VIP Rate</div>
                 <div className="text-[10px] text-slate-500">
                   Includes PayPal Orders v2 authorization rails
                 </div>
@@ -181,15 +162,11 @@ export function DashboardTab({
             </div>
           </div>
 
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={() => onNavigateTab("settings")}
-          >
+          <Button variant="secondary" fullWidth onClick={() => onNavigateTab('settings')}>
             Manage PayPal &amp; Policies →
           </Button>
         </Card>
       </div>
     </div>
-  );
+  )
 }

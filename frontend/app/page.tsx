@@ -1,5 +1,5 @@
-import { HubExperience } from "./_components/hub-experience";
+import { HubExperience } from './_components/hub-experience'
 
 export default function HubPage() {
-  return <HubExperience />;
+  return <HubExperience />
 }

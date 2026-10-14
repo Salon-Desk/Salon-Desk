@@ -1,22 +1,22 @@
-import { Fragment } from "react";
+import { Fragment } from 'react'
 
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
-import { SkeletonFormField, SkeletonPageHeader } from "./shared";
+import { SkeletonFormField, SkeletonPageHeader } from './shared'
 
 export type FormSkeletonProps = {
-  className?: string;
+  className?: string
   /** Number of single-column fields (excluding optional full-width rows) */
-  fields?: number;
+  fields?: number
   /** Extra full-width rows (e.g. textarea, file upload) */
-  fullWidthRows?: number;
-  showActions?: boolean;
-  showAvatar?: boolean;
+  fullWidthRows?: number
+  showActions?: boolean
+  showAvatar?: boolean
   /** Horizontal stepper (e.g. add-room wizard) */
-  showStepper?: boolean;
-  stepCount?: number;
-};
+  showStepper?: boolean
+  stepCount?: number
+}
 
 const FormSkeleton = ({
   className,
@@ -28,7 +28,7 @@ const FormSkeleton = ({
   stepCount = 4,
 }: FormSkeletonProps) => {
   return (
-    <div className={cn("flex w-full flex-col gap-6", className)}>
+    <div className={cn('flex w-full flex-col gap-6', className)}>
       {showStepper ? (
         <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:gap-3">
           {Array.from({ length: stepCount }).map((_, i) => (
@@ -71,7 +71,7 @@ const FormSkeleton = ({
         </div>
       ) : null}
     </div>
-  );
-};
+  )
+}
 
-export default FormSkeleton;
+export default FormSkeleton

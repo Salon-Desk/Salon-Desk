@@ -1,142 +1,141 @@
-"use client";
+'use client'
 
-import { Image as ImageIcon, UploadCloud, X } from "lucide-react";
-import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
-import { type FileRejection, useDropzone } from "react-dropzone";
-import { Controller, useFormContext } from "react-hook-form";
+import { Image as ImageIcon, UploadCloud, X } from 'lucide-react'
+import Image from 'next/image'
+import { useCallback, useEffect, useState } from 'react'
+import { type FileRejection, useDropzone } from 'react-dropzone'
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
   FormFieldError,
+  formFieldHtmlIds,
   FormFieldLabel,
   FormFieldRoot,
-  formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
-import { resolveImageSrc, shouldUnoptimizeImage } from "@/lib/util/remoteImage";
+} from '@/components/forms/form-field-parts'
+import { resolveImageSrc, shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 
 interface RHFUploadImageProps {
-  name: string;
-  label?: string;
-  size?: number;
-  defaultValue?: string;
-  maxSizeMB?: number;
-  className?: string;
+  name: string
+  label?: string
+  size?: number
+  defaultValue?: string
+  maxSizeMB?: number
+  className?: string
 }
 
 const RHFUploadImage = ({
   name,
-  label = "Profile Picture",
+  label = 'Profile Picture',
   size = 160,
   defaultValue,
   maxSizeMB = 5,
   className,
 }: RHFUploadImageProps) => {
-  const { control, setValue, watch } = useFormContext();
-  const { controlId, errorId } = formFieldHtmlIds(name);
-  const fieldValue = watch(name);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [prevFieldValue, setPrevFieldValue] = useState(fieldValue);
+  const { control, setValue, watch } = useFormContext()
+  const { controlId, errorId } = formFieldHtmlIds(name)
+  const fieldValue = watch(name)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [prevFieldValue, setPrevFieldValue] = useState(fieldValue)
 
   if (fieldValue !== prevFieldValue) {
-    setPrevFieldValue(fieldValue);
+    setPrevFieldValue(fieldValue)
 
     if (fieldValue instanceof File) {
-      if (previewUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(previewUrl);
+      if (previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
       }
-      setPreviewUrl(URL.createObjectURL(fieldValue));
-    } else if (typeof fieldValue === "string" && fieldValue) {
-      setPreviewUrl(fieldValue);
+      setPreviewUrl(URL.createObjectURL(fieldValue))
+    } else if (typeof fieldValue === 'string' && fieldValue) {
+      setPreviewUrl(fieldValue)
     } else if (!fieldValue) {
-      if (previewUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(previewUrl);
+      if (previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
       }
-      setPreviewUrl(null);
+      setPreviewUrl(null)
     }
   }
 
-  const maxSizeBytes = maxSizeMB * 1024 * 1024;
+  const maxSizeBytes = maxSizeMB * 1024 * 1024
 
   /** HANDLE FILE DROP */
   const onDrop = useCallback(
     (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
       // Handle rejected files (wrong type, too large, etc.)
       if (rejectedFiles.length > 0) {
-        const error = rejectedFiles[0].errors[0];
-        if (error.code === "file-too-large") {
-          alert(`File must be smaller than ${maxSizeMB}MB`);
-        } else if (error.code === "file-invalid-type") {
-          alert("Please upload a valid image file (PNG, JPG, JPEG, WEBP)");
+        const error = rejectedFiles[0].errors[0]
+        if (error.code === 'file-too-large') {
+          alert(`File must be smaller than ${maxSizeMB}MB`)
+        } else if (error.code === 'file-invalid-type') {
+          alert('Please upload a valid image file (PNG, JPG, JPEG, WEBP)')
         }
-        return;
+        return
       }
 
       if (!acceptedFiles?.length) {
-        return;
+        return
       }
 
-      const file = acceptedFiles[0];
+      const file = acceptedFiles[0]
 
       // Additional size check
       if (file.size > maxSizeBytes) {
-        alert(`File must be smaller than ${maxSizeMB}MB`);
-        return;
+        alert(`File must be smaller than ${maxSizeMB}MB`)
+        return
       }
 
       // Create preview URL
-      if (previewUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(previewUrl);
+      if (previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
       }
-      const newPreviewUrl = URL.createObjectURL(file);
-      setPreviewUrl(newPreviewUrl);
+      const newPreviewUrl = URL.createObjectURL(file)
+      setPreviewUrl(newPreviewUrl)
 
       // Set the file value in form
-      setValue(name, file, { shouldValidate: true, shouldDirty: true });
+      setValue(name, file, { shouldValidate: true, shouldDirty: true })
     },
     [name, setValue, maxSizeBytes, maxSizeMB, previewUrl],
-  );
+  )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     multiple: false,
     accept: {
-      "image/*": [".png", ".jpg", ".jpeg", ".webp"],
+      'image/*': ['.png', '.jpg', '.jpeg', '.webp'],
     },
     maxSize: maxSizeBytes,
-  });
+  })
 
   /** Handle remove image */
   const handleRemove = useCallback(
     (e: React.MouseEvent) => {
-      e.stopPropagation(); // Prevent triggering the dropzone
+      e.stopPropagation() // Prevent triggering the dropzone
 
-      if (previewUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(previewUrl);
+      if (previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
       }
-      setPreviewUrl(null);
-      setValue(name, null, { shouldValidate: true, shouldDirty: true });
+      setPreviewUrl(null)
+      setValue(name, null, { shouldValidate: true, shouldDirty: true })
     },
     [name, setValue, previewUrl],
-  );
+  )
 
   /** Clean up preview URL on unmount */
   useEffect(() => {
     return () => {
-      if (previewUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(previewUrl);
+      if (previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
       }
-    };
-  }, [previewUrl]);
+    }
+  }, [previewUrl])
 
   return (
     <Controller
       name={name}
       control={control}
       render={({ fieldState }) => {
-        const hasValue = fieldValue || defaultValue;
+        const hasValue = fieldValue || defaultValue
         const displayPreview =
-          previewUrl ||
-          (typeof defaultValue === "string" ? defaultValue : null);
+          previewUrl || (typeof defaultValue === 'string' ? defaultValue : null)
 
         return (
           <FormFieldRoot className="relative w-full">
@@ -163,8 +162,8 @@ const RHFUploadImage = ({
 									flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed text-center
 									transition-all duration-300
 									bg-secondary/30
-									${isDragActive ? "border-primary bg-primary/5" : "border-primary/20 hover:border-primary/40"}
-									${fieldState.error ? "border-destructive" : ""}
+									${isDragActive ? 'border-primary bg-primary/5' : 'border-primary/20 hover:border-primary/40'}
+									${fieldState.error ? 'border-destructive' : ''}
 									shadow-md hover:shadow-lg
 									${className}
 								`}
@@ -177,7 +176,7 @@ const RHFUploadImage = ({
                       src={resolveImageSrc(displayPreview)}
                       alt="Upload preview"
                       fill
-                      style={{ objectFit: "cover", borderRadius: "0.75rem" }}
+                      style={{ objectFit: 'cover', borderRadius: '0.75rem' }}
                       unoptimized={shouldUnoptimizeImage(displayPreview)}
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity duration-200 rounded-xl flex items-center justify-center text-white text-xs font-medium">
@@ -188,9 +187,7 @@ const RHFUploadImage = ({
                   <div className="flex flex-col items-center gap-2 p-4 text-foreground/60">
                     <ImageIcon size={32} className="text-primary/40" />
                     <UploadCloud size={24} className="text-primary/60" />
-                    <p className="text-xs font-medium">
-                      Drop or click to upload
-                    </p>
+                    <p className="text-xs font-medium">Drop or click to upload</p>
                     <p className="text-[10px] text-foreground/40">
                       PNG, JPG, WEBP (max {maxSizeMB}MB)
                     </p>
@@ -226,10 +223,10 @@ const RHFUploadImage = ({
               />
             ) : null}
           </FormFieldRoot>
-        );
+        )
       }}
     />
-  );
-};
+  )
+}
 
-export default RHFUploadImage;
+export default RHFUploadImage

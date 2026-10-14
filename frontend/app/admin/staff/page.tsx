@@ -1,20 +1,15 @@
-"use client";
+'use client'
 
-import { Plus, Trash2 } from "lucide-react";
-import { Badge, Button, IconButton } from "@/components/ui";
-import { useAdminContext } from "../_context/admin-context";
+import { Plus, Trash2 } from 'lucide-react'
+
+import { Badge, Button, IconButton } from '@/components/ui'
+
+import { useAdminContext } from '../_context/admin-context'
 
 export default function AdminStaffPage() {
-  const {
-    state,
-    setIsInviteUserOpen,
-    handleToggleUserStatus,
-    setDeletingUser,
-  } = useAdminContext();
+  const { state, setIsInviteUserOpen, handleToggleUserStatus, setDeletingUser } = useAdminContext()
 
-  const superAdminsCount = state.platformUsers.filter(
-    (u) => u.role === "Super Admin",
-  ).length;
+  const superAdminsCount = state.platformUsers.filter((u) => u.role === 'Super Admin').length
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300">
@@ -25,8 +20,7 @@ export default function AdminStaffPage() {
             Team &amp; Access Roles
           </h1>
           <p className="text-slate-500 text-xs">
-            {state.platformUsers.length} administrators · {superAdminsCount}{" "}
-            super admins
+            {state.platformUsers.length} administrators · {superAdminsCount} super admins
           </p>
         </div>
 
@@ -56,44 +50,35 @@ export default function AdminStaffPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {state.platformUsers.map((u) => {
-              const isActive = u.status === "ACTIVE";
-              const isCurrent = u.id === state.currentUser.id;
+              const isActive = u.status === 'ACTIVE'
+              const isCurrent = u.id === state.currentUser.id
 
               return (
-                <tr
-                  key={u.id}
-                  className="transition-colors hover:bg-slate-50/60"
-                >
+                <tr key={u.id} className="transition-colors hover:bg-slate-50/60">
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-bold text-white text-xs">
                         {u.name.charAt(0)}
                       </div>
                       <div>
-                        <div className="font-bold text-slate-900 text-xs">
-                          {u.name}
-                        </div>
+                        <div className="font-bold text-slate-900 text-xs">{u.name}</div>
                         {isCurrent ? (
-                          <span className="font-mono text-[10px] text-amber-800">
-                            (You)
-                          </span>
+                          <span className="font-mono text-[10px] text-amber-800">(You)</span>
                         ) : null}
                       </div>
                     </div>
                   </td>
 
-                  <td className="px-5 py-3.5 font-mono text-slate-600">
-                    {u.email}
-                  </td>
+                  <td className="px-5 py-3.5 font-mono text-slate-600">{u.email}</td>
 
                   <td className="px-5 py-3.5">
                     <Badge
                       tone={
-                        u.role === "Super Admin"
-                          ? "amber"
-                          : u.role === "Compliance Officer"
-                            ? "sky"
-                            : "slate"
+                        u.role === 'Super Admin'
+                          ? 'amber'
+                          : u.role === 'Compliance Officer'
+                            ? 'sky'
+                            : 'slate'
                       }
                     >
                       {u.role}
@@ -101,9 +86,7 @@ export default function AdminStaffPage() {
                   </td>
 
                   <td className="px-5 py-3.5">
-                    <Badge tone={isActive ? "emerald" : "rose"}>
-                      {u.status}
-                    </Badge>
+                    <Badge tone={isActive ? 'emerald' : 'rose'}>{u.status}</Badge>
                   </td>
 
                   <td className="px-5 py-3.5 font-mono text-[11px] text-slate-400">
@@ -118,25 +101,25 @@ export default function AdminStaffPage() {
                         disabled={isCurrent}
                         className={`rounded-lg px-2.5 py-1 font-medium text-[11px] transition-colors ${
                           isCurrent
-                            ? "cursor-not-allowed text-slate-300"
+                            ? 'cursor-not-allowed text-slate-300'
                             : isActive
-                              ? "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
-                              : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              ? 'border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                              : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                         }`}
                       >
-                        {isActive ? "Revoke" : "Activate"}
+                        {isActive ? 'Revoke' : 'Activate'}
                       </button>
 
                       <IconButton
                         title={
                           isCurrent
-                            ? "Cannot delete current session"
-                            : "Delete administrator account"
+                            ? 'Cannot delete current session'
+                            : 'Delete administrator account'
                         }
                         tone="danger"
                         disabled={isCurrent}
                         className={`rounded-xl h-7 w-7 ${
-                          isCurrent ? "cursor-not-allowed opacity-30" : ""
+                          isCurrent ? 'cursor-not-allowed opacity-30' : ''
                         }`}
                         onClick={() => setDeletingUser(u)}
                       >
@@ -145,11 +128,11 @@ export default function AdminStaffPage() {
                     </div>
                   </td>
                 </tr>
-              );
+              )
             })}
           </tbody>
         </table>
       </div>
     </div>
-  );
+  )
 }

@@ -1,26 +1,20 @@
-"use client";
+'use client'
 
-import {
-  Button,
-  FormActions,
-  Modal,
-  SelectField,
-  TextField,
-} from "@/components/ui";
-import type { Organization } from "@/types";
+import { Button, FormActions, Modal, SelectField, TextField } from '@/components/ui'
+import type { Organization } from '@/types'
 
 export interface OverrideFormState {
-  salonId: string;
-  customRate: string;
-  note: string;
+  salonId: string
+  customRate: string
+  note: string
 }
 
 interface AddCommissionOverrideModalProps {
-  organizations: Organization[];
-  form: OverrideFormState;
-  onChange: (form: OverrideFormState) => void;
-  onClose: () => void;
-  onSubmit: (event: React.FormEvent) => void;
+  organizations: Organization[]
+  form: OverrideFormState
+  onChange: (form: OverrideFormState) => void
+  onClose: () => void
+  onSubmit: (event: React.FormEvent) => void
 }
 
 export function AddCommissionOverrideModal({
@@ -39,7 +33,7 @@ export function AddCommissionOverrideModal({
           value={form.salonId}
           onChange={(salonId) => onChange({ ...form, salonId })}
           options={[
-            { value: "", label: "Choose a salon..." },
+            { value: '', label: 'Choose a salon...' },
             ...organizations.map((org) => ({
               value: org.id,
               label: org.name,
@@ -71,5 +65,5 @@ export function AddCommissionOverrideModal({
         </FormActions>
       </form>
     </Modal>
-  );
+  )
 }

@@ -1,6 +1,6 @@
 // components/table/Pagination.tsx
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 export const renderPageNumbers = (
   currentPage: number,
   totalPages: number,
@@ -8,46 +8,39 @@ export const renderPageNumbers = (
   pageSize: number,
   setCurrentPage: (page: number) => void,
 ) => {
-  const pageNumbers = [];
-  const maxPageNumbersToShow = 5;
+  const pageNumbers = []
+  const maxPageNumbersToShow = 5
 
-  let startPage = Math.max(
-    1,
-    currentPage - Math.floor(maxPageNumbersToShow / 2),
-  );
-  let endPage = startPage + maxPageNumbersToShow - 1;
+  let startPage = Math.max(1, currentPage - Math.floor(maxPageNumbersToShow / 2))
+  let endPage = startPage + maxPageNumbersToShow - 1
 
   if (endPage > totalPages) {
-    endPage = totalPages;
-    startPage = Math.max(1, endPage - maxPageNumbersToShow + 1);
+    endPage = totalPages
+    startPage = Math.max(1, endPage - maxPageNumbersToShow + 1)
   }
 
   for (let i = startPage; i <= endPage; i++) {
-    pageNumbers.push(i);
+    pageNumbers.push(i)
   }
 
-  const showFirstPage = startPage > 1;
-  const showEllipsesBefore = startPage > 2;
-  const showLastPage = endPage < totalPages;
-  const showEllipsesAfter = endPage < totalPages - 1;
+  const showFirstPage = startPage > 1
+  const showEllipsesBefore = startPage > 2
+  const showLastPage = endPage < totalPages
+  const showEllipsesAfter = endPage < totalPages - 1
 
   // ✅ CALCULATE STATS
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
+  const startItem = (currentPage - 1) * pageSize + 1
+  const endItem = Math.min(currentPage * pageSize, totalItems)
 
   return (
     <div className="px-3 sm:px-5 py-3 shadow-[0px_-1px_4px_0px_#0000000A] flex flex-col md:flex-row justify-between items-center rounded-b-2xl bg-background gap-4">
       {/* ✅ LEFT: STATISTICS */}
       <div className="flex items-center gap-1.5 sm:gap-2">
-        <span className="text-text-color text-xs sm:text-[14px] lg:text-[16px]">
-          Showing
-        </span>
+        <span className="text-text-color text-xs sm:text-[14px] lg:text-[16px]">Showing</span>
         <span className="text-foreground font-extrabold text-base sm:text-lg lg:text-xl">
           {startItem}-{endItem}
         </span>
-        <span className="text-text-color text-xs sm:text-[14px] lg:text-[16px]">
-          of
-        </span>
+        <span className="text-text-color text-xs sm:text-[14px] lg:text-[16px]">of</span>
         <span className="text-foreground font-extrabold text-base sm:text-lg lg:text-xl">
           {totalItems}
         </span>
@@ -89,8 +82,8 @@ export const renderPageNumbers = (
               onClick={() => setCurrentPage(page)}
               className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full border text-sm shrink-0 ${
                 page === currentPage
-                  ? "bg-primary text-primary-foreground border-primary gold-glow"
-                  : "border-border text-foreground hover:bg-muted"
+                  ? 'bg-primary text-primary-foreground border-primary gold-glow'
+                  : 'border-border text-foreground hover:bg-muted'
               }`}
             >
               {page}
@@ -107,8 +100,8 @@ export const renderPageNumbers = (
                 onClick={() => setCurrentPage(totalPages)}
                 className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full border text-sm shrink-0 ${
                   currentPage === totalPages
-                    ? "bg-primary text-primary-foreground border-primary gold-glow"
-                    : "border-border text-foreground hover:bg-muted"
+                    ? 'bg-primary text-primary-foreground border-primary gold-glow'
+                    : 'border-border text-foreground hover:bg-muted'
                 }`}
               >
                 {totalPages}
@@ -128,5 +121,5 @@ export const renderPageNumbers = (
         </button>
       </div>
     </div>
-  );
-};
+  )
+}

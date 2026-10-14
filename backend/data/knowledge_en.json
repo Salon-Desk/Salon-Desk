@@ -1,0 +1,38 @@
+[
+  {
+    "source": "platform_overview",
+    "content": "SalonDesk is a multi-salon booking platform. Clients discover beauty services, organizations manage staff and schedules, and platform admins approve salons and commissions."
+  },
+  {
+    "source": "booking_flow",
+    "content": "To book: choose a salon and service, pick an available time, sign in if needed, accept hold terms, then a PayPal authorization hold reserves the amount until the appointment completes or a no-show fee applies."
+  },
+  {
+    "source": "cancellation_policy",
+    "content": "Default cancellation policy allows free cancel at least 24 hours before start. Late cancel may charge about 25 percent. No-show fee is typically 50 percent of the service price. Exact fees follow the salon active policy."
+  },
+  {
+    "source": "paypal_hold",
+    "content": "SalonDesk uses PayPal authorization holds. Funds are reserved at booking, captured on completion or no-show fee, and voided on free cancellation within the policy window."
+  },
+  {
+    "source": "roles",
+    "content": "Roles include client, org owner, reception, stylist, platform admin, and platform staff. Clients book services. Org roles manage that salon only. Platform roles oversee all organizations."
+  },
+  {
+    "source": "service_capacity",
+    "content": "Each service defines simultaneous capacity — how many clients can receive that service at the same time. Availability also respects organization working hours and existing bookings."
+  },
+  {
+    "source": "change_requests",
+    "content": "Organizations must submit change requests for PayPal account updates and cancellation policy changes. Platform admins approve or reject before changes take effect."
+  },
+  {
+    "source": "voice_assistant",
+    "content": "The SalonDesk voice assistant helps find services and book appointments. It uses retrieved platform data and does not invent prices or open appointment slots without data."
+  },
+  {
+    "source": "support",
+    "content": "If a question is outside verified knowledge, the assistant should say so briefly and suggest using the SalonDesk app catalog or contacting the salon reception."
+  }
+]

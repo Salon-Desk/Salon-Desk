@@ -1,22 +1,19 @@
-"use client";
+'use client'
 
-import { ChevronDown, RotateCcw } from "lucide-react";
-import Link from "next/link";
-import { PORTAL_NAV, type PortalId } from "./portal-nav";
+import { ChevronDown, RotateCcw } from 'lucide-react'
+import Link from 'next/link'
+
+import { PORTAL_NAV, type PortalId } from './portal-nav'
 
 interface PortalSwitcherProps {
-  current: PortalId;
-  onReset?: () => void;
-  isResetting?: boolean;
+  current: PortalId
+  onReset?: () => void
+  isResetting?: boolean
 }
 
 /** Hover dropdown used in portal headers to jump between the three apps. */
-export function PortalSwitcher({
-  current,
-  onReset,
-  isResetting,
-}: PortalSwitcherProps) {
-  const others = PORTAL_NAV.filter((item) => item.id !== current);
+export function PortalSwitcher({ current, onReset, isResetting }: PortalSwitcherProps) {
+  const others = PORTAL_NAV.filter((item) => item.id !== current)
 
   return (
     <div className="group relative">
@@ -32,7 +29,7 @@ export function PortalSwitcher({
           Ecosystem Navigation
         </div>
         {others.map((item) => {
-          const Icon = item.icon;
+          const Icon = item.icon
           return (
             <Link
               key={item.id}
@@ -42,7 +39,7 @@ export function PortalSwitcher({
               <Icon className="h-3.5 w-3.5 text-amber-500" />
               <span>{item.label}</span>
             </Link>
-          );
+          )
         })}
         {onReset && (
           <>
@@ -53,14 +50,12 @@ export function PortalSwitcher({
               disabled={isResetting}
               className="flex w-full items-center gap-2 px-3 py-2 text-left font-medium text-rose-600 text-xs hover:bg-rose-50"
             >
-              <RotateCcw
-                className={`h-3.5 w-3.5 ${isResetting ? "animate-spin" : ""}`}
-              />
+              <RotateCcw className={`h-3.5 w-3.5 ${isResetting ? 'animate-spin' : ''}`} />
               <span>Reset Demo State</span>
             </button>
           </>
         )}
       </div>
     </div>
-  );
+  )
 }

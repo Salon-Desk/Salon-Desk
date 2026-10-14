@@ -1,18 +1,21 @@
-"use client";
+'use client'
 
-import { Calendar, Sparkles } from "lucide-react";
-import Link from "next/link";
-import { Logo } from "@/components/brand/logo";
-import { ROUTES } from "@/lib/constants";
+import { Calendar, Sparkles } from 'lucide-react'
+import Link from 'next/link'
 
-export type ClientTab = "catalog" | "my-bookings";
+import { UserMenu } from '@/components/auth/user-menu'
+import { Logo } from '@/components/brand/logo'
+import { PortalSwitcher } from '@/components/layout/portal-switcher'
+import { ROUTES } from '@/lib/constants'
+
+export type ClientTab = 'catalog' | 'my-bookings'
 
 interface ClientHeaderProps {
-  activeTab: ClientTab;
-  onTabChange: (tab: ClientTab) => void;
-  activeHoldsCount: number;
-  conciergeOpen: boolean;
-  onToggleConcierge: () => void;
+  activeTab: ClientTab
+  onTabChange: (tab: ClientTab) => void
+  activeHoldsCount: number
+  conciergeOpen: boolean
+  onToggleConcierge: () => void
 }
 
 export function ClientHeader({
@@ -37,11 +40,11 @@ export function ClientHeader({
         <nav aria-label="Main" className="hidden md:flex items-center gap-1">
           <button
             type="button"
-            onClick={() => onTabChange("catalog")}
+            onClick={() => onTabChange('catalog')}
             className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "catalog"
-                ? "bg-stone-950 text-white shadow-xs"
-                : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+              activeTab === 'catalog'
+                ? 'bg-stone-950 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
             }`}
           >
             Explore Services
@@ -49,20 +52,20 @@ export function ClientHeader({
 
           <button
             type="button"
-            onClick={() => onTabChange("my-bookings")}
+            onClick={() => onTabChange('my-bookings')}
             className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeTab === "my-bookings"
-                ? "bg-stone-950 text-white shadow-xs"
-                : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+              activeTab === 'my-bookings'
+                ? 'bg-stone-950 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
             }`}
           >
             <span>My Bookings</span>
             {activeHoldsCount > 0 && (
               <span
                 className={`h-4 min-w-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center ${
-                  activeTab === "my-bookings"
-                    ? "bg-amber-400 text-stone-950"
-                    : "bg-stone-200 text-stone-800"
+                  activeTab === 'my-bookings'
+                    ? 'bg-amber-400 text-stone-950'
+                    : 'bg-stone-200 text-stone-800'
                 }`}
               >
                 {activeHoldsCount}
@@ -76,7 +79,7 @@ export function ClientHeader({
           {/* Mobile Quick Bookings link */}
           <button
             type="button"
-            onClick={() => onTabChange("my-bookings")}
+            onClick={() => onTabChange('my-bookings')}
             className="md:hidden flex items-center gap-1 text-xs font-medium text-stone-700 bg-stone-100 px-3 py-1.5 rounded-full cursor-pointer"
           >
             <Calendar className="h-3.5 w-3.5 text-stone-600" />
@@ -93,14 +96,18 @@ export function ClientHeader({
             type="button"
             onClick={onToggleConcierge}
             className={`flex items-center gap-1.5 rounded-full bg-stone-950 hover:bg-stone-800 text-white font-medium px-4 py-2 text-xs transition-all cursor-pointer ${
-              conciergeOpen ? "ring-2 ring-amber-400/60" : ""
+              conciergeOpen ? 'ring-2 ring-amber-400/60' : ''
             }`}
           >
             <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-            <span>AI Concierge</span>
+            <span className="hidden sm:inline">AI Concierge</span>
           </button>
+
+          <PortalSwitcher current="client" />
+
+          <UserMenu portal="client" />
         </div>
       </div>
     </header>
-  );
+  )
 }

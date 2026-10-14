@@ -1,26 +1,81 @@
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Enum, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import BaseModel
+from app.models.base import BaseModel, TimestampedModel
+from app.models.enums import ServiceStatus
 
 
-class Service(BaseModel):
-    __tablename__ = "services"
+class ServiceCategory(TimestampedModel):
+    __tablename__ = "service_category"
 
-    organization_id: Mapped[uuid.UUID] = mapped_column(
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    services = relationship("Service", back_populates="category")
+    commissions = relationship("PlatformCommission", back_populates="service_category")
+
+
+class Service(TimestampedModel):
+    __tablename__ = "service"
+
+    service_category_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("organizations.id"),
+        ForeignKey("service_category.id"),
+        nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(255))
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organization.id"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
-    duration_minutes: Mapped[int] = mapped_column(Integer)
-    max_capacity: Mapped[int] = mapped_column(Integer, default=1)
+    images: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    base_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[ServiceStatus] = mapped_column(
+        Enum(
+            ServiceStatus,
+            name="service_status",
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        default=ServiceStatus.ACTIVE,
+        nullable=False,
+    )
+    cancellation_policy_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("org_cancellation_policy.id"),
+        nullable=True,
+    )
+    simultaneous_capacity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
+    category = relationship("ServiceCategory", back_populates="services")
     organization = relationship("Organization", back_populates="services")
+    cancellation_policy = relationship("OrgCancellationPolicy")
+    givers = relationship("ServiceGiving", back_populates="service")
+
+
+class ServiceGiving(BaseModel):
+    __tablename__ = "service_giving"
+
+    service_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("service.id"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("user.id"),
+        nullable=False,
+        index=True,
+    )
+
+    service = relationship("Service", back_populates="givers")
+    user = relationship("User")

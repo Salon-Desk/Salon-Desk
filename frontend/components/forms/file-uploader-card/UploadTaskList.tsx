@@ -1,9 +1,9 @@
-"use client";
+'use client'
 
-import { Check, RotateCcw } from "lucide-react";
-import Image from "next/image";
+import { Check, RotateCcw } from 'lucide-react'
+import Image from 'next/image'
 
-import { Spinner } from "@/components/ui/spinner";
+import { Spinner } from '@/components/ui/spinner'
 
 import {
   uploadTaskFileNameClassName,
@@ -11,17 +11,17 @@ import {
   uploadTaskListClassName,
   uploadTaskRetryClassName,
   uploadTaskThumbClassName,
-} from "./constants";
-import type { UploadTask } from "./types";
+} from './constants'
+import type { UploadTask } from './types'
 
 interface UploadTaskListProps {
-  tasks: UploadTask[];
-  onRetry: (task: UploadTask) => void;
+  tasks: UploadTask[]
+  onRetry: (task: UploadTask) => void
 }
 
 export function UploadTaskList({ tasks, onRetry }: UploadTaskListProps) {
   if (tasks.length === 0) {
-    return null;
+    return null
   }
 
   return (
@@ -39,11 +39,9 @@ export function UploadTaskList({ tasks, onRetry }: UploadTaskListProps) {
             />
           ) : null}
           <span className={uploadTaskFileNameClassName}>{task.fileName}</span>
-          {task.status === "uploading" ? <Spinner className="h-4 w-4" /> : null}
-          {task.status === "done" ? (
-            <Check size={14} className="shrink-0 text-primary" />
-          ) : null}
-          {task.status === "error" ? (
+          {task.status === 'uploading' ? <Spinner className="h-4 w-4" /> : null}
+          {task.status === 'done' ? <Check size={14} className="shrink-0 text-primary" /> : null}
+          {task.status === 'error' ? (
             <button
               type="button"
               onClick={() => onRetry(task)}
@@ -57,5 +55,5 @@ export function UploadTaskList({ tasks, onRetry }: UploadTaskListProps) {
         </li>
       ))}
     </ul>
-  );
+  )
 }

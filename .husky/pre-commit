@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+set -e
+
+# Staged-file lint/format (frontend + backend)
+pnpm lint-staged
+
+# Full frontend gate when frontend files are staged
+if git diff --cached --name-only --diff-filter=ACMR | grep -q '^frontend/'; then
+  pnpm --dir frontend format
+  pnpm --dir frontend lint
+  pnpm --dir frontend typecheck
+fi
+
+# Full backend gate when backend files are staged
+if git diff --cached --name-only --diff-filter=ACMR | grep -q '^backend/'; then
+  cd backend
+  uv run ruff check .
+  uv run ruff format --check .
+  uv run pytest
+  cd ..
+fi

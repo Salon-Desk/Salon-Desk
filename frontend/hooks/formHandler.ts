@@ -1,24 +1,20 @@
-// /hooks/formHandler.ts
-import { toast } from "sonner";
+import { toast } from 'sonner'
 
-import { toastColor } from "@/constant/toast-color";
-import type { ApiResponse } from "@/types/api";
+import { toastColor } from '@/constant/toast-color'
+import type { ApiResponse } from '@/types/api'
 
-// Type guard to check if the data is of type ApiFunctionWithMethod input
 const isApiFunctionWithMethodData = <T>(
-  data: T | { body: T; method: "POST" | "PUT" | "DELETE" | "PATCH" },
-): data is { body: T; method: "POST" | "PUT" | "DELETE" | "PATCH" } => {
-  return typeof data === "object" && data !== null && "method" in data;
-};
+  data: T | { body: T; method: 'POST' | 'PUT' | 'DELETE' | 'PATCH' },
+): data is { body: T; method: 'POST' | 'PUT' | 'DELETE' | 'PATCH' } => {
+  return typeof data === 'object' && data !== null && 'method' in data
+}
 
 /** Function types for API calls */
-type ApiFunction<T, R = unknown, E = unknown> = (
-  data: T,
-) => Promise<ApiResponse<R, E>>;
+type ApiFunction<T, R = unknown, E = unknown> = (data: T) => Promise<ApiResponse<R, E>>
 type ApiFunctionWithMethod<T, R = unknown, E = unknown> = (data: {
-  body: T;
-  method: "POST" | "PUT" | "DELETE" | "PATCH";
-}) => Promise<ApiResponse<R, E>>;
+  body: T
+  method: 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+}) => Promise<ApiResponse<R, E>>
 
 const useFormSubmitHandler = <T, R = unknown, E = unknown>(
   apiFunction: ApiFunction<T, R, E> | ApiFunctionWithMethod<T, R, E>,
@@ -28,149 +24,164 @@ const useFormSubmitHandler = <T, R = unknown, E = unknown>(
   onError?: (error: E) => void,
 ) => {
   const handleSubmit = async (
-    data: T | { body: T; method: "POST" | "PUT" | "DELETE" | "PATCH" },
+    data: T | { body: T; method: 'POST' | 'PUT' | 'DELETE' | 'PATCH' },
   ): Promise<ApiResponse<R, E>> => {
     try {
-      let response: ApiResponse<R, E>;
+      let response: ApiResponse<R, E>
 
-      // Handle API method overload
       if (isApiFunctionWithMethodData(data)) {
         response = await (apiFunction as ApiFunctionWithMethod<T, R, E>)(
-          data as { body: T; method: "POST" | "PUT" | "DELETE" | "PATCH" },
-        );
+          data as { body: T; method: 'POST' | 'PUT' | 'DELETE' | 'PATCH' },
+        )
       } else {
-        response = await (apiFunction as ApiFunction<T, R, E>)(data);
+        response = await (apiFunction as ApiFunction<T, R, E>)(data)
       }
 
       if (response.error) {
         if (onError) {
-          onError(response.error);
+          onError(response.error)
         }
 
-        const errorMessage = getErrorMessage(response.error);
+        const errorMessage = getErrorMessage(response.error)
 
-        // Special case
-        if (errorMessage.toLowerCase().includes("deactivated")) {
-          return response;
+        if (errorMessage.toLowerCase().includes('deactivated')) {
+          return response
         }
 
-        toast.error(errorMessage, toastColor.error);
+        toast.error(errorMessage, toastColor.error)
       } else {
         if (isSuccessToastVisible) {
           const successMsg =
             (
               response.data as {
-                data?: { message?: string };
-                message?: string;
+                data?: { message?: string; detail?: string }
+                message?: string
+                detail?: string
               }
             )?.data?.message ||
             (response.data as { message?: string })?.message ||
+            (response.data as { detail?: string })?.detail ||
             successMessage ||
-            "Action completed successfully";
+            'Action completed successfully'
 
-          toast.success(successMsg, toastColor.success);
+          toast.success(successMsg, toastColor.success)
         }
-        onSuccess(response);
+        onSuccess(response)
       }
 
-      return response;
+      return response
     } catch (error: unknown) {
-      let errorMessage = "Something went wrong";
-
-      if (typeof error === "object" && error !== null) {
-        const err = error as {
-          data?: {
-            data?: {
-              errors?: Record<string, unknown>;
-              message?: string;
-              error?: string;
-            };
-            message?: string;
-            error?: string | undefined;
-          };
-          message?: string;
-          error?: string | undefined;
-        };
-
-        // ✅ 1. Handle validation errors (like your case)
-        const validationErrors = err?.data?.data?.errors;
-
-        if (validationErrors && typeof validationErrors === "object") {
-          // Normalize field names by replacing dots and underscores with spaces
-          const normalizedErrors: Record<string, unknown> = {};
-          for (const [field, messages] of Object.entries(validationErrors)) {
-            const normalizedField = field.replace(/[._]/g, " ");
-            // Ensure messages is always an array
-            const messagesArray = Array.isArray(messages)
-              ? messages
-              : [messages];
-            normalizedErrors[normalizedField] = messagesArray;
-          }
-          errorMessage = Object.values(normalizedErrors)
-            .flat()
-            .filter((msg): msg is string => typeof msg === "string")
-            .join("\n"); // or ', ' if you prefer inline
-        } else {
-          // ✅ 2. fallback to normal message extraction
-          errorMessage =
-            err?.data?.message ||
-            err?.data?.data?.message ||
-            err?.data?.error ||
-            err?.error ||
-            "Something went wrong";
-        }
-      }
+      const errorMessage = getErrorMessage(error)
 
       if (onError) {
-        onError(error as E);
+        onError(error as E)
       }
 
-      toast.error(errorMessage, toastColor.error);
+      toast.error(errorMessage, toastColor.error)
 
-      return { error: error as E } as ApiResponse<R, E>;
+      return { error: error as E } as ApiResponse<R, E>
     }
-  };
-
-  return handleSubmit;
-};
-
-export default useFormSubmitHandler;
-
-const getErrorMessage = (error: unknown): string => {
-  const err = error as {
-    data?: {
-      message?: string;
-      data?: {
-        errors?: Record<string, string[]>;
-        error_messages?: string[];
-        error?: string;
-      };
-    };
-  };
-
-  const data = err?.data?.data;
-
-  if (data) {
-    if (Array.isArray(data.error_messages) && data.error_messages.length) {
-      return data.error_messages.join("\n");
-    }
-
-    if (data.errors) {
-      // Normalize field names by replacing dots and underscores with spaces
-      const normalizedErrors: Record<string, string[]> = {};
-      for (const [field, messages] of Object.entries(data.errors)) {
-        const normalizedField = field.replace(/[._]/g, " ");
-        // Ensure messages is always an array of strings
-        const messagesArray = Array.isArray(messages)
-          ? messages
-          : [String(messages)];
-        normalizedErrors[normalizedField] = messagesArray;
-      }
-      return Object.values(normalizedErrors).flat().join("\n");
-    }
-
-    return data.error || err?.data?.message || "Something went wrong";
   }
 
-  return err?.data?.message || "Something went wrong";
-};
+  return handleSubmit
+}
+
+export default useFormSubmitHandler
+
+type FastApiDetailItem = {
+  loc?: Array<string | number>
+  msg?: string
+  message?: string
+}
+
+const formatFastApiDetail = (detail: unknown): string | null => {
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail
+  }
+
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (typeof item === 'string') return item
+        const row = item as FastApiDetailItem
+        return row.msg || row.message || null
+      })
+      .filter((msg): msg is string => Boolean(msg))
+    if (messages.length) {
+      return messages.join('\n')
+    }
+  }
+
+  return null
+}
+
+const getErrorMessage = (error: unknown): string => {
+  if (typeof error === 'string' && error.trim()) {
+    return error
+  }
+
+  if (typeof error !== 'object' || error === null) {
+    return 'Something went wrong'
+  }
+
+  const err = error as {
+    data?: {
+      detail?: unknown
+      message?: string
+      error?: string
+      data?: {
+        errors?: Record<string, unknown>
+        error_messages?: string[]
+        error?: string
+        message?: string
+        detail?: unknown
+      }
+    }
+    message?: string | unknown
+    error?: string
+    status?: number
+  }
+
+  const nested = err.data?.data
+  if (nested) {
+    if (Array.isArray(nested.error_messages) && nested.error_messages.length) {
+      return nested.error_messages.join('\n')
+    }
+
+    if (nested.errors && typeof nested.errors === 'object') {
+      const normalizedErrors: Record<string, unknown[]> = {}
+      for (const [field, messages] of Object.entries(nested.errors)) {
+        const normalizedField = field.replace(/[._]/g, ' ')
+        const messagesArray = Array.isArray(messages) ? messages : [messages]
+        normalizedErrors[normalizedField] = messagesArray
+      }
+      const joined = Object.values(normalizedErrors)
+        .flat()
+        .filter((msg): msg is string => typeof msg === 'string')
+        .join('\n')
+      if (joined) return joined
+    }
+
+    const nestedDetail = formatFastApiDetail(nested.detail)
+    if (nestedDetail) return nestedDetail
+
+    if (nested.message) return nested.message
+    if (nested.error) return nested.error
+  }
+
+  const detail = formatFastApiDetail(err.data?.detail)
+  if (detail) return detail
+
+  if (typeof err.message === 'string' && err.message.trim()) {
+    // axiosBaseQuery may put FastAPI detail into message
+    const fromMessage = formatFastApiDetail(err.message)
+    if (fromMessage) return fromMessage
+    return err.message
+  }
+
+  if (err.data?.message) return err.data.message
+  if (err.data?.error) return err.data.error
+  if (err.error) return err.error
+
+  return 'Something went wrong'
+}

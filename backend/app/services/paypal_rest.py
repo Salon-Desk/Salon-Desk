@@ -15,17 +15,13 @@ class PayPalRestClient:
         # Placeholder — implement OAuth client-credentials flow
         return ""
 
-    async def authorize_order(
-        self, *, amount: Decimal, currency: str = "USD"
-    ) -> dict:
+    async def authorize_order(self, *, amount: Decimal, currency: str = "USD") -> dict:
         _ = amount, currency
         async with httpx.AsyncClient() as client:
             _ = client
         return {"status": "not_implemented"}
 
-    async def partial_capture(
-        self, *, authorization_id: str, amount: Decimal
-    ) -> dict:
+    async def partial_capture(self, *, authorization_id: str, amount: Decimal) -> dict:
         _ = authorization_id, amount
         return {"status": "not_implemented"}
 

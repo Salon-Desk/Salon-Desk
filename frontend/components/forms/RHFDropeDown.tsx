@@ -1,22 +1,22 @@
-"use client";
+'use client'
 
-import { ChevronDown, ChevronUp } from "lucide-react";
-import type React from "react";
-import { useEffect, useRef, useState } from "react";
-import { Controller, useFormContext } from "react-hook-form";
+import { ChevronDown, ChevronUp } from 'lucide-react'
+import type React from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
-  FormFieldError,
-  FormFieldLabel,
-  FormFieldRoot,
   formControlChevronClassName,
   formControlComboboxTriggerClassName,
   formControlCommandEmptyClassName,
   formControlCommandInputClassName,
   formControlCommandItemClassName,
   formControlDropdownContentClassName,
+  FormFieldError,
   formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
+  FormFieldLabel,
+  FormFieldRoot,
+} from '@/components/forms/form-field-parts'
 import {
   Command,
   CommandEmpty,
@@ -24,40 +24,34 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 
-import LoadingSpinner from "../loader/LoadingSpinner";
+import LoadingSpinner from '../loader/LoadingSpinner'
 
 interface Options {
-  value: string;
-  label: string;
-  slug?: string;
+  value: string
+  label: string
+  slug?: string
 }
 
 interface RHFDropeDownProps {
-  name: string;
-  namedName?: string;
-  label: string;
-  options: Options[];
-  isLoading?: boolean;
-  isSearchable?: boolean;
-  onNamedNameChange?: (namedName: string) => void;
-  onChange?: (
-    value: string | { id: string; name: string; slug?: string },
-  ) => void;
-  isRequired?: boolean;
-  isObject?: boolean;
-  isOptionalCaptionVisible?: boolean;
-  isRequiredAstrictCaptionVisible?: boolean;
-  className?: string;
-  showLabel?: boolean;
-  disabled?: boolean;
+  name: string
+  namedName?: string
+  label: string
+  options: Options[]
+  isLoading?: boolean
+  isSearchable?: boolean
+  onNamedNameChange?: (namedName: string) => void
+  onChange?: (value: string | { id: string; name: string; slug?: string }) => void
+  isRequired?: boolean
+  isObject?: boolean
+  isOptionalCaptionVisible?: boolean
+  isRequiredAstrictCaptionVisible?: boolean
+  className?: string
+  showLabel?: boolean
+  disabled?: boolean
 }
 
 const RHFDropeDown: React.FC<RHFDropeDownProps> = ({
@@ -77,63 +71,58 @@ const RHFDropeDown: React.FC<RHFDropeDownProps> = ({
   showLabel = true,
   disabled = false,
 }) => {
-  const { control, setValue, clearErrors, watch } = useFormContext();
-  const selectedValue = watch(name);
-  const [, setSelectedLabel] = useState<string | undefined>(namedName);
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const [inputWidth, setInputWidth] = useState<number | undefined>(undefined);
-  const inputRef = useRef<HTMLButtonElement>(null);
-  const { controlId, errorId } = formFieldHtmlIds(name);
+  const { control, setValue, clearErrors, watch } = useFormContext()
+  const selectedValue = watch(name)
+  const [, setSelectedLabel] = useState<string | undefined>(namedName)
+  const [popoverOpen, setPopoverOpen] = useState(false)
+  const [inputWidth, setInputWidth] = useState<number | undefined>(undefined)
+  const inputRef = useRef<HTMLButtonElement>(null)
+  const { controlId, errorId } = formFieldHtmlIds(name)
 
   const handleSelect = (value: string, optLabel: string, slug?: string) => {
     if (disabled) {
-      return;
+      return
     }
 
     if (onChange) {
-      onChange(isObject ? { id: value, name: optLabel, slug } : value);
+      onChange(isObject ? { id: value, name: optLabel, slug } : value)
     }
 
-    setValue(name, isObject ? { id: value, name: optLabel, slug } : value);
-    clearErrors(name);
-    setSelectedLabel(optLabel);
+    setValue(name, isObject ? { id: value, name: optLabel, slug } : value)
+    clearErrors(name)
+    setSelectedLabel(optLabel)
 
     if (namedName) {
-      setValue(namedName, optLabel);
+      setValue(namedName, optLabel)
     }
-    onNamedNameChange?.(optLabel);
+    onNamedNameChange?.(optLabel)
 
-    setPopoverOpen(false);
-  };
+    setPopoverOpen(false)
+  }
 
   useEffect(() => {
-    const updateWidth = () =>
-      inputRef.current && setInputWidth(inputRef.current.offsetWidth);
-    updateWidth();
-    window.addEventListener("resize", updateWidth);
-    return () => window.removeEventListener("resize", updateWidth);
-  }, []);
+    const updateWidth = () => inputRef.current && setInputWidth(inputRef.current.offsetWidth)
+    updateWidth()
+    window.addEventListener('resize', updateWidth)
+    return () => window.removeEventListener('resize', updateWidth)
+  }, [])
 
   const displayValue = isObject
-    ? (selectedValue?.name ?? "")
-    : (options.find((option) => option.value === selectedValue)?.label ??
-      selectedValue ??
-      "");
+    ? (selectedValue?.name ?? '')
+    : (options.find((option) => option.value === selectedValue)?.label ?? selectedValue ?? '')
 
   return (
     <Controller
       name={name}
       control={control}
       render={({ fieldState: { error } }) => (
-        <FormFieldRoot className={cn("w-full", className)}>
+        <FormFieldRoot className={cn('w-full', className)}>
           {label && showLabel ? (
             <FormFieldLabel
               htmlFor={controlId}
               label={label}
               isRequired={isRequired}
-              showRequiredMarker={
-                isRequired ? isRequiredAstrictCaptionVisible : false
-              }
+              showRequiredMarker={isRequired ? isRequiredAstrictCaptionVisible : false}
               showOptionalHint={!isRequired ? isOptionalCaptionVisible : false}
             />
           ) : null}
@@ -155,23 +144,17 @@ const RHFDropeDown: React.FC<RHFDropeDownProps> = ({
                   disabled,
                 })}
               >
-                {displayValue || `Select ${showLabel ? label : ""}`}
+                {displayValue || `Select ${showLabel ? label : ''}`}
 
                 <span className="absolute right-4 top-1/2 -translate-y-1/2">
                   {!popoverOpen ? (
                     <ChevronDown
-                      className={cn(
-                        formControlChevronClassName,
-                        "text-primary",
-                      )}
+                      className={cn(formControlChevronClassName, 'text-primary')}
                       aria-hidden
                     />
                   ) : (
                     <ChevronUp
-                      className={cn(
-                        formControlChevronClassName,
-                        "text-primary",
-                      )}
+                      className={cn(formControlChevronClassName, 'text-primary')}
                       aria-hidden
                     />
                   )}
@@ -205,15 +188,12 @@ const RHFDropeDown: React.FC<RHFDropeDownProps> = ({
                       {options?.map((role) => (
                         <CommandItem
                           key={role.value}
-                          onSelect={() =>
-                            handleSelect(role.value, role.label, role.slug)
-                          }
+                          onSelect={() => handleSelect(role.value, role.label, role.slug)}
                           className={cn(
                             formControlCommandItemClassName,
-                            watch(name)?.id === role?.value ||
-                              watch(name) === role?.value
-                              ? "border-l-2 border-primary"
-                              : "",
+                            watch(name)?.id === role?.value || watch(name) === role?.value
+                              ? 'border-l-2 border-primary'
+                              : '',
                           )}
                         >
                           {role.label}
@@ -226,13 +206,11 @@ const RHFDropeDown: React.FC<RHFDropeDownProps> = ({
             </PopoverContent>
           </Popover>
 
-          {error ? (
-            <FormFieldError id={errorId} message={error.message ?? ""} />
-          ) : null}
+          {error ? <FormFieldError id={errorId} message={error.message ?? ''} /> : null}
         </FormFieldRoot>
       )}
     />
-  );
-};
+  )
+}
 
-export default RHFDropeDown;
+export default RHFDropeDown

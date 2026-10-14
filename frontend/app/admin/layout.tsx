@@ -1,37 +1,33 @@
-"use client";
+'use client'
 
-import { Sparkles, Zap } from "lucide-react";
-import { usePathname } from "next/navigation";
-import { type ReactNode, useState } from "react";
-import { AuthGate } from "@/components/layout/auth-gate";
-import { ConsoleShell } from "@/components/layout/console-shell";
-import { Button, Toast } from "@/components/ui";
-import { AdminHeader } from "./_components/admin-header";
-import { AdminSidebar } from "./_components/admin-sidebar";
-import { AddCommissionOverrideModal } from "./_components/commission-modals";
-import { RejectChangeRequestModal } from "./_components/request-modals";
+import { Sparkles, Zap } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { type ReactNode, useState } from 'react'
+
+import { AuthGate } from '@/components/layout/auth-gate'
+import { ConsoleShell } from '@/components/layout/console-shell'
+import { Button, Toast } from '@/components/ui'
+
+import { AdminHeader } from './_components/admin-header'
+import { AdminSidebar } from './_components/admin-sidebar'
+import { AddCommissionOverrideModal } from './_components/commission-modals'
+import { RejectChangeRequestModal } from './_components/request-modals'
 import {
   AddSalonModal,
   DeleteSalonModal,
   EditSalonModal,
   SuspendSalonModal,
-} from "./_components/salon-modals";
-import { DeleteStaffModal, InviteStaffModal } from "./_components/staff-modals";
-import {
-  CategoryModal,
-  DeleteCategoryModal,
-} from "./_components/taxonomy-modals";
-import {
-  ADMIN_DEMO_EMAIL,
-  ADMIN_DEMO_PASSWORD,
-} from "./_constants/admin-forms";
-import { getAdminTabFromPathname } from "./_constants/admin-nav";
-import { AdminProvider, useAdminContext } from "./_context/admin-context";
+} from './_components/salon-modals'
+import { DeleteStaffModal, InviteStaffModal } from './_components/staff-modals'
+import { CategoryModal, DeleteCategoryModal } from './_components/taxonomy-modals'
+import { ADMIN_DEMO_EMAIL, ADMIN_DEMO_PASSWORD } from './_constants/admin-forms'
+import { getAdminTabFromPathname } from './_constants/admin-nav'
+import { AdminProvider, useAdminContext } from './_context/admin-context'
 
 function AdminLayoutInner({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-  const currentTab = getAdminTabFromPathname(pathname);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const pathname = usePathname()
+  const currentTab = getAdminTabFromPathname(pathname)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
   const {
     state,
@@ -95,7 +91,7 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
     setDeletingUser,
     handleInviteUser,
     handleDeleteUser,
-  } = useAdminContext();
+  } = useAdminContext()
 
   if (!state.authenticated) {
     return (
@@ -106,19 +102,13 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
         password={ADMIN_DEMO_PASSWORD}
         onSignIn={handleJudgeSignIn}
         extraAction={
-          <Button
-            variant="dark"
-            size="lg"
-            fullWidth
-            onClick={handleJudgeSignIn}
-            className="mt-3"
-          >
+          <Button variant="dark" size="lg" fullWidth onClick={handleJudgeSignIn} className="mt-3">
             <Zap className="h-4 w-4 fill-white" />
             1-click demo sign-in
           </Button>
         }
       />
-    );
+    )
   }
 
   return (
@@ -187,8 +177,8 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
           suspensionReason={suspensionReasonInput}
           onReasonChange={setSuspensionReasonInput}
           onClose={() => {
-            setSuspendingSalon(null);
-            setSuspensionReasonInput("");
+            setSuspendingSalon(null)
+            setSuspensionReasonInput('')
           }}
           onConfirm={handleConfirmSuspension}
         />
@@ -208,8 +198,8 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
           reason={crRejectReason}
           onReasonChange={setCrRejectReason}
           onClose={() => {
-            setRejectingCr(null);
-            setCrRejectReason("");
+            setRejectingCr(null)
+            setCrRejectReason('')
           }}
           onConfirm={handleConfirmRejectCR}
         />
@@ -231,8 +221,8 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
           form={categoryForm}
           onChange={setCategoryForm}
           onClose={() => {
-            setIsAddCategoryOpen(false);
-            setEditingCategory(null);
+            setIsAddCategoryOpen(false)
+            setEditingCategory(null)
           }}
           onSubmit={handleSaveCategory}
         />
@@ -263,7 +253,7 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
         />
       )}
     </div>
-  );
+  )
 }
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -271,5 +261,5 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <AdminProvider>
       <AdminLayoutInner>{children}</AdminLayoutInner>
     </AdminProvider>
-  );
+  )
 }

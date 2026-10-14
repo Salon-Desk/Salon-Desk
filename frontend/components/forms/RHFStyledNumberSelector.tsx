@@ -1,20 +1,20 @@
-"use client";
+'use client'
 
-import { Controller, useFormContext } from "react-hook-form";
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
-  FormFieldError,
-  FormFieldLabel,
-  FormFieldRoot,
   formControlNumberChipClassName,
   formControlOptionScrollClassName,
+  FormFieldError,
   formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
+  FormFieldLabel,
+  FormFieldRoot,
+} from '@/components/forms/form-field-parts'
 
 interface IProps {
-  name: string;
-  label: string;
-  isRequired?: boolean;
+  name: string
+  label: string
+  isRequired?: boolean
 }
 
 const RHFStyledNumberSelector = ({
@@ -22,8 +22,8 @@ const RHFStyledNumberSelector = ({
   label,
   isRequired = true,
 }: IProps & React.InputHTMLAttributes<HTMLInputElement>) => {
-  const { control } = useFormContext();
-  const { errorId } = formFieldHtmlIds(name);
+  const { control } = useFormContext()
+  const { errorId } = formFieldHtmlIds(name)
 
   return (
     <Controller
@@ -38,8 +38,8 @@ const RHFStyledNumberSelector = ({
             aria-describedby={error ? errorId : undefined}
           >
             {[...Array(10)].map((_, index) => {
-              const value = index;
-              const isSelected = Number(field.value) === value;
+              const value = index
+              const isSelected = Number(field.value) === value
 
               return (
                 <button
@@ -48,19 +48,17 @@ const RHFStyledNumberSelector = ({
                   onClick={() => field.onChange(value)}
                   className={formControlNumberChipClassName(isSelected)}
                 >
-                  {index === 0 ? "None" : value}
+                  {index === 0 ? 'None' : value}
                 </button>
-              );
+              )
             })}
           </div>
 
-          {error ? (
-            <FormFieldError id={errorId} message={error.message ?? ""} />
-          ) : null}
+          {error ? <FormFieldError id={errorId} message={error.message ?? ''} /> : null}
         </FormFieldRoot>
       )}
     />
-  );
-};
+  )
+}
 
-export default RHFStyledNumberSelector;
+export default RHFStyledNumberSelector

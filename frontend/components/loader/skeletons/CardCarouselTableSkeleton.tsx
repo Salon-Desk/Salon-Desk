@@ -1,5 +1,5 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 import {
   SkeletonPaginationRow,
@@ -7,14 +7,14 @@ import {
   SkeletonTableFrame,
   SkeletonTableHeaderRow,
   SkeletonTableToolbar,
-} from "./shared";
+} from './shared'
 
 export type CardCarouselTableSkeletonProps = {
-  className?: string;
-  cards?: number;
-  tableRows?: number;
-  tableColumns?: number;
-};
+  className?: string
+  cards?: number
+  tableRows?: number
+  tableColumns?: number
+}
 
 function SkeletonMiniDepartmentCard() {
   return (
@@ -26,10 +26,7 @@ function SkeletonMiniDepartmentCard() {
           <div className="flex items-center gap-2">
             <div className="flex -space-x-2">
               {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton
-                  key={i}
-                  className="size-7 rounded-full ring-2 ring-card"
-                />
+                <Skeleton key={i} className="size-7 rounded-full ring-2 ring-card" />
               ))}
             </div>
             <Skeleton className="h-4 w-8 rounded-md" />
@@ -39,7 +36,7 @@ function SkeletonMiniDepartmentCard() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 const CardCarouselTableSkeleton = ({
@@ -50,10 +47,7 @@ const CardCarouselTableSkeleton = ({
 }: CardCarouselTableSkeletonProps) => {
   return (
     <div
-      className={cn(
-        "flex flex-col gap-4 rounded-2xl bg-background p-1 md:p-2 lg:p-5",
-        className,
-      )}
+      className={cn('flex flex-col gap-4 rounded-2xl bg-background p-1 md:p-2 lg:p-5', className)}
     >
       <div className="flex h-[188px] items-center rounded-4xl border border-border bg-card px-3 py-3">
         <div className="flex w-full items-center gap-2">
@@ -80,7 +74,7 @@ const CardCarouselTableSkeleton = ({
 
       <SkeletonPaginationRow />
     </div>
-  );
-};
+  )
+}
 
-export default CardCarouselTableSkeleton;
+export default CardCarouselTableSkeleton

@@ -1,24 +1,16 @@
-"use client";
+'use client'
 
-import {
-  Calendar,
-  Clock,
-  FileText,
-  Lock,
-  Plus,
-  Shield,
-  User,
-  XCircle,
-} from "lucide-react";
-import { HoldStateBadge } from "@/components/ui";
-import type { Booking } from "@/types";
+import { Calendar, Clock, FileText, Lock, Plus, Shield, User, XCircle } from 'lucide-react'
+
+import { HoldStateBadge } from '@/components/ui'
+import type { Booking } from '@/types'
 
 interface BookingsPanelProps {
-  activeHolds: Booking[];
-  pastBookings: Booking[];
-  onBrowseCatalog: () => void;
-  onCancel: (bookingId: string) => void;
-  onViewReceipt: (booking: Booking) => void;
+  activeHolds: Booking[]
+  pastBookings: Booking[]
+  onBrowseCatalog: () => void
+  onCancel: (bookingId: string) => void
+  onViewReceipt: (booking: Booking) => void
 }
 
 export function BookingsPanel({
@@ -41,9 +33,8 @@ export function BookingsPanel({
             Appointments & Holds
           </h1>
           <p className="text-xs sm:text-sm text-stone-500 font-normal leading-relaxed">
-            Manage your active salon reservations, inspect cryptographic
-            receipts, or cancel before the 24-hour cutoff for an automatic $0
-            charge release.
+            Manage your active salon reservations, inspect cryptographic receipts, or cancel before
+            the 24-hour cutoff for an automatic $0 charge release.
           </p>
         </div>
 
@@ -83,9 +74,8 @@ export function BookingsPanel({
               No Active Reservation Holds
             </h3>
             <p className="mx-auto mt-1 max-w-sm text-xs text-stone-500 leading-relaxed">
-              You currently have no pending appointment holds. Explore our
-              catalog of master stylists and reserve chairs with $0 charged
-              upfront.
+              You currently have no pending appointment holds. Explore our catalog of master
+              stylists and reserve chairs with $0 charged upfront.
             </p>
             <button
               type="button"
@@ -122,8 +112,7 @@ export function BookingsPanel({
 
         {pastBookings.length === 0 ? (
           <div className="rounded-3xl bg-stone-100/50 p-8 text-center text-xs text-stone-500 border border-stone-200/40">
-            No past appointment history yet. Completed or cancelled appointments
-            will appear here.
+            No past appointment history yet. Completed or cancelled appointments will appear here.
           </div>
         ) : (
           <>
@@ -142,17 +131,13 @@ export function BookingsPanel({
                       <h4 className="font-serif text-base font-medium text-stone-950">
                         {booking.serviceName}
                       </h4>
-                      <p className="text-xs text-stone-500">
-                        {booking.stylistName}
-                      </p>
+                      <p className="text-xs text-stone-500">{booking.stylistName}</p>
                     </div>
                     <HoldStateBadge status={booking.status} />
                   </div>
 
                   <div className="flex items-center justify-between text-xs py-2 border-y border-stone-100">
-                    <span className="text-stone-500">
-                      {booking.appointmentTime}
-                    </span>
+                    <span className="text-stone-500">{booking.appointmentTime}</span>
                     <SettlementLabel booking={booking} />
                   </div>
 
@@ -175,21 +160,14 @@ export function BookingsPanel({
                     <th className="px-6 py-4 font-normal">Booking Reference</th>
                     <th className="px-6 py-4 font-normal">Service & Stylist</th>
                     <th className="px-6 py-4 font-normal">Time Slot</th>
-                    <th className="px-6 py-4 font-normal">
-                      Settlement Outcome
-                    </th>
+                    <th className="px-6 py-4 font-normal">Settlement Outcome</th>
                     <th className="px-6 py-4 font-normal">Status</th>
-                    <th className="px-6 py-4 font-normal text-right">
-                      Receipt
-                    </th>
+                    <th className="px-6 py-4 font-normal text-right">Receipt</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 text-stone-700">
                   {pastBookings.map((booking) => (
-                    <tr
-                      key={booking.id}
-                      className="hover:bg-stone-50/50 transition-colors"
-                    >
+                    <tr key={booking.id} className="hover:bg-stone-50/50 transition-colors">
                       <td className="px-6 py-4 font-mono font-medium text-stone-900">
                         {booking.id}
                       </td>
@@ -197,13 +175,9 @@ export function BookingsPanel({
                         <div className="font-serif text-sm font-normal text-stone-950">
                           {booking.serviceName}
                         </div>
-                        <div className="text-[11px] text-stone-400">
-                          {booking.stylistName}
-                        </div>
+                        <div className="text-[11px] text-stone-400">{booking.stylistName}</div>
                       </td>
-                      <td className="px-6 py-4 text-stone-600">
-                        {booking.appointmentTime}
-                      </td>
+                      <td className="px-6 py-4 text-stone-600">{booking.appointmentTime}</td>
                       <td className="px-6 py-4">
                         <SettlementLabel booking={booking} />
                       </td>
@@ -228,7 +202,7 @@ export function BookingsPanel({
         )}
       </section>
     </div>
-  );
+  )
 }
 
 function ActiveHoldCard({
@@ -236,9 +210,9 @@ function ActiveHoldCard({
   onCancel,
   onViewReceipt,
 }: {
-  booking: Booking;
-  onCancel: (bookingId: string) => void;
-  onViewReceipt: (booking: Booking) => void;
+  booking: Booking
+  onCancel: (bookingId: string) => void
+  onViewReceipt: (booking: Booking) => void
 }) {
   return (
     <div className="flex flex-col justify-between rounded-3xl bg-white p-6 sm:p-7 border border-stone-200/60 transition-all hover:border-stone-300">
@@ -285,18 +259,14 @@ function ActiveHoldCard({
             <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
               Full Service Value
             </span>
-            <div className="font-semibold text-stone-900">
-              ${booking.servicePrice}.00
-            </div>
+            <div className="font-semibold text-stone-900">${booking.servicePrice}.00</div>
           </div>
 
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
               Cancellation Cutoff
             </span>
-            <div className="font-medium text-emerald-700">
-              Free cancel ≥ 24h ($0)
-            </div>
+            <div className="font-medium text-emerald-700">Free cancel ≥ 24h ($0)</div>
           </div>
         </div>
 
@@ -331,28 +301,20 @@ function ActiveHoldCard({
         </button>
       </div>
     </div>
-  );
+  )
 }
 
 function SettlementLabel({ booking }: { booking: Booking }) {
-  if (booking.status === "CAPTURED") {
+  if (booking.status === 'CAPTURED') {
     return (
-      <span className="font-medium text-emerald-700">
-        ${booking.servicePrice}.00 Full Captured
-      </span>
-    );
+      <span className="font-medium text-emerald-700">${booking.servicePrice}.00 Full Captured</span>
+    )
   }
-  if (booking.status === "NO_SHOW_CAPTURED") {
-    return (
-      <span className="font-medium text-rose-700">
-        ${booking.noShowFee}.00 No-Show Fee
-      </span>
-    );
+  if (booking.status === 'NO_SHOW_CAPTURED') {
+    return <span className="font-medium text-rose-700">${booking.noShowFee}.00 No-Show Fee</span>
   }
-  if (booking.status === "VOIDED") {
-    return (
-      <span className="font-medium text-stone-400">$0.00 (Hold Voided)</span>
-    );
+  if (booking.status === 'VOIDED') {
+    return <span className="font-medium text-stone-400">$0.00 (Hold Voided)</span>
   }
-  return <span className="text-stone-400">—</span>;
+  return <span className="text-stone-400">—</span>
 }

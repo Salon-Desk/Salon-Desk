@@ -1,19 +1,20 @@
-"use client";
+'use client'
 
-import { ArrowLeft, Lock } from "lucide-react";
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { Logo } from "@/components/brand/logo";
-import { Button } from "@/components/ui";
-import { ROUTES } from "@/lib/constants";
+import { ArrowLeft, Lock } from 'lucide-react'
+import Link from 'next/link'
+import type { ReactNode } from 'react'
+
+import { Logo } from '@/components/brand/logo'
+import { Button } from '@/components/ui'
+import { ROUTES } from '@/lib/constants'
 
 interface AuthGateProps {
-  title: string;
-  subtitle: string;
-  email: string;
-  password: string;
-  onSignIn: () => void;
-  extraAction?: ReactNode;
+  title: string
+  subtitle: string
+  email: string
+  password: string
+  onSignIn: () => void
+  extraAction?: ReactNode
 }
 
 /** Demo sign-in card shown when a console is locked. */
@@ -31,23 +32,17 @@ export function AuthGate({
         <div className="mb-6 flex flex-col items-center text-center">
           <Logo size="md" linkToHome theme="light" />
           <h1 className="mt-4 font-bold text-lg text-slate-900">{title}</h1>
-          <p className="mt-1 text-slate-500 text-xs leading-relaxed">
-            {subtitle}
-          </p>
+          <p className="mt-1 text-slate-500 text-xs leading-relaxed">{subtitle}</p>
         </div>
 
         <div className="mb-5 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-slate-500">Sandbox email</span>
-            <span className="font-mono font-semibold text-slate-800">
-              {email}
-            </span>
+            <span className="font-mono font-semibold text-slate-800">{email}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-slate-500">Password</span>
-            <span className="font-mono font-semibold text-slate-800">
-              {password}
-            </span>
+            <span className="font-mono font-semibold text-slate-800">{password}</span>
           </div>
         </div>
 
@@ -66,5 +61,5 @@ export function AuthGate({
         </Link>
       </div>
     </div>
-  );
+  )
 }

@@ -1,16 +1,16 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 export type AuthFormSkeletonProps = {
-  className?: string;
-  fields?: number;
-};
+  className?: string
+  fields?: number
+}
 
 const AuthFormSkeleton = ({ className, fields = 3 }: AuthFormSkeletonProps) => {
   return (
     <div
       className={cn(
-        "flex min-h-full w-full flex-col rounded-2xl bg-background p-4 sm:p-8 md:p-12 xl:p-14 md:rounded-4xl xl:rounded-[48px] 2xl:rounded-[52px]",
+        'flex min-h-full w-full flex-col rounded-2xl bg-background p-4 sm:p-8 md:p-12 xl:p-14 md:rounded-4xl xl:rounded-[48px] 2xl:rounded-[52px]',
         className,
       )}
     >
@@ -43,7 +43,7 @@ const AuthFormSkeleton = ({ className, fields = 3 }: AuthFormSkeletonProps) => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default AuthFormSkeleton;
+export default AuthFormSkeleton

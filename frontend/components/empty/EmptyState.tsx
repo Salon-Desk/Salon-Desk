@@ -1,22 +1,22 @@
-"use client";
+'use client'
 
-import { Database } from "lucide-react";
-import type { ReactNode } from "react";
+import { Database } from 'lucide-react'
+import type { ReactNode } from 'react'
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils'
 
 interface EmptyStateProps {
-  title?: string;
-  description?: string;
-  actionLabel?: string;
-  onAction?: () => void;
-  icon?: ReactNode;
-  className?: string;
-  fullHeight?: boolean;
+  title?: string
+  description?: string
+  actionLabel?: string
+  onAction?: () => void
+  icon?: ReactNode
+  className?: string
+  fullHeight?: boolean
 }
 
 const EmptyState = ({
-  title = "No Records Found",
+  title = 'No Records Found',
   description = "There's nothing to display here yet. Once information is added, it will appear in this section.",
   actionLabel,
   onAction,
@@ -27,8 +27,8 @@ const EmptyState = ({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center text-center px-4",
-        fullHeight && "min-h-96 py-20",
+        'flex flex-col items-center justify-center text-center px-4',
+        fullHeight && 'min-h-96 py-20',
         className,
       )}
     >
@@ -47,9 +47,7 @@ const EmptyState = ({
       <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
 
       {/* Description */}
-      <p className="text-sm text-gray-500 text-center max-w-md">
-        {description}
-      </p>
+      <p className="text-sm text-gray-500 text-center max-w-md">{description}</p>
 
       {/* Action */}
       {actionLabel && onAction && (
@@ -62,7 +60,7 @@ const EmptyState = ({
         </button>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default EmptyState;
+export default EmptyState

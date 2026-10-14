@@ -1,6 +1,7 @@
-import { redirect } from "next/navigation";
-import { ROUTES } from "@/lib/constants";
+import { redirect } from 'next/navigation'
+
+import { ROUTES } from '@/lib/constants'
 
 export default function OrgPage() {
-  redirect(ROUTES.merchant);
+  redirect(ROUTES.merchant)
 }

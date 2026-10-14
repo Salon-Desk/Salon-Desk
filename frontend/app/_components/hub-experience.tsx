@@ -1,26 +1,28 @@
-"use client";
+'use client'
 
-import { KeyRound, Scissors, ShieldCheck, Sparkles } from "lucide-react";
-import { useState } from "react";
-import { Logo } from "@/components/brand/logo";
-import { ROUTES } from "@/lib/constants";
-import { AppCard } from "./app-card";
-import { SandboxModal } from "./sandbox-modal";
+import { KeyRound, Scissors, ShieldCheck, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+
+import { UserMenu } from '@/components/auth/user-menu'
+import { Logo } from '@/components/brand/logo'
+import { ROUTES } from '@/lib/constants'
+
+import { AppCard } from './app-card'
+import { SandboxModal } from './sandbox-modal'
 
 export function HubExperience() {
-  const [isSandboxModalOpen, setIsSandboxModalOpen] = useState(false);
+  const [isSandboxModalOpen, setIsSandboxModalOpen] = useState(false)
 
   return (
-    <div className="flex min-h-screen flex-col justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8 selection:bg-amber-500/20 selection:text-amber-900">
+    <div className="flex min-h-screen flex-col justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8 selection:bg-amber-500/20 selection:text-amber-900 relative">
+      <div className="absolute top-6 right-6 z-20">
+        <UserMenu />
+      </div>
+
       <div className="mx-auto w-full max-w-7xl">
         <header className="mb-12 flex flex-col items-center text-center">
           <div className="mb-4">
-            <Logo
-              size="md"
-              showTagline={false}
-              linkToHome={false}
-              theme="light"
-            />
+            <Logo size="md" showTagline={false} linkToHome={false} theme="light" />
           </div>
           <h1 className="font-extrabold text-3xl text-slate-900 tracking-tight sm:text-4xl">
             SalonDesk
@@ -73,9 +75,7 @@ export function HubExperience() {
         </div>
       </div>
 
-      {isSandboxModalOpen && (
-        <SandboxModal onClose={() => setIsSandboxModalOpen(false)} />
-      )}
+      {isSandboxModalOpen && <SandboxModal onClose={() => setIsSandboxModalOpen(false)} />}
     </div>
-  );
+  )
 }

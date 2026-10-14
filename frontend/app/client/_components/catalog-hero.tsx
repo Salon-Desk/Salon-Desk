@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from 'next/image'
 
 export function CatalogHero() {
   return (
@@ -14,16 +14,15 @@ export function CatalogHero() {
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-stone-950 leading-[1.1]">
-            Bespoke salon artistry,{" "}
+            Bespoke salon artistry,{' '}
             <span className="font-serif italic font-normal text-amber-700">
               zero upfront charge.
             </span>
           </h1>
 
           <p className="mt-3 sm:mt-4 text-sm sm:text-base text-stone-600 max-w-xl leading-relaxed">
-            Reserve master stylists with PayPal authorization holds. $0 is
-            debited today — funds are securely held and release instantly if you
-            cancel on time.
+            Reserve master stylists with PayPal authorization holds. $0 is debited today — funds are
+            securely held and release instantly if you cancel on time.
           </p>
 
           <div className="mt-5 sm:mt-6 flex flex-wrap items-center gap-2">
@@ -53,12 +52,10 @@ export function CatalogHero() {
           <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-stone-950/20 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4 text-white">
             <div className="text-xs font-semibold">Flagship Atelier</div>
-            <div className="text-[11px] text-stone-300">
-              454 Broome St, SoHo, New York
-            </div>
+            <div className="text-[11px] text-stone-300">454 Broome St, SoHo, New York</div>
           </div>
         </div>
       </div>
     </section>
-  );
+  )
 }

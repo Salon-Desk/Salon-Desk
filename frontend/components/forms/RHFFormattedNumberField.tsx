@@ -1,23 +1,25 @@
-"use client";
+'use client'
 
-import type React from "react";
-import { Controller, useFormContext } from "react-hook-form";
+import type React from 'react'
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
+  formControlInputClassName,
   FormFieldError,
+  formFieldHtmlIds,
   FormFieldLabel,
   FormFieldRoot,
-  formControlInputClassName,
-  formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
+} from '@/components/forms/form-field-parts'
 
-interface RHFFormattedNumberFieldProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "name"> {
-  name: string;
-  label: string;
-  isRequired?: boolean;
-  maxDigits: number;
-  groupPattern?: number[];
+interface RHFFormattedNumberFieldProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'name'
+> {
+  name: string
+  label: string
+  isRequired?: boolean
+  maxDigits: number
+  groupPattern?: number[]
 }
 
 const RHFFormattedNumberField = ({
@@ -29,32 +31,32 @@ const RHFFormattedNumberField = ({
   placeholder,
   ...other
 }: RHFFormattedNumberFieldProps) => {
-  const { control, clearErrors } = useFormContext();
-  const { controlId, errorId } = formFieldHtmlIds(name);
+  const { control, clearErrors } = useFormContext()
+  const { controlId, errorId } = formFieldHtmlIds(name)
 
   const formatValue = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, maxDigits);
+    const digits = value.replace(/\D/g, '').slice(0, maxDigits)
 
-    const parts: string[] = [];
-    let start = 0;
+    const parts: string[] = []
+    let start = 0
 
     for (const size of groupPattern) {
-      const part = digits.slice(start, start + size);
+      const part = digits.slice(start, start + size)
 
       if (!part) {
-        break;
+        break
       }
 
-      parts.push(part);
-      start += size;
+      parts.push(part)
+      start += size
     }
 
     if (start < digits.length) {
-      parts.push(digits.slice(start));
+      parts.push(digits.slice(start))
     }
 
-    return parts.join(" ");
-  };
+    return parts.join(' ')
+  }
 
   return (
     <Controller
@@ -63,11 +65,7 @@ const RHFFormattedNumberField = ({
       render={({ field, fieldState: { error } }) => (
         <FormFieldRoot>
           {label ? (
-            <FormFieldLabel
-              htmlFor={controlId}
-              label={label}
-              isRequired={isRequired}
-            />
+            <FormFieldLabel htmlFor={controlId} label={label} isRequired={isRequired} />
           ) : null}
 
           <input
@@ -78,14 +76,12 @@ const RHFFormattedNumberField = ({
             placeholder={placeholder}
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
-            value={formatValue(field.value ?? "")}
+            value={formatValue(field.value ?? '')}
             onChange={(e) => {
-              const rawValue = e.target.value
-                .replace(/\D/g, "")
-                .slice(0, maxDigits);
+              const rawValue = e.target.value.replace(/\D/g, '').slice(0, maxDigits)
 
-              field.onChange(rawValue);
-              clearErrors(name);
+              field.onChange(rawValue)
+              clearErrors(name)
             }}
             className={formControlInputClassName({
               hasError: !!error,
@@ -94,13 +90,11 @@ const RHFFormattedNumberField = ({
             {...other}
           />
 
-          {error ? (
-            <FormFieldError id={errorId} message={error.message ?? ""} />
-          ) : null}
+          {error ? <FormFieldError id={errorId} message={error.message ?? ''} /> : null}
         </FormFieldRoot>
       )}
     />
-  );
-};
+  )
+}
 
-export default RHFFormattedNumberField;
+export default RHFFormattedNumberField

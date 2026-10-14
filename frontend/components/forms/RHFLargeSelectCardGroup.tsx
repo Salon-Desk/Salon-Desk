@@ -1,41 +1,36 @@
-"use client";
+'use client'
 
-import { CheckCircle, Circle } from "lucide-react";
-import Image from "next/image";
-import { Controller, useFormContext } from "react-hook-form";
+import { CheckCircle, Circle } from 'lucide-react'
+import Image from 'next/image'
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
-  FormFieldError,
-  FormFieldLabel,
-  FormFieldRoot,
   formControlOptionScrollClassName,
   formControlScrollCardClassName,
+  FormFieldError,
   formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
-import { resolveImageSrc } from "@/lib/util/remoteImage";
-import { cn } from "@/lib/utils";
+  FormFieldLabel,
+  FormFieldRoot,
+} from '@/components/forms/form-field-parts'
+import { resolveImageSrc } from '@/lib/util/remoteImage'
+import { cn } from '@/lib/utils'
 
 interface Option {
-  label: string;
-  value: string | number;
-  icon: string;
+  label: string
+  value: string | number
+  icon: string
 }
 
 interface Props {
-  name: string;
-  label: string;
-  options: Option[];
-  isRequired?: boolean;
+  name: string
+  label: string
+  options: Option[]
+  isRequired?: boolean
 }
 
-const RHFLageSelectCardGroup = ({
-  name,
-  label,
-  options,
-  isRequired = true,
-}: Props) => {
-  const { control } = useFormContext();
-  const { errorId } = formFieldHtmlIds(name);
+const RHFLageSelectCardGroup = ({ name, label, options, isRequired = true }: Props) => {
+  const { control } = useFormContext()
+  const { errorId } = formFieldHtmlIds(name)
 
   return (
     <Controller
@@ -43,24 +38,22 @@ const RHFLageSelectCardGroup = ({
       control={control}
       render={({ field, fieldState: { error } }) => (
         <FormFieldRoot className="w-full">
-          {label ? (
-            <FormFieldLabel label={label} isRequired={isRequired} />
-          ) : null}
+          {label ? <FormFieldLabel label={label} isRequired={isRequired} /> : null}
 
           <div
             className={formControlOptionScrollClassName}
             aria-describedby={error ? errorId : undefined}
           >
             {options.map((opt) => {
-              const selected = field.value === opt.value;
+              const selected = field.value === opt.value
 
               return (
                 <button
                   type="button"
                   key={opt.value}
                   onClick={(e) => {
-                    e.preventDefault();
-                    field.onChange(opt.value);
+                    e.preventDefault()
+                    field.onChange(opt.value)
                   }}
                   className={formControlScrollCardClassName(selected)}
                 >
@@ -84,25 +77,23 @@ const RHFLageSelectCardGroup = ({
                     />
                     <p
                       className={cn(
-                        "text-sm font-bold sm:text-[15px]",
-                        selected ? "text-primary" : "text-muted-foreground",
+                        'text-sm font-bold sm:text-[15px]',
+                        selected ? 'text-primary' : 'text-muted-foreground',
                       )}
                     >
                       {opt.label}
                     </p>
                   </div>
                 </button>
-              );
+              )
             })}
           </div>
 
-          {error ? (
-            <FormFieldError id={errorId} message={error.message ?? ""} />
-          ) : null}
+          {error ? <FormFieldError id={errorId} message={error.message ?? ''} /> : null}
         </FormFieldRoot>
       )}
     />
-  );
-};
+  )
+}
 
-export default RHFLageSelectCardGroup;
+export default RHFLageSelectCardGroup

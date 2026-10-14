@@ -1,53 +1,51 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { useId } from "react";
+import Link from 'next/link'
+import { useId } from 'react'
 
 interface LogoProps {
-  size?: "sm" | "md" | "lg" | "xl";
-  showTagline?: boolean;
-  linkToHome?: boolean;
-  theme?: "light" | "dark";
-  className?: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  showTagline?: boolean
+  linkToHome?: boolean
+  theme?: 'light' | 'dark'
+  className?: string
 }
 
 export function Logo({
-  size = "md",
+  size = 'md',
   showTagline = false,
   linkToHome = true,
-  theme = "light",
-  className = "",
+  theme = 'light',
+  className = '',
 }: LogoProps) {
-  const uid = useId().replace(/:/g, "");
+  const uid = useId().replace(/:/g, '')
   const iconDimensions = {
-    sm: "w-8 h-8",
-    md: "w-11 h-11",
-    lg: "w-16 h-16",
-    xl: "w-24 h-24",
-  }[size];
+    sm: 'w-8 h-8',
+    md: 'w-11 h-11',
+    lg: 'w-16 h-16',
+    xl: 'w-24 h-24',
+  }[size]
 
   const brandTextClasses = {
-    sm: "text-lg",
-    md: "text-2xl",
-    lg: "text-4xl",
-    xl: "text-5xl",
-  }[size];
+    sm: 'text-lg',
+    md: 'text-2xl',
+    lg: 'text-4xl',
+    xl: 'text-5xl',
+  }[size]
 
   const depositsTextClasses = {
-    sm: "text-[9px] tracking-[0.25em]",
-    md: "text-[12px] tracking-[0.3em]",
-    lg: "text-[16px] tracking-[0.35em]",
-    xl: "text-[22px] tracking-[0.4em]",
-  }[size];
+    sm: 'text-[9px] tracking-[0.25em]',
+    md: 'text-[12px] tracking-[0.3em]',
+    lg: 'text-[16px] tracking-[0.35em]',
+    xl: 'text-[22px] tracking-[0.4em]',
+  }[size]
 
-  const isLight = theme === "light";
+  const isLight = theme === 'light'
 
   const content = (
     <div className={`flex items-center gap-3 select-none ${className}`}>
       {/* Visual Motif: Calendar Pad + Lock Shackle + Intersecting Shears + Sparkles */}
-      <div
-        className={`relative shrink-0 ${iconDimensions} flex items-center justify-center`}
-      >
+      <div className={`relative shrink-0 ${iconDimensions} flex items-center justify-center`}>
         <svg
           viewBox="0 0 280 280"
           className="w-full h-full filter drop-shadow-[0_4px_12px_rgba(245,158,11,0.2)]"
@@ -57,48 +55,24 @@ export function Logo({
         >
           <title>SalonDesk Deposits</title>
           <defs>
-            <linearGradient
-              id={`${uid}-shackleGradient`}
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="100%"
-            >
+            <linearGradient id={`${uid}-shackleGradient`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#FDE68A" />
               <stop offset="45%" stopColor="#F59E0B" />
               <stop offset="100%" stopColor="#B45309" />
             </linearGradient>
 
-            <linearGradient
-              id={`${uid}-calPadGradient`}
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="100%"
-            >
+            <linearGradient id={`${uid}-calPadGradient`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#FBBF24" />
               <stop offset="60%" stopColor="#F59E0B" />
               <stop offset="100%" stopColor="#B45309" />
             </linearGradient>
 
-            <linearGradient
-              id={`${uid}-calHeaderGrad`}
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="0%"
-            >
+            <linearGradient id={`${uid}-calHeaderGrad`} x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#EA580C" />
               <stop offset="100%" stopColor="#F97316" />
             </linearGradient>
 
-            <linearGradient
-              id={`${uid}-bladeBlue`}
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="100%"
-            >
+            <linearGradient id={`${uid}-bladeBlue`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#38BDF8" />
               <stop offset="50%" stopColor="#1D4ED8" />
               <stop offset="100%" stopColor="#0F172A" />
@@ -145,22 +119,8 @@ export function Logo({
           {/* Calendar Date Slots */}
           <g opacity="0.9">
             <rect x="65" y="172" width="30" height="26" rx="6" fill="#D97706" />
-            <rect
-              x="105"
-              y="172"
-              width="30"
-              height="26"
-              rx="6"
-              fill="#D97706"
-            />
-            <rect
-              x="145"
-              y="172"
-              width="30"
-              height="26"
-              rx="6"
-              fill="#D97706"
-            />
+            <rect x="105" y="172" width="30" height="26" rx="6" fill="#D97706" />
+            <rect x="145" y="172" width="30" height="26" rx="6" fill="#D97706" />
             {/* Active hold highlighted slot */}
             <rect
               x="185"
@@ -174,30 +134,9 @@ export function Logo({
             />
 
             <rect x="65" y="206" width="30" height="26" rx="6" fill="#B45309" />
-            <rect
-              x="105"
-              y="206"
-              width="30"
-              height="26"
-              rx="6"
-              fill="#B45309"
-            />
-            <rect
-              x="145"
-              y="206"
-              width="30"
-              height="26"
-              rx="6"
-              fill="#B45309"
-            />
-            <rect
-              x="185"
-              y="206"
-              width="30"
-              height="26"
-              rx="6"
-              fill="#EA580C"
-            />
+            <rect x="105" y="206" width="30" height="26" rx="6" fill="#B45309" />
+            <rect x="145" y="206" width="30" height="26" rx="6" fill="#B45309" />
+            <rect x="185" y="206" width="30" height="26" rx="6" fill="#EA580C" />
           </g>
 
           {/* INTERSECTING STYLING SHEARS (SCISSORS) */}
@@ -214,14 +153,7 @@ export function Logo({
               stroke="#38BDF8"
               strokeWidth="2"
             />
-            <circle
-              cx="106"
-              cy="252"
-              r="14"
-              fill="#090D16"
-              stroke="#38BDF8"
-              strokeWidth="2"
-            />
+            <circle cx="106" cy="252" r="14" fill="#090D16" stroke="#38BDF8" strokeWidth="2" />
           </g>
 
           <g transform="translate(140, 175) rotate(30) translate(-140, -175)">
@@ -238,29 +170,12 @@ export function Logo({
               strokeWidth="2"
             />
             {/* Pinky spur */}
-            <path
-              d="M 185 268 Q 200 274 208 288 Q 196 284 188 273 Z"
-              fill="#2563EB"
-            />
-            <circle
-              cx="174"
-              cy="252"
-              r="14"
-              fill="#090D16"
-              stroke="#38BDF8"
-              strokeWidth="2"
-            />
+            <path d="M 185 268 Q 200 274 208 288 Q 196 284 188 273 Z" fill="#2563EB" />
+            <circle cx="174" cy="252" r="14" fill="#090D16" stroke="#38BDF8" strokeWidth="2" />
           </g>
 
           {/* Central Pivot Gold Rivet */}
-          <circle
-            cx="140"
-            cy="175"
-            r="9"
-            fill="#FEF08A"
-            stroke="#B45309"
-            strokeWidth="2"
-          />
+          <circle cx="140" cy="175" r="9" fill="#FEF08A" stroke="#B45309" strokeWidth="2" />
           <circle cx="140" cy="175" r="4" fill="#78350F" />
 
           {/* Sparkling Diamond Stars */}
@@ -283,19 +198,17 @@ export function Logo({
       <div className="flex flex-col">
         <div
           className={`font-black tracking-tight leading-none ${
-            isLight ? "text-slate-900" : "text-white"
+            isLight ? 'text-slate-900' : 'text-white'
           } ${brandTextClasses}`}
         >
           Salon
-          <span className={isLight ? "text-sky-600" : "text-[#38BDF8]"}>
-            Desk
-          </span>
+          <span className={isLight ? 'text-sky-600' : 'text-[#38BDF8]'}>Desk</span>
         </div>
         <div
           className={`font-black uppercase text-transparent bg-clip-text ${
             isLight
-              ? "bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700"
-              : "bg-gradient-to-r from-[#FDE68A] via-[#F59E0B] to-[#D97706]"
+              ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700'
+              : 'bg-gradient-to-r from-[#FDE68A] via-[#F59E0B] to-[#D97706]'
           } leading-none mt-1 ${depositsTextClasses}`}
         >
           DEPOSITS
@@ -303,7 +216,7 @@ export function Logo({
         {showTagline && (
           <span
             className={`text-[10px] ${
-              isLight ? "text-slate-500" : "text-[#94A3B8]"
+              isLight ? 'text-slate-500' : 'text-[#94A3B8]'
             } tracking-wider uppercase font-semibold mt-1`}
           >
             A hold, not a charge
@@ -311,7 +224,7 @@ export function Logo({
         )}
       </div>
     </div>
-  );
+  )
 
   if (linkToHome) {
     return (
@@ -321,8 +234,8 @@ export function Logo({
       >
         {content}
       </Link>
-    );
+    )
   }
 
-  return content;
+  return content
 }

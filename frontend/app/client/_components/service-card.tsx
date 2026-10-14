@@ -1,25 +1,21 @@
-"use client";
+'use client'
 
-import { ArrowRight, Clock, Info, Lock, Sparkles, Star } from "lucide-react";
-import Image from "next/image";
-import { stylistForCategory } from "@/lib/data/catalog";
-import { serviceImage } from "@/lib/data/service-content";
-import type { SalonService } from "@/types";
+import { ArrowRight, Clock, Info, Lock, Sparkles, Star } from 'lucide-react'
+import Image from 'next/image'
+
+import { stylistForCategory } from '@/lib/data/catalog'
+import { serviceImage } from '@/lib/data/service-content'
+import type { SalonService } from '@/types'
 
 interface ServiceCardProps {
-  service: SalonService;
-  onAskAi: (service: SalonService) => void;
-  onQuickBook: (service: SalonService) => void;
-  onOpenProtocol: (service: SalonService) => void;
+  service: SalonService
+  onAskAi: (service: SalonService) => void
+  onQuickBook: (service: SalonService) => void
+  onOpenProtocol: (service: SalonService) => void
 }
 
-export function ServiceCard({
-  service,
-  onAskAi,
-  onQuickBook,
-  onOpenProtocol,
-}: ServiceCardProps) {
-  const stylist = stylistForCategory(service.category);
+export function ServiceCard({ service, onAskAi, onQuickBook, onOpenProtocol }: ServiceCardProps) {
+  const stylist = stylistForCategory(service.category)
 
   return (
     <article className="group flex flex-col">
@@ -72,9 +68,7 @@ export function ServiceCard({
             <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
               {service.category}
             </span>
-            <span className="text-xl font-extrabold text-stone-950">
-              ${service.price}
-            </span>
+            <span className="text-xl font-extrabold text-stone-950">${service.price}</span>
           </div>
 
           {/* Title */}
@@ -100,9 +94,7 @@ export function ServiceCard({
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <span className="text-xs text-stone-700 font-medium">
-                {stylist.name}
-              </span>
+              <span className="text-xs text-stone-700 font-medium">{stylist.name}</span>
             </div>
 
             <div className="flex items-center gap-1 font-semibold text-stone-700 text-[11px]">
@@ -134,5 +126,5 @@ export function ServiceCard({
         </div>
       </div>
     </article>
-  );
+  )
 }

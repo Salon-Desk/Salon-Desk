@@ -1,210 +1,187 @@
-"use client";
+'use client'
 
-import { Sparkles, Zap } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { AuthGate } from "@/components/layout/auth-gate";
-import { ConsoleShell } from "@/components/layout/console-shell";
-import { Button, Toast } from "@/components/ui";
-import { useAdminStore, useDemoReset, useToast } from "@/hooks";
-import { createSequentialId } from "@/lib/ids";
+import { Sparkles, Zap } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+
+import { AuthGate } from '@/components/layout/auth-gate'
+import { ConsoleShell } from '@/components/layout/console-shell'
+import { Button, Toast } from '@/components/ui'
+import { useAdminStore, useDemoReset, useToast } from '@/hooks'
+import { createSequentialId } from '@/lib/ids'
 import type {
   ChangeRequest,
   CommissionOverride,
   Organization,
   PlatformUser,
   TaxonomyCategory,
-} from "@/types";
+} from '@/types'
+
 import {
   ADMIN_DEMO_EMAIL,
   ADMIN_DEMO_PASSWORD,
   EMPTY_CATEGORY_FORM,
   EMPTY_SALON_FORM,
   EMPTY_STAFF_FORM,
-} from "../_constants/admin-forms";
-import type {
-  AdminTabId,
-  CrSubTab,
-  SalonStatusFilter,
-} from "../_types/admin-types";
-import { computeAdminMetrics } from "../_utils/compute-admin-metrics";
-import { AdminHeader } from "./admin-header";
-import { AdminSidebar } from "./admin-sidebar";
-import { AddCommissionOverrideModal } from "./commission-modals";
-import { CommissionTab } from "./commission-tab";
-import { OverviewTab } from "./overview-tab";
-import { RejectChangeRequestModal } from "./request-modals";
-import { RequestsTab } from "./requests-tab";
+} from '../_constants/admin-forms'
+import type { AdminTabId, CrSubTab, SalonStatusFilter } from '../_types/admin-types'
+import { computeAdminMetrics } from '../_utils/compute-admin-metrics'
+import { AdminHeader } from './admin-header'
+import { AdminSidebar } from './admin-sidebar'
+import { AddCommissionOverrideModal } from './commission-modals'
+import { CommissionTab } from './commission-tab'
+import { OverviewTab } from './overview-tab'
+import { RejectChangeRequestModal } from './request-modals'
+import { RequestsTab } from './requests-tab'
 import {
   AddSalonModal,
   DeleteSalonModal,
   EditSalonModal,
   type SalonFormState,
   SuspendSalonModal,
-} from "./salon-modals";
-import { SalonsTab } from "./salons-tab";
-import {
-  DeleteStaffModal,
-  InviteStaffModal,
-  type StaffInviteFormState,
-} from "./staff-modals";
-import { StaffTab } from "./staff-tab";
-import {
-  type CategoryFormState,
-  CategoryModal,
-  DeleteCategoryModal,
-} from "./taxonomy-modals";
-import { TaxonomyTab } from "./taxonomy-tab";
+} from './salon-modals'
+import { SalonsTab } from './salons-tab'
+import { DeleteStaffModal, InviteStaffModal, type StaffInviteFormState } from './staff-modals'
+import { StaffTab } from './staff-tab'
+import { type CategoryFormState, CategoryModal, DeleteCategoryModal } from './taxonomy-modals'
+import { TaxonomyTab } from './taxonomy-tab'
 
 export function AdminDashboard() {
-  const { state, setState, resetState } = useAdminStore();
-  const { message, show: showToast } = useToast(3800);
-  const { isResetting, reset: resetDemo } = useDemoReset(resetState);
+  const { state, setState, resetState } = useAdminStore()
+  const { message, show: showToast } = useToast(3800)
+  const { isResetting, reset: resetDemo } = useDemoReset(resetState)
 
-  const [activeTab, setActiveTab] = useState<AdminTabId>("overview");
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<AdminTabId>('overview')
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
-  const [isAddSalonOpen, setIsAddSalonOpen] = useState(false);
-  const [editingSalon, setEditingSalon] = useState<Organization | null>(null);
-  const [suspendingSalon, setSuspendingSalon] = useState<Organization | null>(
-    null,
-  );
-  const [suspensionReasonInput, setSuspensionReasonInput] = useState("");
-  const [deletingSalon, setDeletingSalon] = useState<Organization | null>(null);
+  const [isAddSalonOpen, setIsAddSalonOpen] = useState(false)
+  const [editingSalon, setEditingSalon] = useState<Organization | null>(null)
+  const [suspendingSalon, setSuspendingSalon] = useState<Organization | null>(null)
+  const [suspensionReasonInput, setSuspensionReasonInput] = useState('')
+  const [deletingSalon, setDeletingSalon] = useState<Organization | null>(null)
 
-  const [crSubTab, setCrSubTab] = useState<CrSubTab>("POLICY");
-  const [rejectingCr, setRejectingCr] = useState<ChangeRequest | null>(null);
-  const [crRejectReason, setCrRejectReason] = useState("");
+  const [crSubTab, setCrSubTab] = useState<CrSubTab>('POLICY')
+  const [rejectingCr, setRejectingCr] = useState<ChangeRequest | null>(null)
+  const [crRejectReason, setCrRejectReason] = useState('')
 
-  const [isAddOverrideOpen, setIsAddOverrideOpen] = useState(false);
+  const [isAddOverrideOpen, setIsAddOverrideOpen] = useState(false)
   const [overrideForm, setOverrideForm] = useState({
-    salonId: "",
-    customRate: "1.8",
-    note: "",
-  });
+    salonId: '',
+    customRate: '1.8',
+    note: '',
+  })
   const [globalRateInput, setGlobalRateInput] = useState({
     percentage: state.globalRate.percentage.toString(),
     flatFee: state.globalRate.flatFee.toString(),
-  });
+  })
 
-  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
-  const [editingCategory, setEditingCategory] =
-    useState<TaxonomyCategory | null>(null);
-  const [categoryForm, setCategoryForm] =
-    useState<CategoryFormState>(EMPTY_CATEGORY_FORM);
-  const [deletingCategory, setDeletingCategory] =
-    useState<TaxonomyCategory | null>(null);
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<TaxonomyCategory | null>(null)
+  const [categoryForm, setCategoryForm] = useState<CategoryFormState>(EMPTY_CATEGORY_FORM)
+  const [deletingCategory, setDeletingCategory] = useState<TaxonomyCategory | null>(null)
 
-  const [isInviteUserOpen, setIsInviteUserOpen] = useState(false);
-  const [userForm, setUserForm] =
-    useState<StaffInviteFormState>(EMPTY_STAFF_FORM);
-  const [deletingUser, setDeletingUser] = useState<PlatformUser | null>(null);
+  const [isInviteUserOpen, setIsInviteUserOpen] = useState(false)
+  const [userForm, setUserForm] = useState<StaffInviteFormState>(EMPTY_STAFF_FORM)
+  const [deletingUser, setDeletingUser] = useState<PlatformUser | null>(null)
 
-  const [salonSearch, setSalonSearch] = useState("");
-  const [salonStatusFilter, setSalonStatusFilter] =
-    useState<SalonStatusFilter>("ALL");
-  const [salonForm, setSalonForm] = useState<SalonFormState>(EMPTY_SALON_FORM);
+  const [salonSearch, setSalonSearch] = useState('')
+  const [salonStatusFilter, setSalonStatusFilter] = useState<SalonStatusFilter>('ALL')
+  const [salonForm, setSalonForm] = useState<SalonFormState>(EMPTY_SALON_FORM)
 
   useEffect(() => {
     setGlobalRateInput({
       percentage: state.globalRate.percentage.toString(),
       flatFee: state.globalRate.flatFee.toString(),
-    });
-  }, [state.globalRate.percentage, state.globalRate.flatFee]);
+    })
+  }, [state.globalRate.percentage, state.globalRate.flatFee])
 
-  const metrics = computeAdminMetrics(state);
+  const metrics = computeAdminMetrics(state)
 
   const filteredSalons = useMemo(
     () =>
       state.organizations.filter((org) => {
-        const query = salonSearch.toLowerCase();
+        const query = salonSearch.toLowerCase()
         const matchesSearch =
           org.name.toLowerCase().includes(query) ||
           org.ownerName.toLowerCase().includes(query) ||
-          (org.city?.toLowerCase().includes(query) ?? false);
-        const matchesStatus =
-          salonStatusFilter === "ALL" || org.status === salonStatusFilter;
-        return matchesSearch && matchesStatus;
+          (org.city?.toLowerCase().includes(query) ?? false)
+        const matchesStatus = salonStatusFilter === 'ALL' || org.status === salonStatusFilter
+        return matchesSearch && matchesStatus
       }),
     [state.organizations, salonSearch, salonStatusFilter],
-  );
+  )
 
   const handleResetData = async () => {
-    await resetDemo();
-    showToast("Demo data reset");
-  };
+    await resetDemo()
+    showToast('Demo data reset')
+  }
 
   const handleJudgeSignIn = () => {
-    setState({ ...state, authenticated: true });
-    showToast("Signed in");
-  };
+    setState({ ...state, authenticated: true })
+    showToast('Signed in')
+  }
 
   const handleLockSession = () => {
-    setState({ ...state, authenticated: false });
-    showToast("Session locked");
-  };
+    setState({ ...state, authenticated: false })
+    showToast('Session locked')
+  }
 
   const handleCreateSalon = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!salonForm.name || !salonForm.email) return;
+    event.preventDefault()
+    if (!salonForm.name || !salonForm.email) return
 
     const newOrg: Organization = {
-      id: createSequentialId("org"),
+      id: createSequentialId('org'),
       name: salonForm.name,
       category: salonForm.category,
-      ownerName: salonForm.ownerName || "Partner Owner",
+      ownerName: salonForm.ownerName || 'Partner Owner',
       email: salonForm.email,
-      phone: salonForm.phone || "+1 (212) 555-0100",
-      address: salonForm.address || "100 Broadway",
+      phone: salonForm.phone || '+1 (212) 555-0100',
+      address: salonForm.address || '100 Broadway',
       city: salonForm.city,
-      status: "APPROVED",
+      status: 'APPROVED',
       paypalMerchantId:
-        salonForm.paypalMerchantId ||
-        `MERCHANT_${createSequentialId("NEW").slice(-4)}`,
+        salonForm.paypalMerchantId || `MERCHANT_${createSequentialId('NEW').slice(-4)}`,
       verified: true,
       cancellationPolicyHours: 24,
       activeHoldsCount: 0,
       totalVolume: 0,
       stylistsCount: 2,
-      joinedAt: "Just now",
-    };
+      joinedAt: 'Just now',
+    }
 
     setState({
       ...state,
       organizations: [newOrg, ...state.organizations],
-    });
-    setIsAddSalonOpen(false);
-    setSalonForm(EMPTY_SALON_FORM);
-    showToast(`Added "${newOrg.name}"`);
-  };
+    })
+    setIsAddSalonOpen(false)
+    setSalonForm(EMPTY_SALON_FORM)
+    showToast(`Added "${newOrg.name}"`)
+  }
 
   const handleUpdateSalon = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!editingSalon) return;
+    event.preventDefault()
+    if (!editingSalon) return
 
     const updated = state.organizations.map((org) =>
       org.id === editingSalon.id ? editingSalon : org,
-    );
-    setState({ ...state, organizations: updated });
-    setEditingSalon(null);
-    showToast(`Updated "${editingSalon.name}"`);
-  };
+    )
+    setState({ ...state, organizations: updated })
+    setEditingSalon(null)
+    showToast(`Updated "${editingSalon.name}"`)
+  }
 
   const handleApproveSalon = (orgId: string) => {
     const updated = state.organizations.map((org) =>
-      org.id === orgId
-        ? { ...org, status: "APPROVED" as const, verified: true }
-        : org,
-    );
-    setState({ ...state, organizations: updated });
-    showToast("Salon approved");
-  };
+      org.id === orgId ? { ...org, status: 'APPROVED' as const, verified: true } : org,
+    )
+    setState({ ...state, organizations: updated })
+    showToast('Salon approved')
+  }
 
   const handleConfirmSuspension = () => {
-    if (!suspendingSalon) return;
-    const isCurrentlySuspended = suspendingSalon.status === "SUSPENDED";
-    const nextStatus = isCurrentlySuspended
-      ? ("APPROVED" as const)
-      : ("SUSPENDED" as const);
+    if (!suspendingSalon) return
+    const isCurrentlySuspended = suspendingSalon.status === 'SUSPENDED'
+    const nextStatus = isCurrentlySuspended ? ('APPROVED' as const) : ('SUSPENDED' as const)
 
     const updated = state.organizations.map((org) => {
       if (org.id === suspendingSalon.id) {
@@ -213,41 +190,39 @@ export function AdminDashboard() {
           status: nextStatus,
           suspensionReason: isCurrentlySuspended
             ? undefined
-            : suspensionReasonInput || "Compliance review pending.",
-        };
+            : suspensionReasonInput || 'Compliance review pending.',
+        }
       }
-      return org;
-    });
+      return org
+    })
 
-    setState({ ...state, organizations: updated });
-    setSuspendingSalon(null);
-    setSuspensionReasonInput("");
+    setState({ ...state, organizations: updated })
+    setSuspendingSalon(null)
+    setSuspensionReasonInput('')
     showToast(
       isCurrentlySuspended
         ? `Reinstated "${suspendingSalon.name}"`
         : `Suspended "${suspendingSalon.name}"`,
-    );
-  };
+    )
+  }
 
   const handleDeleteSalon = () => {
-    if (!deletingSalon) return;
+    if (!deletingSalon) return
     setState({
       ...state,
-      organizations: state.organizations.filter(
-        (o) => o.id !== deletingSalon.id,
-      ),
-    });
-    setDeletingSalon(null);
-    showToast(`Removed "${deletingSalon.name}"`);
-  };
+      organizations: state.organizations.filter((o) => o.id !== deletingSalon.id),
+    })
+    setDeletingSalon(null)
+    showToast(`Removed "${deletingSalon.name}"`)
+  }
 
   const handleApproveChangeRequest = (cr: ChangeRequest) => {
     const updatedCRs = state.changeRequests.map((item) =>
-      item.id === cr.id ? { ...item, status: "APPROVED" as const } : item,
-    );
+      item.id === cr.id ? { ...item, status: 'APPROVED' as const } : item,
+    )
 
-    let updatedOrgs = [...state.organizations];
-    if (cr.type === "PAYPAL_ACCOUNT" && cr.proposedData.paypalMerchantId) {
+    let updatedOrgs = [...state.organizations]
+    if (cr.type === 'PAYPAL_ACCOUNT' && cr.proposedData.paypalMerchantId) {
       updatedOrgs = updatedOrgs.map((org) =>
         org.id === cr.salonId
           ? {
@@ -256,11 +231,8 @@ export function AdminDashboard() {
               verified: true,
             }
           : org,
-      );
-    } else if (
-      cr.type === "CANCELLATION_POLICY" &&
-      cr.proposedData.policyHours
-    ) {
+      )
+    } else if (cr.type === 'CANCELLATION_POLICY' && cr.proposedData.policyHours) {
       updatedOrgs = updatedOrgs.map((org) =>
         org.id === cr.salonId
           ? {
@@ -268,92 +240,85 @@ export function AdminDashboard() {
               cancellationPolicyHours: cr.proposedData.policyHours!,
             }
           : org,
-      );
+      )
     }
 
     setState({
       ...state,
       changeRequests: updatedCRs,
       organizations: updatedOrgs,
-    });
-    showToast(`Approved ${cr.id}`);
-  };
+    })
+    showToast(`Approved ${cr.id}`)
+  }
 
   const handleConfirmRejectCR = () => {
-    if (!rejectingCr) return;
+    if (!rejectingCr) return
     const updatedCRs = state.changeRequests.map((item) =>
       item.id === rejectingCr.id
         ? {
             ...item,
-            status: "REJECTED" as const,
-            rejectionReason:
-              crRejectReason || "Did not meet compliance criteria.",
+            status: 'REJECTED' as const,
+            rejectionReason: crRejectReason || 'Did not meet compliance criteria.',
           }
         : item,
-    );
-    setState({ ...state, changeRequests: updatedCRs });
-    const rejectedId = rejectingCr.id;
-    setRejectingCr(null);
-    setCrRejectReason("");
-    showToast(`Rejected ${rejectedId}`);
-  };
+    )
+    setState({ ...state, changeRequests: updatedCRs })
+    const rejectedId = rejectingCr.id
+    setRejectingCr(null)
+    setCrRejectReason('')
+    showToast(`Rejected ${rejectedId}`)
+  }
 
   const handleSaveGlobalRate = (event: React.FormEvent) => {
-    event.preventDefault();
-    const pct = parseFloat(globalRateInput.percentage);
-    const flat = parseFloat(globalRateInput.flatFee);
-    if (Number.isNaN(pct) || Number.isNaN(flat)) return;
+    event.preventDefault()
+    const pct = parseFloat(globalRateInput.percentage)
+    const flat = parseFloat(globalRateInput.flatFee)
+    if (Number.isNaN(pct) || Number.isNaN(flat)) return
 
     setState({
       ...state,
       globalRate: { percentage: pct, flatFee: flat },
-    });
-    showToast(`Rate set to ${pct}% + $${flat.toFixed(2)}`);
-  };
+    })
+    showToast(`Rate set to ${pct}% + $${flat.toFixed(2)}`)
+  }
 
   const handleCreateOverride = (event: React.FormEvent) => {
-    event.preventDefault();
-    const matchedSalon = state.organizations.find(
-      (o) => o.id === overrideForm.salonId,
-    );
-    if (!matchedSalon) return;
+    event.preventDefault()
+    const matchedSalon = state.organizations.find((o) => o.id === overrideForm.salonId)
+    if (!matchedSalon) return
 
-    const rate = parseFloat(overrideForm.customRate);
-    if (Number.isNaN(rate)) return;
+    const rate = parseFloat(overrideForm.customRate)
+    if (Number.isNaN(rate)) return
 
     const newOverride: CommissionOverride = {
       salonId: matchedSalon.id,
       salonName: matchedSalon.name,
       customRate: rate,
-      note: overrideForm.note || "Custom partner agreement",
-      updatedAt: "Just now",
-    };
+      note: overrideForm.note || 'Custom partner agreement',
+      updatedAt: 'Just now',
+    }
 
-    const filtered = state.commissionOverrides.filter(
-      (ov) => ov.salonId !== matchedSalon.id,
-    );
+    const filtered = state.commissionOverrides.filter((ov) => ov.salonId !== matchedSalon.id)
     setState({
       ...state,
       commissionOverrides: [newOverride, ...filtered],
-    });
-    setIsAddOverrideOpen(false);
-    setOverrideForm({ salonId: "", customRate: "1.8", note: "" });
-    showToast(`${rate}% override for "${matchedSalon.name}"`);
-  };
+    })
+    setIsAddOverrideOpen(false)
+    setOverrideForm({ salonId: '', customRate: '1.8', note: '' })
+    showToast(`${rate}% override for "${matchedSalon.name}"`)
+  }
 
   const handleDeleteOverride = (salonId: string) => {
     setState({
       ...state,
-      commissionOverrides: state.commissionOverrides.filter(
-        (ov) => ov.salonId !== salonId,
-      ),
-    });
-    showToast("Override removed");
-  };
+      commissionOverrides: state.commissionOverrides.filter((ov) => ov.salonId !== salonId),
+    })
+    showToast('Override removed')
+  }
 
   const handleSaveCategory = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!categoryForm.name) return;
+    event.preventDefault()
+    if (!categoryForm.name) return
 
     if (editingCategory) {
       const updated = state.categories.map((c) =>
@@ -361,146 +326,133 @@ export function AdminDashboard() {
           ? {
               ...c,
               name: categoryForm.name,
-              slug:
-                categoryForm.slug ||
-                categoryForm.name.toLowerCase().replace(/\s+/g, "-"),
+              slug: categoryForm.slug || categoryForm.name.toLowerCase().replace(/\s+/g, '-'),
               description: categoryForm.description,
               iconName: categoryForm.iconName,
               displayOrder: parseInt(categoryForm.displayOrder, 10) || 1,
             }
           : c,
-      );
-      setState({ ...state, categories: updated });
-      setEditingCategory(null);
-      showToast(`Updated "${categoryForm.name}"`);
+      )
+      setState({ ...state, categories: updated })
+      setEditingCategory(null)
+      showToast(`Updated "${categoryForm.name}"`)
     } else {
       const newCat: TaxonomyCategory = {
-        id: createSequentialId("cat"),
+        id: createSequentialId('cat'),
         name: categoryForm.name,
-        slug:
-          categoryForm.slug ||
-          categoryForm.name.toLowerCase().replace(/\s+/g, "-"),
-        description:
-          categoryForm.description || "General salon and styling services.",
-        iconName: categoryForm.iconName || "Scissors",
-        displayOrder:
-          parseInt(categoryForm.displayOrder, 10) ||
-          state.categories.length + 1,
-        status: "ACTIVE",
+        slug: categoryForm.slug || categoryForm.name.toLowerCase().replace(/\s+/g, '-'),
+        description: categoryForm.description || 'General salon and styling services.',
+        iconName: categoryForm.iconName || 'Scissors',
+        displayOrder: parseInt(categoryForm.displayOrder, 10) || state.categories.length + 1,
+        status: 'ACTIVE',
         servicesCount: 0,
-      };
-      setState({ ...state, categories: [...state.categories, newCat] });
-      setIsAddCategoryOpen(false);
-      showToast(`Added "${newCat.name}"`);
+      }
+      setState({ ...state, categories: [...state.categories, newCat] })
+      setIsAddCategoryOpen(false)
+      showToast(`Added "${newCat.name}"`)
     }
 
-    setCategoryForm(EMPTY_CATEGORY_FORM);
-  };
+    setCategoryForm(EMPTY_CATEGORY_FORM)
+  }
 
   const handleToggleCategoryStatus = (catId: string) => {
     const updated = state.categories.map((c) =>
       c.id === catId
         ? {
             ...c,
-            status: (c.status === "ACTIVE" ? "HIDDEN" : "ACTIVE") as
-              | "ACTIVE"
-              | "HIDDEN",
+            status: (c.status === 'ACTIVE' ? 'HIDDEN' : 'ACTIVE') as 'ACTIVE' | 'HIDDEN',
           }
         : c,
-    );
-    setState({ ...state, categories: updated });
-    showToast("Visibility updated");
-  };
+    )
+    setState({ ...state, categories: updated })
+    showToast('Visibility updated')
+  }
 
   const handleDeleteCategory = () => {
-    if (!deletingCategory) return;
+    if (!deletingCategory) return
     setState({
       ...state,
       categories: state.categories.filter((c) => c.id !== deletingCategory.id),
-    });
-    setDeletingCategory(null);
-    showToast(`Removed "${deletingCategory.name}"`);
-  };
+    })
+    setDeletingCategory(null)
+    showToast(`Removed "${deletingCategory.name}"`)
+  }
 
   const handleInviteUser = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!userForm.name || !userForm.email) return;
+    event.preventDefault()
+    if (!userForm.name || !userForm.email) return
 
     const newUser: PlatformUser = {
-      id: createSequentialId("usr"),
+      id: createSequentialId('usr'),
       name: userForm.name,
       email: userForm.email,
       role: userForm.role,
-      status: "ACTIVE",
+      status: 'ACTIVE',
       avatar: `https://picsum.photos/seed/${Date.now()}/200/200`,
-      lastActive: "Just invited",
-    };
+      lastActive: 'Just invited',
+    }
 
-    setState({ ...state, platformUsers: [...state.platformUsers, newUser] });
-    setIsInviteUserOpen(false);
-    setUserForm(EMPTY_STAFF_FORM);
-    showToast(`Invited "${newUser.name}"`);
-  };
+    setState({ ...state, platformUsers: [...state.platformUsers, newUser] })
+    setIsInviteUserOpen(false)
+    setUserForm(EMPTY_STAFF_FORM)
+    showToast(`Invited "${newUser.name}"`)
+  }
 
   const handleToggleUserStatus = (userId: string) => {
-    const target = state.platformUsers.find((u) => u.id === userId);
-    if (!target) return;
+    const target = state.platformUsers.find((u) => u.id === userId)
+    if (!target) return
     if (target.id === state.currentUser.id) {
-      showToast("Cannot revoke your own account");
-      return;
+      showToast('Cannot revoke your own account')
+      return
     }
 
     const updated = state.platformUsers.map((u) =>
       u.id === userId
         ? {
             ...u,
-            status: (u.status === "ACTIVE" ? "REVOKED" : "ACTIVE") as
-              | "ACTIVE"
-              | "REVOKED",
+            status: (u.status === 'ACTIVE' ? 'REVOKED' : 'ACTIVE') as 'ACTIVE' | 'REVOKED',
           }
         : u,
-    );
-    setState({ ...state, platformUsers: updated });
-    showToast(`Updated "${target.name}"`);
-  };
+    )
+    setState({ ...state, platformUsers: updated })
+    showToast(`Updated "${target.name}"`)
+  }
 
   const handleDeleteUser = () => {
-    if (!deletingUser) return;
+    if (!deletingUser) return
     if (deletingUser.id === state.currentUser.id) {
-      showToast("Cannot delete the signed-in account");
-      setDeletingUser(null);
-      return;
+      showToast('Cannot delete the signed-in account')
+      setDeletingUser(null)
+      return
     }
     setState({
       ...state,
-      platformUsers: state.platformUsers.filter(
-        (u) => u.id !== deletingUser.id,
-      ),
-    });
-    setDeletingUser(null);
-    showToast(`Removed "${deletingUser.name}"`);
-  };
+      platformUsers: state.platformUsers.filter((u) => u.id !== deletingUser.id),
+    })
+    setDeletingUser(null)
+    showToast(`Removed "${deletingUser.name}"`)
+  }
 
   const openAddCategory = () => {
-    setEditingCategory(null);
+    setEditingCategory(null)
     setCategoryForm({
       ...EMPTY_CATEGORY_FORM,
       displayOrder: String(state.categories.length + 1),
-    });
-    setIsAddCategoryOpen(true);
-  };
+    })
+    setIsAddCategoryOpen(true)
+  }
 
   const openEditCategory = (category: TaxonomyCategory) => {
-    setEditingCategory(category);
+    setEditingCategory(category)
     setCategoryForm({
       name: category.name,
       slug: category.slug,
       description: category.description,
       iconName: category.iconName,
       displayOrder: String(category.displayOrder),
-    });
-    setIsAddCategoryOpen(true);
-  };
+    })
+    setIsAddCategoryOpen(true)
+  }
 
   if (!state.authenticated) {
     return (
@@ -511,19 +463,13 @@ export function AdminDashboard() {
         password={ADMIN_DEMO_PASSWORD}
         onSignIn={handleJudgeSignIn}
         extraAction={
-          <Button
-            variant="dark"
-            size="lg"
-            fullWidth
-            onClick={handleJudgeSignIn}
-            className="mt-3"
-          >
+          <Button variant="dark" size="lg" fullWidth onClick={handleJudgeSignIn} className="mt-3">
             <Zap className="h-4 w-4 fill-white" />
             1-click demo sign-in
           </Button>
         }
       />
-    );
+    )
   }
 
   return (
@@ -565,7 +511,7 @@ export function AdminDashboard() {
           />
         }
       >
-        {activeTab === "overview" && (
+        {activeTab === 'overview' && (
           <OverviewTab
             totalVolume={metrics.totalVolume}
             totalHolds={metrics.totalHolds}
@@ -576,12 +522,12 @@ export function AdminDashboard() {
             pendingCrCount={metrics.pendingCrCount}
             onNavigate={setActiveTab}
             onAddSalon={() => setIsAddSalonOpen(true)}
-            onReviewPolicy={() => setCrSubTab("POLICY")}
+            onReviewPolicy={() => setCrSubTab('POLICY')}
             onAddOverride={() => setIsAddOverrideOpen(true)}
           />
         )}
 
-        {activeTab === "salons" && (
+        {activeTab === 'salons' && (
           <SalonsTab
             salons={filteredSalons}
             search={salonSearch}
@@ -596,7 +542,7 @@ export function AdminDashboard() {
           />
         )}
 
-        {activeTab === "requests" && (
+        {activeTab === 'requests' && (
           <RequestsTab
             changeRequests={state.changeRequests}
             subTab={crSubTab}
@@ -606,7 +552,7 @@ export function AdminDashboard() {
           />
         )}
 
-        {activeTab === "commission" && (
+        {activeTab === 'commission' && (
           <CommissionTab
             globalRateInput={globalRateInput}
             onGlobalRateInputChange={setGlobalRateInput}
@@ -618,7 +564,7 @@ export function AdminDashboard() {
           />
         )}
 
-        {activeTab === "taxonomy" && (
+        {activeTab === 'taxonomy' && (
           <TaxonomyTab
             categories={state.categories}
             onAddCategory={openAddCategory}
@@ -628,7 +574,7 @@ export function AdminDashboard() {
           />
         )}
 
-        {activeTab === "staff" && (
+        {activeTab === 'staff' && (
           <StaffTab
             users={state.platformUsers}
             currentUserId={state.currentUser.id}
@@ -663,8 +609,8 @@ export function AdminDashboard() {
           suspensionReason={suspensionReasonInput}
           onReasonChange={setSuspensionReasonInput}
           onClose={() => {
-            setSuspendingSalon(null);
-            setSuspensionReasonInput("");
+            setSuspendingSalon(null)
+            setSuspensionReasonInput('')
           }}
           onConfirm={handleConfirmSuspension}
         />
@@ -684,8 +630,8 @@ export function AdminDashboard() {
           reason={crRejectReason}
           onReasonChange={setCrRejectReason}
           onClose={() => {
-            setRejectingCr(null);
-            setCrRejectReason("");
+            setRejectingCr(null)
+            setCrRejectReason('')
           }}
           onConfirm={handleConfirmRejectCR}
         />
@@ -707,8 +653,8 @@ export function AdminDashboard() {
           form={categoryForm}
           onChange={setCategoryForm}
           onClose={() => {
-            setIsAddCategoryOpen(false);
-            setEditingCategory(null);
+            setIsAddCategoryOpen(false)
+            setEditingCategory(null)
           }}
           onSubmit={handleSaveCategory}
         />
@@ -739,5 +685,5 @@ export function AdminDashboard() {
         />
       )}
     </div>
-  );
+  )
 }

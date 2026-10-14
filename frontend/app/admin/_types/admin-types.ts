@@ -1,15 +1,5 @@
-export type AdminTabId =
-  | "overview"
-  | "salons"
-  | "requests"
-  | "commission"
-  | "taxonomy"
-  | "staff";
+export type AdminTabId = 'overview' | 'salons' | 'requests' | 'commission' | 'taxonomy' | 'staff'
 
-export type CrSubTab = "POLICY" | "PAYPAL";
+export type CrSubTab = 'POLICY' | 'PAYPAL'
 
-export type SalonStatusFilter =
-  | "ALL"
-  | "APPROVED"
-  | "PENDING_REVIEW"
-  | "SUSPENDED";
+export type SalonStatusFilter = 'ALL' | 'APPROVED' | 'PENDING_REVIEW' | 'SUSPENDED'

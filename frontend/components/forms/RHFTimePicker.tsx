@@ -1,20 +1,20 @@
-"use client";
+'use client'
 
-import { Controller, useFormContext } from "react-hook-form";
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
+  formControlInputClassName,
   FormFieldError,
+  formFieldHtmlIds,
   FormFieldLabel,
   FormFieldRoot,
-  formControlInputClassName,
-  formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
+} from '@/components/forms/form-field-parts'
 
 interface IProps {
-  name: string;
-  label: string;
-  isRequired?: boolean;
-  placeholder?: string;
+  name: string
+  label: string
+  isRequired?: boolean
+  placeholder?: string
 }
 
 const RHFTimePicker = ({
@@ -24,8 +24,8 @@ const RHFTimePicker = ({
   placeholder,
   ...other
 }: IProps & React.InputHTMLAttributes<HTMLInputElement>) => {
-  const { control, clearErrors } = useFormContext();
-  const { controlId, errorId } = formFieldHtmlIds(name);
+  const { control, clearErrors } = useFormContext()
+  const { controlId, errorId } = formFieldHtmlIds(name)
 
   return (
     <Controller
@@ -34,11 +34,7 @@ const RHFTimePicker = ({
       render={({ field, fieldState: { error } }) => (
         <FormFieldRoot>
           {label ? (
-            <FormFieldLabel
-              htmlFor={controlId}
-              label={label}
-              isRequired={isRequired}
-            />
+            <FormFieldLabel htmlFor={controlId} label={label} isRequired={isRequired} />
           ) : null}
 
           <input
@@ -48,22 +44,20 @@ const RHFTimePicker = ({
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
             {...field}
-            value={field.value ?? ""}
+            value={field.value ?? ''}
             onChange={(e) => {
-              field.onChange(e.target.value);
-              clearErrors(name);
+              field.onChange(e.target.value)
+              clearErrors(name)
             }}
             className={formControlInputClassName({ hasError: !!error })}
             {...other}
           />
 
-          {error ? (
-            <FormFieldError id={errorId} message={error.message ?? ""} />
-          ) : null}
+          {error ? <FormFieldError id={errorId} message={error.message ?? ''} /> : null}
         </FormFieldRoot>
       )}
     />
-  );
-};
+  )
+}
 
-export default RHFTimePicker;
+export default RHFTimePicker

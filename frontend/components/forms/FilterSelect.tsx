@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Select,
@@ -6,25 +6,25 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 export type FilterSelectOption = {
-  label: string;
-  value: string;
-};
+  label: string
+  value: string
+}
 
 type FilterSelectProps = {
-  value: string;
-  onValueChange: (value: string) => void;
-  options: FilterSelectOption[];
-  placeholder?: string;
-  className?: string;
-  triggerClassName?: string;
+  value: string
+  onValueChange: (value: string) => void
+  options: FilterSelectOption[]
+  placeholder?: string
+  className?: string
+  triggerClassName?: string
   /** Fixed width for toolbar filters (Figma: 160px). */
-  widthClassName?: string;
-  "aria-label"?: string;
-};
+  widthClassName?: string
+  'aria-label'?: string
+}
 
 /**
  * Shared table/toolbar filter select — Figma agent styling
@@ -37,15 +37,15 @@ export function FilterSelect({
   placeholder,
   className,
   triggerClassName,
-  widthClassName = "w-[160px]",
-  "aria-label": ariaLabel,
+  widthClassName = 'w-[160px]',
+  'aria-label': ariaLabel,
 }: FilterSelectProps) {
   return (
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger
         aria-label={ariaLabel ?? placeholder}
         className={cn(
-          "h-9 rounded-md border-[#E5E7EB] bg-white px-2.5 text-[13px] text-[#111827] shadow-none",
+          'h-9 rounded-md border-[#E5E7EB] bg-white px-2.5 text-[13px] text-[#111827] shadow-none',
           widthClassName,
           triggerClassName,
           className,
@@ -61,7 +61,7 @@ export function FilterSelect({
         ))}
       </SelectContent>
     </Select>
-  );
+  )
 }
 
-export default FilterSelect;
+export default FilterSelect

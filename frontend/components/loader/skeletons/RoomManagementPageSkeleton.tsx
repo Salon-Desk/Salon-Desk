@@ -1,7 +1,7 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
-import { SkeletonSearchField } from "./shared";
+import { SkeletonSearchField } from './shared'
 
 function SkeletonRoomCard() {
   return (
@@ -20,19 +20,18 @@ function SkeletonRoomCard() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 export type RoomManagementPageSkeletonProps = {
-  className?: string;
-  cards?: number;
-  isCardOnly?: boolean;
+  className?: string
+  cards?: number
+  isCardOnly?: boolean
   /** With `isCardOnly`, overrides the inner card grid (e.g. booking drawer uses 2 columns + tighter gaps). */
-  cardGridClassName?: string;
-};
+  cardGridClassName?: string
+}
 
-const defaultCardGridClass =
-  "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4";
+const defaultCardGridClass = 'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
 
 const RoomManagementPageSkeleton = ({
   className,
@@ -47,14 +46,11 @@ const RoomManagementPageSkeleton = ({
           <SkeletonRoomCard key={i} />
         ))}
       </div>
-    );
+    )
   }
   return (
     <div
-      className={cn(
-        "flex flex-col gap-4 rounded-2xl bg-background p-1 md:p-2 lg:p-5",
-        className,
-      )}
+      className={cn('flex flex-col gap-4 rounded-2xl bg-background p-1 md:p-2 lg:p-5', className)}
     >
       <div className="sticky top-0 z-10 -mx-1 rounded-2xl bg-background px-1 py-1 md:-mx-2 md:px-2 md:py-2 lg:-mx-5 lg:px-5 lg:py-5">
         <div className="flex flex-col gap-4">
@@ -73,7 +69,7 @@ const RoomManagementPageSkeleton = ({
         ))}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default RoomManagementPageSkeleton;
+export default RoomManagementPageSkeleton

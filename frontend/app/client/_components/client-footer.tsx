@@ -1,23 +1,16 @@
-"use client";
+'use client'
 
-import {
-  ArrowUpRight,
-  Building2,
-  Lock,
-  RotateCcw,
-  Scissors,
-  Shield,
-  Sparkles,
-} from "lucide-react";
-import Link from "next/link";
-import { Logo } from "@/components/brand/logo";
-import { BUYER_PERSONAS, type BuyerPersonaId, ROUTES } from "@/lib/constants";
+import { ArrowUpRight, Building2, Lock, RotateCcw, Scissors, Shield, Sparkles } from 'lucide-react'
+import Link from 'next/link'
+
+import { Logo } from '@/components/brand/logo'
+import { BUYER_PERSONAS, type BuyerPersonaId, ROUTES } from '@/lib/constants'
 
 interface ClientFooterProps {
-  buyerPersona: BuyerPersonaId;
-  onTogglePersona: () => void;
-  onReset: () => void;
-  isResetting: boolean;
+  buyerPersona: BuyerPersonaId
+  onTogglePersona: () => void
+  onReset: () => void
+  isResetting: boolean
 }
 
 export function ClientFooter({
@@ -26,7 +19,7 @@ export function ClientFooter({
   onReset,
   isResetting,
 }: ClientFooterProps) {
-  const buyer = BUYER_PERSONAS[buyerPersona];
+  const buyer = BUYER_PERSONAS[buyerPersona]
 
   return (
     <footer className="mt-20 border-t border-stone-200/80 bg-stone-50/70 text-stone-700">
@@ -42,9 +35,8 @@ export function ClientFooter({
               </span>
             </div>
             <p className="text-xs text-stone-500 leading-relaxed max-w-sm">
-              SoHo flagship hair design, skin fades, balayage, and restorative
-              treatments. Reserve master stylists with $0 debited today through
-              PayPal authorization holds.
+              SoHo flagship hair design, skin fades, balayage, and restorative treatments. Reserve
+              master stylists with $0 debited today through PayPal authorization holds.
             </p>
             <div className="pt-2 text-xs text-stone-500 space-y-1">
               <div>454 Broome Street, SoHo, New York, NY 10013</div>
@@ -79,8 +71,7 @@ export function ClientFooter({
               Platform & Reviewer Tools
             </div>
             <p className="text-xs text-stone-500">
-              Switch between demo personas, jump to other portals, or reset demo
-              database state.
+              Switch between demo personas, jump to other portals, or reset demo database state.
             </p>
 
             <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -93,9 +84,7 @@ export function ClientFooter({
               >
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>Buyer: {buyer.shortLabel}</span>
-                <span className="text-[10px] text-stone-400 underline ml-0.5">
-                  Switch
-                </span>
+                <span className="text-[10px] text-stone-400 underline ml-0.5">Switch</span>
               </button>
 
               {/* Reset Demo State */}
@@ -107,7 +96,7 @@ export function ClientFooter({
                 className="inline-flex items-center gap-1.5 rounded-full bg-white border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-800 hover:bg-stone-100 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <RotateCcw
-                  className={`h-3 w-3 text-stone-500 ${isResetting ? "animate-spin" : ""}`}
+                  className={`h-3 w-3 text-stone-500 ${isResetting ? 'animate-spin' : ''}`}
                 />
                 <span>Reset Demo</span>
               </button>
@@ -147,7 +136,7 @@ export function ClientFooter({
         {/* Bottom Micro-Bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500">
           <div>
-            © 2026 Crown & Blade Atelier. Powered by{" "}
+            © 2026 Crown & Blade Atelier. Powered by{' '}
             <span className="font-semibold text-stone-800">SalonDesk</span>.
           </div>
           <div className="text-[11px] text-stone-400">
@@ -156,5 +145,5 @@ export function ClientFooter({
         </div>
       </div>
     </footer>
-  );
+  )
 }

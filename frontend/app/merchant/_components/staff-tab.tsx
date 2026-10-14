@@ -1,32 +1,26 @@
-"use client";
+'use client'
 
-import { Edit2, Plus, Trash2 } from "lucide-react";
-import { Button, Card, IconButton } from "@/components/ui";
-import type { StaffMember } from "@/types";
+import { Edit2, Plus, Trash2 } from 'lucide-react'
+
+import { Button, Card, IconButton } from '@/components/ui'
+import type { StaffMember } from '@/types'
 
 interface StaffTabProps {
-  staff: StaffMember[];
-  onAddStaff: () => void;
-  onEditStaff: (member: StaffMember) => void;
-  onDeleteStaff: (member: StaffMember) => void;
+  staff: StaffMember[]
+  onAddStaff: () => void
+  onEditStaff: (member: StaffMember) => void
+  onDeleteStaff: (member: StaffMember) => void
 }
 
-export function StaffTab({
-  staff,
-  onAddStaff,
-  onEditStaff,
-  onDeleteStaff,
-}: StaffTabProps) {
+export function StaffTab({ staff, onAddStaff, onEditStaff, onDeleteStaff }: StaffTabProps) {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-200">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h2 className="font-bold text-slate-900 text-xl">
-            Staff &amp; Stylist Management
-          </h2>
+          <h2 className="font-bold text-slate-900 text-xl">Staff &amp; Stylist Management</h2>
           <p className="text-slate-600 text-xs">
-            Configure staff working hours, breaks, specialties, and client
-            capacity for authorization hold bookings.
+            Configure staff working hours, breaks, specialties, and client capacity for
+            authorization hold bookings.
           </p>
         </div>
 
@@ -53,22 +47,18 @@ export function StaffTab({
                 />
                 <span
                   className={`rounded border px-2 py-0.5 font-bold text-[10px] uppercase tracking-wider ${
-                    stylist.status === "ACTIVE"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-slate-200 bg-slate-100 text-slate-600"
+                    stylist.status === 'ACTIVE'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                      : 'border-slate-200 bg-slate-100 text-slate-600'
                   }`}
                 >
-                  {stylist.status || "ACTIVE"}
+                  {stylist.status || 'ACTIVE'}
                 </span>
               </div>
 
               <div>
-                <h3 className="font-bold text-base text-slate-900">
-                  {stylist.name}
-                </h3>
-                <p className="font-semibold text-amber-800 text-xs">
-                  {stylist.role}
-                </p>
+                <h3 className="font-bold text-base text-slate-900">{stylist.name}</h3>
+                <p className="font-semibold text-amber-800 text-xs">{stylist.role}</p>
                 <div className="mt-1 font-mono text-[11px] text-slate-500">
                   ★ {stylist.rating.toFixed(1)} ({stylist.reviewsCount} reviews)
                 </div>
@@ -76,14 +66,9 @@ export function StaffTab({
 
               <div className="space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs">
                 <div className="text-slate-700">
-                  Hours:{" "}
-                  <strong className="text-slate-900">
-                    {stylist.workingHours}
-                  </strong>
+                  Hours: <strong className="text-slate-900">{stylist.workingHours}</strong>
                 </div>
-                <div className="text-[11px] text-slate-500">
-                  Break: {stylist.breakPeriod}
-                </div>
+                <div className="text-[11px] text-slate-500">Break: {stylist.breakPeriod}</div>
                 <div className="text-[11px] text-slate-500">
                   Max Clients: {stylist.maxSimultaneousClients || 1} at a time
                 </div>
@@ -121,5 +106,5 @@ export function StaffTab({
         ))}
       </div>
     </div>
-  );
+  )
 }

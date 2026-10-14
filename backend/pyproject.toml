@@ -14,12 +14,17 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "cryptography>=44.0.0",
     "httpx>=0.28.0",
+    "bcrypt>=5.0.0",
+    "pgvector>=0.3.6",
+    "livekit>=1.0.0",
+    "livekit-agents[openai,silero,deepgram]>=1.0.0",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
+    "ruff>=0.11.0",
 ]
 
 [tool.uv]
@@ -29,3 +34,32 @@ package = false
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["app", "scripts", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501", # line length handled by formatter
+    "B008", # FastAPI Depends/Query in defaults is intentional
+    "UP042", # keep str, Enum for SQLAlchemy / Pydantic compatibility
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

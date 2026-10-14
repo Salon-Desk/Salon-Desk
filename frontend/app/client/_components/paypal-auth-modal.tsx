@@ -1,26 +1,27 @@
-"use client";
+'use client'
 
-import { CheckCircle2, Lock, Shield, Sparkles, Star, User } from "lucide-react";
-import { Button, DetailRow, Modal, Panel } from "@/components/ui";
-import { BUYER_PERSONAS, type BuyerPersonaId } from "@/lib/constants";
-import { INITIAL_STAFF } from "@/lib/data/catalog";
-import { formatSlot, TIME_SLOTS } from "@/lib/data/service-content";
-import type { Booking, SalonService, StaffMember } from "@/types";
+import { CheckCircle2, Lock, Shield, Sparkles, Star, User } from 'lucide-react'
 
-export type AuthStep = "review" | "authorizing" | "success";
+import { Button, DetailRow, Modal, Panel } from '@/components/ui'
+import { BUYER_PERSONAS, type BuyerPersonaId } from '@/lib/constants'
+import { INITIAL_STAFF } from '@/lib/data/catalog'
+import { formatSlot, TIME_SLOTS } from '@/lib/data/service-content'
+import type { Booking, SalonService, StaffMember } from '@/types'
+
+export type AuthStep = 'review' | 'authorizing' | 'success'
 
 interface PaypalAuthModalProps {
-  service: SalonService;
-  stylist: StaffMember;
-  slot: string;
-  step: AuthStep;
-  confirmedBooking: Booking | null;
-  buyerPersona: BuyerPersonaId;
-  onSelectStylist: (staff: StaffMember) => void;
-  onSelectSlot: (slot: string) => void;
-  onApprove: () => void;
-  onClose: () => void;
-  onViewBookings: () => void;
+  service: SalonService
+  stylist: StaffMember
+  slot: string
+  step: AuthStep
+  confirmedBooking: Booking | null
+  buyerPersona: BuyerPersonaId
+  onSelectStylist: (staff: StaffMember) => void
+  onSelectSlot: (slot: string) => void
+  onApprove: () => void
+  onClose: () => void
+  onViewBookings: () => void
 }
 
 export function PaypalAuthModal({
@@ -36,18 +37,18 @@ export function PaypalAuthModal({
   onClose,
   onViewBookings,
 }: PaypalAuthModalProps) {
-  const buyer = BUYER_PERSONAS[buyerPersona];
+  const buyer = BUYER_PERSONAS[buyerPersona]
 
   return (
     <Modal
       onClose={onClose}
       size="md"
-      hideHeader={step !== "review"}
+      hideHeader={step !== 'review'}
       icon={<Lock className="h-4 w-4 text-amber-600" />}
       title="PayPal Authorization Hold"
       description="Reserve chair with intent: AUTHORIZE ($0 debited today)"
     >
-      {step === "review" && (
+      {step === 'review' && (
         <div>
           <Panel className="mb-4">
             <div className="mb-2 flex items-start justify-between">
@@ -55,13 +56,9 @@ export function PaypalAuthModal({
                 <span className="font-bold text-[10px] text-amber-600 uppercase tracking-wider">
                   {service.category}
                 </span>
-                <h4 className="font-bold text-slate-900 text-sm">
-                  {service.name}
-                </h4>
+                <h4 className="font-bold text-slate-900 text-sm">{service.name}</h4>
               </div>
-              <span className="font-black text-base text-slate-900">
-                ${service.price}
-              </span>
+              <span className="font-black text-base text-slate-900">${service.price}</span>
             </div>
 
             <span className="mb-1 block font-bold text-[11px] text-slate-700">
@@ -75,13 +72,11 @@ export function PaypalAuthModal({
                   onClick={() => onSelectStylist(staff)}
                   className={`rounded-xl border p-2 text-left transition-all ${
                     stylist.id === staff.id
-                      ? "border-amber-500 bg-white shadow-xs ring-1 ring-amber-500"
-                      : "border-slate-200 bg-white/60 hover:bg-white"
+                      ? 'border-amber-500 bg-white shadow-xs ring-1 ring-amber-500'
+                      : 'border-slate-200 bg-white/60 hover:bg-white'
                   }`}
                 >
-                  <div className="truncate font-bold text-[11px] text-slate-900">
-                    {staff.name}
-                  </div>
+                  <div className="truncate font-bold text-[11px] text-slate-900">{staff.name}</div>
                   <div className="flex items-center gap-0.5 text-[9px] text-slate-500">
                     <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
                     <span>{staff.rating}</span>
@@ -95,8 +90,8 @@ export function PaypalAuthModal({
             </span>
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
               {TIME_SLOTS.slice(0, 4).map((item) => {
-                const slotStr = formatSlot(item);
-                const selected = slot === slotStr;
+                const slotStr = formatSlot(item)
+                const selected = slot === slotStr
                 return (
                   <button
                     key={slotStr}
@@ -104,13 +99,13 @@ export function PaypalAuthModal({
                     onClick={() => onSelectSlot(slotStr)}
                     className={`rounded-lg border px-2 py-1.5 text-center font-semibold text-[10px] transition-all ${
                       selected
-                        ? "border-amber-500 bg-amber-500 font-bold text-slate-950 shadow-xs"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                        ? 'border-amber-500 bg-amber-500 font-bold text-slate-950 shadow-xs'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
                     }`}
                   >
                     {item.label}
                   </button>
-                );
+                )
               })}
             </div>
           </Panel>
@@ -150,9 +145,7 @@ export function PaypalAuthModal({
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-slate-500" />
               <div>
-                <div className="font-bold text-slate-900 text-xs">
-                  {buyer.name}
-                </div>
+                <div className="font-bold text-slate-900 text-xs">{buyer.name}</div>
                 <div className="text-[10px] text-slate-500">{buyer.card}</div>
               </div>
             </div>
@@ -166,13 +159,12 @@ export function PaypalAuthModal({
             Authorize ${service.holdDeposit} Hold with PayPal ($0 Today)
           </Button>
           <p className="mt-2.5 text-center text-[11px] text-slate-400">
-            Authorization Hold: No money leaves your account today. Free
-            cancellation ≥ 24 hours.
+            Authorization Hold: No money leaves your account today. Free cancellation ≥ 24 hours.
           </p>
         </div>
       )}
 
-      {step === "authorizing" && (
+      {step === 'authorizing' && (
         <div className="py-12 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 animate-spin items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-600">
             <Sparkles className="h-8 w-8" />
@@ -188,7 +180,7 @@ export function PaypalAuthModal({
         </div>
       )}
 
-      {step === "success" && confirmedBooking && (
+      {step === 'success' && confirmedBooking && (
         <div className="py-4 text-center">
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600">
             <CheckCircle2 className="h-8 w-8" />
@@ -196,31 +188,20 @@ export function PaypalAuthModal({
           <span className="mb-2 inline-block rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-bold text-amber-700 text-xs">
             HELD • ${confirmedBooking.holdAmount} Authorization Placed
           </span>
-          <h3 className="mb-1 font-black text-lg text-slate-900">
-            Appointment Confirmed!
-          </h3>
+          <h3 className="mb-1 font-black text-lg text-slate-900">Appointment Confirmed!</h3>
           <p className="mb-5 text-slate-500 text-xs">
-            Zero dollars charged today. Your stylist{" "}
-            {confirmedBooking.stylistName} is reserved for{" "}
+            Zero dollars charged today. Your stylist {confirmedBooking.stylistName} is reserved for{' '}
             {confirmedBooking.appointmentTime}.
           </p>
 
           <Panel className="mb-6 space-y-2 text-left text-xs">
             <DetailRow
               label="Booking Reference:"
-              value={
-                <span className="font-mono font-bold">
-                  {confirmedBooking.id}
-                </span>
-              }
+              value={<span className="font-mono font-bold">{confirmedBooking.id}</span>}
             />
             <DetailRow
               label="PayPal Auth ID:"
-              value={
-                <span className="font-mono font-bold">
-                  {confirmedBooking.paypalAuthId}
-                </span>
-              }
+              value={<span className="font-mono font-bold">{confirmedBooking.paypalAuthId}</span>}
             />
             <DetailRow
               label="Consent Hash:"
@@ -250,5 +231,5 @@ export function PaypalAuthModal({
         </div>
       )}
     </Modal>
-  );
+  )
 }

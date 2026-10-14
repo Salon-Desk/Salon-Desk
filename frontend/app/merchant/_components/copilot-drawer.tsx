@@ -1,60 +1,53 @@
-"use client";
+'use client'
 
-import { Bot, Check, Send } from "lucide-react";
-import { useState } from "react";
-import { Button, Drawer } from "@/components/ui";
-import type { Booking } from "@/types";
+import { Bot, Check, Send } from 'lucide-react'
+import { useState } from 'react'
+
+import { Button, Drawer } from '@/components/ui'
+import type { Booking } from '@/types'
 
 export interface CopilotMessage {
-  role: "user" | "assistant";
-  content: string;
-  hasProposal?: boolean;
-  proposalData?: RefundProposal;
+  role: 'user' | 'assistant'
+  content: string
+  hasProposal?: boolean
+  proposalData?: RefundProposal
 }
 
 export interface RefundProposal {
-  bookingId: string;
-  clientName: string;
-  refundAmount: number;
-  reason: string;
+  bookingId: string
+  clientName: string
+  refundAmount: number
+  reason: string
 }
 
 interface CopilotDrawerProps {
-  bookings: Booking[];
-  onClose: () => void;
-  onExecuteRefund: (proposal: RefundProposal) => string;
+  bookings: Booking[]
+  onClose: () => void
+  onExecuteRefund: (proposal: RefundProposal) => string
 }
 
 const INITIAL_MESSAGE: CopilotMessage = {
-  role: "assistant",
+  role: 'assistant',
   content:
-    "👋 Hello Selamawit! I am your Salon AI Assistant powered by PayPal Agent Toolkit 1.11.0.\n\nI can verify client authorization holds, query appointment breakdowns, or propose goodwill partial refunds for emergencies.",
-};
+    '👋 Hello Selamawit! I am your Salon AI Assistant powered by PayPal Agent Toolkit 1.11.0.\n\nI can verify client authorization holds, query appointment breakdowns, or propose goodwill partial refunds for emergencies.',
+}
 
-export function CopilotDrawer({
-  bookings,
-  onClose,
-  onExecuteRefund,
-}: CopilotDrawerProps) {
-  const [copilotQuery, setCopilotQuery] = useState("");
-  const [copilotChat, setCopilotChat] = useState<CopilotMessage[]>([
-    INITIAL_MESSAGE,
-  ]);
+export function CopilotDrawer({ bookings, onClose, onExecuteRefund }: CopilotDrawerProps) {
+  const [copilotQuery, setCopilotQuery] = useState('')
+  const [copilotChat, setCopilotChat] = useState<CopilotMessage[]>([INITIAL_MESSAGE])
 
   const handleCopilotSend = (prefilledText?: string) => {
-    const text = prefilledText || copilotQuery;
-    if (!text.trim()) return;
+    const text = prefilledText || copilotQuery
+    if (!text.trim()) return
 
-    const userMsg: CopilotMessage = { role: "user", content: text };
-    setCopilotChat((prev) => [...prev, userMsg]);
-    setCopilotQuery("");
+    const userMsg: CopilotMessage = { role: 'user', content: text }
+    setCopilotChat((prev) => [...prev, userMsg])
+    setCopilotQuery('')
 
-    const lower = text.toLowerCase();
+    const lower = text.toLowerCase()
 
-    if (lower.includes("hana") || lower.includes("status of hana")) {
-      const hanaBooking = bookings.find((b) =>
-        b.clientName.toLowerCase().includes("hana"),
-      );
+    if (lower.includes('hana') || lower.includes('status of hana')) {
+      const hanaBooking = bookings.find((b) => b.clientName.toLowerCase().includes('hana'))
       const response = hanaBooking
         ? `⚡ [toolkit.get_authorization("${hanaBooking.paypalAuthId}")]\n` +
           `Hana Bekele has an active authorization hold for $${hanaBooking.holdAmount}.00 for "${hanaBooking.serviceName}" scheduled for ${hanaBooking.appointmentTime}.\n` +
@@ -62,87 +55,66 @@ export function CopilotDrawer({
           `• Honor Period: ${hanaBooking.honorPeriodEndsInHours || 38} hours remaining\n` +
           `• $0.00 debited from client account today\n` +
           `• Stylist: ${hanaBooking.stylistName}`
-        : "Could not find an active booking for Hana.";
+        : 'Could not find an active booking for Hana.'
 
-      setCopilotChat((prev) => [
-        ...prev,
-        { role: "assistant", content: response },
-      ]);
-      return;
+      setCopilotChat((prev) => [...prev, { role: 'assistant', content: response }])
+      return
     }
 
     if (
-      lower.includes("summarize") ||
-      lower.includes("hold volume") ||
-      lower.includes("transactions")
+      lower.includes('summarize') ||
+      lower.includes('hold volume') ||
+      lower.includes('transactions')
     ) {
-      const activeHolds = bookings.filter(
-        (b) => b.status === "HELD" || b.status === "REAUTHORIZED",
-      );
-      const totalProtected = activeHolds.reduce(
-        (acc, b) => acc + b.holdAmount,
-        0,
-      );
-      const captured = bookings.filter((b) => b.status === "CAPTURED");
-      const totalCaptured = captured.reduce(
-        (acc, b) => acc + b.servicePrice,
-        0,
-      );
+      const activeHolds = bookings.filter((b) => b.status === 'HELD' || b.status === 'REAUTHORIZED')
+      const totalProtected = activeHolds.reduce((acc, b) => acc + b.holdAmount, 0)
+      const captured = bookings.filter((b) => b.status === 'CAPTURED')
+      const totalCaptured = captured.reduce((acc, b) => acc + b.servicePrice, 0)
 
       const response =
         `⚡ [toolkit.list_transactions & get_portfolio_summary]\n` +
         `• Active Protected Holds: ${activeHolds.length} bookings ($${totalProtected}.00 reserved on PayPal)\n` +
         `• Settled Revenue Today: $${totalCaptured}.00\n` +
         `• No-Show Protected Recoveries: $30.00 captured with zero chargebacks\n` +
-        `• Next upcoming appointment: Hana Bekele (Today at 10:00 AM)`;
+        `• Next upcoming appointment: Hana Bekele (Today at 10:00 AM)`
 
-      setCopilotChat((prev) => [
-        ...prev,
-        { role: "assistant", content: response },
-      ]);
-      return;
+      setCopilotChat((prev) => [...prev, { role: 'assistant', content: response }])
+      return
     }
 
-    if (
-      lower.includes("emergency") ||
-      lower.includes("refund") ||
-      lower.includes("goodwill")
-    ) {
-      const jamalBooking = bookings.find((b) => b.id === "SD-8461");
-      const refundAmount = 15.0;
+    if (lower.includes('emergency') || lower.includes('refund') || lower.includes('goodwill')) {
+      const jamalBooking = bookings.find((b) => b.id === 'SD-8461')
+      const refundAmount = 15.0
       const proposal: RefundProposal = {
-        bookingId: jamalBooking?.id || "SD-8461",
-        clientName: jamalBooking?.clientName || "Jamal Crawford",
+        bookingId: jamalBooking?.id || 'SD-8461',
+        clientName: jamalBooking?.clientName || 'Jamal Crawford',
         refundAmount,
-        reason: "Client Family Emergency - Goodwill 50% No-Show Waiver",
-      };
+        reason: 'Client Family Emergency - Goodwill 50% No-Show Waiver',
+      }
 
       const response =
         `⚡ [toolkit.create_refund Proposal]\n` +
         `I recognized intent for a goodwill partial refund. The $30.00 no-show fee for Jamal Crawford (SD-8461) can be partially refunded by $15.00.\n` +
-        `Human-in-the-Loop Safeguard: This transaction requires your explicit confirmation below.`;
+        `Human-in-the-Loop Safeguard: This transaction requires your explicit confirmation below.`
 
       setCopilotChat((prev) => [
         ...prev,
         {
-          role: "assistant",
+          role: 'assistant',
           content: response,
           hasProposal: true,
           proposalData: proposal,
         },
-      ]);
-      return;
+      ])
+      return
     }
 
     const defaultResponse =
       `⚡ [PayPal Agent Toolkit 1.11.0]\n` +
-      `I can query bookings, verify authorizations, or create refund proposals. Try asking: "What is the status of Hana's hold?" or "Client had a family emergency, refund half the $30 no-show fee."`;
+      `I can query bookings, verify authorizations, or create refund proposals. Try asking: "What is the status of Hana's hold?" or "Client had a family emergency, refund half the $30 no-show fee."`
 
-    setCopilotChat((prev) => [
-      ...prev,
-      { role: "assistant", content: defaultResponse },
-    ]);
-  };
+    setCopilotChat((prev) => [...prev, { role: 'assistant', content: defaultResponse }])
+  }
 
   return (
     <Drawer
@@ -159,20 +131,14 @@ export function CopilotDrawer({
         <div className="flex shrink-0 flex-wrap gap-1.5 border-slate-100 border-b bg-white p-3">
           <button
             type="button"
-            onClick={() =>
-              handleCopilotSend("What is the status of Hana's hold?")
-            }
+            onClick={() => handleCopilotSend("What is the status of Hana's hold?")}
             className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] text-slate-700 transition-colors hover:border-amber-400 hover:text-amber-800"
           >
             🔍 Hana&apos;s hold status?
           </button>
           <button
             type="button"
-            onClick={() =>
-              handleCopilotSend(
-                "Summarize today's hold volume and transactions",
-              )
-            }
+            onClick={() => handleCopilotSend("Summarize today's hold volume and transactions")}
             className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] text-slate-700 transition-colors hover:border-amber-400 hover:text-amber-800"
           >
             📊 Today&apos;s volume summary
@@ -180,9 +146,7 @@ export function CopilotDrawer({
           <button
             type="button"
             onClick={() =>
-              handleCopilotSend(
-                "Client had a family emergency, refund half the $30 no-show fee.",
-              )
+              handleCopilotSend('Client had a family emergency, refund half the $30 no-show fee.')
             }
             className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] text-rose-700 transition-colors hover:border-rose-300"
           >
@@ -195,14 +159,14 @@ export function CopilotDrawer({
             <div
               key={`${msg.role}-${idx}`}
               className={`flex flex-col space-y-2 ${
-                msg.role === "user" ? "items-end" : "items-start"
+                msg.role === 'user' ? 'items-end' : 'items-start'
               }`}
             >
               <div
                 className={`max-w-[88%] rounded-xl p-3 whitespace-pre-line leading-relaxed ${
-                  msg.role === "user"
-                    ? "bg-gradient-to-r from-amber-500 to-amber-600 font-semibold text-white shadow-xs"
-                    : "border border-slate-200 bg-slate-50 text-slate-800"
+                  msg.role === 'user'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 font-semibold text-white shadow-xs'
+                    : 'border border-slate-200 bg-slate-50 text-slate-800'
                 }`}
               >
                 {msg.content}
@@ -221,12 +185,10 @@ export function CopilotDrawer({
 
                   <div className="space-y-1 font-mono text-xs">
                     <div className="font-bold text-slate-900">
-                      Client: {msg.proposalData.clientName} (
-                      {msg.proposalData.bookingId})
+                      Client: {msg.proposalData.clientName} ({msg.proposalData.bookingId})
                     </div>
                     <div className="font-bold text-emerald-700 text-sm">
-                      Refund Amount: ${msg.proposalData.refundAmount.toFixed(2)}{" "}
-                      USD
+                      Refund Amount: ${msg.proposalData.refundAmount.toFixed(2)} USD
                     </div>
                     <div className="font-sans text-[11px] text-slate-600">
                       Reason: {msg.proposalData.reason}
@@ -237,19 +199,18 @@ export function CopilotDrawer({
                     fullWidth
                     className="border-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
                     onClick={() => {
-                      const ledgerId = onExecuteRefund(msg.proposalData!);
+                      const ledgerId = onExecuteRefund(msg.proposalData!)
                       setCopilotChat((prev) => [
                         ...prev,
                         {
-                          role: "assistant",
+                          role: 'assistant',
                           content: `✅ Refund of $${msg.proposalData!.refundAmount.toFixed(2)} successfully executed via PayPal Orders v2 API. Audit ledger entry #${ledgerId} recorded.`,
                         },
-                      ]);
+                      ])
                     }}
                   >
                     <Check className="h-4 w-4" />
-                    Confirm ${msg.proposalData.refundAmount.toFixed(2)} Partial
-                    Refund via PayPal
+                    Confirm ${msg.proposalData.refundAmount.toFixed(2)} Partial Refund via PayPal
                   </Button>
                 </div>
               ) : null}
@@ -259,8 +220,8 @@ export function CopilotDrawer({
 
         <form
           onSubmit={(event) => {
-            event.preventDefault();
-            handleCopilotSend();
+            event.preventDefault()
+            handleCopilotSend()
           }}
           className="flex shrink-0 gap-2 border-slate-200 border-t bg-slate-50 p-3"
         >
@@ -277,5 +238,5 @@ export function CopilotDrawer({
         </form>
       </div>
     </Drawer>
-  );
+  )
 }

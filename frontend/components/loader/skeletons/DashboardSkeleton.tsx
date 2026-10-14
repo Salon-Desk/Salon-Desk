@@ -1,19 +1,16 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
-import { SkeletonStatCard } from "./shared";
+import { SkeletonStatCard } from './shared'
 
 export type DashboardSkeletonProps = {
-  className?: string;
-  statCount?: number;
-};
+  className?: string
+  statCount?: number
+}
 
-const DashboardSkeleton = ({
-  className,
-  statCount = 4,
-}: DashboardSkeletonProps) => {
+const DashboardSkeleton = ({ className, statCount = 4 }: DashboardSkeletonProps) => {
   return (
-    <div className={cn("flex flex-col gap-6 p-6 sm:p-8", className)}>
+    <div className={cn('flex flex-col gap-6 p-6 sm:p-8', className)}>
       <div className="flex flex-col gap-2">
         <Skeleton className="h-8 w-40 max-w-full rounded-md" />
         <Skeleton className="h-4 w-full max-w-xl rounded-md" />
@@ -30,7 +27,7 @@ const DashboardSkeleton = ({
         <Skeleton className="h-48 w-full rounded-lg" />
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default DashboardSkeleton;
+export default DashboardSkeleton

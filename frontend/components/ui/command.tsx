@@ -1,91 +1,74 @@
-"use client";
+'use client'
 
-import { Command as CommandPrimitive } from "cmdk";
-import { SearchIcon } from "lucide-react";
-import type { ComponentProps } from "react";
-import { cn } from "@/lib/utils";
+import { Command as CommandPrimitive } from 'cmdk'
+import { SearchIcon } from 'lucide-react'
+import type { ComponentProps } from 'react'
 
-function Command({
-  className,
-  ...props
-}: ComponentProps<typeof CommandPrimitive>) {
+import { cn } from '@/lib/utils'
+
+function Command({ className, ...props }: ComponentProps<typeof CommandPrimitive>) {
   return (
     <CommandPrimitive
       data-slot="command"
       className={cn(
-        "flex size-full flex-col overflow-hidden rounded-xl bg-popover p-1 text-popover-foreground",
+        'flex size-full flex-col overflow-hidden rounded-xl bg-popover p-1 text-popover-foreground',
         className,
       )}
       {...props}
     />
-  );
+  )
 }
 
-function CommandInput({
-  className,
-  ...props
-}: ComponentProps<typeof CommandPrimitive.Input>) {
+function CommandInput({ className, ...props }: ComponentProps<typeof CommandPrimitive.Input>) {
   return (
-    <div
-      className="flex items-center gap-2 border-border border-b px-2"
-      cmdk-input-wrapper=""
-    >
+    <div className="flex items-center gap-2 border-border border-b px-2" cmdk-input-wrapper="">
       <SearchIcon className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(
-          "flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+          'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
           className,
         )}
         {...props}
       />
     </div>
-  );
+  )
 }
 
-function CommandList({
-  className,
-  ...props
-}: ComponentProps<typeof CommandPrimitive.List>) {
+function CommandList({ className, ...props }: ComponentProps<typeof CommandPrimitive.List>) {
   return (
     <CommandPrimitive.List
       data-slot="command-list"
       className={cn(
-        "max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none",
+        'max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none',
         className,
       )}
       {...props}
     />
-  );
+  )
 }
 
-function CommandEmpty({
-  className,
-  ...props
-}: ComponentProps<typeof CommandPrimitive.Empty>) {
+function CommandEmpty({ className, ...props }: ComponentProps<typeof CommandPrimitive.Empty>) {
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
-      className={cn("py-6 text-center text-sm", className)}
+      className={cn('py-6 text-center text-sm', className)}
       {...props}
     />
-  );
+  )
 }
 
-function CommandGroup({
-  className,
-  ...props
-}: ComponentProps<typeof CommandPrimitive.Group>) {
+function CommandGroup({ className, ...props }: ComponentProps<typeof CommandPrimitive.Group>) {
   return (
     <CommandPrimitive.Group
       data-slot="command-group"
       className={cn(
-        "overflow-hidden p-1 text-foreground **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground **:[[cmdk-group-heading]]:text-xs",
+        'overflow-hidden p-1 text-foreground **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground **:[[cmdk-group-heading]]:text-xs',
         className,
       )}
       {...props}
     />
-  );
+  )
 }
 
 function CommandSeparator({
@@ -95,16 +78,13 @@ function CommandSeparator({
   return (
     <CommandPrimitive.Separator
       data-slot="command-separator"
-      className={cn("-mx-1 h-px bg-border", className)}
+      className={cn('-mx-1 h-px bg-border', className)}
       {...props}
     />
-  );
+  )
 }
 
-function CommandItem({
-  className,
-  ...props
-}: ComponentProps<typeof CommandPrimitive.Item>) {
+function CommandItem({ className, ...props }: ComponentProps<typeof CommandPrimitive.Item>) {
   return (
     <CommandPrimitive.Item
       data-slot="command-item"
@@ -114,20 +94,17 @@ function CommandItem({
       )}
       {...props}
     />
-  );
+  )
 }
 
-function CommandShortcut({ className, ...props }: ComponentProps<"span">) {
+function CommandShortcut({ className, ...props }: ComponentProps<'span'>) {
   return (
     <span
       data-slot="command-shortcut"
-      className={cn(
-        "ml-auto text-muted-foreground text-xs tracking-widest",
-        className,
-      )}
+      className={cn('ml-auto text-muted-foreground text-xs tracking-widest', className)}
       {...props}
     />
-  );
+  )
 }
 
 export {
@@ -139,4 +116,4 @@ export {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-};
+}

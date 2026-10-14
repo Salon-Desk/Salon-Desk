@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Building2,
@@ -10,35 +10,30 @@ import {
   Sliders,
   Users,
   X,
-} from "lucide-react";
-import Link from "next/link";
-import { Logo } from "@/components/brand/logo";
-import {
-  ConsoleSidebarNav,
-  type SidebarTab,
-} from "@/components/layout/console-sidebar-nav";
-import { ROUTES } from "@/lib/constants";
-import type { PlatformUser } from "@/types";
-import {
-  ADMIN_NAV_GROUPS,
-  ADMIN_TAB_LABELS,
-  ADMIN_TAB_ROUTES,
-} from "../_constants/admin-nav";
-import type { AdminTabId } from "../_types/admin-types";
+} from 'lucide-react'
+import Link from 'next/link'
+
+import { Logo } from '@/components/brand/logo'
+import { ConsoleSidebarNav, type SidebarTab } from '@/components/layout/console-sidebar-nav'
+import { ROUTES } from '@/lib/constants'
+import type { PlatformUser } from '@/types'
+
+import { ADMIN_NAV_GROUPS, ADMIN_TAB_LABELS, ADMIN_TAB_ROUTES } from '../_constants/admin-nav'
+import type { AdminTabId } from '../_types/admin-types'
 
 interface AdminSidebarProps {
-  activeTab: AdminTabId;
-  onTabChange?: (tab: AdminTabId) => void;
-  onCloseMobile?: () => void;
-  organizationCount: number;
-  categoryCount: number;
-  staffCount: number;
-  pendingCrCount: number;
-  pendingSalonCount: number;
-  currentUser: PlatformUser;
-  onLockSession: () => void;
-  onResetDemo: () => void;
-  isResetting: boolean;
+  activeTab: AdminTabId
+  onTabChange?: (tab: AdminTabId) => void
+  onCloseMobile?: () => void
+  organizationCount: number
+  categoryCount: number
+  staffCount: number
+  pendingCrCount: number
+  pendingSalonCount: number
+  currentUser: PlatformUser
+  onLockSession: () => void
+  onResetDemo: () => void
+  isResetting: boolean
 }
 
 export function AdminSidebar({
@@ -57,14 +52,14 @@ export function AdminSidebar({
 }: AdminSidebarProps) {
   const tabs: SidebarTab<AdminTabId>[] = [
     {
-      id: "overview",
+      id: 'overview',
       label: ADMIN_TAB_LABELS.overview,
       icon: PieChart,
       group: ADMIN_NAV_GROUPS[0],
       href: ADMIN_TAB_ROUTES.overview,
     },
     {
-      id: "salons",
+      id: 'salons',
       label: ADMIN_TAB_LABELS.salons,
       icon: Building2,
       group: ADMIN_NAV_GROUPS[1],
@@ -73,7 +68,7 @@ export function AdminSidebar({
       href: ADMIN_TAB_ROUTES.salons,
     },
     {
-      id: "requests",
+      id: 'requests',
       label: ADMIN_TAB_LABELS.requests,
       icon: Sliders,
       group: ADMIN_NAV_GROUPS[1],
@@ -82,14 +77,14 @@ export function AdminSidebar({
       href: ADMIN_TAB_ROUTES.requests,
     },
     {
-      id: "commission",
+      id: 'commission',
       label: ADMIN_TAB_LABELS.commission,
       icon: Percent,
       group: ADMIN_NAV_GROUPS[2],
       href: ADMIN_TAB_ROUTES.commission,
     },
     {
-      id: "taxonomy",
+      id: 'taxonomy',
       label: ADMIN_TAB_LABELS.taxonomy,
       icon: Layers,
       group: ADMIN_NAV_GROUPS[3],
@@ -97,28 +92,28 @@ export function AdminSidebar({
       href: ADMIN_TAB_ROUTES.taxonomy,
     },
     {
-      id: "staff",
+      id: 'staff',
       label: ADMIN_TAB_LABELS.staff,
       icon: Users,
       group: ADMIN_NAV_GROUPS[3],
       badge: staffCount,
       href: ADMIN_TAB_ROUTES.staff,
     },
-  ];
+  ]
 
   const initials = currentUser.name
-    .split(" ")
+    .split(' ')
     .map((part) => part.charAt(0))
-    .join("")
+    .join('')
     .slice(0, 2)
-    .toUpperCase();
+    .toUpperCase()
 
-  const displayName = currentUser.name.replace(" (Judge Demo)", "");
+  const displayName = currentUser.name.replace(' (Judge Demo)', '')
 
   const handleNavChange = (tab: AdminTabId) => {
-    onTabChange?.(tab);
-    onCloseMobile?.();
-  };
+    onTabChange?.(tab)
+    onCloseMobile?.()
+  }
 
   return (
     <div className="flex h-full flex-col bg-[#0B0F17] text-slate-200 overflow-hidden">
@@ -150,9 +145,7 @@ export function AdminSidebar({
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
           <div className="min-w-0 truncate text-left">
-            <div className="truncate font-semibold text-slate-100 text-xs">
-              Orders v2 Network
-            </div>
+            <div className="truncate font-semibold text-slate-100 text-xs">Orders v2 Network</div>
           </div>
         </div>
         <span className="shrink-0 font-mono text-[9px] text-emerald-400 font-semibold bg-emerald-500/15 border border-emerald-500/25 px-1.5 py-0.5 rounded">
@@ -179,9 +172,7 @@ export function AdminSidebar({
           className="flex items-center justify-between rounded-lg px-2.5 py-1.5 font-medium text-slate-400 text-xs transition-colors hover:bg-white/[0.06] hover:text-white"
         >
           <span>Merchant Console</span>
-          <span className="font-mono text-[10px] text-slate-500">
-            /merchant
-          </span>
+          <span className="font-mono text-[10px] text-slate-500">/merchant</span>
         </Link>
         <Link
           href={ROUTES.client}
@@ -200,12 +191,8 @@ export function AdminSidebar({
               {initials}
             </div>
             <div className="min-w-0 text-left">
-              <div className="truncate font-semibold text-slate-200 text-xs">
-                {displayName}
-              </div>
-              <div className="truncate text-[10px] text-slate-500">
-                {currentUser.role}
-              </div>
+              <div className="truncate font-semibold text-slate-200 text-xs">{displayName}</div>
+              <div className="truncate text-[10px] text-slate-500">{currentUser.role}</div>
             </div>
           </div>
           <button
@@ -225,12 +212,10 @@ export function AdminSidebar({
           disabled={isResetting}
           className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-800/80 bg-slate-900/80 px-2.5 py-1.5 font-medium text-slate-400 text-xs transition-all hover:bg-slate-800 hover:text-slate-200 disabled:opacity-60"
         >
-          <RotateCcw
-            className={`h-3 w-3 ${isResetting ? "animate-spin" : ""}`}
-          />
+          <RotateCcw className={`h-3 w-3 ${isResetting ? 'animate-spin' : ''}`} />
           Reset Demo Data
         </button>
       </div>
     </div>
-  );
+  )
 }

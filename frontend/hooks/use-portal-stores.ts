@@ -1,26 +1,24 @@
-"use client";
+'use client'
 
 import {
   type AdminDashboardState,
   adminStore,
-  type ClientStoreState,
   clientStore,
+  type ClientStoreState,
   type MerchantConsoleState,
   merchantStore,
-} from "@/lib/store";
-import {
-  type PersistentStoreHandle,
-  usePersistentStore,
-} from "./use-persistent-store";
+} from '@/lib/store'
+
+import { type PersistentStoreHandle, usePersistentStore } from './use-persistent-store'
 
 export function useClientStore(): PersistentStoreHandle<ClientStoreState> {
-  return usePersistentStore(clientStore);
+  return usePersistentStore(clientStore)
 }
 
 export function useMerchantStore(): PersistentStoreHandle<MerchantConsoleState> {
-  return usePersistentStore(merchantStore);
+  return usePersistentStore(merchantStore)
 }
 
 export function useAdminStore(): PersistentStoreHandle<AdminDashboardState> {
-  return usePersistentStore(adminStore);
+  return usePersistentStore(adminStore)
 }

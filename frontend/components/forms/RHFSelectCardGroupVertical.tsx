@@ -1,37 +1,32 @@
-"use client";
+'use client'
 
-import { CheckCircle, Circle } from "lucide-react";
-import { Controller, useFormContext } from "react-hook-form";
+import { CheckCircle, Circle } from 'lucide-react'
+import { Controller, useFormContext } from 'react-hook-form'
 
 import {
+  formControlListOptionClassName,
   FormFieldError,
+  formFieldHtmlIds,
   FormFieldLabel,
   FormFieldRoot,
-  formControlListOptionClassName,
-  formFieldHtmlIds,
-} from "@/components/forms/form-field-parts";
+} from '@/components/forms/form-field-parts'
 
 interface Option {
-  label: string;
-  value: string | number;
-  subtitle?: string;
+  label: string
+  value: string | number
+  subtitle?: string
 }
 
 interface Props {
-  name: string;
-  label: string;
-  options: Option[];
-  isRequired?: boolean;
+  name: string
+  label: string
+  options: Option[]
+  isRequired?: boolean
 }
 
-const RHFSelectCardGroupVertical = ({
-  name,
-  label,
-  options,
-  isRequired = true,
-}: Props) => {
-  const { control } = useFormContext();
-  const { errorId } = formFieldHtmlIds(name);
+const RHFSelectCardGroupVertical = ({ name, label, options, isRequired = true }: Props) => {
+  const { control } = useFormContext()
+  const { errorId } = formFieldHtmlIds(name)
 
   return (
     <Controller
@@ -39,16 +34,14 @@ const RHFSelectCardGroupVertical = ({
       control={control}
       render={({ field, fieldState: { error } }) => (
         <FormFieldRoot className="w-full space-y-2">
-          {label ? (
-            <FormFieldLabel label={label} isRequired={isRequired} />
-          ) : null}
+          {label ? <FormFieldLabel label={label} isRequired={isRequired} /> : null}
 
           <div
             className="no-scrollbar grid max-h-72 grid-cols-1 gap-2 overflow-y-auto py-1 sm:max-h-80 sm:gap-3 lg:grid-cols-2"
             aria-describedby={error ? errorId : undefined}
           >
             {options.map((opt) => {
-              const selected = field.value === opt.value;
+              const selected = field.value === opt.value
 
               return (
                 <button
@@ -63,10 +56,7 @@ const RHFSelectCardGroupVertical = ({
                       aria-hidden
                     />
                   ) : (
-                    <Circle
-                      className="size-5 shrink-0 text-muted-foreground"
-                      aria-hidden
-                    />
+                    <Circle className="size-5 shrink-0 text-muted-foreground" aria-hidden />
                   )}
 
                   <div className="flex min-w-0 flex-col">
@@ -81,17 +71,15 @@ const RHFSelectCardGroupVertical = ({
                     ) : null}
                   </div>
                 </button>
-              );
+              )
             })}
           </div>
 
-          {error ? (
-            <FormFieldError id={errorId} message={error.message ?? ""} />
-          ) : null}
+          {error ? <FormFieldError id={errorId} message={error.message ?? ''} /> : null}
         </FormFieldRoot>
       )}
     />
-  );
-};
+  )
+}
 
-export default RHFSelectCardGroupVertical;
+export default RHFSelectCardGroupVertical

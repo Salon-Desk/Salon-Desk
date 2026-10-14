@@ -1,12 +1,13 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { Logo } from "@/components/brand/logo";
-import { PORTAL_NAV } from "@/components/layout";
-import { Button } from "@/components/ui";
+import Link from 'next/link'
+
+import { Logo } from '@/components/brand/logo'
+import { PORTAL_NAV } from '@/components/layout'
+import { Button } from '@/components/ui'
 
 interface HubHeaderProps {
-  onOpenSandboxModal?: () => void;
+  onOpenSandboxModal?: () => void
 }
 
 export function HubHeader({ onOpenSandboxModal }: HubHeaderProps) {
@@ -32,5 +33,5 @@ export function HubHeader({ onOpenSandboxModal }: HubHeaderProps) {
         </Button>
       </div>
     </header>
-  );
+  )
 }

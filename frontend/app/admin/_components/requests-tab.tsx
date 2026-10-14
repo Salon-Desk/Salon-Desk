@@ -1,19 +1,16 @@
-"use client";
+'use client'
 
-import {
-  Button,
-  ChangeRequestStatusBadge,
-  SegmentedControl,
-} from "@/components/ui";
-import type { ChangeRequest } from "@/types";
-import type { CrSubTab } from "../_types/admin-types";
+import { Button, ChangeRequestStatusBadge, SegmentedControl } from '@/components/ui'
+import type { ChangeRequest } from '@/types'
+
+import type { CrSubTab } from '../_types/admin-types'
 
 interface RequestsTabProps {
-  changeRequests: ChangeRequest[];
-  subTab: CrSubTab;
-  onSubTabChange: (tab: CrSubTab) => void;
-  onApprove: (cr: ChangeRequest) => void;
-  onReject: (cr: ChangeRequest) => void;
+  changeRequests: ChangeRequest[]
+  subTab: CrSubTab
+  onSubTabChange: (tab: CrSubTab) => void
+  onApprove: (cr: ChangeRequest) => void
+  onReject: (cr: ChangeRequest) => void
 }
 
 export function RequestsTab({
@@ -23,18 +20,12 @@ export function RequestsTab({
   onApprove,
   onReject,
 }: RequestsTabProps) {
-  const policyCount = changeRequests.filter(
-    (r) => r.type === "CANCELLATION_POLICY",
-  ).length;
-  const paypalCount = changeRequests.filter(
-    (r) => r.type === "PAYPAL_ACCOUNT",
-  ).length;
+  const policyCount = changeRequests.filter((r) => r.type === 'CANCELLATION_POLICY').length
+  const paypalCount = changeRequests.filter((r) => r.type === 'PAYPAL_ACCOUNT').length
 
   const filtered = changeRequests.filter((r) =>
-    subTab === "POLICY"
-      ? r.type === "CANCELLATION_POLICY"
-      : r.type === "PAYPAL_ACCOUNT",
-  );
+    subTab === 'POLICY' ? r.type === 'CANCELLATION_POLICY' : r.type === 'PAYPAL_ACCOUNT',
+  )
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-200">
@@ -45,11 +36,11 @@ export function RequestsTab({
           onChange={onSubTabChange}
           options={[
             {
-              value: "POLICY" as const,
+              value: 'POLICY' as const,
               label: `Policy (${policyCount})`,
             },
             {
-              value: "PAYPAL" as const,
+              value: 'PAYPAL' as const,
               label: `PayPal (${paypalCount})`,
             },
           ]}
@@ -64,8 +55,8 @@ export function RequestsTab({
         ) : null}
 
         {filtered.map((cr) => {
-          const isPending = cr.status === "PENDING_REVIEW";
-          const isRejected = cr.status === "REJECTED";
+          const isPending = cr.status === 'PENDING_REVIEW'
+          const isRejected = cr.status === 'REJECTED'
 
           return (
             <div
@@ -75,31 +66,24 @@ export function RequestsTab({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold font-mono text-amber-700 text-xs">
-                      {cr.id}
-                    </span>
+                    <span className="font-bold font-mono text-amber-700 text-xs">{cr.id}</span>
                     <span className="text-slate-300">·</span>
-                    <span className="font-bold text-slate-900 text-sm">
-                      {cr.salonName}
-                    </span>
+                    <span className="font-bold text-slate-900 text-sm">{cr.salonName}</span>
                   </div>
-                  <div className="text-[11px] text-slate-500">
-                    {cr.submittedAt}
-                  </div>
+                  <div className="text-[11px] text-slate-500">{cr.submittedAt}</div>
                 </div>
 
                 <ChangeRequestStatusBadge status={cr.status} />
               </div>
 
-              {cr.type === "CANCELLATION_POLICY" ? (
+              {cr.type === 'CANCELLATION_POLICY' ? (
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs">
                     <span className="block font-bold text-[10px] text-slate-500 uppercase">
                       Current
                     </span>
                     <div className="text-slate-700">
-                      Cancel window:{" "}
-                      <strong>{cr.currentData.policyHours}h</strong>
+                      Cancel window: <strong>{cr.currentData.policyHours}h</strong>
                     </div>
                     <div className="text-slate-700">
                       No-show: <strong>${cr.currentData.noShowFee}.00</strong>
@@ -114,22 +98,16 @@ export function RequestsTab({
                       Proposed
                     </span>
                     <div className="text-slate-800">
-                      Cancel window:{" "}
-                      <strong className="text-amber-800">
-                        {cr.proposedData.policyHours}h
-                      </strong>
+                      Cancel window:{' '}
+                      <strong className="text-amber-800">{cr.proposedData.policyHours}h</strong>
                     </div>
                     <div className="text-slate-800">
-                      No-show:{" "}
-                      <strong className="text-amber-800">
-                        ${cr.proposedData.noShowFee}.00
-                      </strong>
+                      No-show:{' '}
+                      <strong className="text-amber-800">${cr.proposedData.noShowFee}.00</strong>
                     </div>
                     <div className="text-slate-800">
-                      Hold:{" "}
-                      <strong className="text-amber-800">
-                        {cr.proposedData.holdPercent}%
-                      </strong>
+                      Hold:{' '}
+                      <strong className="text-amber-800">{cr.proposedData.holdPercent}%</strong>
                     </div>
                   </div>
                 </div>
@@ -139,9 +117,7 @@ export function RequestsTab({
                     <span className="block font-bold font-sans text-[10px] text-slate-500 uppercase">
                       Current
                     </span>
-                    <div className="truncate text-slate-800">
-                      {cr.currentData.paypalMerchantId}
-                    </div>
+                    <div className="truncate text-slate-800">{cr.currentData.paypalMerchantId}</div>
                   </div>
 
                   <div className="space-y-1 rounded-xl border border-amber-200 bg-amber-50/70 p-3.5">
@@ -172,9 +148,9 @@ export function RequestsTab({
                 </div>
               ) : null}
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

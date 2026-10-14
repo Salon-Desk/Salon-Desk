@@ -1,38 +1,38 @@
-"use client";
+'use client'
 
-import { Check, X } from "lucide-react";
-import Image from "next/image";
-import { Dialog as DialogPrimitive } from "radix-ui";
-import type React from "react";
+import { Check, X } from 'lucide-react'
+import Image from 'next/image'
+import { Dialog as DialogPrimitive } from 'radix-ui'
+import type React from 'react'
 
-import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog";
-import { resolveImageSrc } from "@/lib/util/remoteImage";
-import { cn } from "@/lib/utils";
+import { Dialog, DialogOverlay, DialogPortal } from '@/components/ui/dialog'
+import { resolveImageSrc } from '@/lib/util/remoteImage'
+import { cn } from '@/lib/utils'
 
 function resolvePublicAssetUrl(src: string): string {
-  return resolveImageSrc(src);
+  return resolveImageSrc(src)
 }
 
 /** Primary card blue from design spec */
-export const PAYMENT_SUCCESS_CARD_BLUE = "#2E3A8C";
+export const PAYMENT_SUCCESS_CARD_BLUE = '#2E3A8C'
 
 export interface PaymentConfirmationDialogProps {
-  open: boolean;
-  setOpen: (open: boolean) => void;
+  open: boolean
+  setOpen: (open: boolean) => void
   /**
    * Primary action (e.g. “Back to Home”). Typical target after payment: `router.push('/bookings')`.
    */
-  onConfirm: () => void;
-  isLoading?: boolean;
-  title?: string;
-  description?: string;
-  confirmLabel?: string;
+  onConfirm: () => void
+  isLoading?: boolean
+  title?: string
+  description?: string
+  confirmLabel?: string
   /** Optional top illustration (e.g. 3D asset). If omitted, a built-in icon composition is shown. */
-  heroImageSrc?: string;
-  heroImageAlt?: string;
+  heroImageSrc?: string
+  heroImageAlt?: string
   /** Blurred backdrop inside the card — file under `public/` (e.g. `bg.png` or `images/bg.png`). */
-  backgroundImageSrc?: string;
-  className?: string;
+  backgroundImageSrc?: string
+  className?: string
 }
 
 function PaymentSuccessHeroFallback() {
@@ -45,23 +45,23 @@ function PaymentSuccessHeroFallback() {
         <Check className="h-7 w-7 text-white" strokeWidth={3} aria-hidden />
       </div>
     </div>
-  );
+  )
 }
 
 const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps> = ({
-  title = "Payment Successful",
-  description = "Your payment via Stripe has been processed successfully. A confirmation email has been sent to you.",
+  title = 'Payment Successful',
+  description = 'Your payment via Stripe has been processed successfully. A confirmation email has been sent to you.',
   open,
   setOpen,
   onConfirm,
   isLoading = false,
-  confirmLabel = "Back to Home",
+  confirmLabel = 'Back to Home',
   heroImageSrc,
-  heroImageAlt = "Payment successful",
-  backgroundImageSrc = "images/bgg.png",
+  heroImageAlt = 'Payment successful',
+  backgroundImageSrc = 'images/bgg.png',
   className,
 }) => {
-  const blurredBgUrl = resolvePublicAssetUrl(backgroundImageSrc);
+  const blurredBgUrl = resolvePublicAssetUrl(backgroundImageSrc)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -71,16 +71,16 @@ const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps> = ({
           className="bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `url("${blurredBgUrl.replace(/"/g, '\\"')}")`,
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
           }}
         />
         <DialogPrimitive.Content
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 outline-none",
-            "max-w-[min(100vw-1.5rem,420px)] sm:max-w-[420px]",
-            "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-            "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+            'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 outline-none',
+            'max-w-[min(100vw-1.5rem,420px)] sm:max-w-[420px]',
+            'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
+            'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
             className,
           )}
         >
@@ -97,8 +97,8 @@ const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps> = ({
                 className="absolute left-1/2 top-1/2 min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 scale-125 bg-cover bg-center bg-no-repeat"
                 style={{
                   backgroundImage: `url("${blurredBgUrl.replace(/"/g, '\\"')}")`,
-                  filter: "blur(28px)",
-                  WebkitFilter: "blur(28px)",
+                  filter: 'blur(28px)',
+                  WebkitFilter: 'blur(28px)',
                 }}
               />
             </div>
@@ -138,9 +138,7 @@ const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps> = ({
             )}
 
             <div className="relative z-10 mx-5 mt-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-6 shadow-inner backdrop-blur-md">
-              <h2 className="text-center text-xl font-bold tracking-tight text-white">
-                {title}
-              </h2>
+              <h2 className="text-center text-xl font-bold tracking-tight text-white">{title}</h2>
               <p className="mt-3 text-center text-sm font-normal leading-relaxed text-white/95">
                 {description}
               </p>
@@ -152,20 +150,20 @@ const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps> = ({
                 disabled={isLoading}
                 onClick={onConfirm}
                 className={cn(
-                  "w-full max-w-[280px] rounded-full bg-white py-4 text-center text-base font-bold transition",
-                  "hover:bg-white/95 active:scale-[0.99]",
-                  "disabled:pointer-events-none disabled:opacity-60",
+                  'w-full max-w-[280px] rounded-full bg-white py-4 text-center text-base font-bold transition',
+                  'hover:bg-white/95 active:scale-[0.99]',
+                  'disabled:pointer-events-none disabled:opacity-60',
                 )}
                 style={{ color: PAYMENT_SUCCESS_CARD_BLUE }}
               >
-                {isLoading ? "Please wait…" : confirmLabel}
+                {isLoading ? 'Please wait…' : confirmLabel}
               </button>
             </div>
           </div>
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>
-  );
-};
+  )
+}
 
-export default PaymentConfirmationDialog;
+export default PaymentConfirmationDialog

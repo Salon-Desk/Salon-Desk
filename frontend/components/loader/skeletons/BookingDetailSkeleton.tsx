@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from '@/components/ui/skeleton'
 
 export const BookingDetailSkeleton = () => {
   return (
@@ -56,7 +56,7 @@ export const BookingDetailSkeleton = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default BookingDetailSkeleton;
+export default BookingDetailSkeleton
