@@ -1,6 +1,6 @@
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
@@ -8,135 +8,119 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Shega Store Agent — agent guide
+# SalonDesk — agent guide
 
-Next.js 16 App Router agent dashboard (customers, RFQs, commissions). Package manager: **pnpm**. Path alias: **`@/*`** → repo root (`tsconfig.json`).
+Next.js 16 App Router demo for salon booking with PayPal authorization holds (client, merchant, admin portals). Package manager: **pnpm**. Path alias: **`@/*`** → frontend root (`tsconfig.json`).
+
+**English-only.** Do not add i18n, locale providers, translation dictionaries, or `_localization/` folders.
 
 ## Commands
 
-| Script                            | Purpose                             |
-| --------------------------------- | ----------------------------------- |
-| `pnpm dev`                        | Dev server (Next default port)      |
-| `pnpm build` / `pnpm start`       | Production                          |
-| `pnpm validate`                   | `prettier --check` + ESLint + `tsc` |
-| `pnpm lint` / `pnpm lint:fix`     | ESLint (`--max-warnings=0`)         |
-| `pnpm format` / `pnpm format:fix` | Prettier check / write              |
-| `pnpm typecheck`                  | `tsc --noEmit`                      |
+| Script              | Purpose                        |
+| ------------------- | ------------------------------ |
+| `pnpm dev`          | Dev server (Next default port) |
+| `pnpm build`        | Production build               |
+| `pnpm start`        | Production server              |
+| `pnpm lint`         | Biome check                    |
+| `pnpm format`       | Biome format write             |
 
-Pre-commit (Husky): `lint-staged` → full format check → lint → typecheck → build. Match `.prettierrc` (2 spaces, LF, single quotes, **no semicolons**, printWidth 100).
+Match Biome (`biome.json`): 2-space indent, project formatter settings.
 
 ## Repository layout
 
 ```
-app/                 App Router: layout, page, ClientWrapper, InnerWrapper, globals.css
-  (private)/         Authenticated agent shell + feature routes (dashboard, customers, commissions, …)
+app/                 App Router: layout, globals.css, portal routes
+  _components/       Hub (landing) feature UI
+  client/            Client portal feature (+ thin page.tsx)
+  merchant/          Merchant console feature
+  admin/             Platform admin feature
+  book/              Alias route → client
+  org/               Alias route → merchant
+  api/               Route handlers (AI concierge, demo reset)
 components/
-  ui/                shadcn/base-nova primitives (do not duplicate)
+  ui/                Shared primitives (SalonDesk + shadcn/radix-nova)
   forms/             Shared React Hook Form fields (RHF*), pickers, upload
-  layout/            Shared private-shell chrome + `_localization` for sidebar/header
-  button|dialog|drawer|empty|loader|table|tab/   Shared cross-feature reusable UI
-constant/            App constants (`variables`, table, toast colors)
-hooks/               Shared client hooks
+  layout/            Shared console chrome (sidebar shell, portal switcher)
+  brand/             Logo and brand marks
+  button|dialog|drawer|empty|loader|table|tab|…   Shared reusable UI
+constant/            App constants (validation messages, toast colors, …)
+hooks/               Shared client hooks (store, toast, media query, …)
 lib/
-  i18n/              Locales, dictionaries, LocaleProvider, server locale
+  store/             Persistent portal stores
+  data/              Seed / catalog data
+  schema/            Shared Zod validators
   util/              Pure helpers
   utils.ts           cn() and shared class helpers
-store/               Prefer Redux Toolkit + RTK Query here when adding APIs (may be empty today)
-types/               Shared TypeScript types (incl. TranslationKey)
+types/               Shared TypeScript domain types
 public/              Static assets
 ```
 
-- **New UI**: prefer `components/ui` + `cn` from `@/lib/utils`. Add shadcn via `pnpm dlx shadcn@latest add …` (see `components.json` aliases).
-- **Forms**: wrap with `FormProvider`, use existing `RHF*` components under `components/forms`.
-- **Global vs feature UI**: reuse **global** building blocks (`ui/`, `forms/`, `button/`, `dialog/`, `loader/`, `layout/` for shared shell) anywhere in the app. When a component, utility, constant, or hook is reused across 2 or more features, hoist it to the appropriate global directory.
-- **Feature isolation**: keep private feature trees under `app/(private)/<feature>/` self-contained with underscore-prefixed folders. Do not copy generic form primitives, buttons, or shadcn wrappers into feature folders.
-- **API**: when introducing HTTP, prefer RTK endpoints in `store/` and a shared axios client; env via `NEXT_PUBLIC_*`.
-- **Do not** add business logic under `app/` beyond routing and thin page composition.
+- **New UI**: prefer `components/ui` + `cn` from `@/lib/utils`. Add shadcn via `pnpm dlx shadcn@latest add …` (see `components.json`).
+- **Forms**: wrap with `FormProvider`, use existing `RHF*` under `components/forms`.
+- **Global vs feature UI**: reuse global building blocks anywhere. When a component, hook, constant, or util is used by 2+ features, hoist it to the matching global directory.
+- **Feature isolation**: keep each portal under `app/<feature>/` with underscore-prefixed internal folders. Do not copy generic form primitives or shadcn wrappers into feature folders.
+- **API**: route handlers under `app/api/`; portal state via `lib/store` + hooks. Env via `NEXT_PUBLIC_*`.
+- **Do not** put business logic in `app/**/page.tsx` beyond thin composition.
+- **Copy**: use plain English strings in components. Validation copy lives in `constant/validation-messages.ts`.
 
 ## App shell
 
-- `app/layout.tsx`: server layout, `getServerLocale()`, wraps children in **`ClientWrapper`**, sets `html lang={initialLocale}`.
-- **`ClientWrapper`**: `LocaleProvider`, Sonner toaster, **`InnerWrapper`**.
-- **`InnerWrapper`**: pass-through today; reserved for auth bootstrap / realtime later—keep file, avoid extra providers unless needed.
-- Private chrome: `app/(private)/layout.tsx` composes `components/layout` (sidebar/header); shared strings in `components/layout/_localization`.
-
-## Localization (`lib/i18n`)
-
-Supported locales: **`en`**, **`am`** (`lib/i18n/locale.ts`).
-
-Dictionary assembly: `lib/i18n/dictionaries/en.ts` & `am.ts` import JSON and export a single `as const` tree. **Current scope (store agent):**
-
-| Namespace           | Files                                                  | Use                                     |
-| ------------------- | ------------------------------------------------------ | --------------------------------------- |
-| `pages.layout`      | `components/layout/_localization/{en,am}.json`         | Sidebar / header / logout copy          |
-| `pages.dashboard`   | `app/(private)/dashboard/_localization/{en,am}.json`   | Dashboard                               |
-| `pages.customers`   | `app/(private)/customers/_localization/{en,am}.json`   | Customers                               |
-| `pages.commissions` | `app/(private)/commissions/_localization/{en,am}.json` | Commissions                             |
-| `pages.not-found`   | `dictionaries/pages/not-found/*.json`                  | 404                                     |
-| `validation`        | `dictionaries/validation/*.json`                       | Zod / form messages                     |
-| `common`            | `dictionaries/common/*.json`                           | Shared UI (forms, table, pagination, …) |
-| `metadata`          | `dictionaries/metadata/*.json`                         | SEO / titles                            |
-
-- Add strings: update **both** `en` and `am` JSON, register imports in `en.ts` / `am.ts`, use typed keys via `TranslationKey` / `useTranslation()` / `clientTranslate()`.
-- Server: `getServerLocale()` (`lib/i18n/server.ts`). Client: `LocaleProvider`, cookie + `localStorage` persistence (`persistClientLocale`).
-- Do **not** re-add removed page namespaces without product need; keep dictionaries lean for this app.
+- `app/layout.tsx`: root server layout, fonts, Sonner toaster, `html lang="en"`.
+- Portal chrome: `components/layout` (`ConsoleShell`, `AuthGate`, `PortalSwitcher`).
+- Hub landing: `app/page.tsx` composes `app/_components`.
 
 ## TypeScript & quality
 
-- Strict mode; prefer explicit types in `types/` for domain models.
-- ESLint: flat config `eslint.config.mjs` (Next core-web-vitals + import sort + unused imports).
+- Strict mode; prefer explicit types in `types/` for shared domain models.
+- Biome for lint/format (`biome.json`).
 - Empty interfaces extending another type → use `type` aliases.
-- Zod v4 APIs (see `lib/schema/common.ts` for patterns).
-
-## IDE / extensions
-
-Use project Prettier from `node_modules`. Match `.prettierrc` and EditorConfig if present.
+- Zod v4 APIs (see `lib/schema/common.ts`).
+- Avoid unstable values like `new Date()` during Client Component prerender; use fixed values or read time in `useEffect` / event handlers.
 
 ## Global reusable components (`components/`)
 
-These folders are **app-wide**—import them from any route or feature:
+App-wide — import from any route or feature:
 
 | Area               | Path                                      | Use                                                              |
 | ------------------ | ----------------------------------------- | ---------------------------------------------------------------- |
-| Primitives         | `components/ui/`                          | Buttons, inputs, dialogs, tables—shadcn/base-nova                |
+| Primitives         | `components/ui/`                          | Buttons, inputs, dialogs, tables                                 |
 | Forms              | `components/forms/`                       | `RHF*`, `FormProvider`, pickers, file upload                     |
-| Actions & feedback | `components/button/`, `loader/`, `empty/` | `PrimaryButton`, loading spinners, skeletons, empty/error states |
-| Overlays & dialogs | `components/dialog/`, `drawer/`, `table/` | `CustomResponsiveDialog`, modal dialogs, drawers, pagination     |
+| Actions & feedback | `components/button/`, `loader/`, `empty/` | `PrimaryButton`, spinners, skeletons, empty/error states         |
+| Overlays & dialogs | `components/dialog/`, `drawer/`, `table/` | Responsive dialogs, drawers, data grids, pagination              |
 | Tabs               | `components/tab/`                         | Shared tab patterns                                              |
-| App shell          | `components/layout/`                      | Shared private-shell chrome + localization for sidebar/header    |
+| App shell          | `components/layout/`                      | Console shell, auth gate, portal nav                             |
+| Brand              | `components/brand/`                       | Logo                                                             |
 
-## Feature layout standard (`app/(private)/<feature>/`)
+## Feature layout standard (`app/<feature>/`)
 
-Every major agent feature (`dashboard`, `customers`, `commissions`, RFQs, etc.) strictly adheres to **underscore-prefixed internal folders**:
+Every portal feature (`client`, `merchant`, `admin`, and hub via `app/_components`) uses **underscore-prefixed internal folders**:
 
-| Folder           | Purpose                                                                   |
-| ---------------- | ------------------------------------------------------------------------- |
-| `_components/`   | Feature-internal React UI components; composed in the route page          |
-| `_constants/`    | Feature-specific default state, seeds, and static local config            |
-| `_hooks/`        | Feature-specific custom React hooks                                       |
-| `_libs/`         | Feature-specific getters, transformers, and data helpers                  |
-| `_localization/` | Feature `en.json` / `am.json` translation dictionaries                    |
-| `_schemas/`      | Feature-specific Zod validation schemas (uses `@/lib/schema/common`)      |
-| `_types/`        | Feature-local TypeScript interfaces and types                             |
-| `_utils/`        | Pure helper functions scoped exclusively to this feature                  |
-| `index.ts`       | Public API barrel exporting entry components, hooks, constants, and types |
+| Folder         | Purpose                                                          |
+| -------------- | ---------------------------------------------------------------- |
+| `_components/` | Feature-internal React UI; composed by the route page            |
+| `_constants/`  | Feature-specific defaults, seeds, static local config            |
+| `_hooks/`      | Feature-specific custom React hooks                              |
+| `_libs/`       | Feature-specific getters, transformers, data helpers             |
+| `_schemas/`    | Feature Zod schemas (reuse `@/lib/schema/common`)                |
+| `_types/`      | Feature-local TypeScript types                                   |
+| `_utils/`      | Pure helpers scoped to this feature                              |
+| `index.ts`     | Public API barrel (entry components, hooks, constants, types)    |
+| `page.tsx`     | Thin route: import and render the feature entry component only   |
 
-### Hoisting & Schema Rules (Local Feature vs Global)
+Hub landing lives at `app/` with `_components/` next to `page.tsx` (same rules, no nested route segment).
 
-1. **Private by default**: All code starts inside the feature's underscore folders.
+### Hoisting & schema rules
+
+1. **Private by default**: new feature code starts in that feature’s underscore folders.
 2. **Validation schemas in `_schemas/`**:
-   - Feature form schemas must live in `_schemas/` (not inline inside component files).
-   - Reuse common field validators and primitives from `@/lib/schema/common.ts`.
-   - All validation error messages must be localized via `constant/validation-messages.ts` and `lib/i18n/dictionaries/validation/`.
-3. **Hoist on reuse**: When a component, utility, hook, validator, or constant is needed by 2+ features or global routes, hoist it:
-   - UI components / dialogs / buttons → `components/button/`, `components/dialog/`, `components/layout/`, etc.
-   - Shared field validators & schemas → `lib/schema/common.ts`
+   - Feature form schemas live in `_schemas/`, not inline in components.
+   - Reuse `@/lib/schema/common.ts`.
+   - Error messages use English strings from `constant/validation-messages.ts` (no i18n layer).
+3. **Hoist on reuse** (2+ features or global routes):
+   - UI → `components/button/`, `components/dialog/`, `components/layout/`, etc.
+   - Shared schemas → `lib/schema/common.ts`
    - Shared hooks → `hooks/`
    - Shared constants → `constant/`
-   - Shared utility functions → `lib/util/`
-   - Shared data contracts / models → `types/`
-4. **Keep pages thin**: `app/(private)/…/page.tsx` should compose feature UI, not own large business logic.
-
-## Related agent rules
-
-File-scoped Cursor rules live in `.cursor/rules/` (i18n, components, features, store, lib). Prefer those when editing matching paths.
+   - Shared utils → `lib/util/`
+   - Shared models → `types/`
+4. **Keep pages thin**: `app/<feature>/page.tsx` only composes the feature entry export.

@@ -1,5 +1,5 @@
-import MerchantPage from "@/app/merchant/page";
+import { MerchantConsole } from "@/app/merchant";
 
 export default function OrgPage() {
-  return <MerchantPage />;
+  return <MerchantConsole />;
 }

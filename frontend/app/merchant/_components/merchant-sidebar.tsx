@@ -21,8 +21,8 @@ import {
 } from "@/components/layout/console-sidebar-nav";
 import { ROUTES } from "@/lib/constants";
 import type { MerchantSalonInfo } from "@/lib/data/merchant";
-import type { MerchantTab } from "./merchant-types";
-import { MERCHANT_TAB_GROUPS } from "./merchant-types";
+import type { MerchantTab } from "../_types/merchant-types";
+import { MERCHANT_TAB_GROUPS } from "../_types/merchant-types";
 
 interface MerchantSidebarProps {
   salon: MerchantSalonInfo;

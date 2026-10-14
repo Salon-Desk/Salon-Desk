@@ -19,7 +19,7 @@ import {
 } from "@/components/layout/console-sidebar-nav";
 import { ROUTES } from "@/lib/constants";
 import type { PlatformUser } from "@/types";
-import { ADMIN_NAV_GROUPS, type AdminTabId } from "./admin-shared";
+import { ADMIN_NAV_GROUPS, type AdminTabId } from "../_libs/admin-shared";
 
 interface AdminSidebarProps {
   activeTab: AdminTabId;

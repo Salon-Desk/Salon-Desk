@@ -9,7 +9,7 @@ import {
   SegmentedControl,
 } from "@/components/ui";
 import type { Organization } from "@/types";
-import type { SalonStatusFilter } from "./admin-shared";
+import type { SalonStatusFilter } from "../_libs/admin-shared";
 
 interface SalonsTabProps {
   salons: Organization[];

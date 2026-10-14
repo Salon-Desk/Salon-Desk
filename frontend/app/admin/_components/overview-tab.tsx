@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Card, StatCard } from "@/components/ui";
 import { formatUsd } from "@/lib/format";
-import type { AdminTabId } from "./admin-shared";
+import type { AdminTabId } from "../_libs/admin-shared";
 
 interface OverviewTabProps {
   totalVolume: number;

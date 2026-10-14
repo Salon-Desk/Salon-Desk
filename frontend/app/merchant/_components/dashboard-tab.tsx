@@ -5,7 +5,7 @@ import { Button, Card, HoldStateBadge, StatCard } from "@/components/ui";
 import type { MerchantSalonInfo } from "@/lib/data/merchant";
 import { formatUsd } from "@/lib/format";
 import type { Booking } from "@/types";
-import type { MerchantTab } from "./merchant-types";
+import type { MerchantTab } from "../_types/merchant-types";
 
 interface DashboardTabProps {
   salon: MerchantSalonInfo;

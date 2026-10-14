@@ -20,7 +20,7 @@ import {
   type CrSubTab,
   computeAdminMetrics,
   type SalonStatusFilter,
-} from "./admin-shared";
+} from "../_libs/admin-shared";
 import { AdminSidebar } from "./admin-sidebar";
 import { AddCommissionOverrideModal } from "./commission-modals";
 import { CommissionTab } from "./commission-tab";

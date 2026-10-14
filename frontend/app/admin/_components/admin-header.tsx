@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PortalSwitcher } from "@/components/layout/portal-switcher";
 import { Button } from "@/components/ui";
 import { ROUTES } from "@/lib/constants";
-import { ADMIN_TAB_TITLES, type AdminTabId } from "./admin-shared";
+import { ADMIN_TAB_TITLES, type AdminTabId } from "../_libs/admin-shared";
 
 interface AdminHeaderProps {
   activeTab: AdminTabId;

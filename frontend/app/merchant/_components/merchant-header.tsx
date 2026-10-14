@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PortalSwitcher } from "@/components/layout/portal-switcher";
 import { Button } from "@/components/ui";
 import { ROUTES } from "@/lib/constants";
-import { MERCHANT_TAB_TITLES, type MerchantTab } from "./merchant-types";
+import { MERCHANT_TAB_TITLES, type MerchantTab } from "../_types/merchant-types";
 
 interface MerchantHeaderProps {
   activeTab: MerchantTab;

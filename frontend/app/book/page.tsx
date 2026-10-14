@@ -1,5 +1,5 @@
-import ClientPage from "@/app/client/page";
+import { ClientExperience } from "@/app/client";
 
 export default function BookPage() {
-  return <ClientPage />;
+  return <ClientExperience />;
 }

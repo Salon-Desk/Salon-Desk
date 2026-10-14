@@ -1,5 +1,5 @@
-import { MerchantConsole } from "@/components/merchant";
+import { MerchantConsole } from "./_components/merchant-console";
 
-export default function Page() {
+export default function MerchantPage() {
   return <MerchantConsole />;
 }

@@ -3,7 +3,7 @@
 import { Bot, Clock, Lock, Mic, Send, Sparkles, User, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui";
-import type { ConciergeMessage } from "@/hooks";
+import type { ConciergeMessage } from "../_hooks/use-ai-concierge";
 import { INITIAL_STAFF } from "@/lib/data/catalog";
 import { DEFAULT_TIME_SLOT } from "@/lib/data/service-content";
 import type { SalonService, StaffMember } from "@/types";

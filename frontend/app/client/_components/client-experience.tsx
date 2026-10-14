@@ -3,12 +3,8 @@
 import { Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Toast } from "@/components/ui";
-import {
-  useAiConcierge,
-  useClientStore,
-  useDemoReset,
-  useToast,
-} from "@/hooks";
+import { useClientStore, useDemoReset, useToast } from "@/hooks";
+import { useAiConcierge } from "../_hooks/use-ai-concierge";
 import {
   BUYER_PERSONAS,
   type BuyerPersonaId,

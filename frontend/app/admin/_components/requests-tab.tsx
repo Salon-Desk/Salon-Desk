@@ -6,7 +6,7 @@ import {
   SegmentedControl,
 } from "@/components/ui";
 import type { ChangeRequest } from "@/types";
-import type { CrSubTab } from "./admin-shared";
+import type { CrSubTab } from "../_libs/admin-shared";
 
 interface RequestsTabProps {
   changeRequests: ChangeRequest[];
