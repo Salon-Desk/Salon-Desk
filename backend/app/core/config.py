@@ -1,9 +1,9 @@
 import json
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 LLMProvider = Literal["groq", "ollama", "openai"]
 
@@ -69,7 +69,11 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24
     algorithm: str = "HS256"
 
-    cors_origins: list[str] = Field(default_factory=lambda: list(_DEFAULT_CORS_ORIGINS))
+    # NoDecode: pydantic-settings otherwise JSON-parses list fields before validators,
+    # which breaks comma-separated Docker --env-file values.
+    cors_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: list(_DEFAULT_CORS_ORIGINS)
+    )
     # Optional regex for preview / hackathon subdomains (Starlette CORSMiddleware).
     cors_origin_regex: str | None = r"https?://(.*\.)?huludelala\.com"
 
