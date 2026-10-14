@@ -1,12 +1,14 @@
 # All-in-one production image: PostgreSQL + FastAPI + Next.js + nginx (port 80)
 # Used by GitHub Actions deploy and docker compose -f docker-compose.single.yml
 
-FROM python:3.11-slim AS api-builder
+FROM python:3.11-slim-bookworm AS api-builder
 WORKDIR /build
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM node:22-bookworm-slim AS node-runtime
 
 FROM node:22-alpine AS web-builder
 WORKDIR /build
@@ -28,10 +30,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -f /etc/nginx/sites-enabled/default
 
 ENV PYTHONUNBUFFERED=1
-ENV PATH=/install/bin:$PATH
+ENV PATH=/usr/local/bin:$PATH
 ENV PYTHONPATH=/app/backend
 
-COPY --from=api-builder /install /install
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=api-builder /usr/local /usr/local
 COPY backend/ /app/backend/
 WORKDIR /app/backend
 

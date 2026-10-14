@@ -3,6 +3,9 @@ set -e
 
 cd /app/backend
 
+export PATH="/usr/local/bin:/usr/bin:${PATH:-}"
+export PYTHONPATH="/app/backend"
+
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_DB="${POSTGRES_DB:-salondesk}"
 
