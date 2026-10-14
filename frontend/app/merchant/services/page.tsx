@@ -1,158 +1,199 @@
 'use client'
 
-import { Clock, Edit2, Plus, Trash2 } from 'lucide-react'
+import { Clock, Edit2, Loader2, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
-import { Button, Card, IconButton, SearchInput } from '@/components/ui'
+import PrimaryButton from '@/components/button/PrimaryButton'
+import { Card, IconButton, SearchInput } from '@/components/ui'
+import { toastColor } from '@/constant/toast-color'
 import { formatUsd } from '@/lib/format'
+import { useGetCatalogCategoriesQuery } from '@/store/slice/catalogApi'
+import { useGetMyServicesQuery, useUpdateMyServiceMutation } from '@/store/slice/organizationApi'
+import type { ApiOrgService } from '@/types/api-org'
 
-import { useMerchantContext } from '../_context/merchant-context'
+import { OrgServiceFormModal } from '../_components/org-service-form-modal'
 
 export default function MerchantServicesPage() {
-  const { state, openAddService, openEditService, openDeleteService } = useMerchantContext()
+  const { data: services = [], isLoading, isError, refetch } = useGetMyServicesQuery()
+  const { data: categories = [] } = useGetCatalogCategoriesQuery()
+  const [deactivateService, { isLoading: deactivating }] = useUpdateMyServiceMutation()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('ALL')
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editing, setEditing] = useState<ApiOrgService | null>(null)
 
-  const categories = useMemo(() => {
-    const cats = new Set<string>()
-    state.services.forEach((s) => {
-      if (s.category) cats.add(s.category)
-    })
-    return ['ALL', ...Array.from(cats)]
-  }, [state.services])
+  const categoryNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    categories.forEach((c) => map.set(c.id, c.name))
+    return map
+  }, [categories])
+
+  const categoryFilters = useMemo(() => {
+    const ids = new Set(services.map((s) => s.service_category_id))
+    return ['ALL', ...Array.from(ids)]
+  }, [services])
 
   const filteredServices = useMemo(() => {
-    return state.services.filter((s) => {
-      const matchesCat = selectedCategory === 'ALL' || s.category === selectedCategory
-      const query = searchQuery.toLowerCase()
+    const q = searchQuery.toLowerCase()
+    return services.filter((s) => {
+      const matchesCat = selectedCategory === 'ALL' || s.service_category_id === selectedCategory
+      const catName = categoryNameById.get(s.service_category_id) || ''
       const matchesQuery =
-        s.name.toLowerCase().includes(query) ||
-        s.category.toLowerCase().includes(query) ||
-        s.description?.toLowerCase().includes(query)
+        !q ||
+        s.name.toLowerCase().includes(q) ||
+        catName.toLowerCase().includes(q) ||
+        (s.description || '').toLowerCase().includes(q)
       return matchesCat && matchesQuery
     })
-  }, [selectedCategory, searchQuery, state.services])
+  }, [services, selectedCategory, searchQuery, categoryNameById])
+
+  const handleDeactivate = async (service: ApiOrgService) => {
+    try {
+      await deactivateService({
+        serviceId: service.id,
+        body: { status: 'inactive' },
+      }).unwrap()
+      toast.success('Service marked inactive', toastColor.success)
+    } catch (err) {
+      const message =
+        (err as { data?: { detail?: string } })?.data?.detail || 'Could not update service'
+      toast.error(String(message), toastColor.error)
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300">
-      {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
             Services &amp; Pricing
           </h1>
           <p className="text-slate-500 text-xs">
-            {state.services.length} services · Client authorization hold rates
+            {isLoading ? 'Loading…' : `${services.length} services from your organization`}
           </p>
         </div>
-
-        <Button
-          variant="primary"
+        <PrimaryButton
+          title="Add service"
           size="sm"
-          onClick={openAddService}
-          className="rounded-xl px-3.5 py-2 font-medium text-xs shadow-xs"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Add Service
-        </Button>
+          fullWidth={false}
+          icon={<Plus className="h-4 w-4" />}
+          className="h-9 rounded-xl px-3.5 text-xs"
+          onClick={() => {
+            setEditing(null)
+            setIsFormOpen(true)
+          }}
+        />
       </div>
 
-      {/* Filter & Category Controls */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search services..."
-            className="w-full text-xs"
-          />
-        </div>
-
-        {/* Category Pills */}
-        <div className="flex flex-wrap items-center gap-1">
-          {categories.map((cat) => (
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search services…"
+          className="sm:max-w-xs"
+        />
+        <div className="flex flex-wrap gap-2">
+          {categoryFilters.map((id) => (
             <button
-              key={cat}
+              key={id}
               type="button"
-              onClick={() => setSelectedCategory(cat)}
-              className={`rounded-lg px-2.5 py-1 font-medium text-xs transition-all ${
-                selectedCategory === cat
-                  ? 'bg-slate-900 text-white font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              onClick={() => setSelectedCategory(id)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                selectedCategory === id
+                  ? 'bg-stone-950 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              {cat === 'ALL' ? 'All' : cat}
+              {id === 'ALL' ? 'All' : categoryNameById.get(id) || 'Category'}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Services Grid */}
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+          <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+          Loading services…
+        </div>
+      ) : null}
+
+      {isError ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700">
+          <p>Could not load services.</p>
+          <PrimaryButton
+            title="Retry"
+            variant="outline"
+            size="sm"
+            fullWidth={false}
+            className="mt-3 h-9 rounded-xl px-4"
+            onClick={() => void refetch()}
+          />
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredServices.map((srv) => (
+        {filteredServices.map((service) => (
           <Card
-            key={srv.id}
-            hoverTone="amber"
-            className="flex flex-col justify-between space-y-4 rounded-3xl p-5 border border-slate-200/90 bg-white shadow-xs transition-all hover:shadow-sm"
+            key={service.id}
+            className="flex flex-col justify-between rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs"
           >
-            <div>
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <span className="rounded-md bg-amber-50 border border-amber-200/80 px-2 py-0.5 font-medium text-[10px] text-amber-900">
-                  {srv.category}
-                </span>
-                <span className="flex items-center gap-1 font-mono text-slate-500 text-[11px]">
-                  <Clock className="h-3 w-3 text-slate-400" />
-                  {srv.durationMin}m
+            <div className="space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-bold text-base text-slate-900">{service.name}</h3>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium capitalize text-slate-700">
+                  {service.status}
                 </span>
               </div>
-
-              <h3 className="mb-1 font-bold text-base text-slate-900">{srv.name}</h3>
-              <p className="mb-3 line-clamp-2 text-slate-500 text-xs leading-relaxed">
-                {srv.description || 'Styling service.'}
+              <p className="text-xs text-amber-800">
+                {categoryNameById.get(service.service_category_id) || 'Uncategorized'}
               </p>
-
-              {/* Price & Hold Box */}
-              <div className="space-y-1.5 rounded-xl border border-slate-200/70 bg-slate-50/60 p-3 text-xs">
-                <div className="flex justify-between items-center text-slate-600">
-                  <span>Price:</span>
-                  <span className="text-slate-900 font-bold">{formatUsd(srv.price)}</span>
-                </div>
-                <div className="flex justify-between items-center text-amber-900 font-medium border-slate-200/60 border-t pt-1">
-                  <span>PayPal Hold:</span>
-                  <span>{formatUsd(srv.holdDeposit)}</span>
-                </div>
-                <div className="flex justify-between items-center text-slate-500 text-[11px] border-slate-200/60 border-t pt-1">
-                  <span>No-Show Retention:</span>
-                  <span>{formatUsd(srv.noShowFee)}</span>
-                </div>
+              <p className="line-clamp-2 text-xs text-slate-500">
+                {service.description || 'No description'}
+              </p>
+              <div className="flex items-center justify-between pt-2 text-xs font-semibold text-slate-800">
+                <span>{formatUsd(Number(service.base_price))}</span>
+                <span className="inline-flex items-center gap-1 text-slate-500">
+                  <Clock className="h-3.5 w-3.5" />
+                  {service.duration_minutes} min
+                </span>
               </div>
             </div>
-
-            <div className="flex items-center justify-between border-slate-100 border-t pt-3 text-xs">
-              <span className="font-mono text-[10px] text-slate-400">{srv.id}</span>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="secondary"
+            <div className="mt-4 flex justify-end gap-1 border-t border-slate-100 pt-3">
+              <IconButton
+                aria-label="Edit service"
+                onClick={() => {
+                  setEditing(service)
+                  setIsFormOpen(true)
+                }}
+              >
+                <Edit2 className="h-4 w-4" />
+              </IconButton>
+              {service.status !== 'inactive' ? (
+                <PrimaryButton
+                  title="Deactivate"
+                  variant="ghost"
                   size="sm"
-                  onClick={() => openEditService(srv)}
-                  className="rounded-xl font-medium text-xs h-7 px-2.5"
-                >
-                  <Edit2 className="h-3 w-3 mr-1 text-slate-500" />
-                  Edit
-                </Button>
-                <IconButton
-                  aria-label="Delete service"
-                  onClick={() => openDeleteService(srv)}
-                  className="rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-rose-600 hover:border-rose-200 h-7 w-7"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </IconButton>
-              </div>
+                  fullWidth={false}
+                  isDisabled={deactivating}
+                  className="h-8 rounded-lg px-2 text-xs"
+                  onClick={() => void handleDeactivate(service)}
+                />
+              ) : null}
             </div>
           </Card>
         ))}
       </div>
+
+      <OrgServiceFormModal
+        open={isFormOpen}
+        editing={editing}
+        onClose={() => {
+          setIsFormOpen(false)
+          setEditing(null)
+        }}
+      />
     </div>
   )
 }

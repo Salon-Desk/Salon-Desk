@@ -2,6 +2,9 @@
 
 import { ChevronDown, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
+import { useSelector } from 'react-redux'
+
+import { isAdminUser, isClientUser, isMerchantUser, userSelector } from '@/store/authSlice'
 
 import { PORTAL_NAV, type PortalId } from './portal-nav'
 
@@ -11,9 +14,17 @@ interface PortalSwitcherProps {
   isResetting?: boolean
 }
 
+function canAccessPortal(portal: PortalId, user: ReturnType<typeof userSelector>): boolean {
+  if (!user) return portal === 'client'
+  if (portal === 'admin') return isAdminUser(user)
+  if (portal === 'merchant') return isMerchantUser(user)
+  return isClientUser(user) || isMerchantUser(user) || isAdminUser(user)
+}
+
 /** Hover dropdown used in portal headers to jump between the three apps. */
 export function PortalSwitcher({ current, onReset, isResetting }: PortalSwitcherProps) {
-  const others = PORTAL_NAV.filter((item) => item.id !== current)
+  const user = useSelector(userSelector)
+  const others = PORTAL_NAV.filter((item) => item.id !== current && canAccessPortal(item.id, user))
 
   return (
     <div className="group relative">
@@ -28,19 +39,23 @@ export function PortalSwitcher({ current, onReset, isResetting }: PortalSwitcher
         <div className="px-3 py-1.5 font-bold text-[10px] text-slate-400 uppercase tracking-wider">
           Ecosystem Navigation
         </div>
-        {others.map((item) => {
-          const Icon = item.icon
-          return (
-            <Link
-              key={item.id}
-              href={item.href}
-              className="flex items-center gap-2 px-3 py-2 font-medium text-slate-700 text-xs hover:bg-slate-50 hover:text-amber-600"
-            >
-              <Icon className="h-3.5 w-3.5 text-amber-500" />
-              <span>{item.label}</span>
-            </Link>
-          )
-        })}
+        {others.length === 0 ? (
+          <p className="px-3 py-2 text-[11px] text-slate-500">No other portals for this role.</p>
+        ) : (
+          others.map((item) => {
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className="flex items-center gap-2 px-3 py-2 font-medium text-slate-700 text-xs hover:bg-slate-50 hover:text-amber-600"
+              >
+                <Icon className="h-3.5 w-3.5 text-amber-500" />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })
+        )}
         {onReset && (
           <>
             <div className="my-1 h-px bg-slate-100" />

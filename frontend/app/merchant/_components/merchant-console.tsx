@@ -73,7 +73,6 @@ export function MerchantConsole() {
   const [deletingService, setDeletingService] = useState<SalonService | null>(null)
 
   const [isChangePaypalOpen, setIsChangePaypalOpen] = useState(false)
-  const [paypalChangeInput, setPaypalChangeInput] = useState('')
   const [isChangePolicyOpen, setIsChangePolicyOpen] = useState(false)
   const [policyForm, setPolicyForm] = useState({
     policyHours: 24,
@@ -270,9 +269,8 @@ export function MerchantConsole() {
     showToast(`Service "${name}" removed.`)
   }
 
-  const handleSubmitPaypalChange = (event: FormEvent) => {
-    event.preventDefault()
-    if (!paypalChangeInput) return
+  const handleSubmitPaypalChange = (merchantId: string) => {
+    if (!merchantId) return
 
     const newCr: ChangeRequest = {
       id: createSequentialId('CR-PAYPAL'),
@@ -285,7 +283,7 @@ export function MerchantConsole() {
         paypalMerchantId: state.salon.paypalMerchantId,
       },
       proposedData: {
-        paypalMerchantId: paypalChangeInput,
+        paypalMerchantId: merchantId,
       },
     }
 
@@ -294,13 +292,10 @@ export function MerchantConsole() {
       changeRequests: [newCr, ...prev.changeRequests],
     }))
     setIsChangePaypalOpen(false)
-    setPaypalChangeInput('')
     showToast('PayPal account change request submitted to Platform Admins for verification.')
   }
 
-  const handleSubmitPolicyChange = (event: FormEvent) => {
-    event.preventDefault()
-
+  const handleSubmitPolicyChange = (next: { policyHours: number; noShowFee: number }) => {
     const newCr: ChangeRequest = {
       id: createSequentialId('CR-POLICY'),
       type: 'CANCELLATION_POLICY',
@@ -314,8 +309,8 @@ export function MerchantConsole() {
         holdPercent: 100,
       },
       proposedData: {
-        policyHours: policyForm.policyHours,
-        noShowFee: policyForm.noShowFee,
+        policyHours: next.policyHours,
+        noShowFee: next.noShowFee,
         holdPercent: 100,
       },
     }
@@ -525,7 +520,6 @@ export function MerchantConsole() {
             salon={state.salon}
             changeRequests={state.changeRequests}
             onRequestPaypalChange={() => {
-              setPaypalChangeInput('')
               setIsChangePaypalOpen(true)
             }}
             onRequestPolicyChange={() => {
@@ -602,25 +596,20 @@ export function MerchantConsole() {
         />
       ) : null}
 
-      {isChangePaypalOpen ? (
-        <PaypalChangeModal
-          currentMerchantId={state.salon.paypalMerchantId}
-          value={paypalChangeInput}
-          onChange={setPaypalChangeInput}
-          onClose={() => setIsChangePaypalOpen(false)}
-          onSubmit={handleSubmitPaypalChange}
-        />
-      ) : null}
+      <PaypalChangeModal
+        open={isChangePaypalOpen}
+        currentMerchantId={state.salon.paypalMerchantId}
+        onClose={() => setIsChangePaypalOpen(false)}
+        onSubmit={handleSubmitPaypalChange}
+      />
 
-      {isChangePolicyOpen ? (
-        <PolicyChangeModal
-          policyHours={policyForm.policyHours}
-          noShowFee={policyForm.noShowFee}
-          onChange={setPolicyForm}
-          onClose={() => setIsChangePolicyOpen(false)}
-          onSubmit={handleSubmitPolicyChange}
-        />
-      ) : null}
+      <PolicyChangeModal
+        open={isChangePolicyOpen}
+        policyHours={policyForm.policyHours}
+        noShowFee={policyForm.noShowFee}
+        onClose={() => setIsChangePolicyOpen(false)}
+        onSubmit={handleSubmitPolicyChange}
+      />
     </>
   )
 }

@@ -1,214 +1,155 @@
 'use client'
 
-import { CheckCircle2, Copy, Edit2, Lock, Plus, Trash2, Unlock } from 'lucide-react'
-import { useState } from 'react'
+import { CheckCircle2, Loader2, PauseCircle } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
+import PrimaryButton from '@/components/button/PrimaryButton'
+import { Card } from '@/components/ui'
+import { toastColor } from '@/constant/toast-color'
 import {
-  Button,
-  IconButton,
-  OrganizationStatusBadge,
-  SearchInput,
-  SegmentedControl,
-} from '@/components/ui'
+  useApproveOrganizationMutation,
+  useGetAdminOrganizationsQuery,
+  useSuspendOrganizationMutation,
+} from '@/store/slice/adminApi'
+import type { ApiOrganization } from '@/types/api-org'
 
-import { useAdminContext } from '../_context/admin-context'
-
-const FILTER_OPTIONS = [
-  { value: 'ALL' as const, label: 'All' },
-  { value: 'APPROVED' as const, label: 'Active' },
-  { value: 'PENDING_REVIEW' as const, label: 'Pending' },
-  { value: 'SUSPENDED' as const, label: 'Suspended' },
-]
+type StatusFilter = 'all' | 'pending' | 'approved' | 'suspended'
 
 export default function AdminSalonsPage() {
+  const [filter, setFilter] = useState<StatusFilter>('all')
   const {
-    filteredSalons,
-    salonSearch,
-    setSalonSearch,
-    salonStatusFilter,
-    setSalonStatusFilter,
-    setIsAddSalonOpen,
-    setEditingSalon,
-    setSuspendingSalon,
-    setDeletingSalon,
-    handleApproveSalon,
-  } = useAdminContext()
+    data: organizations = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useGetAdminOrganizationsQuery(filter === 'all' ? undefined : { status: filter })
+  const [approveOrg, { isLoading: approving }] = useApproveOrganizationMutation()
+  const [suspendOrg, { isLoading: suspending }] = useSuspendOrganizationMutation()
 
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const counts = useMemo(() => {
+    return {
+      all: organizations.length,
+      pending: organizations.filter((o) => o.status === 'pending').length,
+      approved: organizations.filter((o) => o.status === 'approved').length,
+      suspended: organizations.filter((o) => o.status === 'suspended').length,
+    }
+  }, [organizations])
 
-  const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
+  const handleApprove = async (org: ApiOrganization) => {
+    try {
+      await approveOrg(org.id).unwrap()
+      toast.success(`${org.name} approved`, toastColor.success)
+    } catch (err) {
+      toast.error(
+        String((err as { data?: { detail?: string } })?.data?.detail || 'Approve failed'),
+        toastColor.error,
+      )
+    }
+  }
+
+  const handleSuspend = async (org: ApiOrganization) => {
+    try {
+      await suspendOrg(org.id).unwrap()
+      toast.success(`${org.name} suspended`, toastColor.success)
+    } catch (err) {
+      toast.error(
+        String((err as { data?: { detail?: string } })?.data?.detail || 'Suspend failed'),
+        toastColor.error,
+      )
+    }
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
-            Partner Salons
-          </h1>
-          <p className="text-slate-500 text-xs">
-            {filteredSalons.length} onboarded salons · PayPal merchant integrations
-          </p>
-        </div>
-
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => setIsAddSalonOpen(true)}
-          className="rounded-xl px-3.5 py-2 font-medium text-xs shadow-xs"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Add Salon
-        </Button>
+    <div className="mx-auto w-full max-w-6xl space-y-5 animate-in fade-in duration-300">
+      <div>
+        <h1 className="font-extrabold text-xl text-slate-900 sm:text-2xl">Salons</h1>
+        <p className="text-xs text-slate-500">
+          Approve or suspend organizations from org-owner sign-up.
+        </p>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <SearchInput
-            value={salonSearch}
-            onChange={setSalonSearch}
-            placeholder="Search salons by name, owner, or city..."
-            className="w-full text-xs"
-          />
-        </div>
-
-        <div className="overflow-x-auto pb-1 sm:pb-0">
-          <SegmentedControl
-            value={salonStatusFilter}
-            onChange={setSalonStatusFilter}
-            options={FILTER_OPTIONS}
-            variant="pills"
-          />
-        </div>
+      <div className="flex flex-wrap gap-2">
+        {(['all', 'pending', 'approved', 'suspended'] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setFilter(key)}
+            className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${
+              filter === key ? 'bg-stone-950 text-white' : 'bg-slate-100 text-slate-700'
+            }`}
+          >
+            {key}
+            {filter === 'all' || filter === key ? ` (${counts[key] ?? organizations.length})` : ''}
+          </button>
+        ))}
       </div>
 
-      {/* Salons Table */}
-      <div className="overflow-x-auto rounded-3xl border border-slate-200/90 bg-white shadow-xs">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="border-slate-200/80 border-b bg-slate-50/70 font-semibold text-slate-700">
-              <th className="px-5 py-3">Salon</th>
-              <th className="px-5 py-3">Owner</th>
-              <th className="px-5 py-3">PayPal Merchant ID</th>
-              <th className="px-5 py-3">Notice Window</th>
-              <th className="px-5 py-3">Take-Rate</th>
-              <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filteredSalons.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-5 py-12 text-center text-slate-400 text-xs">
-                  No partner salons found.
-                </td>
-              </tr>
-            ) : (
-              filteredSalons.map((salon) => (
-                <tr key={salon.id} className="transition-colors hover:bg-slate-50/60">
-                  <td className="px-5 py-3.5">
-                    <div className="font-bold text-slate-900 text-sm">{salon.name}</div>
-                    <div className="text-[11px] text-slate-400">{salon.city || salon.address}</div>
-                  </td>
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+          <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+          Loading salons…
+        </div>
+      ) : null}
 
-                  <td className="px-5 py-3.5 text-slate-700">
-                    <div className="font-medium text-slate-900">{salon.ownerName}</div>
-                    <div className="text-[11px] text-slate-400 font-mono">{salon.email}</div>
-                  </td>
+      {isError ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700">
+          <p>Could not load organizations.</p>
+          <PrimaryButton
+            title="Retry"
+            variant="outline"
+            size="sm"
+            fullWidth={false}
+            className="mt-3 h-9 rounded-xl px-4"
+            onClick={() => void refetch()}
+          />
+        </div>
+      ) : null}
 
-                  <td className="px-5 py-3.5 font-mono text-slate-700">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-slate-800">{salon.paypalMerchantId}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(salon.id, salon.paypalMerchantId)}
-                        className="text-slate-400 hover:text-slate-700 transition-colors"
-                        title="Copy Merchant ID"
-                      >
-                        {copiedId === salon.id ? (
-                          <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </button>
-                    </div>
-                  </td>
-
-                  <td className="px-5 py-3.5 font-medium text-slate-700">
-                    <span className="font-mono text-xs">≥ {salon.cancellationPolicyHours}h</span>
-                  </td>
-
-                  <td className="px-5 py-3.5">
-                    {salon.customCommissionRate ? (
-                      <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 font-medium font-mono text-emerald-900 text-[11px]">
-                        {salon.customCommissionRate}% VIP
-                      </span>
-                    ) : (
-                      <span className="font-mono text-slate-500 text-[11px]">2.5% std</span>
-                    )}
-                  </td>
-
-                  <td className="px-5 py-3.5">
-                    <OrganizationStatusBadge status={salon.status} />
-                  </td>
-
-                  <td className="px-5 py-3.5 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {salon.status === 'PENDING_REVIEW' ? (
-                        <Button
-                          variant="success"
-                          size="sm"
-                          onClick={() => handleApproveSalon(salon.id)}
-                          className="h-7 rounded-xl font-medium text-xs px-2.5"
-                        >
-                          Approve
-                        </Button>
-                      ) : null}
-
-                      <IconButton
-                        title="Edit Salon Details"
-                        onClick={() => setEditingSalon(salon)}
-                        className="rounded-xl border border-slate-200 bg-white hover:bg-slate-100 h-7 w-7 text-slate-600"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </IconButton>
-
-                      <IconButton
-                        title={salon.status === 'SUSPENDED' ? 'Reinstate Salon' : 'Suspend Salon'}
-                        className={`rounded-xl h-7 w-7 ${
-                          salon.status === 'SUSPENDED'
-                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                            : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100'
-                        }`}
-                        onClick={() => setSuspendingSalon(salon)}
-                      >
-                        {salon.status === 'SUSPENDED' ? (
-                          <Unlock className="h-3 w-3" />
-                        ) : (
-                          <Lock className="h-3 w-3" />
-                        )}
-                      </IconButton>
-
-                      <IconButton
-                        title="Remove Salon"
-                        tone="danger"
-                        className="rounded-xl h-7 w-7"
-                        onClick={() => setDeletingSalon(salon)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </IconButton>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="space-y-3">
+        {organizations.map((org) => (
+          <Card
+            key={org.id}
+            className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-sm text-slate-900">{org.name}</h3>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium capitalize text-slate-700">
+                  {org.status}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                {org.description || 'No description'} · {org.id.slice(0, 8)}…
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {org.status !== 'approved' ? (
+                <PrimaryButton
+                  title={approving ? 'Approving…' : 'Approve'}
+                  size="sm"
+                  fullWidth={false}
+                  isLoading={approving}
+                  icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+                  className="h-9 rounded-xl px-3 text-xs"
+                  onClick={() => void handleApprove(org)}
+                />
+              ) : null}
+              {org.status !== 'suspended' ? (
+                <PrimaryButton
+                  title={suspending ? 'Suspending…' : 'Suspend'}
+                  variant="destructive"
+                  size="sm"
+                  fullWidth={false}
+                  isLoading={suspending}
+                  icon={<PauseCircle className="h-3.5 w-3.5" />}
+                  className="h-9 rounded-xl px-3 text-xs"
+                  onClick={() => void handleSuspend(org)}
+                />
+              ) : null}
+            </div>
+          </Card>
+        ))}
       </div>
     </div>
   )

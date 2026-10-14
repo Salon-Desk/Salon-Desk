@@ -1,53 +1,100 @@
 'use client'
 
-import { Activity, CheckCircle2, Copy, FileSpreadsheet, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Copy, FileSpreadsheet, Loader2, ShieldCheck } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
-import {
-  Button,
-  Card,
-  type Column,
-  DataTable,
-  HoldStateBadge,
-  LedgerActionBadge,
-  SearchInput,
-} from '@/components/ui'
+import PrimaryButton from '@/components/button/PrimaryButton'
+import { type Column, DataTable, HoldStateBadge, SearchInput } from '@/components/ui'
+import { toastColor } from '@/constant/toast-color'
 import { formatUsd } from '@/lib/format'
+import { mapApiBookingToUi } from '@/lib/mappers/booking'
 import { HOLD_STATE_FILTER_LABEL, HOLD_STATES } from '@/lib/status'
-import type { AuditLedgerEntry, Booking, HoldState } from '@/types'
+import { useCancelBookingMutation } from '@/store/slice/bookingsApi'
+import { useGetMyOrgBookingsQuery } from '@/store/slice/organizationApi'
+import { useMarkBookingNoShowMutation, useMarkBookingShowMutation } from '@/store/slice/paymentsApi'
+import type { Booking, HoldState } from '@/types'
 
-import { useMerchantContext } from '../_context/merchant-context'
+import { ConsentModal } from '../_components/consent-modal'
+import { SettlementDrawer } from '../_components/settlement-drawer'
 
 type AppointmentFilter = 'ALL' | HoldState
 
 export default function MerchantAppointmentsPage() {
-  const { state, setSelectedBooking, setInspectConsentBooking } = useMerchantContext()
+  const { data: apiBookings = [], isLoading, isError, refetch } = useGetMyOrgBookingsQuery()
+  const [markShow, { isLoading: markingShow }] = useMarkBookingShowMutation()
+  const [markNoShow, { isLoading: markingNoShow }] = useMarkBookingNoShowMutation()
+  const [cancelBooking, { isLoading: cancelling }] = useCancelBookingMutation()
 
   const [appointmentSearch, setAppointmentSearch] = useState('')
   const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('ALL')
-  const [activeView, setActiveView] = useState<'BOOKINGS' | 'LEDGER'>('BOOKINGS')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [inspectConsentBooking, setInspectConsentBooking] = useState<Booking | null>(null)
+
+  const bookings = useMemo(() => apiBookings.map((b) => mapApiBookingToUi(b)), [apiBookings])
+
+  const isSettlementProcessing = markingShow || markingNoShow || cancelling
 
   const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text)
+    void navigator.clipboard.writeText(text)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
   }
 
   const filteredAppointments = useMemo(
     () =>
-      state.bookings.filter((b) => {
+      bookings.filter((b) => {
         const matchesFilter = appointmentFilter === 'ALL' || b.status === appointmentFilter
         const query = appointmentSearch.toLowerCase()
         const matchesSearch =
           b.clientName.toLowerCase().includes(query) ||
           b.id.toLowerCase().includes(query) ||
           b.serviceName.toLowerCase().includes(query) ||
-          b.stylistName.toLowerCase().includes(query)
+          b.stylistName.toLowerCase().includes(query) ||
+          b.status.toLowerCase().includes(query)
         return matchesFilter && matchesSearch
       }),
-    [appointmentFilter, appointmentSearch, state.bookings],
+    [appointmentFilter, appointmentSearch, bookings],
   )
+
+  const handleMarkShow = async (booking: Booking) => {
+    try {
+      await markShow(booking.id).unwrap()
+      toast.success(
+        `Marked show — capture started for ${booking.id.slice(0, 8)}`,
+        toastColor.success,
+      )
+      setSelectedBooking(null)
+    } catch (err) {
+      const message = (err as { data?: { detail?: string } })?.data?.detail || 'Could not mark show'
+      toast.error(String(message), toastColor.error)
+    }
+  }
+
+  const handleMarkNoShow = async (booking: Booking) => {
+    try {
+      await markNoShow(booking.id).unwrap()
+      toast.success(`No-show fee capture started for ${booking.id.slice(0, 8)}`, toastColor.success)
+      setSelectedBooking(null)
+    } catch (err) {
+      const message =
+        (err as { data?: { detail?: string } })?.data?.detail || 'Could not mark no-show'
+      toast.error(String(message), toastColor.error)
+    }
+  }
+
+  const handleCancelAndVoid = async (booking: Booking) => {
+    try {
+      await cancelBooking({ bookingId: booking.id, body: { reason: 'Merchant void' } }).unwrap()
+      toast.success(`Booking ${booking.id.slice(0, 8)} cancelled`, toastColor.success)
+      setSelectedBooking(null)
+    } catch (err) {
+      const message =
+        (err as { data?: { detail?: string } })?.data?.detail || 'Could not cancel booking'
+      toast.error(String(message), toastColor.error)
+    }
+  }
 
   const bookingColumns: Column<Booking>[] = [
     {
@@ -55,7 +102,7 @@ export default function MerchantAppointmentsPage() {
       header: 'Booking Ref',
       cell: (b) => (
         <div className="flex items-center gap-1.5 font-mono text-xs">
-          <span className="font-semibold text-slate-800">{b.id}</span>
+          <span className="font-semibold text-slate-800">{b.id.slice(0, 8)}</span>
           <button
             type="button"
             onClick={() => handleCopy(b.id, b.id)}
@@ -77,7 +124,7 @@ export default function MerchantAppointmentsPage() {
       cell: (b) => (
         <div>
           <div className="font-bold text-slate-900 text-xs">{b.clientName}</div>
-          <div className="font-mono text-[11px] text-slate-400">{b.clientPhone}</div>
+          <div className="font-mono text-[11px] text-slate-400">{b.clientPhone || '—'}</div>
         </div>
       ),
     },
@@ -98,7 +145,7 @@ export default function MerchantAppointmentsPage() {
     },
     {
       key: 'hold',
-      header: 'Protection Hold',
+      header: 'Ticket',
       cell: (b) => (
         <div>
           <div className="font-bold text-slate-900 text-xs">{formatUsd(b.servicePrice)}</div>
@@ -127,77 +174,14 @@ export default function MerchantAppointmentsPage() {
           >
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
           </button>
-          <Button
-            variant="primary"
+          <PrimaryButton
+            title="Settle"
             size="sm"
+            fullWidth={false}
+            className="h-7 rounded-xl px-3 text-xs shadow-xs"
             onClick={() => setSelectedBooking(b)}
-            className="rounded-xl font-medium text-xs h-7 px-3 shadow-xs"
-          >
-            Settle
-          </Button>
+          />
         </div>
-      ),
-    },
-  ]
-
-  const ledgerColumns: Column<AuditLedgerEntry>[] = [
-    {
-      key: 'id',
-      header: 'Ledger ID',
-      cell: (entry) => (
-        <span className="font-bold font-mono text-slate-800 text-xs">{entry.id}</span>
-      ),
-    },
-    {
-      key: 'booking',
-      header: 'Booking Ref',
-      cell: (entry) => <span className="text-slate-500 font-mono text-xs">{entry.bookingId}</span>,
-    },
-    {
-      key: 'client',
-      header: 'Client',
-      cell: (entry) => (
-        <span className="font-medium text-slate-900 text-xs">{entry.clientName}</span>
-      ),
-    },
-    {
-      key: 'action',
-      header: 'Action Rail',
-      cell: (entry) => <LedgerActionBadge action={entry.action} />,
-    },
-    {
-      key: 'amount',
-      header: 'Volume',
-      cell: (entry) => (
-        <span className="font-bold text-slate-900 text-xs">{formatUsd(entry.amount)}</span>
-      ),
-    },
-    {
-      key: 'debug',
-      header: 'PayPal Debug ID',
-      cell: (entry) => (
-        <div className="flex items-center gap-1">
-          <span className="text-[11px] text-slate-500 font-mono">{entry.paypalDebugId}</span>
-          <button
-            type="button"
-            onClick={() => handleCopy(entry.id, entry.paypalDebugId)}
-            className="text-slate-400 hover:text-slate-700"
-            title="Copy PayPal Debug ID"
-          >
-            {copiedId === entry.id ? (
-              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-          </button>
-        </div>
-      ),
-    },
-    {
-      key: 'time',
-      header: 'Timestamp',
-      cell: (entry) => (
-        <span className="text-[11px] text-slate-400 font-mono">{entry.timestamp}</span>
       ),
     },
   ]
@@ -206,47 +190,45 @@ export default function MerchantAppointmentsPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300">
-      {/* Header & Controls */}
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
             Appointments
           </h1>
           <p className="text-slate-500 text-xs">
-            Client reservations, authorization holds, and settlement history.
+            {isLoading ? 'Loading…' : `${bookings.length} organization bookings`}
           </p>
         </div>
 
-        {/* View Switcher */}
         <div className="flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-xs">
-          <button
-            type="button"
-            onClick={() => setActiveView('BOOKINGS')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium text-xs transition-all ${
-              activeView === 'BOOKINGS'
-                ? 'bg-slate-900 text-white shadow-xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
+          <div className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 font-semibold text-xs text-white shadow-xs">
             <FileSpreadsheet className="h-3.5 w-3.5" />
-            <span>Bookings ({state.bookings.length})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveView('LEDGER')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium text-xs transition-all ${
-              activeView === 'LEDGER'
-                ? 'bg-slate-900 text-white shadow-xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Activity className="h-3.5 w-3.5" />
-            <span>Audit Ledger ({state.auditLedger.length})</span>
-          </button>
+            <span>Bookings ({bookings.length})</span>
+          </div>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+          <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+          Loading appointments…
+        </div>
+      ) : null}
+
+      {isError ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700">
+          <p>Could not load bookings.</p>
+          <PrimaryButton
+            title="Retry"
+            variant="outline"
+            size="sm"
+            fullWidth={false}
+            className="mt-3 h-9 rounded-xl px-4"
+            onClick={() => void refetch()}
+          />
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
           <SearchInput
@@ -257,7 +239,6 @@ export default function MerchantAppointmentsPage() {
           />
         </div>
 
-        {/* Filter Pills */}
         <div className="flex flex-wrap items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
           {filterOptions.map((st) => (
             <button
@@ -276,34 +257,35 @@ export default function MerchantAppointmentsPage() {
         </div>
       </div>
 
-      {/* Tables */}
-      {activeView === 'BOOKINGS' ? (
+      {!isLoading && !isError ? (
         <DataTable
           columns={bookingColumns}
           rows={filteredAppointments}
           rowKey={(b) => b.id}
           className="rounded-3xl border border-slate-200/90 bg-white shadow-xs"
         />
-      ) : (
-        <Card padding="lg" className="space-y-4 rounded-3xl shadow-xs">
-          <div className="flex items-center justify-between border-slate-100 border-b pb-3">
-            <h3 className="font-bold text-slate-900 text-sm">
-              Settlement Ledger (PayPal Orders v2)
-            </h3>
-            <span className="font-mono text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-medium">
-              Reconciled
-            </span>
-          </div>
+      ) : null}
 
-          <DataTable
-            columns={ledgerColumns}
-            rows={state.auditLedger}
-            rowKey={(entry) => entry.id}
-            mono
-            className="rounded-2xl shadow-none border-0"
-          />
-        </Card>
-      )}
+      {selectedBooking ? (
+        <SettlementDrawer
+          booking={selectedBooking}
+          isSettlementProcessing={isSettlementProcessing}
+          onClose={() => setSelectedBooking(null)}
+          onMarkShow={(b) => void handleMarkShow(b)}
+          onMarkNoShow={(b) => void handleMarkNoShow(b)}
+          onCancelAndVoid={(b) => void handleCancelAndVoid(b)}
+          onReauthorizeHold={() =>
+            toast.info('Reauthorization is handled automatically by the payment honor window.')
+          }
+        />
+      ) : null}
+
+      {inspectConsentBooking ? (
+        <ConsentModal
+          booking={inspectConsentBooking}
+          onClose={() => setInspectConsentBooking(null)}
+        />
+      ) : null}
     </div>
   )
 }

@@ -1,28 +1,38 @@
 'use client'
 
-import { Sparkles } from 'lucide-react'
+import { Loader2, Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useSelector } from 'react-redux'
+import { toast } from 'sonner'
 
+import { useAuthModal } from '@/components/auth/auth-context'
 import { Toast } from '@/components/ui'
+import { toastColor } from '@/constant/toast-color'
 import { useClientStore, useDemoReset, useToast } from '@/hooks'
-import { BUYER_PERSONAS, type BuyerPersonaId, FLAGSHIP_SALON } from '@/lib/constants'
-import {
-  INITIAL_SERVICES,
-  INITIAL_STAFF,
-  SERVICE_CATEGORIES,
-  stylistForCategory,
-} from '@/lib/data/catalog'
+import { BUYER_PERSONAS, type BuyerPersonaId } from '@/lib/constants'
+import { INITIAL_STAFF, stylistForCategory } from '@/lib/data/catalog'
 import { DEFAULT_TIME_SLOT } from '@/lib/data/service-content'
-import { formatClockTimeWithSeconds } from '@/lib/format'
+import { createIdempotencyKey } from '@/lib/ids'
 import {
-  createBookingId,
-  createConsentHash,
-  createIdempotencyKey,
-  createLedgerId,
-  createPaypalAuthId,
-  createPaypalDebugId,
-} from '@/lib/ids'
+  mapApiBookingToUi,
+  mapCatalogServiceToSalonService,
+  slotLabelToIso,
+} from '@/lib/mappers/booking'
+import { isAuthenticatedSelector, isClientUser, userSelector } from '@/store/authSlice'
+import {
+  useCancelBookingMutation,
+  useCreateBookingConsentMutation,
+  useCreateBookingMutation,
+  useGetMyBookingsQuery,
+} from '@/store/slice/bookingsApi'
+import {
+  useGetCatalogCategoriesQuery,
+  useGetCatalogOrganizationsQuery,
+  useGetCatalogServicesQuery,
+} from '@/store/slice/catalogApi'
+import { useCreatePaymentHoldMutation } from '@/store/slice/paymentsApi'
 import type { Booking, SalonService, StaffMember } from '@/types'
+import type { CatalogService } from '@/types/api-org'
 
 import { useAiConcierge } from '../_hooks/use-ai-concierge'
 import { AiConcierge } from './ai-concierge'
@@ -37,18 +47,41 @@ import { ReceiptModal } from './receipt-modal'
 import { ServiceCard } from './service-card'
 
 export function ClientExperience() {
-  const { state, setState, resetState } = useClientStore()
+  const { resetState } = useClientStore()
   const { isResetting, reset } = useDemoReset(resetState)
   const { message: toastMessage, show: showToast, dismiss } = useToast()
   const concierge = useAiConcierge()
+  const { openAuthModal } = useAuthModal()
+  const user = useSelector(userSelector)
+  const isAuthenticated = useSelector(isAuthenticatedSelector)
+
+  const {
+    data: catalogServices = [],
+    isLoading: catalogLoading,
+    isError: catalogError,
+    refetch: refetchCatalog,
+  } = useGetCatalogServicesQuery()
+  const { data: categories = [] } = useGetCatalogCategoriesQuery()
+  const { data: organizations = [] } = useGetCatalogOrganizationsQuery()
+  const {
+    data: apiBookings = [],
+    isLoading: bookingsLoading,
+    refetch: refetchBookings,
+  } = useGetMyBookingsQuery(undefined, { skip: !isAuthenticated || !isClientUser(user) })
+
+  const [createBooking] = useCreateBookingMutation()
+  const [createConsent] = useCreateBookingConsentMutation()
+  const [createHold] = useCreatePaymentHoldMutation()
+  const [cancelBooking] = useCancelBookingMutation()
 
   const [activeTab, setActiveTab] = useState<ClientTab>('catalog')
   const [buyerPersona, setBuyerPersona] = useState<BuyerPersonaId>('hana')
-  const [selectedCategory, setSelectedCategory] = useState<string>(SERVICE_CATEGORIES[0])
+  const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<ServiceSort>('popular')
 
   const [selectedService, setSelectedService] = useState<SalonService | null>(null)
+  const [selectedCatalogService, setSelectedCatalogService] = useState<CatalogService | null>(null)
   const [protocolService, setProtocolService] = useState<SalonService | null>(null)
   const [selectedStylist, setSelectedStylist] = useState<StaffMember>(INITIAL_STAFF[0])
   const [selectedSlot, setSelectedSlot] = useState(DEFAULT_TIME_SLOT)
@@ -57,29 +90,79 @@ export function ClientExperience() {
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null)
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null)
 
-  const buyer = BUYER_PERSONAS[buyerPersona]
+  const orgNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    organizations.forEach((o) => map.set(o.id, o.name))
+    return map
+  }, [organizations])
+
+  const catalogById = useMemo(() => {
+    const map = new Map<string, CatalogService>()
+    catalogServices.forEach((s) => map.set(s.id, s))
+    return map
+  }, [catalogServices])
+
+  const categoryOptions = useMemo(() => {
+    const names = categories.map((c) => c.name)
+    return ['All', ...(names.length ? names : [])]
+  }, [categories])
+
+  const salonServices = useMemo(
+    () => catalogServices.map(mapCatalogServiceToSalonService),
+    [catalogServices],
+  )
 
   const filteredServices = useMemo(() => {
-    return INITIAL_SERVICES.filter((service) => {
-      const matchCategory = selectedCategory === 'All' || service.category === selectedCategory
-      const matchSearch =
-        service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        service.description.toLowerCase().includes(searchQuery.toLowerCase())
-      return matchCategory && matchSearch
-    }).sort((a, b) => {
-      if (sortBy === 'price-asc') return a.price - b.price
-      if (sortBy === 'price-desc') return b.price - a.price
-      if (sortBy === 'duration') return a.durationMin - b.durationMin
-      if (sortBy === 'popular') return Number(b.popular) - Number(a.popular)
-      return 0
-    })
-  }, [selectedCategory, searchQuery, sortBy])
+    return salonServices
+      .filter((service) => {
+        const matchCategory = selectedCategory === 'All' || service.category === selectedCategory
+        const matchSearch =
+          service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          service.description.toLowerCase().includes(searchQuery.toLowerCase())
+        return matchCategory && matchSearch
+      })
+      .sort((a, b) => {
+        if (sortBy === 'price-asc') return a.price - b.price
+        if (sortBy === 'price-desc') return b.price - a.price
+        if (sortBy === 'duration') return a.durationMin - b.durationMin
+        if (sortBy === 'popular') return Number(b.popular) - Number(a.popular)
+        return 0
+      })
+  }, [salonServices, selectedCategory, searchQuery, sortBy])
 
-  const activeHolds = state.bookings.filter((b) => b.status === 'HELD')
-  const pastBookings = state.bookings.filter((b) => b.status !== 'HELD')
+  const uiBookings = useMemo(
+    () =>
+      apiBookings.map((b) =>
+        mapApiBookingToUi(b, {
+          clientName:
+            user?.name ||
+            [user?.first_name, user?.last_name].filter(Boolean).join(' ') ||
+            user?.email ||
+            'You',
+          salonName: orgNameById.get(b.org_id) || 'Salon',
+          serviceName: 'Service',
+          stylistName: 'Stylist',
+        }),
+      ),
+    [apiBookings, orgNameById, user],
+  )
+
+  const activeHolds = uiBookings.filter((b) => b.status === 'HELD' || b.status === 'REAUTHORIZED')
+  const pastBookings = uiBookings.filter((b) => b.status !== 'HELD' && b.status !== 'REAUTHORIZED')
 
   const openCheckout = (service: SalonService, stylist?: StaffMember, slot?: string) => {
+    if (!isAuthenticated || !isClientUser(user)) {
+      openAuthModal('sign-in', 'client')
+      showToast('Sign in with a client account to place a PayPal hold.')
+      return
+    }
+    const catalog = catalogById.get(service.id)
+    if (!catalog) {
+      toast.error('Service is not available from the live catalog', toastColor.error)
+      return
+    }
     setSelectedService(service)
+    setSelectedCatalogService(catalog)
     setSelectedStylist(stylist ?? stylistForCategory(service.category))
     if (slot) setSelectedSlot(slot)
     setAuthStep('review')
@@ -100,103 +183,78 @@ export function ClientExperience() {
     )
   }
 
-  const handleApproveHold = () => {
-    if (!selectedService) return
+  const handleApproveHold = async () => {
+    if (!selectedService || !selectedCatalogService) return
     setAuthStep('authorizing')
 
-    window.setTimeout(() => {
-      const bookingId = createBookingId()
-      const newBooking: Booking = {
-        id: bookingId,
-        clientName: buyer.name,
-        clientEmail: buyer.email,
-        clientPhone: buyer.phone,
-        salonId: FLAGSHIP_SALON.id,
-        salonName: FLAGSHIP_SALON.name,
-        serviceId: selectedService.id,
+    try {
+      const startsAt = slotLabelToIso(selectedSlot)
+      const booking = await createBooking({
+        org_id: selectedCatalogService.organization_id,
+        starts_at: startsAt,
+        service_ids: [selectedCatalogService.id],
+        stylist_id: null,
+        customer_notes: `Booked via client portal · ${selectedStylist.name}`,
+      }).unwrap()
+
+      const termsText =
+        'I authorize SalonDesk / PayPal to place an authorization hold for this appointment. $0 is charged today; settlement occurs at the salon.'
+      await createConsent({
+        bookingId: booking.id,
+        body: {
+          terms_version: 'v1',
+          terms_text: termsText,
+          signed_payload: `${booking.id}:${user?.id || 'client'}:${Date.now()}`,
+        },
+      }).unwrap()
+
+      await createHold({
+        booking_id: booking.id,
+        idempotency_key: createIdempotencyKey(booking.id, 'AUTH_INTENT'),
+        currency: 'USD',
+      }).unwrap()
+
+      const uiBooking = mapApiBookingToUi(booking, {
+        clientName:
+          user?.name ||
+          [user?.first_name, user?.last_name].filter(Boolean).join(' ') ||
+          BUYER_PERSONAS[buyerPersona].name,
+        salonName:
+          orgNameById.get(selectedCatalogService.organization_id) ||
+          selectedCatalogService.organization_name ||
+          'Salon',
         serviceName: selectedService.name,
-        stylistId: selectedStylist.id,
         stylistName: selectedStylist.name,
-        appointmentTime: selectedSlot,
-        durationMin: selectedService.durationMin,
-        servicePrice: selectedService.price,
-        holdAmount: selectedService.holdDeposit,
-        noShowFee: selectedService.noShowFee,
-        status: 'HELD',
-        paypalAuthId: createPaypalAuthId(),
-        authExpiresAt: 'In 6 days, 23 hours',
-        idempotencyKey: createIdempotencyKey(bookingId, 'AUTH_INTENT'),
-        consentHash: createConsentHash(bookingId),
-        createdAt: 'Just now',
-      }
+      })
 
-      setState((prev) => ({
-        ...prev,
-        bookings: [newBooking, ...prev.bookings],
-        auditLedger: [
-          {
-            id: createLedgerId(),
-            bookingId,
-            clientName: buyer.name,
-            serviceName: selectedService.name,
-            action: 'AUTHORIZATION_CREATED',
-            amount: selectedService.holdDeposit,
-            currency: 'USD',
-            paypalDebugId: createPaypalDebugId('REQ'),
-            webhookVerified: true,
-            timestamp: formatClockTimeWithSeconds(),
-            details: `PayPal SDK v6 Authorization hold created (intent: AUTHORIZE). Funds reserved: $${selectedService.holdDeposit}. Zero money charged today. Free cancellation window: 24h.`,
-          },
-          ...prev.auditLedger,
-        ],
-      }))
-
-      setConfirmedBooking(newBooking)
+      setConfirmedBooking(uiBooking)
       setAuthStep('success')
+      void refetchBookings()
       showToast(
         `Appointment confirmed! PayPal authorization hold of $${selectedService.holdDeposit} placed. $0 debited today.`,
       )
-    }, 1400)
+    } catch (err) {
+      setAuthStep('review')
+      const message =
+        (err as { data?: { detail?: string } })?.data?.detail ||
+        'Could not create booking hold. Please try again.'
+      toast.error(String(message), toastColor.error)
+    }
   }
 
-  const handleCancelBooking = (bookingId: string) => {
-    const booking = state.bookings.find((b) => b.id === bookingId)
-    if (!booking) return
-
-    setState((prev) => ({
-      ...prev,
-      bookings: prev.bookings.map((b) =>
-        b.id === bookingId
-          ? {
-              ...b,
-              status: 'VOIDED' as const,
-              settledAt: 'Just now',
-              settlementNote:
-                'Client self-service cancellation; PayPal authorization voided immediately ($0 debited).',
-            }
-          : b,
-      ),
-      auditLedger: [
-        {
-          id: createLedgerId(),
-          bookingId,
-          clientName: booking.clientName,
-          serviceName: booking.serviceName,
-          action: 'AUTHORIZATION_VOIDED',
-          amount: booking.holdAmount,
-          currency: 'USD',
-          paypalDebugId: createPaypalDebugId('REQ'),
-          webhookVerified: true,
-          timestamp: formatClockTimeWithSeconds(),
-          details: `Client voided appointment in self-service portal. PayPal authorization voided, $${booking.holdAmount} hold lifted instantly. $0 charged.`,
-        },
-        ...prev.auditLedger,
-      ],
-    }))
-
-    showToast(
-      `Appointment ${bookingId} cancelled. PayPal hold of $${booking.holdAmount} has been completely released ($0 charged).`,
-    )
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      await cancelBooking({
+        bookingId,
+        body: { reason: 'Client self-service cancellation' },
+      }).unwrap()
+      void refetchBookings()
+      showToast(`Appointment cancelled. Authorization hold will be released ($0 charged).`)
+    } catch (err) {
+      const message =
+        (err as { data?: { detail?: string } })?.data?.detail || 'Could not cancel booking'
+      toast.error(String(message), toastColor.error)
+    }
   }
 
   const handleReset = async () => {
@@ -227,8 +285,30 @@ export function ClientExperience() {
               onSearchChange={setSearchQuery}
               sortBy={sortBy}
               onSortChange={setSortBy}
+              categories={categoryOptions}
             />
-            {filteredServices.length === 0 ? (
+
+            {catalogLoading ? (
+              <div className="flex items-center justify-center gap-2 py-16 text-sm text-stone-500">
+                <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+                Loading live catalog…
+              </div>
+            ) : null}
+
+            {catalogError ? (
+              <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 text-center text-sm text-rose-700">
+                <p>Could not load the service catalog.</p>
+                <button
+                  type="button"
+                  onClick={() => void refetchCatalog()}
+                  className="mt-3 rounded-full bg-stone-950 px-5 py-2 text-xs font-bold text-white"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : null}
+
+            {!catalogLoading && !catalogError && filteredServices.length === 0 ? (
               <div className="rounded-3xl bg-stone-100/60 p-12 text-center">
                 <p className="text-sm font-semibold text-stone-900">
                   No services match your search
@@ -239,7 +319,7 @@ export function ClientExperience() {
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedCategory(SERVICE_CATEGORIES[0])
+                    setSelectedCategory('All')
                     setSearchQuery('')
                   }}
                   className="mt-4 rounded-full bg-stone-950 px-5 py-2 font-bold text-xs text-white transition-colors hover:bg-stone-800 cursor-pointer"
@@ -247,7 +327,9 @@ export function ClientExperience() {
                   Reset Filters
                 </button>
               </div>
-            ) : (
+            ) : null}
+
+            {!catalogLoading && !catalogError && filteredServices.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 sm:gap-y-14">
                 {filteredServices.map((service) => (
                   <ServiceCard
@@ -259,16 +341,25 @@ export function ClientExperience() {
                   />
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
         ) : (
-          <BookingsPanel
-            activeHolds={activeHolds}
-            pastBookings={pastBookings}
-            onBrowseCatalog={() => setActiveTab('catalog')}
-            onCancel={handleCancelBooking}
-            onViewReceipt={setReceiptBooking}
-          />
+          <>
+            {bookingsLoading ? (
+              <div className="flex items-center justify-center gap-2 py-16 text-sm text-stone-500">
+                <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+                Loading your bookings…
+              </div>
+            ) : (
+              <BookingsPanel
+                activeHolds={activeHolds}
+                pastBookings={pastBookings}
+                onBrowseCatalog={() => setActiveTab('catalog')}
+                onCancel={(id) => void handleCancelBooking(id)}
+                onViewReceipt={setReceiptBooking}
+              />
+            )}
+          </>
         )}
       </main>
 
@@ -281,7 +372,6 @@ export function ClientExperience() {
         isResetting={isResetting}
       />
 
-      {/* Mobile Floating Action Dock - Minimalist Pill */}
       <nav
         aria-label="Mobile quick actions"
         className="fixed bottom-4 inset-x-4 z-30 md:hidden flex items-center justify-between gap-1 rounded-full bg-stone-950/90 text-white p-1.5 backdrop-blur-xl"
@@ -350,7 +440,7 @@ export function ClientExperience() {
           buyerPersona={buyerPersona}
           onSelectStylist={setSelectedStylist}
           onSelectSlot={setSelectedSlot}
-          onApprove={handleApproveHold}
+          onApprove={() => void handleApproveHold()}
           onClose={() => setIsPayPalOpen(false)}
           onViewBookings={() => {
             setIsPayPalOpen(false)

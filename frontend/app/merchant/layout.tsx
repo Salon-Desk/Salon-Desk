@@ -2,21 +2,33 @@
 
 import { ShieldCheck, Sparkles } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { toast } from 'sonner'
 
-import { AuthGate } from '@/components/layout/auth-gate'
 import { ConsoleShell } from '@/components/layout/console-shell'
+import { PortalGuard } from '@/components/layout/portal-guard'
 import { Toast } from '@/components/ui'
-import { SANDBOX_CREDENTIALS } from '@/lib/constants'
+import { toastColor } from '@/constant/toast-color'
+import { mapBookingStatusToHoldState } from '@/lib/mappers/booking'
+import type { AppDispatch } from '@/store/app'
+import { logout } from '@/store/authSlice'
+import {
+  useCreateMyChangeRequestMutation,
+  useGetMyChangeRequestsQuery,
+  useGetMyEmployeesQuery,
+  useGetMyOrgAccountQuery,
+  useGetMyOrganizationQuery,
+  useGetMyOrgBookingsQuery,
+  useGetMyServicesQuery,
+} from '@/store/slice/organizationApi'
 
 import { ConsentModal } from './_components/consent-modal'
 import { CopilotDrawer } from './_components/copilot-drawer'
 import { MerchantHeader } from './_components/merchant-header'
 import { MerchantSidebar } from './_components/merchant-sidebar'
-import { DeleteServiceModal, ServiceFormModal } from './_components/service-modals'
 import { PaypalChangeModal, PolicyChangeModal } from './_components/settings-modals'
 import { SettlementDrawer } from './_components/settlement-drawer'
-import { DeleteStaffModal, StaffFormModal } from './_components/staff-modals'
 import { MerchantProvider, useMerchantContext } from './_context/merchant-context'
 import { getMerchantTabFromPathname } from './_types/merchant-types'
 
@@ -24,11 +36,31 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const currentTab = getMerchantTabFromPathname(pathname)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const dispatch = useDispatch<AppDispatch>()
+
+  const { data: org } = useGetMyOrganizationQuery()
+  const { data: account } = useGetMyOrgAccountQuery()
+  const { data: apiBookings = [] } = useGetMyOrgBookingsQuery()
+  const { data: employees = [] } = useGetMyEmployeesQuery()
+  const { data: services = [] } = useGetMyServicesQuery()
+  const { data: changeRequests = [] } = useGetMyChangeRequestsQuery()
+  const [createChangeRequest, { isLoading: submittingCr }] = useCreateMyChangeRequestMutation()
+
+  const activeHoldsCount = useMemo(
+    () =>
+      apiBookings.filter((b) => {
+        const hold = mapBookingStatusToHoldState(b.status)
+        return hold === 'HELD' || hold === 'REAUTHORIZED'
+      }).length,
+    [apiBookings],
+  )
+  const pendingChangeRequests = useMemo(
+    () => changeRequests.filter((cr) => cr.status.toUpperCase() === 'PENDING').length,
+    [changeRequests],
+  )
 
   const {
     state,
-    activeHoldsCount,
-    pendingChangeRequests,
     isResetting,
     toastMessage,
     dismissToast,
@@ -42,60 +74,31 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
     isCopilotOpen,
     setIsCopilotOpen,
 
-    isAddStaffOpen,
-    setIsAddStaffOpen,
-    editingStaff,
-    staffForm,
-    setStaffForm,
-    deletingStaff,
-    setDeletingStaff,
-    handleSaveStaff,
-    handleDeleteStaff,
-
-    isAddServiceOpen,
-    setIsAddServiceOpen,
-    editingService,
-    serviceForm,
-    setServiceForm,
-    deletingService,
-    setDeletingService,
-    handleSaveService,
-    handleDeleteService,
-
     isChangePaypalOpen,
     setIsChangePaypalOpen,
-    paypalChangeInput,
-    setPaypalChangeInput,
-    handleSubmitPaypalChange,
 
     isChangePolicyOpen,
     setIsChangePolicyOpen,
     policyForm,
-    setPolicyForm,
-    handleSubmitPolicyChange,
 
     settlement,
     handleExecuteRefundProposal,
-    handleSignIn,
-    handleLockSession,
     handleResetDemoData,
     handleToggleDrift,
   } = useMerchantContext()
 
-  if (!state.authenticated) {
-    return (
-      <AuthGate
-        title="Merchant Console Sign-In"
-        subtitle="Operational portal for salon owners. Manage calendar appointments, execute HITL settlements, and configure deposit policies."
-        email={SANDBOX_CREDENTIALS.merchantAccount.email}
-        password={SANDBOX_CREDENTIALS.merchantAccount.password}
-        onSignIn={handleSignIn}
-      />
-    )
+  const salon = {
+    ...state.salon,
+    id: org?.id || state.salon.id,
+    name: org?.name || state.salon.name,
+  }
+
+  const handleLockSession = () => {
+    dispatch(logout())
   }
 
   return (
-    <>
+    <PortalGuard portal="merchant">
       {toastMessage ? (
         <Toast
           message={toastMessage}
@@ -124,12 +127,12 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
         onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)}
         sidebar={
           <MerchantSidebar
-            salon={state.salon}
+            salon={salon}
             activeTab={currentTab}
             activeHoldsCount={activeHoldsCount}
-            bookingsCount={state.bookings.length}
-            staffCount={state.staff.length}
-            servicesCount={state.services.length}
+            bookingsCount={apiBookings.length}
+            staffCount={employees.length}
+            servicesCount={services.length}
             pendingChangeRequests={pendingChangeRequests}
             isResetting={isResetting}
             onOpenCopilot={() => setIsCopilotOpen(true)}
@@ -154,7 +157,6 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
         <div className="animate-in fade-in duration-200">{children}</div>
       </ConsoleShell>
 
-      {/* Global Modals & Slide-overs */}
       {selectedBooking ? (
         <SettlementDrawer
           booking={selectedBooking}
@@ -182,62 +184,69 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
         />
       ) : null}
 
-      {isAddStaffOpen ? (
-        <StaffFormModal
-          editingStaff={editingStaff}
-          form={staffForm}
-          onChange={setStaffForm}
-          onClose={() => setIsAddStaffOpen(false)}
-          onSubmit={handleSaveStaff}
-        />
-      ) : null}
+      <PaypalChangeModal
+        open={isChangePaypalOpen}
+        currentMerchantId={account?.merchant_id || state.salon.paypalMerchantId}
+        isLoading={submittingCr}
+        onClose={() => setIsChangePaypalOpen(false)}
+        onSubmit={async (merchantId) => {
+          try {
+            await createChangeRequest({
+              request_type: 'PAYPAL_ACCOUNT',
+              payload_json: {
+                merchant_id: merchantId,
+                display_name: org?.name || merchantId,
+                currency: account?.currency || 'USD',
+              },
+              current_snapshot_json: {
+                merchant_id: account?.merchant_id || state.salon.paypalMerchantId,
+              },
+            }).unwrap()
+            toast.success('PayPal change request submitted', toastColor.success)
+            setIsChangePaypalOpen(false)
+          } catch (err) {
+            toast.error(
+              String((err as { data?: { detail?: string } })?.data?.detail || 'Submit failed'),
+              toastColor.error,
+            )
+          }
+        }}
+      />
 
-      {deletingStaff ? (
-        <DeleteStaffModal
-          staff={deletingStaff}
-          onClose={() => setDeletingStaff(null)}
-          onConfirm={handleDeleteStaff}
-        />
-      ) : null}
-
-      {isAddServiceOpen ? (
-        <ServiceFormModal
-          editingService={editingService}
-          form={serviceForm}
-          onChange={setServiceForm}
-          onClose={() => setIsAddServiceOpen(false)}
-          onSubmit={handleSaveService}
-        />
-      ) : null}
-
-      {deletingService ? (
-        <DeleteServiceModal
-          service={deletingService}
-          onClose={() => setDeletingService(null)}
-          onConfirm={handleDeleteService}
-        />
-      ) : null}
-
-      {isChangePaypalOpen ? (
-        <PaypalChangeModal
-          currentMerchantId={state.salon.paypalMerchantId}
-          value={paypalChangeInput}
-          onChange={setPaypalChangeInput}
-          onClose={() => setIsChangePaypalOpen(false)}
-          onSubmit={handleSubmitPaypalChange}
-        />
-      ) : null}
-
-      {isChangePolicyOpen ? (
-        <PolicyChangeModal
-          policyHours={policyForm.policyHours}
-          noShowFee={policyForm.noShowFee}
-          onChange={setPolicyForm}
-          onClose={() => setIsChangePolicyOpen(false)}
-          onSubmit={handleSubmitPolicyChange}
-        />
-      ) : null}
-    </>
+      <PolicyChangeModal
+        open={isChangePolicyOpen}
+        policyHours={policyForm.policyHours}
+        noShowFee={policyForm.noShowFee}
+        isLoading={submittingCr}
+        onClose={() => setIsChangePolicyOpen(false)}
+        onSubmit={async (next) => {
+          try {
+            await createChangeRequest({
+              request_type: 'CANCELLATION_POLICY',
+              payload_json: {
+                name: 'Updated policy',
+                data: {
+                  free_cancel_hours: next.policyHours,
+                  no_show_fee: next.noShowFee,
+                  hold_percent: 100,
+                },
+              },
+              current_snapshot_json: {
+                policyHours: policyForm.policyHours,
+                noShowFee: policyForm.noShowFee,
+              },
+            }).unwrap()
+            toast.success('Policy amendment submitted', toastColor.success)
+            setIsChangePolicyOpen(false)
+          } catch (err) {
+            toast.error(
+              String((err as { data?: { detail?: string } })?.data?.detail || 'Submit failed'),
+              toastColor.error,
+            )
+          }
+        }}
+      />
+    </PortalGuard>
   )
 }
 

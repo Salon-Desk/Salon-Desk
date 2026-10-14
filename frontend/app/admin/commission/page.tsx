@@ -1,266 +1,175 @@
 'use client'
 
-import { CheckCircle2, Copy, Percent, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { Edit2, Loader2, Percent, Plus } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
-import { Button, Card, NumberField } from '@/components/ui'
+import PrimaryButton from '@/components/button/PrimaryButton'
+import { Card, IconButton } from '@/components/ui'
 import { formatUsd } from '@/lib/format'
+import {
+  useGetAdminCategoriesQuery,
+  useGetAdminCommissionsQuery,
+  useGetAdminDashboardQuery,
+} from '@/store/slice/adminApi'
+import type { PlatformCommission } from '@/types/api-org'
 
-import { useAdminContext } from '../_context/admin-context'
+import { CommissionFormModal } from '../_components/commission-form-modal'
+
+function formatCommissionRate(c: PlatformCommission): string {
+  const pct = c.percentage != null ? `${Number(c.percentage)}%` : null
+  const flat = c.flat != null ? formatUsd(Number(c.flat)) : null
+  if (c.type === 'hybrid') return [pct, flat].filter(Boolean).join(' + ')
+  if (c.type === 'flat') return flat || '—'
+  return pct || '—'
+}
 
 export default function AdminCommissionPage() {
-  const {
-    state,
-    globalRateInput,
-    setGlobalRateInput,
-    handleSaveGlobalRate,
-    setIsAddOverrideOpen,
-    handleDeleteOverride,
-  } = useAdminContext()
+  const { data: commissions = [], isLoading, isError, refetch } = useGetAdminCommissionsQuery()
+  const { data: categories = [] } = useGetAdminCategoriesQuery()
+  const { data: dashboard } = useGetAdminDashboardQuery()
 
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const [editing, setEditing] = useState<PlatformCommission | null>(null)
 
-  const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
-  }
+  const categoryNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    categories.forEach((c) => map.set(c.id, c.name))
+    return map
+  }, [categories])
 
-  const totalCommissionRevenue = state.commissionTransactions.reduce(
-    (acc, tx) => acc + tx.platformCut,
-    0,
-  )
+  const ledgerSum = Number(dashboard?.ledger_amount_sum || 0)
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
-      {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
             Commission &amp; Fees
           </h1>
-          <p className="text-slate-500 text-xs">
-            Global take-rate tiers, VIP custom overrides, and fee ledger.
-          </p>
+          <p className="text-slate-500 text-xs">Platform take-rate rules by service category.</p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/90 bg-white px-3.5 py-1.5 shadow-xs">
-          <span className="text-slate-400 text-[10px] block uppercase font-medium">
-            Platform Cut (MTD)
-          </span>
-          <span className="text-emerald-800 font-bold text-sm">
-            {formatUsd(totalCommissionRevenue)}
-          </span>
-        </div>
-      </div>
-
-      {/* Global Take-Rate & Custom Overrides Grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Global Rate Form */}
-        <Card
-          padding="lg"
-          className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs"
-        >
-          <div className="flex items-center justify-between border-slate-100 border-b pb-3">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80">
-                <Percent className="h-4 w-4 text-amber-700" />
-              </div>
-              <div>
-                <h2 className="font-bold text-slate-900 text-sm">Global Rate</h2>
-                <span className="text-slate-400 text-[11px]">Default Tier</span>
-              </div>
-            </div>
-            <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] text-slate-700">
-              Active
+        <div className="flex items-center gap-3">
+          <div className="rounded-2xl border border-slate-200/90 bg-white px-3.5 py-1.5 shadow-xs">
+            <span className="text-slate-400 text-[10px] block uppercase font-medium">
+              Ledger volume
             </span>
+            <span className="text-emerald-800 font-bold text-sm">{formatUsd(ledgerSum)}</span>
           </div>
-
-          <form onSubmit={handleSaveGlobalRate} className="space-y-3">
-            <NumberField
-              label="Platform Take-Rate (%)"
-              step={0.1}
-              value={parseFloat(globalRateInput.percentage) || 0}
-              onChange={(value) =>
-                setGlobalRateInput({
-                  ...globalRateInput,
-                  percentage: String(value),
-                })
-              }
-            />
-
-            <NumberField
-              label="Fixed Transaction Fee ($)"
-              step={0.05}
-              value={parseFloat(globalRateInput.flatFee) || 0}
-              onChange={(value) =>
-                setGlobalRateInput({
-                  ...globalRateInput,
-                  flatFee: String(value),
-                })
-              }
-            />
-
-            <div className="rounded-xl border border-slate-200/70 bg-slate-50/60 p-2.5 text-xs text-slate-600">
-              Deducted at capture:{' '}
-              <strong className="text-slate-900">
-                {globalRateInput.percentage}% + $
-                {parseFloat(globalRateInput.flatFee || '0').toFixed(2)}
-              </strong>
-            </div>
-
-            <Button
-              type="submit"
-              fullWidth
-              className="rounded-xl py-2 font-medium text-xs shadow-xs"
-            >
-              Save Global Rate
-            </Button>
-          </form>
-        </Card>
-
-        {/* Custom Overrides Table */}
-        <Card
-          padding="lg"
-          className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs lg:col-span-2"
-        >
-          <div className="flex items-center justify-between border-slate-100 border-b pb-3">
-            <div>
-              <h2 className="font-bold text-slate-900 text-sm">VIP Partner Overrides</h2>
-              <p className="text-slate-500 text-xs">Custom negotiated commission agreements</p>
-            </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsAddOverrideOpen(true)}
-              className="rounded-xl font-medium text-xs h-8 px-3"
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              <span>Add Override</span>
-            </Button>
-          </div>
-
-          <div className="overflow-x-auto rounded-2xl border border-slate-200/90">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-slate-200 border-b bg-slate-50 font-semibold text-slate-700">
-                  <th className="px-4 py-2.5">Salon</th>
-                  <th className="px-4 py-2.5">Rate</th>
-                  <th className="px-4 py-2.5">Note</th>
-                  <th className="px-4 py-2.5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-mono">
-                {state.commissionOverrides.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-4 py-8 text-center text-slate-400 text-xs font-sans"
-                    >
-                      No custom overrides configured. All partners use the global tier.
-                    </td>
-                  </tr>
-                ) : (
-                  state.commissionOverrides.map((ov) => (
-                    <tr key={ov.salonId} className="transition-colors hover:bg-slate-50/60">
-                      <td className="px-4 py-3 font-semibold font-sans text-slate-900">
-                        {ov.salonName}
-                      </td>
-                      <td className="px-4 py-3 font-bold text-emerald-800">
-                        <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[11px]">
-                          {ov.customRate}% VIP
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-sans text-slate-600 text-xs">{ov.note}</td>
-                      <td className="px-4 py-3 text-right font-sans">
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteOverride(ov.salonId)}
-                          className="rounded-lg p-1 text-slate-400 transition-colors hover:text-rose-600"
-                          title="Remove override"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+          <PrimaryButton
+            title="Add commission"
+            size="sm"
+            fullWidth={false}
+            icon={<Plus className="h-3.5 w-3.5" />}
+            className="h-9 rounded-xl px-3.5 text-xs"
+            onClick={() => {
+              setEditing(null)
+              setIsOpen(true)
+            }}
+          />
+        </div>
       </div>
 
-      {/* Live Commission Transactions Ledger */}
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+          <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+          Loading commissions…
+        </div>
+      ) : null}
+
+      {isError ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700">
+          <p>Could not load commissions.</p>
+          <PrimaryButton
+            title="Retry"
+            variant="outline"
+            size="sm"
+            fullWidth={false}
+            className="mt-3 h-9 rounded-xl px-4"
+            onClick={() => void refetch()}
+          />
+        </div>
+      ) : null}
+
+      {!isLoading && !isError && commissions.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center">
+          <Percent className="mx-auto h-8 w-8 text-slate-300" />
+          <p className="mt-3 text-sm font-medium text-slate-700">No commission rules yet</p>
+          <PrimaryButton
+            title="Create first rule"
+            size="sm"
+            fullWidth={false}
+            className="mt-4 h-9 rounded-xl px-4"
+            onClick={() => {
+              setEditing(null)
+              setIsOpen(true)
+            }}
+          />
+        </div>
+      ) : null}
+
       <Card
         padding="lg"
         className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs"
       >
         <div className="flex items-center justify-between border-slate-100 border-b pb-3">
           <div>
-            <h2 className="font-bold text-slate-900 text-sm">Fee Split Ledger</h2>
-            <p className="text-slate-500 text-xs">
-              Platform fees retained on captured reservations
-            </p>
+            <h2 className="font-bold text-slate-900 text-sm">Category take-rates</h2>
+            <p className="text-slate-500 text-xs">Applied when bookings capture</p>
           </div>
-          <span className="font-mono text-[11px] text-slate-400">
-            {state.commissionTransactions.length} settled
-          </span>
+          <span className="font-mono text-[11px] text-slate-400">{commissions.length} rules</span>
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-slate-200/90">
-          <table className="w-full text-left font-mono text-xs">
+          <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-slate-200 border-b bg-slate-50 font-sans font-semibold text-slate-700">
-                <th className="px-4 py-2.5">Txn Ref</th>
-                <th className="px-4 py-2.5">Salon</th>
-                <th className="px-4 py-2.5">Ticket</th>
-                <th className="px-4 py-2.5">Hold</th>
-                <th className="px-4 py-2.5">Platform Cut</th>
-                <th className="px-4 py-2.5">Net Payout</th>
-                <th className="px-4 py-2.5">PayPal Ref</th>
-                <th className="px-4 py-2.5">Timestamp</th>
+              <tr className="border-slate-200 border-b bg-slate-50 font-semibold text-slate-700">
+                <th className="px-4 py-2.5">Name</th>
+                <th className="px-4 py-2.5">Category</th>
+                <th className="px-4 py-2.5">Type</th>
+                <th className="px-4 py-2.5">Rate</th>
+                <th className="px-4 py-2.5 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {state.commissionTransactions.map((tx) => (
-                <tr key={tx.id} className="transition-colors hover:bg-slate-50/60">
-                  <td className="px-4 py-3 font-semibold text-slate-900 font-sans">{tx.id}</td>
-                  <td className="px-4 py-3 font-sans text-slate-700">{tx.salonName}</td>
-                  <td className="px-4 py-3 text-slate-700">{formatUsd(tx.bookingAmount)}</td>
-                  <td className="px-4 py-3 text-amber-800 font-semibold">
-                    {formatUsd(tx.capturedFee)}
+              {commissions.map((c) => (
+                <tr key={c.id} className="transition-colors hover:bg-slate-50/60">
+                  <td className="px-4 py-3 font-semibold text-slate-900">{c.name}</td>
+                  <td className="px-4 py-3 text-slate-700">
+                    {categoryNameById.get(c.service_category_id) ||
+                      c.service_category_id.slice(0, 8)}
                   </td>
-                  <td className="px-4 py-3 font-bold text-emerald-800">
-                    {formatUsd(tx.platformCut)}
+                  <td className="px-4 py-3 capitalize text-slate-600">{c.type}</td>
+                  <td className="px-4 py-3 font-bold text-emerald-800 font-mono">
+                    {formatCommissionRate(c)}
                   </td>
-                  <td className="px-4 py-3 font-semibold text-slate-900">
-                    {formatUsd(tx.netPayout)}
+                  <td className="px-4 py-3 text-right">
+                    <IconButton
+                      aria-label="Edit commission"
+                      onClick={() => {
+                        setEditing(c)
+                        setIsOpen(true)
+                      }}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </IconButton>
                   </td>
-                  <td className="px-4 py-3 text-slate-500">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[11px] truncate max-w-[130px]">{tx.paypalRef}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(tx.id, tx.paypalRef)}
-                        className="text-slate-400 hover:text-slate-700"
-                        title="Copy PayPal Ref"
-                      >
-                        {copiedId === tx.id ? (
-                          <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-[11px] text-slate-400 font-sans">{tx.timestamp}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </Card>
+
+      <CommissionFormModal
+        open={isOpen}
+        editing={editing}
+        categories={categories}
+        onClose={() => {
+          setIsOpen(false)
+          setEditing(null)
+        }}
+      />
     </div>
   )
 }

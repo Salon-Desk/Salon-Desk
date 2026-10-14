@@ -1,39 +1,154 @@
 'use client'
 
-import { CheckCircle2, Clock, Copy, CreditCard, ExternalLink, Sliders } from 'lucide-react'
-import { useState } from 'react'
+import { CheckCircle2, Clock, Copy, CreditCard, ExternalLink, Loader2, Sliders } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
-import { Button, Card } from '@/components/ui'
+import PrimaryButton from '@/components/button/PrimaryButton'
+import { Card } from '@/components/ui'
+import { toastColor } from '@/constant/toast-color'
 import { formatUsd } from '@/lib/format'
+import {
+  useCreateMyChangeRequestMutation,
+  useGetMyCancellationPoliciesQuery,
+  useGetMyChangeRequestsQuery,
+  useGetMyOrgAccountQuery,
+  useGetMyOrganizationQuery,
+  useGetMyOrgSettingsQuery,
+} from '@/store/slice/organizationApi'
 
-import { useMerchantContext } from '../_context/merchant-context'
+import { PaypalChangeModal, PolicyChangeModal } from '../_components/settings-modals'
 
 export default function MerchantSettingsPage() {
-  const { state, openChangePaypal, openChangePolicy } = useMerchantContext()
+  const { data: org, isLoading: orgLoading } = useGetMyOrganizationQuery()
+  const { data: account, isLoading: accountLoading } = useGetMyOrgAccountQuery()
+  const { data: settings } = useGetMyOrgSettingsQuery()
+  const { data: policies = [] } = useGetMyCancellationPoliciesQuery()
+  const {
+    data: changeRequests = [],
+    isLoading: crLoading,
+    isError,
+    refetch,
+  } = useGetMyChangeRequestsQuery()
+  const [createChangeRequest, { isLoading: submitting }] = useCreateMyChangeRequestMutation()
 
   const [copied, setCopied] = useState(false)
+  const [isPaypalOpen, setIsPaypalOpen] = useState(false)
+  const [isPolicyOpen, setIsPolicyOpen] = useState(false)
+
+  const activePolicy = useMemo(
+    () => policies.find((p) => p.status?.toLowerCase() === 'active') || policies[0],
+    [policies],
+  )
+
+  const policyHours = Number(
+    (activePolicy?.data?.free_cancel_hours as number | undefined) ??
+      (activePolicy?.data?.policyHours as number | undefined) ??
+      24,
+  )
+  const noShowFee = Number(
+    (activePolicy?.data?.no_show_fee as number | undefined) ??
+      (activePolicy?.data?.noShowFee as number | undefined) ??
+      30,
+  )
+
+  const merchantId = account?.merchant_id || '—'
+  const isLoading = orgLoading || accountLoading || crLoading
 
   const handleCopyMerchantId = () => {
-    navigator.clipboard.writeText(state.salon.paypalMerchantId)
+    if (!account?.merchant_id) return
+    void navigator.clipboard.writeText(account.merchant_id)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleSubmitPaypal = async (nextMerchantId: string) => {
+    try {
+      await createChangeRequest({
+        request_type: 'PAYPAL_ACCOUNT',
+        payload_json: {
+          merchant_id: nextMerchantId,
+          display_name: org?.name || nextMerchantId,
+          currency: account?.currency || 'USD',
+        },
+        current_snapshot_json: {
+          merchant_id: account?.merchant_id || null,
+          merchant_email: account?.merchant_email || null,
+          status: account?.status || null,
+        },
+      }).unwrap()
+      toast.success('PayPal change request submitted', toastColor.success)
+      setIsPaypalOpen(false)
+    } catch (err) {
+      const message =
+        (err as { data?: { detail?: string } })?.data?.detail || 'Could not submit request'
+      toast.error(String(message), toastColor.error)
+    }
+  }
+
+  const handleSubmitPolicy = async (next: { policyHours: number; noShowFee: number }) => {
+    try {
+      await createChangeRequest({
+        request_type: 'CANCELLATION_POLICY',
+        payload_json: {
+          name: activePolicy?.name || 'Updated policy',
+          policy_id: activePolicy?.id,
+          data: {
+            free_cancel_hours: next.policyHours,
+            no_show_fee: next.noShowFee,
+            hold_percent: 100,
+          },
+        },
+        current_snapshot_json: {
+          policy_id: activePolicy?.id || null,
+          name: activePolicy?.name || null,
+          data: activePolicy?.data || {},
+        },
+      }).unwrap()
+      toast.success('Policy amendment submitted', toastColor.success)
+      setIsPolicyOpen(false)
+    } catch (err) {
+      const message =
+        (err as { data?: { detail?: string } })?.data?.detail || 'Could not submit request'
+      toast.error(String(message), toastColor.error)
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
-      {/* Header */}
       <div>
         <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
           Settings &amp; Policies
         </h1>
         <p className="text-slate-500 text-xs">
-          PayPal merchant credentials, cancellation terms, and compliance requests.
+          {isLoading
+            ? 'Loading…'
+            : `${org?.name || 'Organization'} · ${settings?.timezone || 'UTC'}`}
         </p>
       </div>
 
-      {/* Main Grid */}
+      {isError ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700">
+          <p>Could not load change requests.</p>
+          <PrimaryButton
+            title="Retry"
+            variant="outline"
+            size="sm"
+            fullWidth={false}
+            className="mt-3 h-9 rounded-xl px-4"
+            onClick={() => void refetch()}
+          />
+        </div>
+      ) : null}
+
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
+          <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+          Loading settings…
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* PayPal Credentials Card */}
         <Card
           padding="lg"
           className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs"
@@ -48,8 +163,8 @@ export default function MerchantSettingsPage() {
                 <span className="text-slate-500 text-[11px]">Direct Payouts</span>
               </div>
             </div>
-            <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 font-medium text-[10px] text-emerald-800">
-              Verified
+            <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 font-medium text-[10px] text-emerald-800 capitalize">
+              {account?.status || 'unlinked'}
             </span>
           </div>
 
@@ -57,45 +172,48 @@ export default function MerchantSettingsPage() {
             <div className="flex justify-between items-center">
               <span className="font-sans text-slate-500">Merchant ID:</span>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-slate-900">{state.salon.paypalMerchantId}</span>
-                <button
-                  type="button"
-                  onClick={handleCopyMerchantId}
-                  className="text-slate-400 hover:text-slate-700 transition-colors"
-                  title="Copy Merchant ID"
-                >
-                  {copied ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                </button>
+                <span className="font-bold text-slate-900">{merchantId}</span>
+                {account?.merchant_id ? (
+                  <button
+                    type="button"
+                    onClick={handleCopyMerchantId}
+                    className="text-slate-400 hover:text-slate-700 transition-colors"
+                    title="Copy Merchant ID"
+                  >
+                    {copied ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                ) : null}
               </div>
             </div>
             <div className="flex justify-between items-center border-slate-200/60 border-t pt-2">
-              <span className="font-sans text-slate-500">API Protocol:</span>
-              <span className="text-slate-700 font-sans font-medium text-xs">PayPal Orders v2</span>
+              <span className="font-sans text-slate-500">Currency:</span>
+              <span className="text-slate-700 font-sans font-medium text-xs">
+                {account?.currency || 'USD'}
+              </span>
             </div>
             <div className="flex justify-between items-center border-slate-200/60 border-t pt-2">
-              <span className="font-sans text-slate-500">Take-Rate:</span>
-              <span className="font-bold text-slate-900">
-                {state.salon.commissionRate}% VIP Rate
+              <span className="font-sans text-slate-500">Display name:</span>
+              <span className="font-bold text-slate-900 font-sans">
+                {account?.display_name || org?.name || '—'}
               </span>
             </div>
           </div>
 
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={openChangePaypal}
-            className="rounded-xl py-2 font-medium text-xs"
-          >
-            <span>Request PayPal ID Change</span>
-            <ExternalLink className="h-3.5 w-3.5 ml-1 text-slate-400" />
-          </Button>
+          <PrimaryButton
+            title="Request PayPal ID Change"
+            variant="outline"
+            size="sm"
+            isDisabled={submitting}
+            onClick={() => setIsPaypalOpen(true)}
+            icon={<ExternalLink className="h-3.5 w-3.5" />}
+            className="h-10 rounded-xl text-xs"
+          />
         </Card>
 
-        {/* Cancellation Policy Rules Card */}
         <Card
           padding="lg"
           className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs"
@@ -107,46 +225,45 @@ export default function MerchantSettingsPage() {
               </div>
               <div>
                 <h2 className="font-bold text-slate-900 text-sm">Cancellation Policy</h2>
-                <span className="text-slate-500 text-[11px]">Enforced on PayPal</span>
+                <span className="text-slate-500 text-[11px]">
+                  {activePolicy?.name || 'Default policy'}
+                </span>
               </div>
             </div>
-            <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 font-medium text-[10px] text-slate-700">
-              Active Rule
+            <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 font-medium text-[10px] text-slate-700 capitalize">
+              {activePolicy?.status || 'none'}
             </span>
           </div>
 
           <div className="space-y-2 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 text-xs">
             <div className="flex justify-between items-center">
               <span className="text-slate-500">Free Notice Cutoff:</span>
-              <span className="font-bold text-slate-900 font-mono">
-                ≥ {state.salon.cancellationPolicyHours} hours
-              </span>
+              <span className="font-bold text-slate-900 font-mono">≥ {policyHours} hours</span>
             </div>
             <div className="flex justify-between items-center border-slate-200/60 border-t pt-2">
               <span className="text-slate-500">Standard No-Show Fee:</span>
-              <span className="font-bold text-slate-900 font-mono">
-                {formatUsd(state.salon.defaultNoShowFee)}
-              </span>
+              <span className="font-bold text-slate-900 font-mono">{formatUsd(noShowFee)}</span>
             </div>
             <div className="flex justify-between items-center border-slate-200/60 border-t pt-2">
-              <span className="text-slate-500">Authorization Model:</span>
-              <span className="font-medium text-emerald-700">Non-Debit Pre-Auth</span>
+              <span className="text-slate-500">Address:</span>
+              <span className="font-medium text-slate-700 truncate max-w-[60%] text-right">
+                {settings?.physical_address || '—'}
+              </span>
             </div>
           </div>
 
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={openChangePolicy}
-            className="rounded-xl py-2 font-medium text-xs"
-          >
-            <span>Request Policy Amendment</span>
-            <Sliders className="h-3.5 w-3.5 ml-1 text-slate-400" />
-          </Button>
+          <PrimaryButton
+            title="Request Policy Amendment"
+            variant="outline"
+            size="sm"
+            isDisabled={submitting}
+            onClick={() => setIsPolicyOpen(true)}
+            icon={<Sliders className="h-3.5 w-3.5" />}
+            className="h-10 rounded-xl text-xs"
+          />
         </Card>
       </div>
 
-      {/* Submitted Change Requests Audit Queue */}
       <Card
         padding="lg"
         className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs"
@@ -157,42 +274,63 @@ export default function MerchantSettingsPage() {
             <p className="text-slate-500 text-xs">Platform operator compliance reviews</p>
           </div>
           <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 font-mono text-[11px] text-slate-600">
-            {state.changeRequests.length} requests
+            {changeRequests.length} requests
           </span>
         </div>
 
         <div className="space-y-2.5">
-          {state.changeRequests.length === 0 ? (
+          {changeRequests.length === 0 ? (
             <div className="py-8 text-center text-slate-400 text-xs">
               No change requests on record.
             </div>
           ) : (
-            state.changeRequests.map((cr) => (
+            changeRequests.map((cr) => (
               <div
                 key={cr.id}
                 className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5 text-xs transition-colors hover:bg-white sm:flex-row sm:items-center"
               >
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-semibold text-slate-800">{cr.id}</span>
+                    <span className="font-mono font-semibold text-slate-800">
+                      {cr.id.slice(0, 8)}
+                    </span>
                     <span className="text-slate-300">·</span>
                     <span className="font-medium text-slate-900">
-                      {cr.type === 'PAYPAL_ACCOUNT'
+                      {cr.request_type === 'PAYPAL_ACCOUNT'
                         ? 'PayPal Account Transition'
                         : 'Cancellation Policy Modification'}
                     </span>
                   </div>
-                  <div className="text-[11px] text-slate-500">Submitted {cr.submittedAt}</div>
+                  <div className="text-[11px] text-slate-500">
+                    Submitted {new Date(cr.created_at).toLocaleString()}
+                  </div>
                 </div>
 
-                <span className="self-start sm:self-auto rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 font-medium text-[10px] text-amber-900">
-                  {cr.status.replace('_', ' ')}
+                <span className="self-start sm:self-auto rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 font-medium text-[10px] text-amber-900 capitalize">
+                  {cr.status.replaceAll('_', ' ').toLowerCase()}
                 </span>
               </div>
             ))
           )}
         </div>
       </Card>
+
+      <PaypalChangeModal
+        open={isPaypalOpen}
+        currentMerchantId={merchantId}
+        isLoading={submitting}
+        onClose={() => setIsPaypalOpen(false)}
+        onSubmit={handleSubmitPaypal}
+      />
+
+      <PolicyChangeModal
+        open={isPolicyOpen}
+        policyHours={policyHours}
+        noShowFee={noShowFee}
+        isLoading={submitting}
+        onClose={() => setIsPolicyOpen(false)}
+        onSubmit={handleSubmitPolicy}
+      />
     </div>
   )
 }

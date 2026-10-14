@@ -1,3 +1,12 @@
+// Ensure endpoint injection for RTK Query slices
+import './slice/authApi'
+import './slice/userApi'
+import './slice/organizationApi'
+import './slice/adminApi'
+import './slice/catalogApi'
+import './slice/bookingsApi'
+import './slice/paymentsApi'
+
 import { configureStore } from '@reduxjs/toolkit'
 
 import { apiSlice } from './apiSlice'

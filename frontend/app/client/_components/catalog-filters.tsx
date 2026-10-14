@@ -13,6 +13,7 @@ interface CatalogFiltersProps {
   onSearchChange: (value: string) => void
   sortBy: ServiceSort
   onSortChange: (sort: ServiceSort) => void
+  categories?: string[]
 }
 
 export function CatalogFilters({
@@ -22,13 +23,14 @@ export function CatalogFilters({
   onSearchChange,
   sortBy,
   onSortChange,
+  categories = [...SERVICE_CATEGORIES],
 }: CatalogFiltersProps) {
   return (
     <div className="sticky top-16 z-30 mb-8 py-2.5 bg-white/90 backdrop-blur-xl">
       <div className="flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
         {/* Category Pills - Borderless & Shadowless */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none snap-x">
-          {SERVICE_CATEGORIES.map((cat) => {
+          {categories.map((cat) => {
             const isSelected = category === cat
             return (
               <button

@@ -2,7 +2,7 @@
 
 import { X } from 'lucide-react'
 import type React from 'react'
-import { forwardRef, useImperativeHandle, useRef } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 
 import {
   Dialog,
@@ -60,6 +60,11 @@ const CustomResponsiveDialog = forwardRef<
     ref,
   ) => {
     const bodyRef = useRef<HTMLDivElement | null>(null)
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+      setMounted(true)
+    }, [])
 
     useImperativeHandle(ref, () => ({
       scrollToTop() {
@@ -68,6 +73,11 @@ const CustomResponsiveDialog = forwardRef<
     }))
 
     const isDesktop = useMediaQuery('(min-width: 768px)')
+
+    // Avoid SSR drawer → desktop dialog flash while matchMedia hydrates.
+    if (!mounted) {
+      return null
+    }
 
     const contentClasses = cn(
       'w-full max-w-lg rounded-xl border-none  [&>button]:hidden  scrollbar-hide bg-background shadow-xl',
@@ -78,16 +88,19 @@ const CustomResponsiveDialog = forwardRef<
 
     const bodyClasses = cn(
       'flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide',
-      'px-5 sm:px-8 lg:px-0 py-6',
+      'px-5 sm:px-6 py-6',
       'scrollbar-thin',
       classNameBody,
     )
 
-    // Header and footer hug their content; each dialog owns its own chrome padding.
-    // Only the footer keeps a bottom inset so action buttons never sit on the dialog edge.
-    const headerClasses = cn('flex-none', classNameHeader)
+    // Shared horizontal inset so header / body / footer align on both dialog and drawer.
+    const headerClasses = cn('flex-none px-5 sm:px-6', classNameHeader)
 
-    const footerClasses = cn('flex-none pb-4', !hideFooterBorder && 'border-t', classNameFooter)
+    const footerClasses = cn(
+      'flex-none px-5 sm:px-6 pb-4 pt-3',
+      !hideFooterBorder && 'border-t',
+      classNameFooter,
+    )
 
     const closeBtnClasses = cn(
       'absolute top-4 right-4 z-50',
@@ -160,7 +173,10 @@ const CustomResponsiveDialog = forwardRef<
 
           <div
             ref={bodyRef}
-            className="flex-1 min-h-0 max-h-[70dvh] overflow-y-auto overflow-x-hidden scrollbar-thin"
+            className={cn(
+              'flex-1 min-h-0 max-h-[70dvh] overflow-y-auto overflow-x-hidden scrollbar-thin',
+              bodyClasses,
+            )}
           >
             {children}
           </div>

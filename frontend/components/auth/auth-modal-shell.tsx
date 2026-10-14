@@ -32,7 +32,7 @@ export function AuthModalShell({
         if (!open) closeAuthModal()
       }}
       header={
-        <div className="px-5 pt-6 pb-2 text-center sm:px-6">
+        <div className="pt-6 pb-2 text-center">
           {icon ? (
             <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-600">
               {icon}
@@ -44,7 +44,7 @@ export function AuthModalShell({
         </div>
       }
       classNameContent="max-w-lg"
-      classNameBody={cn('px-5 py-4 sm:px-6', classNameBody)}
+      classNameBody={cn('py-4', classNameBody)}
       hideFooterBorder
     >
       {children}

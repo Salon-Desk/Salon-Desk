@@ -29,7 +29,8 @@ const initialState: UserState = {
   token: initialToken,
   organizationId: initialUser?.org_id ?? null,
   isAuthenticated: Boolean(initialToken),
-  isLoading: false,
+  // Wait for /me when a stored token exists so PortalGuard does not flash wrong content.
+  isLoading: Boolean(initialToken),
   activeApp: 'client',
   didLogout: false,
 }

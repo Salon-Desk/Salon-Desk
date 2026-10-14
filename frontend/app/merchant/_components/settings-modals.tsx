@@ -1,121 +1,203 @@
 'use client'
 
-import type { FormEvent } from 'react'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+
+import PrimaryButton from '@/components/button/PrimaryButton'
+import FormProvider from '@/components/forms/FormProvider'
+import RHFDropeDown from '@/components/forms/RHFDropeDown'
+import RHFNumberField from '@/components/forms/RHFNumberField'
+import RHFTextField from '@/components/forms/RHFTextField'
+import { Modal, Panel } from '@/components/ui'
+import { zodResolver } from '@/lib/schema/resolver'
 
 import {
-  Button,
-  FormActions,
-  Modal,
-  NumberField,
-  Panel,
-  SelectField,
-  TextField,
-} from '@/components/ui'
+  paypalChangeDefaultValues,
+  type PaypalChangeFormData,
+  paypalChangeSchema,
+  policyChangeDefaultValues,
+  type PolicyChangeFormData,
+  policyChangeSchema,
+} from '../_schemas/settings.schema'
 
 interface PaypalChangeModalProps {
+  open: boolean
   currentMerchantId: string
-  value: string
-  onChange: (value: string) => void
+  isLoading?: boolean
   onClose: () => void
-  onSubmit: (event: FormEvent) => void
+  onSubmit: (merchantId: string) => Promise<void> | void
 }
 
 interface PolicyChangeModalProps {
+  open: boolean
   policyHours: number
   noShowFee: number
-  onChange: (next: { policyHours: number; noShowFee: number }) => void
+  isLoading?: boolean
   onClose: () => void
-  onSubmit: (event: FormEvent) => void
+  onSubmit: (next: { policyHours: number; noShowFee: number }) => Promise<void> | void
 }
 
 export function PaypalChangeModal({
+  open,
   currentMerchantId,
-  value,
-  onChange,
+  isLoading = false,
   onClose,
   onSubmit,
 }: PaypalChangeModalProps) {
+  const methods = useForm<PaypalChangeFormData>({
+    resolver: zodResolver(paypalChangeSchema),
+    defaultValues: paypalChangeDefaultValues,
+    mode: 'onBlur',
+  })
+
+  useEffect(() => {
+    if (!open) return
+    methods.reset(paypalChangeDefaultValues)
+  }, [open, methods])
+
+  const handleSubmit = async (data: PaypalChangeFormData) => {
+    await onSubmit((data.merchant_id ?? '').trim())
+  }
+
+  if (!open) return null
+
   return (
     <Modal onClose={onClose} size="md" title="Request PayPal Merchant ID Change">
-      <form onSubmit={onSubmit} className="space-y-3.5 text-xs">
-        <p className="text-slate-600 leading-relaxed">
-          Platform Admin approval is required before changing the payout account. Payouts will
-          continue routing to your verified ID until approved.
-        </p>
+      <FormProvider
+        methods={methods}
+        onSubmit={(e) => {
+          e?.preventDefault()
+          void methods.handleSubmit(handleSubmit)(e)
+        }}
+      >
+        <div className="space-y-3 text-xs">
+          <p className="text-slate-600 leading-relaxed">
+            Platform Admin approval is required before changing the payout account. Payouts will
+            continue routing to your verified ID until approved.
+          </p>
 
-        <Panel className="space-y-1 bg-white font-mono text-[11px]">
-          <span className="font-sans text-slate-500 uppercase">Current Approved ID:</span>
-          <div className="font-bold text-slate-900">{currentMerchantId}</div>
-        </Panel>
+          <Panel className="space-y-1 bg-white font-mono text-[11px]">
+            <span className="font-sans text-slate-500 uppercase">Current Approved ID:</span>
+            <div className="font-bold text-slate-900">{currentMerchantId}</div>
+          </Panel>
 
-        <TextField
-          label="New Proposed PayPal Merchant ID"
-          required
-          mono
-          value={value}
-          onChange={onChange}
-          placeholder="e.g. SELAM-EXPANSION-8812"
-        />
+          <RHFTextField
+            name="merchant_id"
+            label="New Proposed PayPal Merchant ID"
+            isRequired
+            placeholder="e.g. SELAM-EXPANSION-8812"
+          />
 
-        <FormActions>
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary">
-            Submit Change Request
-          </Button>
-        </FormActions>
-      </form>
+          <div className="flex gap-2 pt-1">
+            <PrimaryButton
+              title="Cancel"
+              type="button"
+              variant="outline"
+              size="sm"
+              fullWidth
+              className="h-11 rounded-xl"
+              onClick={onClose}
+              isDisabled={isLoading}
+            />
+            <PrimaryButton
+              title={isLoading ? 'Submitting…' : 'Submit change request'}
+              type="submit"
+              size="sm"
+              fullWidth
+              isLoading={isLoading}
+              className="h-11 rounded-xl"
+            />
+          </div>
+        </div>
+      </FormProvider>
     </Modal>
   )
 }
 
 export function PolicyChangeModal({
+  open,
   policyHours,
   noShowFee,
-  onChange,
+  isLoading = false,
   onClose,
   onSubmit,
 }: PolicyChangeModalProps) {
+  const methods = useForm<PolicyChangeFormData>({
+    resolver: zodResolver(policyChangeSchema),
+    defaultValues: policyChangeDefaultValues,
+    mode: 'onBlur',
+  })
+
+  useEffect(() => {
+    if (!open) return
+    const hours = String(policyHours) as PolicyChangeFormData['policyHours']
+    const allowed = ['12', '24', '48', '72'] as const
+    methods.reset({
+      policyHours: allowed.includes(hours as (typeof allowed)[number]) ? hours : '24',
+      noShowFee,
+    })
+  }, [open, policyHours, noShowFee, methods])
+
+  const handleSubmit = async (data: PolicyChangeFormData) => {
+    await onSubmit({
+      policyHours: Number(data.policyHours),
+      noShowFee: Number(data.noShowFee),
+    })
+  }
+
+  if (!open) return null
+
   return (
     <Modal onClose={onClose} size="md" title="Propose Cancellation Policy Amendment">
-      <form onSubmit={onSubmit} className="space-y-3.5 text-xs">
-        <p className="text-slate-600 leading-relaxed">
-          Policy changes undergo compliance review to prevent deceptive booking terms for salon
-          customers.
-        </p>
+      <FormProvider
+        methods={methods}
+        onSubmit={(e) => {
+          e?.preventDefault()
+          void methods.handleSubmit(handleSubmit)(e)
+        }}
+      >
+        <div className="space-y-3 text-xs">
+          <p className="text-slate-600 leading-relaxed">
+            Policy changes undergo compliance review to prevent deceptive booking terms for salon
+            customers.
+          </p>
 
-        <SelectField
-          label="Proposed Free Cancellation Notice (Hours)"
-          required
-          value={String(policyHours)}
-          onChange={(value) => onChange({ policyHours: Number(value), noShowFee })}
-          options={[
-            { value: '12', label: '12 Hours Prior' },
-            { value: '24', label: '24 Hours Prior (Industry Standard)' },
-            { value: '48', label: '48 Hours Prior' },
-            { value: '72', label: '72 Hours Prior' },
-          ]}
-        />
+          <RHFDropeDown
+            name="policyHours"
+            label="Proposed Free Cancellation Notice (Hours)"
+            isRequired
+            options={[
+              { value: '12', label: '12 Hours Prior' },
+              { value: '24', label: '24 Hours Prior (Industry Standard)' },
+              { value: '48', label: '48 Hours Prior' },
+              { value: '72', label: '72 Hours Prior' },
+            ]}
+          />
 
-        <NumberField
-          label="Default No-Show Fee ($)"
-          required
-          value={noShowFee}
-          min={10}
-          step={5}
-          onChange={(nextFee) => onChange({ policyHours, noShowFee: nextFee })}
-        />
+          <RHFNumberField name="noShowFee" label="Default No-Show Fee ($)" isRequired />
 
-        <FormActions>
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary">
-            Submit Policy Proposal
-          </Button>
-        </FormActions>
-      </form>
+          <div className="flex gap-2 pt-1">
+            <PrimaryButton
+              title="Cancel"
+              type="button"
+              variant="outline"
+              size="sm"
+              fullWidth
+              className="h-11 rounded-xl"
+              onClick={onClose}
+              isDisabled={isLoading}
+            />
+            <PrimaryButton
+              title={isLoading ? 'Submitting…' : 'Submit policy proposal'}
+              type="submit"
+              size="sm"
+              fullWidth
+              isLoading={isLoading}
+              className="h-11 rounded-xl"
+            />
+          </div>
+        </div>
+      </FormProvider>
     </Modal>
   )
 }

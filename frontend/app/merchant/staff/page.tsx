@@ -1,135 +1,144 @@
 'use client'
 
-import { Edit2, Plus, Star, Trash2 } from 'lucide-react'
+import { Loader2, Plus, Trash2, UserRound } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
-import { Button, Card, IconButton } from '@/components/ui'
+import PrimaryButton from '@/components/button/PrimaryButton'
+import { Card, ConfirmDialog, IconButton } from '@/components/ui'
+import { toastColor } from '@/constant/toast-color'
+import { useDeleteMyEmployeeMutation, useGetMyEmployeesQuery } from '@/store/slice/organizationApi'
+import type { User } from '@/types/user'
 
-import { useMerchantContext } from '../_context/merchant-context'
+import { EmployeeFormModal } from '../_components/employee-form-modal'
+
+function displayName(user: User): string {
+  const first = user.profile?.first_name || user.first_name
+  const last = user.profile?.last_name || user.last_name
+  if (first || last) return [first, last].filter(Boolean).join(' ')
+  return user.email
+}
 
 export default function MerchantStaffPage() {
-  const { state, openAddStaff, openEditStaff, openDeleteStaff } = useMerchantContext()
+  const { data: employees = [], isLoading, isError, refetch } = useGetMyEmployeesQuery()
+  const [deleteEmployee, { isLoading: isDeleting }] = useDeleteMyEmployeeMutation()
+  const [isAddOpen, setIsAddOpen] = useState(false)
+  const [deleting, setDeleting] = useState<User | null>(null)
 
-  const totalClientsCapacity = state.staff.reduce(
-    (acc, s) => acc + (s.maxSimultaneousClients || 1),
-    0,
-  )
+  const handleConfirmDelete = async () => {
+    if (!deleting) return
+    try {
+      await deleteEmployee(deleting.id).unwrap()
+      toast.success('Team member removed', toastColor.success)
+      setDeleting(null)
+    } catch (err) {
+      const message =
+        (err as { data?: { detail?: string } })?.data?.detail || 'Could not remove employee'
+      toast.error(String(message), toastColor.error)
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300">
-      {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
             Staff &amp; Stylists
           </h1>
           <p className="text-slate-500 text-xs">
-            {state.staff.length} active stylists · {totalClientsCapacity} concurrent client capacity
+            {isLoading ? 'Loading…' : `${employees.length} team members from your organization`}
           </p>
         </div>
 
-        <Button
-          variant="primary"
+        <PrimaryButton
+          title="Add team member"
           size="sm"
-          onClick={openAddStaff}
-          className="rounded-xl px-3.5 py-2 font-medium text-xs shadow-xs"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Add Stylist
-        </Button>
+          fullWidth={false}
+          icon={<Plus className="h-4 w-4" />}
+          className="h-9 rounded-xl px-3.5 text-xs shadow-xs"
+          onClick={() => setIsAddOpen(true)}
+        />
       </div>
 
-      {/* Stylist Cards Grid */}
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-slate-500 text-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+          Loading staff…
+        </div>
+      ) : null}
+
+      {isError ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700">
+          <p>Could not load employees. Sign in as an org owner and try again.</p>
+          <PrimaryButton
+            title="Retry"
+            variant="outline"
+            size="sm"
+            fullWidth={false}
+            className="mt-3 h-9 rounded-xl px-4"
+            onClick={() => void refetch()}
+          />
+        </div>
+      ) : null}
+
+      {!isLoading && !isError && employees.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center">
+          <UserRound className="mx-auto h-8 w-8 text-slate-300" />
+          <p className="mt-3 text-sm font-medium text-slate-700">No team members yet</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Add a stylist or reception account to get started.
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {state.staff.map((stylist) => (
+        {employees.map((member) => (
           <Card
-            key={stylist.id}
+            key={member.id}
             hoverTone="amber"
-            className="flex flex-col justify-between space-y-4 rounded-3xl p-5 border border-slate-200/90 bg-white shadow-xs transition-all hover:shadow-sm"
+            className="flex flex-col justify-between space-y-4 rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs"
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={stylist.avatar}
-                    alt={stylist.name}
-                    className="h-14 w-14 rounded-2xl border border-slate-200 object-cover"
-                  />
-                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                  <UserRound className="h-6 w-6" />
                 </div>
-                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 font-medium text-[11px] text-emerald-800">
-                  {stylist.status || 'Active'}
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 font-medium text-[11px] text-emerald-800 capitalize">
+                  {member.status || 'active'}
                 </span>
               </div>
-
               <div>
-                <h3 className="font-bold text-base text-slate-900">{stylist.name}</h3>
-                <p className="text-xs font-medium text-amber-800">{stylist.role}</p>
-                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
-                  <div className="flex items-center text-amber-500">
-                    <Star className="h-3 w-3 fill-amber-400" />
-                    <span className="ml-1 font-bold text-slate-800">
-                      {stylist.rating.toFixed(1)}
-                    </span>
-                  </div>
-                  <span>·</span>
-                  <span>{stylist.reviewsCount} reviews</span>
-                </div>
-              </div>
-
-              {/* Working Hours & Capacity Box */}
-              <div className="space-y-1 rounded-xl border border-slate-200/70 bg-slate-50/60 p-2.5 text-xs">
-                <div className="flex items-center justify-between text-slate-600">
-                  <span>Shift:</span>
-                  <span className="font-medium text-slate-900 font-mono text-[11px]">
-                    {stylist.workingHours}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-slate-600">
-                  <span>Concurrent chairs:</span>
-                  <span className="font-semibold text-slate-900 text-[11px]">
-                    {stylist.maxSimultaneousClients || 1} client max
-                  </span>
-                </div>
-              </div>
-
-              {/* Specialties */}
-              <div className="flex flex-wrap gap-1">
-                {stylist.specialties.map((spec) => (
-                  <span
-                    key={spec}
-                    className="rounded-lg bg-slate-100 px-2 py-0.5 font-medium text-[10px] text-slate-700"
-                  >
-                    {spec}
-                  </span>
-                ))}
+                <h3 className="font-bold text-base text-slate-900">{displayName(member)}</h3>
+                <p className="text-xs font-medium text-amber-800 capitalize">
+                  {member.role.replace('_', ' ')}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-500">{member.email}</p>
               </div>
             </div>
-
-            <div className="flex items-center justify-between border-slate-100 border-t pt-3">
-              <span className="font-mono text-[10px] text-slate-400">{stylist.id}</span>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => openEditStaff(stylist)}
-                  className="rounded-xl font-medium text-xs h-7 px-2.5"
-                >
-                  <Edit2 className="h-3 w-3 mr-1 text-slate-500" />
-                  Edit
-                </Button>
-                <IconButton
-                  aria-label="Remove stylist"
-                  onClick={() => openDeleteStaff(stylist)}
-                  className="rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-rose-600 hover:border-rose-200 h-7 w-7"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </IconButton>
-              </div>
+            <div className="flex justify-end border-t border-slate-100 pt-3">
+              <IconButton
+                aria-label="Remove team member"
+                onClick={() => setDeleting(member)}
+                className="text-rose-600 hover:bg-rose-50"
+              >
+                <Trash2 className="h-4 w-4" />
+              </IconButton>
             </div>
           </Card>
         ))}
       </div>
+
+      <EmployeeFormModal open={isAddOpen} onClose={() => setIsAddOpen(false)} />
+
+      {deleting ? (
+        <ConfirmDialog
+          title="Remove team member?"
+          description={`Remove ${displayName(deleting)} (${deleting.email}) from your salon?`}
+          confirmLabel={isDeleting ? 'Removing…' : 'Remove'}
+          onConfirm={() => void handleConfirmDelete()}
+          onClose={() => setDeleting(null)}
+        />
+      ) : null}
     </div>
   )
 }
