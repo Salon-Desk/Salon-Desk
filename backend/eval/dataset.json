@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "locale": "en",
+    "prompt": "Book a haircut tomorrow at 3pm",
+    "expected": {
+      "service_hint": "haircut",
+      "has_time": true
+    }
+  },
+  {
+    "id": 2,
+    "locale": "am",
+    "prompt": "ነገ ከሰዓት 3 ሰዓት የፀጉር አስተካክል እፈልጋለሁ",
+    "expected": {
+      "service_hint": "haircut",
+      "has_time": true
+    }
+  }
+]
