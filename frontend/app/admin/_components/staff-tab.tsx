@@ -20,21 +20,11 @@ export function StaffTab({
   onDelete,
 }: StaffTabProps) {
   return (
-    <div className="mx-auto w-full max-w-7xl animate-in space-y-6 duration-200 fade-in">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <h2 className="font-bold text-slate-900 text-xl">
-            Platform Staff &amp; RBAC Access
-          </h2>
-          <p className="text-slate-600 text-xs">
-            Manage administrator privileges across Super Admin, Compliance
-            Officer, and Support Agent roles.
-          </p>
-        </div>
-
+    <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-200">
+      <div className="flex justify-end">
         <Button onClick={onInvite}>
           <Plus className="h-3.5 w-3.5" />
-          <span>Invite Admin</span>
+          <span>Invite</span>
         </Button>
       </div>
 
@@ -42,11 +32,11 @@ export function StaffTab({
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-slate-200 border-b bg-slate-50 font-semibold text-slate-700">
-              <th className="px-4 py-3">Administrator</th>
+              <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Role Tier</th>
+              <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Last Activity</th>
+              <th className="px-4 py-3">Last active</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -63,11 +53,11 @@ export function StaffTab({
                     </div>
                     <div>
                       <div>{u.name}</div>
-                      {isCurrent && (
+                      {isCurrent ? (
                         <span className="font-mono font-semibold text-[10px] text-amber-800">
-                          (Your Current Session)
+                          You
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </td>
 
@@ -113,14 +103,14 @@ export function StaffTab({
                               : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                         }`}
                       >
-                        {isActive ? "Revoke Access" : "Reactivate"}
+                        {isActive ? "Revoke" : "Reactivate"}
                       </button>
 
                       <IconButton
                         title={
                           isCurrent
-                            ? "Cannot delete logged in user"
-                            : "Delete Administrator"
+                            ? "Cannot delete signed-in user"
+                            : "Delete"
                         }
                         tone="danger"
                         disabled={isCurrent}

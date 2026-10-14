@@ -39,21 +39,11 @@ export function TaxonomyTab({
   onDeleteCategory,
 }: TaxonomyTabProps) {
   return (
-    <div className="mx-auto w-full max-w-7xl animate-in space-y-6 duration-200 fade-in">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <h2 className="font-bold text-slate-900 text-xl">
-            Central Service Category Taxonomy
-          </h2>
-          <p className="text-slate-600 text-xs">
-            Global catalog tags applied across all salon discovery searches and
-            AI booking matchers.
-          </p>
-        </div>
-
+    <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-200">
+      <div className="flex justify-end">
         <Button onClick={onAddCategory}>
           <Plus className="h-3.5 w-3.5" />
-          <span>New Category</span>
+          <span>New category</span>
         </Button>
       </div>
 
@@ -77,7 +67,7 @@ export function TaxonomyTab({
                     </div>
                     <div>
                       <span className="font-mono text-[10px] text-slate-500 uppercase">
-                        Order #{cat.displayOrder}
+                        #{cat.displayOrder}
                       </span>
                       <h3 className="font-bold text-base text-slate-900">
                         {cat.name}
@@ -90,19 +80,12 @@ export function TaxonomyTab({
                   </Badge>
                 </div>
 
-                <p className="mb-4 text-slate-600 text-xs leading-relaxed">
+                <p className="mb-3 text-slate-600 text-xs leading-relaxed">
                   {cat.description}
                 </p>
 
                 <div className="font-mono text-[11px] text-slate-500">
-                  Slug:{" "}
-                  <span className="font-semibold text-slate-800">
-                    /{cat.slug}
-                  </span>{" "}
-                  · Services:{" "}
-                  <strong className="text-amber-800">
-                    {cat.servicesCount} registered
-                  </strong>
+                  /{cat.slug} · {cat.servicesCount} services
                 </div>
               </div>
 
@@ -112,7 +95,7 @@ export function TaxonomyTab({
                   onClick={() => onToggleStatus(cat.id)}
                   className="font-semibold text-slate-600 text-xs transition-colors hover:text-slate-900"
                 >
-                  {isActive ? "Hide Category" : "Activate Category"}
+                  {isActive ? "Hide" : "Activate"}
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -120,7 +103,7 @@ export function TaxonomyTab({
                     type="button"
                     onClick={() => onEditCategory(cat)}
                     className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 text-slate-700 shadow-xs hover:bg-slate-200"
-                    title="Edit Category"
+                    title="Edit"
                   >
                     <Edit2 className="h-3.5 w-3.5" />
                   </button>
@@ -128,7 +111,7 @@ export function TaxonomyTab({
                     type="button"
                     onClick={() => onDeleteCategory(cat)}
                     className="rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-700 shadow-xs hover:bg-rose-100"
-                    title="Delete Category"
+                    title="Delete"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

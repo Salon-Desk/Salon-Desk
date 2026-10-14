@@ -14,13 +14,20 @@ import type {
   PlatformUser,
   TaxonomyCategory,
 } from "@/types";
-import { AdminHeader } from "./admin-header";
 import {
-  type AdminTabId,
-  type CrSubTab,
-  computeAdminMetrics,
-  type SalonStatusFilter,
-} from "../_libs/admin-shared";
+  ADMIN_DEMO_EMAIL,
+  ADMIN_DEMO_PASSWORD,
+  EMPTY_CATEGORY_FORM,
+  EMPTY_SALON_FORM,
+  EMPTY_STAFF_FORM,
+} from "../_constants/admin-forms";
+import type {
+  AdminTabId,
+  CrSubTab,
+  SalonStatusFilter,
+} from "../_types/admin-types";
+import { computeAdminMetrics } from "../_utils/compute-admin-metrics";
+import { AdminHeader } from "./admin-header";
 import { AdminSidebar } from "./admin-sidebar";
 import { AddCommissionOverrideModal } from "./commission-modals";
 import { CommissionTab } from "./commission-tab";
@@ -47,34 +54,6 @@ import {
   DeleteCategoryModal,
 } from "./taxonomy-modals";
 import { TaxonomyTab } from "./taxonomy-tab";
-
-const EMPTY_SALON_FORM: SalonFormState = {
-  name: "",
-  category: "Luxury Barber & Grooming Lounge",
-  ownerName: "",
-  email: "",
-  phone: "",
-  address: "",
-  city: "New York, NY",
-  paypalMerchantId: "",
-};
-
-const EMPTY_CATEGORY_FORM: CategoryFormState = {
-  name: "",
-  slug: "",
-  description: "",
-  iconName: "Scissors",
-  displayOrder: "1",
-};
-
-const EMPTY_STAFF_FORM: StaffInviteFormState = {
-  name: "",
-  email: "",
-  role: "Support Agent",
-};
-
-const ADMIN_DEMO_EMAIL = "admin@salondesk.io";
-const ADMIN_DEMO_PASSWORD = "JudgeAccess2026!";
 
 export function AdminDashboard() {
   const { state, setState, resetState } = useAdminStore();
@@ -151,17 +130,17 @@ export function AdminDashboard() {
 
   const handleResetData = async () => {
     await resetDemo();
-    showToast("Platform Admin Demo State Re-seeded Successfully!");
+    showToast("Demo data reset");
   };
 
   const handleJudgeSignIn = () => {
     setState({ ...state, authenticated: true });
-    showToast("⚡ Instant Judge Access Granted! Welcome to Platform Admin.");
+    showToast("Signed in");
   };
 
   const handleLockSession = () => {
     setState({ ...state, authenticated: false });
-    showToast("Signed out of Platform Admin");
+    showToast("Session locked");
   };
 
   const handleCreateSalon = (event: React.FormEvent) => {
@@ -195,7 +174,7 @@ export function AdminDashboard() {
     });
     setIsAddSalonOpen(false);
     setSalonForm(EMPTY_SALON_FORM);
-    showToast(`Salon "${newOrg.name}" registered and onboarded.`);
+    showToast(`Added "${newOrg.name}"`);
   };
 
   const handleUpdateSalon = (event: React.FormEvent) => {
@@ -207,7 +186,7 @@ export function AdminDashboard() {
     );
     setState({ ...state, organizations: updated });
     setEditingSalon(null);
-    showToast(`Updated settings for "${editingSalon.name}".`);
+    showToast(`Updated "${editingSalon.name}"`);
   };
 
   const handleApproveSalon = (orgId: string) => {
@@ -217,7 +196,7 @@ export function AdminDashboard() {
         : org,
     );
     setState({ ...state, organizations: updated });
-    showToast("Salon approved and activated on PayPal live hold rails.");
+    showToast("Salon approved");
   };
 
   const handleConfirmSuspension = () => {
@@ -245,8 +224,8 @@ export function AdminDashboard() {
     setSuspensionReasonInput("");
     showToast(
       isCurrentlySuspended
-        ? `Reinstated "${suspendingSalon.name}".`
-        : `Suspended "${suspendingSalon.name}". Holds paused.`,
+        ? `Reinstated "${suspendingSalon.name}"`
+        : `Suspended "${suspendingSalon.name}"`,
     );
   };
 
@@ -259,7 +238,7 @@ export function AdminDashboard() {
       ),
     });
     setDeletingSalon(null);
-    showToast(`Offboarded and deleted salon "${deletingSalon.name}".`);
+    showToast(`Removed "${deletingSalon.name}"`);
   };
 
   const handleApproveChangeRequest = (cr: ChangeRequest) => {
@@ -297,9 +276,7 @@ export function AdminDashboard() {
       changeRequests: updatedCRs,
       organizations: updatedOrgs,
     });
-    showToast(
-      `Approved request ${cr.id} for "${cr.salonName}". Record updated.`,
-    );
+    showToast(`Approved ${cr.id}`);
   };
 
   const handleConfirmRejectCR = () => {
@@ -318,7 +295,7 @@ export function AdminDashboard() {
     const rejectedId = rejectingCr.id;
     setRejectingCr(null);
     setCrRejectReason("");
-    showToast(`Rejected request ${rejectedId}. Salon notified.`);
+    showToast(`Rejected ${rejectedId}`);
   };
 
   const handleSaveGlobalRate = (event: React.FormEvent) => {
@@ -331,9 +308,7 @@ export function AdminDashboard() {
       ...state,
       globalRate: { percentage: pct, flatFee: flat },
     });
-    showToast(
-      `Global rate updated to ${pct}% + $${flat.toFixed(2)} per transaction.`,
-    );
+    showToast(`Rate set to ${pct}% + $${flat.toFixed(2)}`);
   };
 
   const handleCreateOverride = (event: React.FormEvent) => {
@@ -363,7 +338,7 @@ export function AdminDashboard() {
     });
     setIsAddOverrideOpen(false);
     setOverrideForm({ salonId: "", customRate: "1.8", note: "" });
-    showToast(`Custom rate of ${rate}% set for "${matchedSalon.name}".`);
+    showToast(`${rate}% override for "${matchedSalon.name}"`);
   };
 
   const handleDeleteOverride = (salonId: string) => {
@@ -373,7 +348,7 @@ export function AdminDashboard() {
         (ov) => ov.salonId !== salonId,
       ),
     });
-    showToast("Custom override removed; salon reverted to global rate tier.");
+    showToast("Override removed");
   };
 
   const handleSaveCategory = (event: React.FormEvent) => {
@@ -397,7 +372,7 @@ export function AdminDashboard() {
       );
       setState({ ...state, categories: updated });
       setEditingCategory(null);
-      showToast(`Category "${categoryForm.name}" updated.`);
+      showToast(`Updated "${categoryForm.name}"`);
     } else {
       const newCat: TaxonomyCategory = {
         id: createSequentialId("cat"),
@@ -416,7 +391,7 @@ export function AdminDashboard() {
       };
       setState({ ...state, categories: [...state.categories, newCat] });
       setIsAddCategoryOpen(false);
-      showToast(`Category "${newCat.name}" added to public taxonomy.`);
+      showToast(`Added "${newCat.name}"`);
     }
 
     setCategoryForm(EMPTY_CATEGORY_FORM);
@@ -434,7 +409,7 @@ export function AdminDashboard() {
         : c,
     );
     setState({ ...state, categories: updated });
-    showToast("Category visibility toggled.");
+    showToast("Visibility updated");
   };
 
   const handleDeleteCategory = () => {
@@ -444,7 +419,7 @@ export function AdminDashboard() {
       categories: state.categories.filter((c) => c.id !== deletingCategory.id),
     });
     setDeletingCategory(null);
-    showToast(`Category "${deletingCategory.name}" removed.`);
+    showToast(`Removed "${deletingCategory.name}"`);
   };
 
   const handleInviteUser = (event: React.FormEvent) => {
@@ -464,16 +439,14 @@ export function AdminDashboard() {
     setState({ ...state, platformUsers: [...state.platformUsers, newUser] });
     setIsInviteUserOpen(false);
     setUserForm(EMPTY_STAFF_FORM);
-    showToast(
-      `Staff member "${newUser.name}" invited with ${newUser.role} credentials.`,
-    );
+    showToast(`Invited "${newUser.name}"`);
   };
 
   const handleToggleUserStatus = (userId: string) => {
     const target = state.platformUsers.find((u) => u.id === userId);
     if (!target) return;
     if (target.id === state.currentUser.id) {
-      showToast("Cannot revoke your own active administrator account.");
+      showToast("Cannot revoke your own account");
       return;
     }
 
@@ -488,13 +461,13 @@ export function AdminDashboard() {
         : u,
     );
     setState({ ...state, platformUsers: updated });
-    showToast(`Admin account status updated for "${target.name}".`);
+    showToast(`Updated "${target.name}"`);
   };
 
   const handleDeleteUser = () => {
     if (!deletingUser) return;
     if (deletingUser.id === state.currentUser.id) {
-      showToast("Cannot delete the logged-in demo judge account.");
+      showToast("Cannot delete the signed-in account");
       setDeletingUser(null);
       return;
     }
@@ -505,7 +478,7 @@ export function AdminDashboard() {
       ),
     });
     setDeletingUser(null);
-    showToast(`Removed administrator "${deletingUser.name}".`);
+    showToast(`Removed "${deletingUser.name}"`);
   };
 
   const openAddCategory = () => {
@@ -531,31 +504,25 @@ export function AdminDashboard() {
 
   if (!state.authenticated) {
     return (
-      <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-50 p-4 font-sans text-slate-900">
-        <div className="pointer-events-none absolute top-1/2 left-1/2 h-[300px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-500/10 blur-[120px]" />
-
-        <div className="relative w-full max-w-md space-y-4">
-          <AuthGate
-            title="Platform Admin Sign-In"
-            subtitle="Super Admin management for salon compliance, PayPal authorization reconciliation, fee overrides, and multi-tenant governance."
-            email={ADMIN_DEMO_EMAIL}
-            password={ADMIN_DEMO_PASSWORD}
-            onSignIn={handleJudgeSignIn}
-            extraAction={
-              <Button
-                variant="dark"
-                size="lg"
-                fullWidth
-                onClick={handleJudgeSignIn}
-                className="mt-3"
-              >
-                <Zap className="h-4 w-4 fill-white" />
-                1-Click Judge Sign-In
-              </Button>
-            }
-          />
-        </div>
-      </div>
+      <AuthGate
+        title="Admin sign-in"
+        subtitle="Manage salons, approvals, fees, and staff."
+        email={ADMIN_DEMO_EMAIL}
+        password={ADMIN_DEMO_PASSWORD}
+        onSignIn={handleJudgeSignIn}
+        extraAction={
+          <Button
+            variant="dark"
+            size="lg"
+            fullWidth
+            onClick={handleJudgeSignIn}
+            className="mt-3"
+          >
+            <Zap className="h-4 w-4 fill-white" />
+            1-click demo sign-in
+          </Button>
+        }
+      />
     );
   }
 

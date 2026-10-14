@@ -34,31 +34,17 @@ export function CommissionTab({
   onDeleteOverride,
 }: CommissionTabProps) {
   return (
-    <div className="mx-auto w-full max-w-7xl animate-in space-y-8 duration-200 fade-in">
-      <div>
-        <h2 className="font-bold text-slate-900 text-xl">
-          Platform Commission &amp; Fee Rails
-        </h2>
-        <p className="text-slate-600 text-xs">
-          Configure global platform fee parameters, grant custom VIP salon
-          partner rate overrides, and audit fee capture.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-200">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <Card padding="lg" className="space-y-4">
           <div className="flex items-center gap-2">
             <Percent className="h-5 w-5 text-amber-600" />
-            <SectionHeading size="sm" title="Global Platform Fee Tier" />
+            <SectionHeading size="sm" title="Global rate" />
           </div>
-          <p className="text-slate-600 text-xs leading-relaxed">
-            Default fee assessed on completed tickets and captured no-show
-            deposits.
-          </p>
 
-          <form onSubmit={onSaveGlobalRate} className="space-y-3 pt-2">
+          <form onSubmit={onSaveGlobalRate} className="space-y-3">
             <NumberField
-              label="Percentage Rate (%)"
+              label="Percentage (%)"
               step={0.1}
               value={parseFloat(globalRateInput.percentage) || 0}
               onChange={(value) =>
@@ -70,7 +56,7 @@ export function CommissionTab({
             />
 
             <NumberField
-              label="Fixed Fee Per Transaction ($)"
+              label="Flat fee ($)"
               step={0.05}
               value={parseFloat(globalRateInput.flatFee) || 0}
               onChange={(value) =>
@@ -83,7 +69,7 @@ export function CommissionTab({
 
             <FormActions>
               <Button type="submit" fullWidth>
-                Save Global Rate
+                Save rate
               </Button>
             </FormActions>
           </form>
@@ -92,12 +78,11 @@ export function CommissionTab({
         <Card padding="lg" className="space-y-4 lg:col-span-2">
           <SectionHeading
             size="sm"
-            title="Partner Commission Overrides"
-            description="Tailored fee agreements for high-volume franchises or VIP pilot salons."
+            title="Overrides"
             action={
               <Button variant="secondary" onClick={onAddOverride}>
                 <Plus className="h-3.5 w-3.5" />
-                <span>Add Custom Override</span>
+                <span>Add override</span>
               </Button>
             }
           />
@@ -106,10 +91,10 @@ export function CommissionTab({
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-slate-200 border-b bg-slate-50 font-semibold text-slate-700">
-                  <th className="px-4 py-2.5">Salon Partner</th>
-                  <th className="px-4 py-2.5">Custom Rate</th>
-                  <th className="px-4 py-2.5">Agreement Notes</th>
-                  <th className="px-4 py-2.5 text-right">Action</th>
+                  <th className="px-4 py-2.5">Salon</th>
+                  <th className="px-4 py-2.5">Rate</th>
+                  <th className="px-4 py-2.5">Note</th>
+                  <th className="px-4 py-2.5 text-right"> </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-mono">
@@ -132,7 +117,7 @@ export function CommissionTab({
                         type="button"
                         onClick={() => onDeleteOverride(ov.salonId)}
                         className="text-slate-400 transition-colors hover:text-rose-600"
-                        title="Delete override"
+                        title="Remove override"
                       >
                         <Trash2 className="inline h-3.5 w-3.5" />
                       </button>
@@ -146,19 +131,19 @@ export function CommissionTab({
       </div>
 
       <Card padding="lg" className="space-y-4">
-        <SectionHeading size="sm" title="Platform Commission Ledger" />
+        <SectionHeading size="sm" title="Ledger" />
         <div className="overflow-x-auto rounded-xl border border-slate-200">
           <table className="w-full text-left font-mono text-xs">
             <thead>
               <tr className="border-slate-200 border-b bg-slate-50 font-sans font-semibold text-slate-700">
-                <th className="px-4 py-2.5">Txn ID</th>
+                <th className="px-4 py-2.5">Txn</th>
                 <th className="px-4 py-2.5">Salon</th>
-                <th className="px-4 py-2.5">Ticket Amount</th>
+                <th className="px-4 py-2.5">Ticket</th>
                 <th className="px-4 py-2.5">Captured</th>
-                <th className="px-4 py-2.5">Platform Fee Cut</th>
-                <th className="px-4 py-2.5">Net Payout to Salon</th>
-                <th className="px-4 py-2.5">PayPal Ref</th>
-                <th className="px-4 py-2.5">Timestamp</th>
+                <th className="px-4 py-2.5">Fee</th>
+                <th className="px-4 py-2.5">Net</th>
+                <th className="px-4 py-2.5">PayPal</th>
+                <th className="px-4 py-2.5">When</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

@@ -9,7 +9,7 @@ import {
   SegmentedControl,
 } from "@/components/ui";
 import type { Organization } from "@/types";
-import type { SalonStatusFilter } from "../_libs/admin-shared";
+import type { SalonStatusFilter } from "../_types/admin-types";
 
 interface SalonsTabProps {
   salons: Organization[];
@@ -44,23 +44,13 @@ export function SalonsTab({
   onDelete,
 }: SalonsTabProps) {
   return (
-    <div className="mx-auto w-full max-w-7xl animate-in space-y-6 duration-200 fade-in">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <h2 className="font-bold text-slate-900 text-xl">
-            Multi-Tenant Salon Directory
-          </h2>
-          <p className="text-slate-600 text-xs">
-            Manage salon partners, approve pending onboarding requests,
-            configure custom rates, or suspend accounts.
-          </p>
-        </div>
-
+    <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-200">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-wrap items-center gap-2.5">
           <SearchInput
             value={search}
             onChange={onSearchChange}
-            placeholder="Search salon or city..."
+            placeholder="Search salon or city…"
             className="min-w-[200px]"
           />
 
@@ -73,7 +63,7 @@ export function SalonsTab({
 
           <Button onClick={onAddSalon}>
             <Plus className="h-3.5 w-3.5" />
-            <span>Onboard Salon</span>
+            <span>Add salon</span>
           </Button>
         </div>
       </div>
@@ -82,11 +72,11 @@ export function SalonsTab({
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-slate-200 border-b bg-slate-50 font-semibold text-slate-700">
-              <th className="px-4 py-3">Salon &amp; Location</th>
-              <th className="px-4 py-3">Owner Contact</th>
-              <th className="px-4 py-3">PayPal Merchant ID</th>
+              <th className="px-4 py-3">Salon</th>
+              <th className="px-4 py-3">Owner</th>
+              <th className="px-4 py-3">PayPal ID</th>
               <th className="px-4 py-3">Policy</th>
-              <th className="px-4 py-3">Rate Override</th>
+              <th className="px-4 py-3">Rate</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
@@ -115,30 +105,28 @@ export function SalonsTab({
                 <td className="px-4 py-3.5 font-mono text-slate-700">
                   <div className="flex items-center gap-1.5">
                     <span>{salon.paypalMerchantId}</span>
-                    {salon.verified && (
+                    {salon.verified ? (
                       <span
                         className="font-bold text-emerald-700"
-                        title="Verified PayPal Sandbox Merchant"
+                        title="Verified"
                       >
                         ✓
                       </span>
-                    )}
+                    ) : null}
                   </div>
                 </td>
 
                 <td className="px-4 py-3.5 font-medium text-slate-700">
-                  ≥ {salon.cancellationPolicyHours}h free
+                  ≥ {salon.cancellationPolicyHours}h
                 </td>
 
                 <td className="px-4 py-3.5">
                   {salon.customCommissionRate ? (
                     <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-bold font-mono text-emerald-800">
-                      {salon.customCommissionRate}% VIP
+                      {salon.customCommissionRate}%
                     </span>
                   ) : (
-                    <span className="font-mono text-slate-500">
-                      Standard (2.5%)
-                    </span>
+                    <span className="font-mono text-slate-500">2.5%</span>
                   )}
                 </td>
 
@@ -148,7 +136,7 @@ export function SalonsTab({
 
                 <td className="px-4 py-3.5 text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    {salon.status === "PENDING_REVIEW" && (
+                    {salon.status === "PENDING_REVIEW" ? (
                       <Button
                         variant="success"
                         size="sm"
@@ -156,10 +144,10 @@ export function SalonsTab({
                       >
                         Approve
                       </Button>
-                    )}
+                    ) : null}
 
                     <IconButton
-                      title="Edit Salon Details"
+                      title="Edit"
                       onClick={() => onEdit(salon)}
                     >
                       <Edit2 className="h-3.5 w-3.5" />
@@ -167,9 +155,7 @@ export function SalonsTab({
 
                     <IconButton
                       title={
-                        salon.status === "SUSPENDED"
-                          ? "Reinstate Salon"
-                          : "Suspend Salon"
+                        salon.status === "SUSPENDED" ? "Reinstate" : "Suspend"
                       }
                       className={
                         salon.status === "SUSPENDED"
@@ -186,7 +172,7 @@ export function SalonsTab({
                     </IconButton>
 
                     <IconButton
-                      title="Offboard Salon"
+                      title="Delete"
                       tone="danger"
                       onClick={() => onDelete(salon)}
                     >
