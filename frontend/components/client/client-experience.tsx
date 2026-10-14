@@ -1,7 +1,8 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
-import { SegmentedControl, Toast } from "@/components/ui";
+import { Toast } from "@/components/ui";
 import {
   useAiConcierge,
   useClientStore,
@@ -247,22 +248,7 @@ export function ClientExperience() {
         isResetting={isResetting}
       />
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6 md:hidden">
-          <SegmentedControl
-            fullWidth
-            value={activeTab}
-            onChange={setActiveTab}
-            options={[
-              { value: "catalog", label: "Explore Services" },
-              {
-                value: "my-bookings",
-                label: `My Bookings (${activeHolds.length})`,
-              },
-            ]}
-          />
-        </div>
-
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 pb-28 md:pb-12">
         {activeTab === "catalog" ? (
           <div>
             <CatalogHero />
@@ -274,17 +260,39 @@ export function ClientExperience() {
               sortBy={sortBy}
               onSortChange={setSortBy}
             />
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredServices.map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  onAskAi={handleAskAi}
-                  onQuickBook={handleStartBooking}
-                  onOpenProtocol={setProtocolService}
-                />
-              ))}
-            </div>
+            {filteredServices.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
+                <p className="text-sm font-semibold text-slate-800">
+                  No services match your search
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Try adjusting your search query or selecting a different
+                  category.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory(SERVICE_CATEGORIES[0]);
+                    setSearchQuery("");
+                  }}
+                  className="mt-4 rounded-xl bg-amber-500 px-4 py-2 font-bold text-xs text-slate-950 transition-colors hover:bg-amber-600 cursor-pointer"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {filteredServices.map((service) => (
+                  <ServiceCard
+                    key={service.id}
+                    service={service}
+                    onAskAi={handleAskAi}
+                    onQuickBook={handleStartBooking}
+                    onOpenProtocol={setProtocolService}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <BookingsPanel
@@ -296,6 +304,52 @@ export function ClientExperience() {
           />
         )}
       </main>
+
+      {/* Mobile Floating Action Dock */}
+      <nav
+        aria-label="Mobile quick actions"
+        className="fixed bottom-3 inset-x-3 z-30 md:hidden flex items-center justify-between gap-1 rounded-2xl border border-slate-200/90 bg-white/95 p-1.5 shadow-2xl backdrop-blur-xl"
+      >
+        <button
+          type="button"
+          onClick={() => setActiveTab("catalog")}
+          className={`flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
+            activeTab === "catalog"
+              ? "bg-slate-900 text-white shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <span>Catalog</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => concierge.setIsOpen(true)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+        >
+          <Sparkles className="h-4 w-4 text-slate-950" />
+          <span>Ask AI</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("my-bookings")}
+          className={`flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-semibold transition-all ${
+            activeTab === "my-bookings"
+              ? "bg-slate-900 text-white shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <span className="flex items-center gap-1">
+            Bookings
+            {activeHolds.length > 0 && (
+              <span className="h-4 min-w-4 px-1 rounded-full bg-amber-500 text-slate-950 font-mono text-[9px] font-bold flex items-center justify-center">
+                {activeHolds.length}
+              </span>
+            )}
+          </span>
+        </button>
+      </nav>
 
       {concierge.isOpen && (
         <AiConcierge

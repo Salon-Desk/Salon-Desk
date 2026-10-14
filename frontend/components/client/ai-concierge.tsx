@@ -1,7 +1,8 @@
 "use client";
 
-import { Bot, Lock, Mic, Send, Sparkles, X } from "lucide-react";
-import { Button, Drawer } from "@/components/ui";
+import { Bot, Clock, Lock, Mic, Send, Sparkles, User, X } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Button } from "@/components/ui";
 import type { ConciergeMessage } from "@/hooks";
 import { INITIAL_STAFF } from "@/lib/data/catalog";
 import { DEFAULT_TIME_SLOT } from "@/lib/data/service-content";
@@ -65,76 +66,113 @@ export function AiConcierge({
   onAuthorize,
   onClose,
 }: AiConciergeProps) {
-  return (
-    <Drawer
-      onClose={onClose}
-      title={
-        <span className="flex items-center gap-1.5">
-          AI Booking Concierge
-          <span className="rounded border border-amber-400/30 bg-amber-500/20 px-1.5 font-mono text-[10px] text-amber-300">
-            Gemini 2.5
-          </span>
-        </span>
-      }
-      subtitle={
-        mode === "voice" ? "Voice Mode Active" : "Chat & Instant Proposal Mode"
-      }
-      icon={
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 font-bold text-slate-950 shadow-md">
-          <Sparkles className="h-5 w-5" />
-        </div>
-      }
-    >
-      {/* Custom dark header actions are inside the drawer body because Drawer
-          uses a light header. Recreate the concierge chrome in the first row. */}
-      <div className="flex items-center justify-end gap-2 border-slate-200 border-b bg-slate-900 px-4 py-2">
-        <button
-          type="button"
-          onClick={() => onModeChange(mode === "chat" ? "voice" : "chat")}
-          className={`flex items-center gap-1 rounded-lg p-1.5 font-semibold text-xs transition-colors ${
-            mode === "voice"
-              ? "bg-amber-500 font-bold text-slate-950"
-              : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-          }`}
-        >
-          {mode === "voice" ? (
-            <Mic className="h-4 w-4" />
-          ) : (
-            <Bot className="h-4 w-4" />
-          )}
-          <span className="text-[11px]">
-            {mode === "voice" ? "Voice" : "Chat"}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
-      {mode === "voice" ? (
-        <VoiceSurface
-          isListening={isListening}
-          isSpeaking={isSpeaking}
-          volumeLevel={volumeLevel}
-          onVoiceTrigger={onVoiceTrigger}
-          onToggleListen={onToggleListen}
-        />
-      ) : (
-        <ChatSurface
-          messages={messages}
-          messagesEndRef={messagesEndRef}
-          isThinking={isThinking}
-          prompt={prompt}
-          onPromptChange={onPromptChange}
-          onSend={onSend}
-          onAuthorize={onAuthorize}
-        />
-      )}
-    </Drawer>
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <button
+        type="button"
+        aria-label="Close concierge"
+        onClick={onClose}
+        className="absolute inset-0 h-full w-full cursor-default"
+      />
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="AI Concierge"
+        className="relative flex h-full w-full max-w-full sm:max-w-md flex-col border-l border-slate-200 bg-white text-slate-900 shadow-2xl animate-in slide-in-from-right-8 duration-300"
+      >
+        {/* Mobile Drag Indicator Handle */}
+        <div className="pt-2 pb-1 sm:hidden flex justify-center">
+          <div className="h-1 w-10 rounded-full bg-slate-300" />
+        </div>
+
+        {/* Clean Light-Themed Header */}
+        <header className="flex items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-md">
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
+              <Sparkles className="h-4 w-4" />
+              <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+              </span>
+            </div>
+            <div>
+              <h2 className="font-bold text-sm text-slate-900">AI Concierge</h2>
+              <p className="text-[10px] text-slate-500 font-medium">
+                Gemini 2.5
+              </p>
+            </div>
+          </div>
+
+          {/* Minimal Mode Toggle & Close Button */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+              <button
+                type="button"
+                onClick={() => onModeChange("chat")}
+                className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
+                  mode === "chat"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                <Bot className="h-3.5 w-3.5 text-amber-600" />
+                <span>Chat</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onModeChange("voice")}
+                className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
+                  mode === "voice"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                <Mic className="h-3.5 w-3.5 text-amber-600" />
+                <span>Voice</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </header>
+
+        {/* Content Body */}
+        {mode === "voice" ? (
+          <VoiceSurface
+            isListening={isListening}
+            isSpeaking={isSpeaking}
+            volumeLevel={volumeLevel}
+            onVoiceTrigger={onVoiceTrigger}
+            onToggleListen={onToggleListen}
+          />
+        ) : (
+          <ChatSurface
+            messages={messages}
+            messagesEndRef={messagesEndRef}
+            isThinking={isThinking}
+            prompt={prompt}
+            onPromptChange={onPromptChange}
+            onSend={onSend}
+            onAuthorize={onAuthorize}
+          />
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -152,97 +190,87 @@ function VoiceSurface({
   onToggleListen: () => void;
 }) {
   const status = isSpeaking
-    ? "AI Speaking..."
+    ? "Speaking..."
     : isListening
       ? "Listening..."
-      : "Voice Ready";
+      : "Tap to Speak";
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-between bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6 text-white">
-      <div className="mt-6 text-center">
-        <span className="mb-3 inline-block rounded-full border border-amber-400/30 bg-amber-500/20 px-3 py-1 font-bold text-amber-300 text-xs">
+    <div className="flex flex-1 flex-col items-center justify-between p-6 bg-gradient-to-b from-slate-50 via-white to-amber-50/20 text-slate-900 overflow-y-auto">
+      {/* Top Status */}
+      <div className="pt-4 text-center">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+            isListening
+              ? "bg-rose-50 text-rose-700 border border-rose-200 animate-pulse"
+              : isSpeaking
+                ? "bg-amber-50 text-amber-800 border border-amber-200 animate-pulse"
+                : "bg-slate-100 text-slate-600 border border-slate-200"
+          }`}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
           {status}
         </span>
-        <h4 className="mb-1 font-bold text-lg text-white">Speak Naturally</h4>
-        <p className="mx-auto max-w-xs text-slate-400 text-xs">
-          Say what you want: &quot;Book a balayage Saturday with Elena&quot; or
-          &quot;How does the $0 hold work?&quot;
-        </p>
       </div>
 
-      <div className="my-8 flex h-24 items-center justify-center gap-1.5">
+      {/* Dynamic Sound Waveform Bars */}
+      <div className="my-8 flex h-20 items-center justify-center gap-1.5 px-4">
         {WAVEFORM_BARS.map((bar, index) => {
           const barHeight =
             isListening || isSpeaking
               ? Math.max(
                   12,
-                  Math.min(80, ((index % 4) + 1) * volumeLevel * 2.5),
+                  Math.min(72, ((index % 5) + 1) * volumeLevel * 2.5),
                 )
               : 8;
           return (
             <div
               key={bar}
               style={{ height: `${barHeight}px` }}
-              className="w-1.5 rounded-full bg-gradient-to-t from-amber-500 to-amber-300 transition-all duration-150"
+              className="w-1.5 rounded-full bg-gradient-to-t from-amber-500 to-amber-400 transition-all duration-150"
             />
           );
         })}
       </div>
 
-      <div className="mb-6 w-full space-y-2">
-        <span className="block text-center font-bold text-[10px] text-slate-400 uppercase tracking-wider">
-          Quick Voice Prompts
-        </span>
-        <VoiceChip
-          text="Book Signature Balayage with Elena for Saturday"
-          onClick={onVoiceTrigger}
-        />
-        <VoiceChip
-          text="Book Precision Fade with Marcus tomorrow afternoon"
-          onClick={onVoiceTrigger}
-        />
-        <VoiceChip
-          text="Explain how the $0 hold policy works"
-          onClick={onVoiceTrigger}
-        />
+      {/* Clean Quick Prompts */}
+      <div className="w-full max-w-xs space-y-2 mb-6">
+        <button
+          type="button"
+          onClick={() =>
+            onVoiceTrigger("Book Precision Fade tomorrow with Marcus")
+          }
+          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 hover:border-amber-300 transition-colors shadow-xs cursor-pointer truncate"
+        >
+          &quot;Book Precision Fade tomorrow with Marcus&quot;
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            onVoiceTrigger("Book Signature Balayage this Saturday")
+          }
+          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 hover:border-amber-300 transition-colors shadow-xs cursor-pointer truncate"
+        >
+          &quot;Book Signature Balayage this Saturday&quot;
+        </button>
       </div>
 
+      {/* Central Mic Button */}
       <div className="mb-4 text-center">
         <button
           type="button"
           onClick={onToggleListen}
-          className={`flex h-16 w-16 items-center justify-center rounded-full transition-all ${
+          aria-label={isListening ? "Stop listening" : "Start speaking"}
+          className={`flex h-16 w-16 items-center justify-center rounded-full transition-all duration-300 shadow-lg cursor-pointer ${
             isListening
-              ? "animate-pulse bg-rose-500 text-white ring-8 ring-rose-500/30"
-              : "bg-amber-500 text-slate-950 shadow-xl hover:bg-amber-600"
+              ? "bg-rose-500 text-white ring-8 ring-rose-500/20 scale-105"
+              : "bg-gradient-to-tr from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 hover:scale-105 shadow-amber-500/25"
           }`}
         >
           <Mic className="h-7 w-7" />
         </button>
-        <span className="mt-2 block text-[11px] text-slate-400">
-          {isListening ? "Listening... Tap to stop" : "Tap to Speak"}
-        </span>
       </div>
     </div>
-  );
-}
-
-function VoiceChip({
-  text,
-  onClick,
-}: {
-  text: string;
-  onClick: (text: string) => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onClick(text)}
-      className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/10 p-2.5 text-left text-slate-200 text-xs transition-colors hover:bg-white/20"
-    >
-      <span>&quot;{text}&quot;</span>
-      <Mic className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-    </button>
   );
 }
 
@@ -267,76 +295,100 @@ function ChatSurface({
     slot?: string;
   }) => void;
 }) {
-  return (
-    <div className="flex flex-1 flex-col justify-between overflow-hidden bg-slate-50">
-      <div className="flex-1 space-y-4 overflow-y-auto p-4">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
-          >
-            <div
-              className={`max-w-[88%] rounded-2xl p-3.5 text-xs leading-relaxed ${
-                msg.sender === "user"
-                  ? "rounded-tr-xs bg-slate-900 text-white"
-                  : "rounded-tl-xs border border-slate-200 bg-white text-slate-800 shadow-xs"
-              }`}
-            >
-              <p>{msg.text}</p>
-              <span className="mt-1.5 block font-medium text-[9px] text-slate-400">
-                {msg.time}
-              </span>
-            </div>
+  const inputRef = useRef<HTMLInputElement>(null);
 
-            {msg.sender === "assistant" &&
-              msg.hasProposal &&
-              msg.proposedService && (
+  return (
+    <div className="flex flex-1 flex-col justify-between overflow-hidden bg-slate-50/70">
+      {/* Messages Thread */}
+      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+        {messages.map((msg) => {
+          const isUser = msg.sender === "user";
+          return (
+            <div
+              key={msg.id}
+              className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
+            >
+              <div
+                className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm leading-relaxed ${
+                  isUser
+                    ? "rounded-tr-xs bg-slate-900 text-white font-medium shadow-xs"
+                    : "rounded-tl-xs border border-slate-200/90 bg-white text-slate-800 shadow-xs"
+                }`}
+              >
+                <p className="whitespace-pre-wrap">{msg.text}</p>
+              </div>
+
+              {/* Minimal Clean Proposal Card */}
+              {!isUser && msg.hasProposal && msg.proposedService && (
                 <ProposalCard message={msg} onAuthorize={onAuthorize} />
               )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
 
+        {/* Thinking Indicator */}
         {isThinking && (
-          <div className="flex w-fit items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-slate-500 text-xs">
+          <div className="flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500 shadow-xs">
             <Sparkles className="h-3.5 w-3.5 animate-spin text-amber-500" />
-            <span>AI Concierge is selecting the best stylist & slot...</span>
+            <span>Finding available slots...</span>
           </div>
         )}
+
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="flex items-center gap-1.5 overflow-x-auto border-slate-200 border-t bg-white px-3 py-2 scrollbar-none">
-        <QuickChip
-          label="Fade with Marcus"
-          onClick={() => onSend("Book Precision Fade with Marcus tomorrow")}
-        />
-        <QuickChip
-          label="Balayage with Elena"
-          onClick={() => onSend("I want Balayage with Elena this weekend")}
-        />
-        <QuickChip
-          label="How hold works"
-          onClick={() => onSend("How does the $0 hold protect me?")}
-        />
-      </div>
-
-      <div className="flex items-center gap-2 border-slate-200 border-t bg-white p-3">
-        <input
-          type="text"
-          value={prompt}
-          onChange={(event) => onPromptChange(event.target.value)}
-          onKeyDown={(event) => event.key === "Enter" && onSend()}
-          placeholder="Ask to book, check stylists, or policy..."
-          className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 text-xs placeholder:text-slate-400 focus:border-amber-500 focus:outline-hidden"
-        />
+      {/* Minimal Suggestion Chips */}
+      <div className="flex items-center gap-1.5 overflow-x-auto border-t border-slate-200/80 bg-white px-3 py-2 scrollbar-none snap-x">
         <button
           type="button"
-          onClick={() => onSend()}
-          disabled={!prompt.trim() || isThinking}
-          className="shrink-0 rounded-xl bg-slate-900 p-2 text-white text-xs transition-colors hover:bg-slate-800 disabled:opacity-50"
+          onClick={() => onSend("Book Precision Fade with Marcus")}
+          className="snap-start shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-100 hover:border-amber-300 transition-colors cursor-pointer"
         >
-          <Send className="h-4 w-4" />
+          Fade with Marcus
         </button>
+        <button
+          type="button"
+          onClick={() => onSend("Book Balayage this Saturday")}
+          className="snap-start shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-100 hover:border-amber-300 transition-colors cursor-pointer"
+        >
+          Balayage this Saturday
+        </button>
+        <button
+          type="button"
+          onClick={() => onSend("How does the $0 hold work?")}
+          className="snap-start shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-100 hover:border-amber-300 transition-colors cursor-pointer"
+        >
+          How $0 hold works
+        </button>
+      </div>
+
+      {/* Sleek Light Input Bar */}
+      <div className="border-t border-slate-200/80 bg-white p-3">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSend();
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            value={prompt}
+            onChange={(e) => onPromptChange(e.target.value)}
+            placeholder="Ask or book anything..."
+            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-amber-500 focus:outline-hidden transition-colors"
+          />
+
+          <button
+            type="submit"
+            disabled={!prompt.trim() || isThinking}
+            aria-label="Send"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 font-bold text-slate-950 transition-all hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </form>
       </div>
     </div>
   );
@@ -355,68 +407,55 @@ function ProposalCard({
 }) {
   const service = message.proposedService;
   if (!service) return null;
+
+  const stylist = message.proposedStylist || INITIAL_STAFF[0];
+  const slot = message.proposedSlot || DEFAULT_TIME_SLOT;
+
   return (
-    <div className="mt-2 w-full max-w-[94%] rounded-2xl border border-amber-200 bg-white p-3.5 shadow-xs">
-      <div className="mb-2 flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full bg-amber-500" />
-        <span className="font-black text-[10px] text-amber-700 uppercase tracking-wider">
-          Proposed Reservation
-        </span>
-      </div>
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <h5 className="font-bold text-slate-900 text-xs">{service.name}</h5>
-        <span className="font-black text-slate-900 text-xs">
+    <div className="mt-2.5 w-full max-w-[92%] rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/30 p-3.5 text-slate-900 shadow-sm">
+      {/* Title & Price */}
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <h4 className="font-bold text-sm text-slate-900 truncate">
+          {service.name}
+        </h4>
+        <span className="font-extrabold text-sm text-slate-900 shrink-0">
           ${service.price}
         </span>
       </div>
-      <div className="mb-3 space-y-1 rounded-xl border border-slate-100 bg-slate-50 p-2.5 text-[11px]">
-        <div className="flex justify-between text-slate-600">
-          <span>Stylist:</span>
-          <span className="font-bold text-slate-900">
-            {message.proposedStylist?.name || INITIAL_STAFF[0].name}
-          </span>
-        </div>
-        <div className="flex justify-between text-slate-600">
-          <span>Time Slot:</span>
-          <span className="font-bold text-slate-900">
-            {message.proposedSlot || DEFAULT_TIME_SLOT}
-          </span>
-        </div>
-        <div className="flex justify-between border-slate-200 border-t pt-1 font-semibold text-emerald-600">
-          <span>Upfront Today:</span>
-          <span>$0.00 (Zero Charge)</span>
-        </div>
-        <div className="flex justify-between font-semibold text-amber-700">
-          <span>Deposit Hold:</span>
-          <span>${service.holdDeposit} (PayPal Authorization)</span>
-        </div>
+
+      {/* Time & Stylist info */}
+      <div className="mb-3 flex items-center justify-between text-xs text-slate-700 rounded-lg bg-white border border-slate-200/80 px-2.5 py-1.5 shadow-2xs">
+        <span className="flex items-center gap-1.5 text-slate-700">
+          <User className="h-3 w-3 text-amber-600" />
+          {stylist.name}
+        </span>
+        <span className="flex items-center gap-1.5 text-slate-700">
+          <Clock className="h-3 w-3 text-amber-600" />
+          {slot}
+        </span>
       </div>
+
+      {/* Direct One-Click Button */}
       <Button
         variant="primary"
         fullWidth
         onClick={() =>
           onAuthorize({
             service,
-            stylist: message.proposedStylist,
-            slot: message.proposedSlot,
+            stylist,
+            slot,
           })
         }
+        className="w-full py-2 font-bold text-xs cursor-pointer shadow-xs"
       >
         <Lock className="h-3.5 w-3.5" />
-        Authorize Hold with PayPal →
+        <span>Hold with PayPal ($0 today) →</span>
       </Button>
-    </div>
-  );
-}
 
-function QuickChip({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="whitespace-nowrap rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1 font-medium text-[11px] text-slate-700 hover:bg-slate-200"
-    >
-      {label}
-    </button>
+      <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-500 px-1">
+        <span>${service.holdDeposit} hold amount</span>
+        <span>Free 24h cancel</span>
+      </div>
+    </div>
   );
 }
