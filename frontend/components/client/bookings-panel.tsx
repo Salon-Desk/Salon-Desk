@@ -1,13 +1,16 @@
 "use client";
 
-import { Calendar, FileText, Lock, Shield, XCircle } from "lucide-react";
 import {
-  Button,
-  DataTable,
-  EmptyState,
-  HoldStateBadge,
-  SectionHeading,
-} from "@/components/ui";
+  Calendar,
+  Clock,
+  FileText,
+  Lock,
+  Plus,
+  Shield,
+  User,
+  XCircle,
+} from "lucide-react";
+import { HoldStateBadge } from "@/components/ui";
 import type { Booking } from "@/types";
 
 interface BookingsPanelProps {
@@ -26,42 +29,74 @@ export function BookingsPanel({
   onViewReceipt,
 }: BookingsPanelProps) {
   return (
-    <div>
-      <SectionHeading
-        title="My Appointments & Deposits"
-        description="Manage active holds, view cryptographic receipts, or cancel before the 24-hour cutoff for a $0 charge."
-        action={
-          <button
-            type="button"
-            onClick={onBrowseCatalog}
-            className="flex items-center gap-1 font-bold text-amber-600 text-xs hover:text-amber-700"
-          >
-            + Book Another Service
-          </button>
-        }
-      />
+    <div className="space-y-12">
+      {/* Editorial Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-8 border-b border-stone-200/60">
+        <div className="space-y-2 max-w-2xl">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
+            <Shield className="h-3.5 w-3.5 text-amber-600" />
+            <span>PayPal Authorization Holds</span>
+          </div>
+          <h1 className="font-serif text-3xl sm:text-4xl font-normal tracking-tight text-stone-950">
+            Appointments & Holds
+          </h1>
+          <p className="text-xs sm:text-sm text-stone-500 font-normal leading-relaxed">
+            Manage your active salon reservations, inspect cryptographic
+            receipts, or cancel before the 24-hour cutoff for an automatic $0
+            charge release.
+          </p>
+        </div>
 
-      <div className="mt-6 mb-8">
-        <div className="mb-3 flex items-center gap-2">
-          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-amber-500" />
-          <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">
-            Active Authorization Holds ({activeHolds.length})
-          </h3>
+        <button
+          type="button"
+          onClick={onBrowseCatalog}
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-950 hover:bg-stone-800 text-white font-medium text-xs sm:text-sm px-5 py-2.5 transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          <span>Book New Service</span>
+        </button>
+      </div>
+
+      {/* Active Holds Section */}
+      <section>
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+            <h2 className="text-xs font-bold uppercase tracking-wider text-stone-900">
+              Active Authorization Holds
+            </h2>
+            <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-700">
+              {activeHolds.length}
+            </span>
+          </div>
+          <span className="hidden sm:inline text-xs text-stone-400">
+            $0 charged today • Settled at salon checkout
+          </span>
         </div>
 
         {activeHolds.length === 0 ? (
-          <EmptyState
-            icon={Calendar}
-            title="No Active Holds"
-            description="You currently have no pending appointment holds. Explore services and book with zero upfront charges."
-            action={
-              <Button variant="primary" onClick={onBrowseCatalog}>
-                Explore Service Catalog
-              </Button>
-            }
-          />
+          <div className="rounded-3xl bg-stone-100/50 p-10 sm:p-14 text-center border border-stone-200/40">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-stone-400">
+              <Calendar className="h-6 w-6" />
+            </div>
+            <h3 className="font-serif text-lg font-medium text-stone-950">
+              No Active Reservation Holds
+            </h3>
+            <p className="mx-auto mt-1 max-w-sm text-xs text-stone-500 leading-relaxed">
+              You currently have no pending appointment holds. Explore our
+              catalog of master stylists and reserve chairs with $0 charged
+              upfront.
+            </p>
+            <button
+              type="button"
+              onClick={onBrowseCatalog}
+              className="mt-5 rounded-full bg-stone-950 hover:bg-stone-800 text-white font-medium text-xs px-5 py-2.5 transition-colors cursor-pointer"
+            >
+              Explore Service Catalog
+            </button>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             {activeHolds.map((booking) => (
               <ActiveHoldCard
                 key={booking.id}
@@ -72,97 +107,128 @@ export function BookingsPanel({
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      <h3 className="mb-3 font-bold text-slate-800 text-sm uppercase tracking-wider">
-        Past & Settled Appointments ({pastBookings.length})
-      </h3>
-      <DataTable
-        rows={pastBookings}
-        rowKey={(row) => row.id}
-        emptyState="No settled appointments yet."
-        columns={[
-          {
-            key: "id",
-            header: "Booking ID",
-            cell: (row) => (
-              <span className="font-mono font-bold text-slate-900">
-                {row.id}
-              </span>
-            ),
-          },
-          {
-            key: "service",
-            header: "Service & Stylist",
-            cell: (row) => (
-              <div>
-                <div className="font-bold text-slate-800">
-                  {row.serviceName}
+      {/* Past & Settled Appointments Section */}
+      <section>
+        <div className="mb-5 flex items-center gap-2.5">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-stone-900">
+            Past & Settled Appointments
+          </h2>
+          <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-700">
+            {pastBookings.length}
+          </span>
+        </div>
+
+        {pastBookings.length === 0 ? (
+          <div className="rounded-3xl bg-stone-100/50 p-8 text-center text-xs text-stone-500 border border-stone-200/40">
+            No past appointment history yet. Completed or cancelled appointments
+            will appear here.
+          </div>
+        ) : (
+          <>
+            {/* Mobile View: Clean responsive cards */}
+            <div className="space-y-3 sm:hidden">
+              {pastBookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="rounded-2xl bg-white p-4 border border-stone-200/60 space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-mono text-stone-400 uppercase">
+                        {booking.id}
+                      </span>
+                      <h4 className="font-serif text-base font-medium text-stone-950">
+                        {booking.serviceName}
+                      </h4>
+                      <p className="text-xs text-stone-500">
+                        {booking.stylistName}
+                      </p>
+                    </div>
+                    <HoldStateBadge status={booking.status} />
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs py-2 border-y border-stone-100">
+                    <span className="text-stone-500">
+                      {booking.appointmentTime}
+                    </span>
+                    <SettlementLabel booking={booking} />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onViewReceipt(booking)}
+                    className="w-full text-center text-xs font-medium text-stone-900 hover:text-amber-600 py-1 transition-colors cursor-pointer"
+                  >
+                    View Cryptographic Receipt →
+                  </button>
                 </div>
-                <div className="text-[11px] text-slate-500">
-                  {row.stylistName}
-                </div>
-              </div>
-            ),
-          },
-          {
-            key: "slot",
-            header: "Slot",
-            cell: (row) => (
-              <span className="font-medium text-slate-600">
-                {row.appointmentTime}
-              </span>
-            ),
-          },
-          {
-            key: "settlement",
-            header: "Final Settlement",
-            cell: (row) => <SettlementLabel booking={row} />,
-          },
-          {
-            key: "status",
-            header: "Status",
-            cell: (row) => <HoldStateBadge status={row.status} />,
-          },
-          {
-            key: "receipt",
-            header: "Receipt",
-            align: "right",
-            cell: (row) => (
-              <button
-                type="button"
-                onClick={() => onViewReceipt(row)}
-                className="font-bold text-amber-600 underline hover:text-amber-700"
-              >
-                Details
-              </button>
-            ),
-          },
-        ]}
-      />
+              ))}
+            </div>
+
+            {/* Desktop View: Sleek borderless table */}
+            <div className="hidden sm:block rounded-3xl bg-white border border-stone-200/60 overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-stone-100 bg-stone-50/60 text-[11px] font-medium uppercase tracking-wider text-stone-400">
+                    <th className="px-6 py-4 font-normal">Booking Reference</th>
+                    <th className="px-6 py-4 font-normal">Service & Stylist</th>
+                    <th className="px-6 py-4 font-normal">Time Slot</th>
+                    <th className="px-6 py-4 font-normal">
+                      Settlement Outcome
+                    </th>
+                    <th className="px-6 py-4 font-normal">Status</th>
+                    <th className="px-6 py-4 font-normal text-right">
+                      Receipt
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 text-stone-700">
+                  {pastBookings.map((booking) => (
+                    <tr
+                      key={booking.id}
+                      className="hover:bg-stone-50/50 transition-colors"
+                    >
+                      <td className="px-6 py-4 font-mono font-medium text-stone-900">
+                        {booking.id}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-serif text-sm font-normal text-stone-950">
+                          {booking.serviceName}
+                        </div>
+                        <div className="text-[11px] text-stone-400">
+                          {booking.stylistName}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-stone-600">
+                        {booking.appointmentTime}
+                      </td>
+                      <td className="px-6 py-4">
+                        <SettlementLabel booking={booking} />
+                      </td>
+                      <td className="px-6 py-4">
+                        <HoldStateBadge status={booking.status} />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => onViewReceipt(booking)}
+                          className="rounded-full bg-stone-100 hover:bg-stone-200 text-stone-800 px-3 py-1 font-medium transition-colors cursor-pointer"
+                        >
+                          Receipt
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </section>
     </div>
   );
-}
-
-function SettlementLabel({ booking }: { booking: Booking }) {
-  if (booking.status === "CAPTURED") {
-    return (
-      <span className="font-bold text-emerald-600">
-        ${booking.servicePrice} Full Captured
-      </span>
-    );
-  }
-  if (booking.status === "NO_SHOW_CAPTURED") {
-    return (
-      <span className="font-bold text-rose-600">
-        ${booking.noShowFee} No-Show Fee
-      </span>
-    );
-  }
-  if (booking.status === "VOIDED") {
-    return <span className="font-medium text-slate-500">$0 (Hold Voided)</span>;
-  }
-  return <span className="text-slate-500">—</span>;
 }
 
 function ActiveHoldCard({
@@ -175,77 +241,118 @@ function ActiveHoldCard({
   onViewReceipt: (booking: Booking) => void;
 }) {
   return (
-    <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-amber-200/80 bg-white p-5 shadow-xs">
-      <div className="absolute top-0 right-0 h-full w-2 bg-amber-500" />
-
+    <div className="flex flex-col justify-between rounded-3xl bg-white p-6 sm:p-7 border border-stone-200/60 transition-all hover:border-stone-300">
       <div>
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div>
-            <span className="block font-black text-[11px] text-amber-600 uppercase tracking-widest">
+        {/* Top Badges & Service */}
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <span className="text-[11px] font-mono font-semibold uppercase tracking-widest text-amber-700">
               {booking.id} • {booking.salonName}
             </span>
-            <h4 className="font-extrabold text-base text-slate-900">
+            <h3 className="font-serif text-xl sm:text-2xl font-normal text-stone-950">
               {booking.serviceName}
-            </h4>
+            </h3>
           </div>
-          <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 font-bold text-amber-700 text-xs">
-            <Lock className="h-3 w-3" />
-            HELD (${booking.holdAmount})
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 shrink-0">
+            <Lock className="h-3 w-3 text-amber-600" />
+            <span>Held (${booking.holdAmount})</span>
           </span>
         </div>
 
-        <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs">
-          <Meta label="Master Stylist" value={booking.stylistName} />
-          <Meta label="Appointment Slot" value={booking.appointmentTime} />
-          <Meta label="Full Service Value" value={`$${booking.servicePrice}`} />
-          <div>
-            <span className="block font-bold text-[10px] text-slate-400 uppercase">
-              Free Cancel Window
+        {/* Metadata Grid */}
+        <div className="mb-5 grid grid-cols-2 gap-3 rounded-2xl bg-stone-50/80 p-4 text-xs">
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
+              Master Stylist
             </span>
-            <span className="font-bold text-emerald-600">
-              ≥ 24 hrs prior ($0)
+            <div className="flex items-center gap-1.5 font-medium text-stone-900">
+              <User className="h-3.5 w-3.5 text-stone-500" />
+              <span>{booking.stylistName}</span>
+            </div>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
+              Appointment Slot
             </span>
+            <div className="flex items-center gap-1.5 font-medium text-stone-900">
+              <Clock className="h-3.5 w-3.5 text-stone-500" />
+              <span>{booking.appointmentTime}</span>
+            </div>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
+              Full Service Value
+            </span>
+            <div className="font-semibold text-stone-900">
+              ${booking.servicePrice}.00
+            </div>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
+              Cancellation Cutoff
+            </span>
+            <div className="font-medium text-emerald-700">
+              Free cancel ≥ 24h ($0)
+            </div>
           </div>
         </div>
 
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-amber-100 bg-amber-50/40 px-3 py-2 text-[11px] text-slate-500">
-          <div className="flex max-w-[220px] items-center gap-1.5 truncate font-mono">
+        {/* Cryptographic verification strip */}
+        <div className="mb-6 flex items-center justify-between rounded-xl bg-stone-100/60 px-3.5 py-2 text-[11px] text-stone-500 font-mono">
+          <div className="flex max-w-[240px] items-center gap-1.5 truncate">
             <Shield className="h-3.5 w-3.5 shrink-0 text-amber-600" />
             <span className="truncate">{booking.consentHash}</span>
           </div>
-          <span className="shrink-0 font-medium text-slate-400">PayPal v6</span>
+          <span className="text-stone-400 font-medium">PayPal v6</span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 border-slate-100 border-t pt-2">
-        <Button
-          variant="secondary"
-          className="flex-1"
+      {/* Action buttons */}
+      <div className="flex items-center gap-2.5 pt-4 border-t border-stone-100">
+        <button
+          type="button"
           onClick={() => onViewReceipt(booking)}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs sm:text-sm font-medium py-2.5 px-4 transition-colors cursor-pointer"
         >
-          <FileText className="h-3.5 w-3.5" />
-          View Receipt
-        </Button>
-        <Button
-          variant="danger"
-          className="flex-1"
+          <FileText className="h-3.5 w-3.5 text-stone-600" />
+          <span>View Receipt</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => onCancel(booking.id)}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs sm:text-sm font-medium py-2.5 px-4 transition-colors cursor-pointer"
         >
-          <XCircle className="h-3.5 w-3.5" />
-          Cancel & Void ($0)
-        </Button>
+          <XCircle className="h-3.5 w-3.5 text-rose-600" />
+          <span>Cancel & Void ($0)</span>
+        </button>
       </div>
     </div>
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <span className="block font-bold text-[10px] text-slate-400 uppercase">
-        {label}
+function SettlementLabel({ booking }: { booking: Booking }) {
+  if (booking.status === "CAPTURED") {
+    return (
+      <span className="font-medium text-emerald-700">
+        ${booking.servicePrice}.00 Full Captured
       </span>
-      <span className="font-bold text-slate-800">{value}</span>
-    </div>
-  );
+    );
+  }
+  if (booking.status === "NO_SHOW_CAPTURED") {
+    return (
+      <span className="font-medium text-rose-700">
+        ${booking.noShowFee}.00 No-Show Fee
+      </span>
+    );
+  }
+  if (booking.status === "VOIDED") {
+    return (
+      <span className="font-medium text-stone-400">$0.00 (Hold Voided)</span>
+    );
+  }
+  return <span className="text-stone-400">—</span>;
 }
