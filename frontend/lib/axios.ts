@@ -13,9 +13,24 @@ const configuredApiUrl = (
   'http://localhost:8000'
 ).replace(/\/$/, '')
 
-/** Browser: same-origin when unset/localhost so host nginx can proxy /api/v1. */
+/**
+ * Browser: prefer same-origin (empty baseURL) so nginx can proxy `/api/v1`
+ * and CORS is never involved. Absolute URLs are only kept for true cross-origin APIs.
+ */
 function resolveBrowserBaseUrl(url: string): string {
-  if (!url || /^(https?:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?$/i.test(url)) {
+  if (!url || /^(https?:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(url)) {
+    return ''
+  }
+  if (typeof window === 'undefined') {
+    return url
+  }
+  try {
+    const absolute =
+      url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`
+    if (new URL(absolute).origin === window.location.origin) {
+      return ''
+    }
+  } catch {
     return ''
   }
   return url

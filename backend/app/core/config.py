@@ -1,3 +1,4 @@
+import json
 from functools import lru_cache
 from typing import Literal
 
@@ -5,6 +6,46 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LLMProvider = Literal["groq", "ollama", "openai"]
+
+_DEFAULT_CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost",
+    "http://127.0.0.1:3000",
+    "https://paypalai.hackathon.huludelala.com",
+    "http://paypalai.hackathon.huludelala.com",
+]
+
+
+def _normalize_origin(origin: str) -> str:
+    return origin.strip().strip('"').strip("'").rstrip("/")
+
+
+def parse_cors_origins(value: object) -> list[str]:
+    """Accept JSON arrays, comma-separated lists, or already-parsed lists."""
+    if value is None or value == "":
+        return list(_DEFAULT_CORS_ORIGINS)
+    if isinstance(value, (list, tuple, set)):
+        origins = [_normalize_origin(str(item)) for item in value]
+        return [o for o in origins if o]
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return list(_DEFAULT_CORS_ORIGINS)
+        if text.startswith("["):
+            try:
+                parsed = json.loads(text)
+            except json.JSONDecodeError:
+                # Docker --env-file sometimes leaves outer quotes; strip and retry.
+                try:
+                    parsed = json.loads(text.strip('"').strip("'"))
+                except json.JSONDecodeError:
+                    parsed = None
+            if isinstance(parsed, list):
+                origins = [_normalize_origin(str(item)) for item in parsed]
+                return [o for o in origins if o]
+        origins = [_normalize_origin(part) for part in text.split(",")]
+        return [o for o in origins if o]
+    return list(_DEFAULT_CORS_ORIGINS)
 
 
 class Settings(BaseSettings):
@@ -28,7 +69,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24
     algorithm: str = "HS256"
 
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: list[str] = Field(default_factory=lambda: list(_DEFAULT_CORS_ORIGINS))
+    # Optional regex for preview / hackathon subdomains (Starlette CORSMiddleware).
+    cors_origin_regex: str | None = r"https?://(.*\.)?huludelala\.com"
 
     # PayPal
     paypal_client_id: str = ""
@@ -68,6 +111,23 @@ class Settings(BaseSettings):
 
     # Ed25519 signing key (PEM or base64); empty = generate ephemeral in dev
     ed25519_private_key: str = ""
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def normalize_cors_origins(cls, value: object) -> list[str]:
+        return parse_cors_origins(value)
+
+    @field_validator("cors_origin_regex", mode="before")
+    @classmethod
+    def normalize_cors_origin_regex(cls, value: object) -> str | None:
+        if value is None:
+            return r"https?://(.*\.)?huludelala\.com"
+        if isinstance(value, str):
+            text = value.strip()
+            if text.lower() in {"", "none", "null", "disabled", "off"}:
+                return None
+            return text
+        return None
 
     @field_validator("llm_provider", mode="before")
     @classmethod
