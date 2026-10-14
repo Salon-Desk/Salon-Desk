@@ -8,11 +8,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-FROM node:20-alpine AS web-builder
+FROM node:22-alpine AS web-builder
 WORKDIR /build
 RUN corepack enable && corepack prepare pnpm@11.22.0 --activate
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/.npmrc ./
+RUN pnpm install --frozen-lockfile --config.dangerously-allow-all-builds=true
 COPY frontend/ .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm run build
