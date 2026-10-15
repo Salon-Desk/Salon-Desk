@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO)
 def main() -> None:
     from livekit.agents import WorkerOptions, cli
 
-    from app.agent.worker import entrypoint, prewarm
+    from app.ai.agent.worker import entrypoint, prewarm
     from app.core.config import get_settings
 
     settings = get_settings()

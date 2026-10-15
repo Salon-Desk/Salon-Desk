@@ -1,4 +1,6 @@
 export { default as useFormSubmitHandler } from './formHandler'
+export { useAiConcierge } from './use-ai-concierge'
+export { useBookingContext } from './use-booking-context'
 export { useClipboard } from './use-clipboard'
 export { type DemoResetStats, useDemoReset } from './use-demo-reset'
 export { useIsMobile } from './use-is-mobile'

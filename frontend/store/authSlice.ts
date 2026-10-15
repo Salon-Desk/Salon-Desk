@@ -6,7 +6,7 @@ import {
   getClientAuthUser,
   saveClientAuthSession,
 } from '@/lib/authSession'
-import { authApi } from '@/store/slice/authApi'
+import { sharedApi } from '@/store/api/sharedApi'
 import type { User, UserRole } from '@/types/user'
 
 export type AppPortal = 'client' | 'merchant' | 'admin'
@@ -48,7 +48,7 @@ export const fetchAuthData = createAsyncThunk<User | null, void, { rejectValue: 
       }
 
       const result = await dispatch(
-        authApi.endpoints.me.initiate(undefined, { forceRefetch: true }),
+        sharedApi.endpoints.me.initiate(undefined, { forceRefetch: true }),
       ).unwrap()
 
       const fullUser: User = {

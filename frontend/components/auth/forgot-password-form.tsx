@@ -1,7 +1,7 @@
 'use client'
 
 import type { FC } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
@@ -25,10 +25,14 @@ import type { ForgotPasswordResponse, MessageOut } from '@/types/auth'
 
 interface ForgotPasswordFormProps {
   onBackToSignIn: () => void
+  initialResetToken?: string
 }
 
-export const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({ onBackToSignIn }) => {
-  const [isResetStep, setIsResetStep] = useState(false)
+export const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({
+  onBackToSignIn,
+  initialResetToken,
+}) => {
+  const [isResetStep, setIsResetStep] = useState(Boolean(initialResetToken))
   const [forgotPassword, { isLoading: isSubmittingForgot }] = useForgotPasswordMutation()
   const [resetPassword, { isLoading: isResetting }] = useResetPasswordMutation()
 
@@ -40,9 +44,19 @@ export const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({ onBackToSignIn
 
   const resetMethods = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: resetPasswordDefaultValues,
+    defaultValues: {
+      ...resetPasswordDefaultValues,
+      token: initialResetToken ?? resetPasswordDefaultValues.token,
+    },
     mode: 'onBlur',
   })
+
+  useEffect(() => {
+    if (initialResetToken) {
+      resetMethods.setValue('token', initialResetToken)
+      setIsResetStep(true)
+    }
+  }, [initialResetToken, resetMethods])
 
   const onForgotSuccess = (response: ApiResponse<ForgotPasswordResponse>) => {
     const token = response.data?.reset_token

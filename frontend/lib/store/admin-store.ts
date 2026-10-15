@@ -15,8 +15,6 @@ import type {
   TaxonomyCategory,
 } from '@/types'
 
-import { createPersistentStore } from './create-persistent-store'
-
 export interface AdminDashboardState {
   organizations: Organization[]
   changeRequests: ChangeRequest[]
@@ -43,8 +41,3 @@ export function seedAdminState(): AdminDashboardState {
     currentUser: INITIAL_PLATFORM_USERS[0],
   }
 }
-
-export const adminStore = createPersistentStore<AdminDashboardState>(
-  'salondesk:admin-dashboard:v2',
-  seedAdminState,
-)

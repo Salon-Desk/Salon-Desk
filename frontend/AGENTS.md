@@ -8,119 +8,168 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# SalonDesk — agent guide
+# SalonDesk frontend — agent guide
 
-Next.js 16 App Router demo for salon booking with PayPal authorization holds (client, merchant, admin portals). Package manager: **pnpm**. Path alias: **`@/*`** → frontend root (`tsconfig.json`).
+Next.js 16 App Router demo for salon booking with PayPal authorization holds (**client**, **merchant**, **admin** portals). Package manager: **pnpm**. Path alias: **`@/*`** → frontend root (`tsconfig.json`).
+
+Monorepo backend and shared agent rules: **[../AGENTS.md](../AGENTS.md)**. Human setup: **[../Readme.md](../Readme.md)**.
 
 **English-only.** Do not add i18n, locale providers, translation dictionaries, or `_localization/` folders.
 
 ## Commands
 
-| Script        | Purpose                        |
-| ------------- | ------------------------------ |
-| `pnpm dev`    | Dev server (Next default port) |
-| `pnpm build`  | Production build               |
-| `pnpm start`  | Production server              |
-| `pnpm lint`   | Biome check                    |
-| `pnpm format` | Biome format write             |
+| Script            | Purpose                        |
+| ----------------- | ------------------------------ |
+| `pnpm dev`        | Dev server (Next default port) |
+| `pnpm build`      | Production build               |
+| `pnpm start`      | Production server              |
+| `pnpm lint`       | ESLint (`--max-warnings=0`)    |
+| `pnpm lint:fix`   | ESLint with auto-fix           |
+| `pnpm format`     | Prettier check                 |
+| `pnpm format:fix` | Prettier write                 |
+| `pnpm typecheck`  | `tsc --noEmit`                 |
+| `pnpm validate`   | format + lint + typecheck      |
 
-Match Biome (`biome.json`): 2-space indent, project formatter settings.
+Use ESLint + Prettier (`eslint.config.*`, Prettier config in repo). Match existing 2-space indent and project formatter settings.
 
 ## Repository layout
 
 ```
-app/                 App Router: layout, globals.css, portal routes
-  _components/       Hub (landing) feature UI
-  client/            Client portal feature (+ thin page.tsx)
-  merchant/          Merchant console feature
-  admin/             Platform admin feature
-  book/              Alias route → client
-  org/               Alias route → merchant
-  api/               Route handlers (AI concierge, demo reset)
+app/
+  layout.tsx, globals.css, Providers.tsx   Root shell (Redux, auth, toasts)
+  middleware.ts                            /org → /merchant rewrite only
+  (auth)/login|forgot-password|reset-password
+  _components/                             Hub (landing) feature UI
+  client/                                  Client portal routes + _components/
+  merchant/                                Org console (onboarding, settings, …)
+  admin/                                   Platform admin
+  book/                                    Redirect → /client/book
+  api/                                     Route handlers (demo AI concierge, demo reset)
 components/
-  ui/                Shared primitives (SalonDesk + shadcn/radix-nova)
-  forms/             Shared React Hook Form fields (RHF*), pickers, upload
-  layout/            Shared console chrome (sidebar shell, portal switcher)
-  brand/             Logo and brand marks
-  button|dialog|drawer|empty|loader|table|tab|…   Shared reusable UI
-constant/            App constants (validation messages, toast colors, …)
-hooks/               Shared client hooks (store, toast, media query, …)
+  ui/                                      Shared primitives (SalonDesk + shadcn)
+  forms/                                   RHF* fields, pickers
+  layout/                                  Console shell, portal switcher, auth gate
+  auth/                                    Sign-in, modal host, profile editor
+  ai-concierge/                            Shared concierge UI (drawer, voice orb)
+  chat/                                    Global chat widget + use-agent-chat (RTK)
+constant/                                  Validation messages, toast colors, …
+hooks/                                     Shared hooks (portal stores, concierge, booking draft)
 lib/
-  store/             Persistent portal stores
-  data/              Seed / catalog data
-  schema/            Shared Zod validators
-  util/              Pure helpers
-  utils.ts           cn() and shared class helpers
-types/               Shared TypeScript domain types
-public/              Static assets
+  store/                                   Demo seed fns + types only (Redux owns runtime state)
+  sandbox/                                 demo-reset, local DB helpers for sandbox
+  data/                                    Seed / catalog fixtures
+  schema/                                  Shared Zod validators
+  util/                                    Pure helpers
+  utils/                                   cn() and shared class helpers
+store/
+  index.ts, baseApi.ts                     Redux store + RTK Query base
+  authSlice.ts, bookingDraftSlice.ts
+  clientDemoSlice.ts, merchantDemoSlice.ts, adminDemoSlice.ts
+  api/sharedApi.ts, platformApi.ts, orgApi.ts, clientApi.ts
+  slice/                                   Back-compat re-exports of RTK endpoints
+types/                                     Shared TypeScript domain types
+public/                                    Static assets
 ```
 
-- **New UI**: prefer `components/ui` + `cn` from `@/lib/utils`. Add shadcn via `pnpm dlx shadcn@latest add …` (see `components.json`).
-- **Forms**: wrap with `FormProvider`, use existing `RHF*` under `components/forms`.
-- **Global vs feature UI**: reuse global building blocks anywhere. When a component, hook, constant, or util is used by 2+ features, hoist it to the matching global directory.
-- **Feature isolation**: keep each portal under `app/<feature>/` with underscore-prefixed internal folders. Do not copy generic form primitives or shadcn wrappers into feature folders.
-- **API**: route handlers under `app/api/`; portal state via `lib/store` + hooks. Env via `NEXT_PUBLIC_*`.
-- **Do not** put business logic in `app/**/page.tsx` beyond thin composition.
-- **Copy**: use plain English strings in components. Validation copy lives in `constant/validation-messages.ts`.
+### Routing (client portal)
+
+| Route                 | Purpose                                      |
+| --------------------- | -------------------------------------------- |
+| `/client`             | Catalog + concierge (default tab)            |
+| `/client/book`        | Checkout; `SplitBookingAuth` when logged out |
+| `/client/bookings`    | My bookings                                  |
+| `/client/profile`     | Client profile                               |
+| `/client/org/[orgId]` | Org-filtered catalog                         |
+| `/merchant/*`         | Merchant console (`/org/*` rewrites here)    |
+| `/admin/*`            | Platform admin                               |
+
+JWT lives in **localStorage**; edge `middleware.ts` does not enforce auth (use `AuthGate` / layout guards).
+
+## State & API
+
+- **Auth & session**: `store/authSlice.ts`; bootstrap in `Providers.tsx` (`fetchAuthData`, portal `setActiveApp` from pathname).
+- **Booking checkout draft**: `store/bookingDraftSlice.ts` + `hooks/use-booking-context.ts`; resume after login on `/client/book`.
+- **Portal demo UI** (sandbox bookings, merchant console mock data, admin dashboard mock data): Redux slices `*DemoSlice.ts`, hydrated from localStorage in `Providers.tsx`. Read/write via `hooks/use-portal-stores.ts` (`useClientStore`, `useMerchantStore`, `useAdminStore`).
+- **RTK Query**: inject endpoints in `store/api/*Api.ts`. Prefer these over raw `axios`/`fetch` for `/api/v1/*` calls.
+  - **Client**: catalog, bookings, payments, `clientConciergeChat` → `POST /api/v1/chat`, LiveKit token.
+  - **Org**: `orgApi.ts` → `/api/v1/organizations/*`, settlements.
+  - **Platform**: `platformApi.ts` → `/api/v1/admin/*`.
+  - **Shared**: `sharedApi.ts` → auth/profile.
+- **Legacy**: `store/slice/*` and `store/app.ts` may re-export — new code should import from `@/store` / `@/store/api/clientApi`.
+
+### AI concierge hooks
+
+| Hook             | Location                            | Transport                                                                                   |
+| ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| `useAiConcierge` | `hooks/use-ai-concierge.ts`         | RTK `useClientConciergeChatMutation` when `features.agentChat`; else `app/api/ai/concierge` |
+| `useAgentChat`   | `components/chat/use-agent-chat.ts` | RTK → `/api/v1/chat` (global chat widget)                                                   |
+
+Client drawer UI: `app/client/_components/ConciergeDrawer.tsx` (export alias `ConciergeDrawer`; legacy name `AiConcierge`).
+
+## UI conventions
+
+- **New UI**: prefer `components/ui` + `cn` from `@/lib/utils`. Add shadcn via `pnpm dlx shadcn@latest add …` (`components.json`).
+- **Forms**: `FormProvider` + `components/forms` `RHF*` fields.
+- **Global vs feature**: reuse `components/*` when used in 2+ features; hoist hooks to `hooks/`, types to `types/`.
+- **Feature isolation**: each portal under `app/<feature>/` with underscore-prefixed internal folders.
+- **Pages stay thin**: `page.tsx` composes feature entry components only.
+- **Copy**: plain English in components; validation strings in `constant/validation-messages.ts`.
+
+### Client `_components/` naming
+
+Files under `app/client/_components/` use **PascalCase** filenames aligned with primary exports, e.g.:
+
+| File                                       | Primary export(s)                              |
+| ------------------------------------------ | ---------------------------------------------- |
+| `ClientExperience.tsx`                     | `ClientExperience`                             |
+| `ClientBookPage.tsx`                       | `ClientBookPage`                               |
+| `SplitBookingAuth.tsx`                     | `SplitBookingAuth`                             |
+| `PayPalHoldCheckout.tsx`                   | `PayPalHoldCheckout` (alias `PaypalAuthModal`) |
+| `BookingReceipt.tsx`                       | `BookingReceipt` (alias `ReceiptModal`)        |
+| `ConciergeDrawer.tsx`                      | `AiConcierge` (alias `ConciergeDrawer`)        |
+| `ServiceCard.tsx`, `CatalogFilters.tsx`, … | Same as filename                               |
+
+Public barrel: `app/client/index.ts`.
 
 ## App shell
 
-- `app/layout.tsx`: root server layout, fonts, Sonner toaster, `html lang="en"`.
+- `app/layout.tsx`: fonts, metadata, `Providers`.
+- `app/Providers.tsx`: Redux `Provider`, demo slice hydrate, `AuthProvider`, `AuthModalHost`, optional global `ChatWidget` (hidden on client routes that host their own concierge).
 - Portal chrome: `components/layout` (`ConsoleShell`, `AuthGate`, `PortalSwitcher`).
-- Hub landing: `app/page.tsx` composes `app/_components`.
-
-## TypeScript & quality
-
-- Strict mode; prefer explicit types in `types/` for shared domain models.
-- Biome for lint/format (`biome.json`).
-- Empty interfaces extending another type → use `type` aliases.
-- Zod v4 APIs (see `lib/schema/common.ts`).
-- Avoid unstable values like `new Date()` during Client Component prerender; use fixed values or read time in `useEffect` / event handlers.
-
-## Global reusable components (`components/`)
-
-App-wide — import from any route or feature:
-
-| Area               | Path                                      | Use                                                      |
-| ------------------ | ----------------------------------------- | -------------------------------------------------------- |
-| Primitives         | `components/ui/`                          | Buttons, inputs, dialogs, tables                         |
-| Forms              | `components/forms/`                       | `RHF*`, `FormProvider`, pickers, file upload             |
-| Actions & feedback | `components/button/`, `loader/`, `empty/` | `PrimaryButton`, spinners, skeletons, empty/error states |
-| Overlays & dialogs | `components/dialog/`, `drawer/`, `table/` | Responsive dialogs, drawers, data grids, pagination      |
-| Tabs               | `components/tab/`                         | Shared tab patterns                                      |
-| App shell          | `components/layout/`                      | Console shell, auth gate, portal nav                     |
-| Brand              | `components/brand/`                       | Logo                                                     |
+- Hub: `app/page.tsx` + `app/_components/`.
 
 ## Feature layout standard (`app/<feature>/`)
 
-Every portal feature (`client`, `merchant`, `admin`, and hub via `app/_components`) uses **underscore-prefixed internal folders**:
+| Folder         | Purpose                                            |
+| -------------- | -------------------------------------------------- |
+| `_components/` | Feature-internal React UI                          |
+| `_constants/`  | Feature defaults, demo personas                    |
+| `_hooks/`      | Feature-only hooks (hoist shared ones to `hooks/`) |
+| `_schemas/`    | Feature Zod schemas (reuse `@/lib/schema/common`)  |
+| `_context/`    | Feature React context (merchant/admin)             |
+| `index.ts`     | Public barrel                                      |
+| `page.tsx`     | Thin route entry                                   |
 
-| Folder         | Purpose                                                        |
-| -------------- | -------------------------------------------------------------- |
-| `_components/` | Feature-internal React UI; composed by the route page          |
-| `_constants/`  | Feature-specific defaults, seeds, static local config          |
-| `_hooks/`      | Feature-specific custom React hooks                            |
-| `_libs/`       | Feature-specific getters, transformers, data helpers           |
-| `_schemas/`    | Feature Zod schemas (reuse `@/lib/schema/common`)              |
-| `_types/`      | Feature-local TypeScript types                                 |
-| `_utils/`      | Pure helpers scoped to this feature                            |
-| `index.ts`     | Public API barrel (entry components, hooks, constants, types)  |
-| `page.tsx`     | Thin route: import and render the feature entry component only |
+### Hoisting rules
 
-Hub landing lives at `app/` with `_components/` next to `page.tsx` (same rules, no nested route segment).
+1. Start new code in the feature’s underscore folders.
+2. Schemas in `_schemas/`; messages from `constant/validation-messages.ts`.
+3. After **2+ features** need the same piece → hoist to `components/`, `hooks/`, `lib/`, or `types/`.
+4. Do not duplicate shadcn primitives inside features.
 
-### Hoisting & schema rules
+## TypeScript & quality
 
-1. **Private by default**: new feature code starts in that feature’s underscore folders.
-2. **Validation schemas in `_schemas/`**:
-   - Feature form schemas live in `_schemas/`, not inline in components.
-   - Reuse `@/lib/schema/common.ts`.
-   - Error messages use English strings from `constant/validation-messages.ts` (no i18n layer).
-3. **Hoist on reuse** (2+ features or global routes):
-   - UI → `components/button/`, `components/dialog/`, `components/layout/`, etc.
-   - Shared schemas → `lib/schema/common.ts`
-   - Shared hooks → `hooks/`
-   - Shared constants → `constant/`
-   - Shared utils → `lib/util/`
-   - Shared models → `types/`
-4. **Keep pages thin**: `app/<feature>/page.tsx` only composes the feature entry export.
+- Strict mode; shared domain models in `types/`.
+- ESLint + Prettier; run `pnpm typecheck` before considering frontend work done.
+- Zod v4 APIs (`lib/schema/common.ts`).
+- Avoid unstable values like `new Date()` during Client Component prerender; use fixed seeds or `useEffect` / event handlers.
+
+## Global reusable components
+
+| Area       | Path                                           | Use                       |
+| ---------- | ---------------------------------------------- | ------------------------- |
+| Primitives | `components/ui/`                               | Buttons, inputs, dialogs  |
+| Forms      | `components/forms/`                            | RHF*, pickers             |
+| Layout     | `components/layout/`                           | Console shell, portal nav |
+| Auth       | `components/auth/`                             | Modals, sign-in forms     |
+| AI         | `components/ai-concierge/`, `components/chat/` | Voice orb, global chat    |

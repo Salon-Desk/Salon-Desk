@@ -5,14 +5,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.models.change_request import ChangeRequest
 from app.models.enums import (
     ChangeRequestStatus,
     ChangeRequestType,
     OrgAccountStatus,
     OrgCancellationPolicyStatus,
 )
-from app.models.organization import OrgAccount, OrgCancellationPolicy
+from app.models.payment import OrgAccount
+from app.models.policy import ChangeRequest, OrgCancellationPolicy
 
 
 async def submit_change_request(

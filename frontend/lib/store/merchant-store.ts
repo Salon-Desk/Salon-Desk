@@ -9,8 +9,6 @@ import {
 } from '@/lib/data/merchant'
 import type { AuditLedgerEntry, Booking, ChangeRequest, SalonService, StaffMember } from '@/types'
 
-import { createPersistentStore } from './create-persistent-store'
-
 export interface MerchantConsoleState {
   authenticated: boolean
   salon: MerchantSalonInfo
@@ -37,8 +35,3 @@ export function seedMerchantState(): MerchantConsoleState {
     simulatedDrift: false,
   }
 }
-
-export const merchantStore = createPersistentStore<MerchantConsoleState>(
-  'salondesk:merchant-console:v3',
-  seedMerchantState,
-)

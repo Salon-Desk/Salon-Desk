@@ -1,7 +1,5 @@
 from app.models.base import BaseModel, TimestampedModel
 from app.models.booking import Booking, BookingService
-from app.models.change_request import ChangeRequest
-from app.models.consent import Consent
 from app.models.enums import (
     BookingStatus,
     ChangeRequestStatus,
@@ -18,17 +16,15 @@ from app.models.enums import (
     UserStatus,
 )
 from app.models.knowledge import KnowledgeChunk
-from app.models.ledger import LedgerEntry
+from app.models.ledger import LedgerEntry, PlatformCommission
 from app.models.organization import (
-    OrgAccount,
     Organization,
-    OrgCancellationPolicy,
     OrgEmployeeShift,
     OrgSettings,
     OrgShift,
 )
-from app.models.payment import PaymentCapture, PaymentHold, PaypalWebhookEvent
-from app.models.platform import PlatformCommission
+from app.models.payment import OrgAccount, PaymentCapture, PaymentHold, PaypalWebhookEvent
+from app.models.policy import ChangeRequest, Consent, OrgCancellationPolicy
 from app.models.service import Service, ServiceCategory, ServiceGiving
 from app.models.user import PasswordResetToken, Profile, User
 
@@ -45,6 +41,7 @@ __all__ = [
     "OrgCancellationPolicy",
     "OrgAccount",
     "ChangeRequest",
+    "Consent",
     "ServiceCategory",
     "Service",
     "ServiceGiving",
@@ -54,7 +51,6 @@ __all__ = [
     "PaymentCapture",
     "PaypalWebhookEvent",
     "LedgerEntry",
-    "Consent",
     "PlatformCommission",
     "KnowledgeChunk",
     "KnowledgeEntityType",

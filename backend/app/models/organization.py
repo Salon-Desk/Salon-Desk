@@ -1,17 +1,12 @@
 import uuid
-from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Numeric, String, Text, text
+from sqlalchemy import Enum, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel, TimestampedModel
-from app.models.enums import (
-    OrgAccountStatus,
-    OrganizationStatus,
-    OrgCancellationPolicyStatus,
-)
+from app.models.enums import OrganizationStatus
 
 
 class Organization(TimestampedModel):
@@ -102,68 +97,3 @@ class OrgEmployeeShift(BaseModel):
 
     user = relationship("User")
     org_shift = relationship("OrgShift", back_populates="employee_shifts")
-
-
-class OrgCancellationPolicy(TimestampedModel):
-    __tablename__ = "org_cancellation_policy"
-
-    org_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("organization.id"),
-        nullable=False,
-        index=True,
-    )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[OrgCancellationPolicyStatus] = mapped_column(
-        Enum(
-            OrgCancellationPolicyStatus,
-            name="org_cancellation_policy_status",
-            values_callable=lambda x: [e.value for e in x],
-        ),
-        default=OrgCancellationPolicyStatus.DRAFT,
-        nullable=False,
-    )
-    data: Mapped[dict] = mapped_column(JSONB, nullable=False)
-
-    organization = relationship("Organization")
-
-
-class OrgAccount(TimestampedModel):
-    __tablename__ = "org_account"
-    __table_args__ = (
-        Index(
-            "uq_org_account_active",
-            "org_id",
-            unique=True,
-            postgresql_where=text("status = 'approved'"),
-        ),
-    )
-
-    org_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("organization.id"),
-        nullable=False,
-        index=True,
-    )
-    merchant_id: Mapped[str] = mapped_column(String(100), nullable=False)
-    merchant_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    currency: Mapped[str] = mapped_column(String(3), default="USD", nullable=False)
-    status: Mapped[OrgAccountStatus] = mapped_column(
-        Enum(
-            OrgAccountStatus,
-            name="org_account_status",
-            values_callable=lambda x: [e.value for e in x],
-        ),
-        default=OrgAccountStatus.PENDING,
-        nullable=False,
-    )
-    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    approved_by: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("user.id"),
-        nullable=True,
-    )
-
-    organization = relationship("Organization")
-    approver = relationship("User", foreign_keys=[approved_by])

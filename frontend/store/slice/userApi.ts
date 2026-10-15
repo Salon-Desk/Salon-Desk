@@ -1,7 +1,7 @@
 import type { MessageOut } from '@/types/auth'
 import type { User } from '@/types/user'
 
-import { apiSlice } from '../apiSlice'
+import { baseApi } from '../baseApi'
 
 export interface CreateEmployeeRequest {
   email: string
@@ -37,7 +37,7 @@ export interface AssignShiftRequest {
  * - POST   /api/v1/admin/staff
  * - DELETE /api/v1/admin/staff/:staff_id
  */
-export const userApi = apiSlice.injectEndpoints({
+export const userApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
     // Salon staff

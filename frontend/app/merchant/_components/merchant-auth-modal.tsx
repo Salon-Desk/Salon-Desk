@@ -35,7 +35,7 @@ import {
   merchantSignUpSchema,
 } from '../_schemas/auth.schema'
 
-const MerchantSignUpForm: FC = () => {
+export const MerchantSignUpForm: FC = () => {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { closeAuthModal } = useAuthModal()

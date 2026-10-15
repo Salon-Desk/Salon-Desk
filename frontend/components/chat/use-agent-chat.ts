@@ -2,10 +2,10 @@
 
 import { useCallback, useRef, useState } from 'react'
 
-import axiosInstance from '@/lib/axios'
 import { features } from '@/lib/features'
 import { formatClockTime } from '@/lib/format'
 import { createSequentialId } from '@/lib/ids'
+import { useClientConciergeChatMutation } from '@/store/api/clientApi'
 
 export interface AgentChatMessage {
   id: string
@@ -26,20 +26,6 @@ export interface AgentServiceRecommendation {
   description?: string | null
 }
 
-interface ChatApiResponse {
-  reply: string
-  recommendations?: Array<{
-    service_id: string
-    organization_id: string
-    name: string
-    organization_name: string
-    base_price: string | number
-    duration_minutes: number
-    category_name?: string | null
-    description?: string | null
-  }>
-}
-
 const WELCOME: AgentChatMessage = {
   id: 'msg-welcome',
   sender: 'assistant',
@@ -54,6 +40,7 @@ export function useAgentChat() {
   const [error, setError] = useState<string | null>(null)
   const historyRef = useRef<Array<{ role: 'user' | 'assistant'; content: string }>>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [clientConciergeChat] = useClientConciergeChatMutation()
 
   const send = useCallback(
     async (customPrompt?: string) => {
@@ -73,11 +60,11 @@ export function useAgentChat() {
       setError(null)
 
       try {
-        const { data } = await axiosInstance.post<ChatApiResponse>('/api/v1/chat', {
+        const data = await clientConciergeChat({
           message: query,
           language: features.defaultLanguage,
           history: historyRef.current,
-        })
+        }).unwrap()
 
         const nextHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [
           ...historyRef.current,
@@ -108,7 +95,7 @@ export function useAgentChat() {
           },
         ])
       } catch (err) {
-        const status = (err as { response?: { status?: number } })?.response?.status
+        const status = (err as { status?: number })?.status
         const fallback =
           status === 401
             ? 'Sign in to chat with the AI concierge grounded in live salon data.'
@@ -127,7 +114,7 @@ export function useAgentChat() {
         setIsThinking(false)
       }
     },
-    [prompt],
+    [clientConciergeChat, prompt],
   )
 
   return {

@@ -1,7 +1,7 @@
 'use client'
 
 import { AdminAuthModal } from '@/app/admin/_components/admin-auth-modal'
-import { ClientAuthModal } from '@/app/client/_components/client-auth-modal'
+import { ClientAuthModal } from '@/app/client/_components/ClientAuthModal'
 import { MerchantAuthModal } from '@/app/merchant/_components/merchant-auth-modal'
 import { useAuthModal } from '@/components/auth/auth-context'
 

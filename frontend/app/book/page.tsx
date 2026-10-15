@@ -1,5 +1,6 @@
-import { ClientExperience } from '@/app/client'
+import { redirect } from 'next/navigation'
 
+/** Legacy alias → canonical client checkout route. */
 export default function BookPage() {
-  return <ClientExperience />
+  redirect('/client/book')
 }

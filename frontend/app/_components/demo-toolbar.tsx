@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { Button, CopyableValue, Toast } from '@/components/ui'
 import { useClipboard, useDemoReset } from '@/hooks'
 import { SANDBOX_CREDENTIALS } from '@/lib/constants'
-import { adminStore, clientStore, merchantStore } from '@/lib/store'
+import { resetAllDemoStores } from '@/lib/sandbox/demo-reset'
 
 import { SandboxModal } from './sandbox-modal'
 
@@ -19,11 +19,7 @@ export function DemoToolbar({ onResetSuccess }: DemoToolbarProps) {
   const [showTooltip, setShowTooltip] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const { copiedKey, copy } = useClipboard()
-  const { isResetting, reset } = useDemoReset(() => {
-    clientStore.reset()
-    merchantStore.reset()
-    adminStore.reset()
-  })
+  const { isResetting, reset } = useDemoReset(resetAllDemoStores)
 
   const handleReset = async () => {
     const stats = await reset()

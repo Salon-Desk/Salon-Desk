@@ -17,11 +17,8 @@ from app.models.enums import (
     UserRole,
     UserStatus,
 )
-from app.models.organization import (
-    Organization,
-    OrgCancellationPolicy,
-    OrgSettings,
-)
+from app.models.organization import Organization, OrgSettings
+from app.models.policy import OrgCancellationPolicy
 from app.models.user import PasswordResetToken, Profile, User
 from app.schemas.auth import OrgOwnerSignUpRequest, SignUpRequest
 

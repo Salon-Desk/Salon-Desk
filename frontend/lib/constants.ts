@@ -2,6 +2,9 @@
 export const ROUTES = {
   hub: '/',
   client: '/client',
+  clientBookings: '/client/bookings',
+  clientBook: '/client/book',
+  clientProfile: '/client/profile',
   merchant: '/merchant',
   merchantDashboard: '/merchant',
   merchantCalendar: '/merchant/calendar',
@@ -9,6 +12,10 @@ export const ROUTES = {
   merchantStaff: '/merchant/staff',
   merchantServices: '/merchant/services',
   merchantSettings: '/merchant/settings',
+  merchantSettingsPaypal: '/merchant/settings/paypal',
+  merchantSettingsPolicies: '/merchant/settings/policies',
+  merchantOnboarding: '/merchant/onboarding',
+  merchantProfile: '/merchant/profile',
   admin: '/admin',
   adminOverview: '/admin',
   adminSalons: '/admin/salons',
@@ -16,7 +23,8 @@ export const ROUTES = {
   adminCommission: '/admin/commission',
   adminTaxonomy: '/admin/taxonomy',
   adminStaff: '/admin/staff',
-  book: '/book',
+  adminProfile: '/admin/profile',
+  book: '/client/book',
   org: '/org',
 } as const
 
@@ -56,16 +64,16 @@ export const BUYER_PERSONAS: Record<
 
 export const SANDBOX_CREDENTIALS = {
   buyerAccount: {
-    email: 'buyer-sandbox@salondesk.dev',
-    password: 'SalonTester2026!',
-    name: 'Jane Doe (Sandbox Client)',
+    email: 'client@example.com',
+    password: 'Password123!',
+    name: 'Ada Client (Demo Client)',
     card: '•••• 4242 (Visa Mock)',
   },
   merchantAccount: {
-    email: 'merchant-soho@salondesk.dev',
-    password: 'MerchantAuthPass88!',
-    salonName: 'Crown & Blade Atelier',
-    merchantId: 'MERCHANT_CROWN_7781',
+    email: 'owner@selam.local',
+    password: 'Password123!',
+    salonName: 'Selam Hair Studio',
+    merchantId: 'SELAM-MERCHANT-DEMO',
   },
   techStack: {
     framework: 'Next.js 16 App Router',
@@ -84,7 +92,7 @@ export const SAMPLE_AUTHORIZATION_PAYLOAD = {
       reference_id: 'SD-8491',
       amount: { currency_code: 'USD', value: '25.00' },
       description: 'SalonDesk Authorization Hold: Precision Fade & Hot Towel Beard',
-      payee: { merchant_id: 'MERCHANT_CROWN_7781' },
+      payee: { merchant_id: 'SELAM-MERCHANT-DEMO' },
     },
   ],
   application_context: {

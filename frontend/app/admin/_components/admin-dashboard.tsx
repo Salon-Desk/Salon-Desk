@@ -8,6 +8,7 @@ import { ConsoleShell } from '@/components/layout/console-shell'
 import { Button, Toast } from '@/components/ui'
 import { useAdminStore, useDemoReset, useToast } from '@/hooks'
 import { createSequentialId } from '@/lib/ids'
+import { resetAdminDemoState } from '@/lib/sandbox/demo-reset'
 import type {
   ChangeRequest,
   CommissionOverride,
@@ -48,7 +49,10 @@ import { TaxonomyTab } from './taxonomy-tab'
 export function AdminDashboard() {
   const { state, setState, resetState } = useAdminStore()
   const { message, show: showToast } = useToast(3800)
-  const { isResetting, reset: resetDemo } = useDemoReset(resetState)
+  const { isResetting, reset: resetDemo } = useDemoReset(() => {
+    resetAdminDemoState()
+    resetState()
+  })
 
   const [activeTab, setActiveTab] = useState<AdminTabId>('overview')
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)

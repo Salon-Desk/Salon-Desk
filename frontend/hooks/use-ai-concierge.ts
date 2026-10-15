@@ -1,0 +1,171 @@
+'use client'
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+
+import { INITIAL_SERVICES, INITIAL_STAFF } from '@/lib/data/catalog'
+import { DEFAULT_TIME_SLOT } from '@/lib/data/service-content'
+import { features } from '@/lib/features'
+import { formatClockTime } from '@/lib/format'
+import { createSequentialId } from '@/lib/ids'
+import { useClientConciergeChatMutation } from '@/store/api/clientApi'
+import type { SalonService, StaffMember } from '@/types'
+
+export interface ConciergeMessage {
+  id: string
+  sender: 'user' | 'assistant'
+  text: string
+  time: string
+  proposedService?: SalonService
+  proposedStylist?: StaffMember
+  proposedSlot?: string
+  hasProposal?: boolean
+}
+
+const WELCOME: ConciergeMessage = {
+  id: 'msg-welcome',
+  sender: 'assistant',
+  text: 'Hello! I am your SalonDesk AI Concierge at Crown & Blade Atelier. With our PayPal authorization hold guarantee, $0 is debited today to lock in your appointment. How may I style you today?',
+  time: 'Just now',
+  proposedService: INITIAL_SERVICES[0],
+  proposedStylist: INITIAL_STAFF[0],
+  proposedSlot: DEFAULT_TIME_SLOT,
+  hasProposal: true,
+}
+
+function initialMode(): 'voice' | 'chat' {
+  if (features.agentChat) return 'chat'
+  if (features.voiceAgent) return 'voice'
+  return 'chat'
+}
+
+function demoFallbackMessage(service: SalonService): ConciergeMessage {
+  return {
+    id: createSequentialId('ast'),
+    sender: 'assistant',
+    text: `I have reserved ${service.name} with ${INITIAL_STAFF[0].name} for ${DEFAULT_TIME_SLOT}. Remember: $0 leaves your account today—only an authorization hold of $${service.holdDeposit} is created via PayPal.`,
+    time: formatClockTime(),
+    proposedService: service,
+    proposedStylist: INITIAL_STAFF[0],
+    proposedSlot: DEFAULT_TIME_SLOT,
+    hasProposal: true,
+  }
+}
+
+export function useAiConcierge() {
+  const [isOpen, setIsOpen] = useState(false)
+  const [mode, setMode] = useState<'voice' | 'chat'>(initialMode)
+  const [prompt, setPrompt] = useState('')
+  const [isThinking, setIsThinking] = useState(false)
+  const [messages, setMessages] = useState<ConciergeMessage[]>([WELCOME])
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const historyRef = useRef<Array<{ role: 'user' | 'assistant'; content: string }>>([])
+  const [clientConciergeChat] = useClientConciergeChatMutation()
+
+  const messageCount = messages.length
+  useEffect(() => {
+    if (!isOpen || mode !== 'chat' || messageCount < 1) return
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [isOpen, mode, messageCount])
+
+  const send = useCallback(
+    async (customPrompt?: string, serviceOverride?: SalonService) => {
+      const query = customPrompt || prompt
+      if (!query.trim()) return
+
+      const service = serviceOverride || INITIAL_SERVICES[0]
+      const userMsg: ConciergeMessage = {
+        id: createSequentialId('usr'),
+        sender: 'user',
+        text: query,
+        time: formatClockTime(),
+      }
+
+      setMessages((prev) => [...prev, userMsg])
+      setPrompt('')
+      setIsThinking(true)
+
+      try {
+        if (features.agentChat) {
+          const data = await clientConciergeChat({
+            message: query,
+            language: features.defaultLanguage,
+            history: historyRef.current,
+          }).unwrap()
+
+          const nextHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [
+            ...historyRef.current,
+            { role: 'user', content: query },
+            { role: 'assistant', content: data.reply },
+          ]
+          historyRef.current = nextHistory.slice(-12)
+
+          const top = data.recommendations?.[0]
+          const proposedFromApi: SalonService | undefined = top
+            ? {
+                ...service,
+                id: top.service_id,
+                name: top.name,
+                price: Number(top.base_price),
+                durationMin: top.duration_minutes,
+                description: top.description ?? service.description,
+              }
+            : undefined
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: createSequentialId('ast'),
+              sender: 'assistant',
+              text: data.reply,
+              time: formatClockTime(),
+              proposedService: proposedFromApi ?? service,
+              proposedStylist: INITIAL_STAFF[0],
+              proposedSlot: DEFAULT_TIME_SLOT,
+              hasProposal: Boolean(proposedFromApi ?? service),
+            },
+          ])
+          return
+        }
+
+        const res = await fetch('/api/ai/concierge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: query,
+            selectedServiceId: service.id,
+          }),
+        })
+        const data = await res.json()
+        const assistantMsg: ConciergeMessage = {
+          id: createSequentialId('ast'),
+          sender: 'assistant',
+          text: data.replyText,
+          time: formatClockTime(),
+          proposedService: data.matchedService || service,
+          proposedStylist: data.matchedStylist || INITIAL_STAFF[0],
+          proposedSlot: data.proposedTimeSlot || DEFAULT_TIME_SLOT,
+          hasProposal: data.hasProposal ?? true,
+        }
+        setMessages((prev) => [...prev, assistantMsg])
+      } catch {
+        setMessages((prev) => [...prev, demoFallbackMessage(service)])
+      } finally {
+        setIsThinking(false)
+      }
+    },
+    [clientConciergeChat, prompt],
+  )
+
+  return {
+    isOpen,
+    setIsOpen,
+    mode,
+    setMode,
+    prompt,
+    setPrompt,
+    isThinking,
+    messages,
+    messagesEndRef,
+    send,
+  }
+}

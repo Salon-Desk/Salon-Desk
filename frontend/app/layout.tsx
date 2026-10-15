@@ -3,7 +3,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 
-import ClientWrapper from './ClientWrapper'
+import Providers from './Providers'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
       <body className="flex min-h-full flex-col bg-slate-50 font-sans text-slate-900 selection:bg-amber-500/20 selection:text-amber-900">
-        <ClientWrapper>{children}</ClientWrapper>
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

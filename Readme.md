@@ -34,6 +34,7 @@ cd frontend
 pnpm install
 pnpm dev
 # App: http://localhost:3000
+# Conventions: frontend/AGENTS.md
 ```
 
 Full stack via Compose:
@@ -152,7 +153,7 @@ OLLAMA_MODEL=llama3.2:1b
 OLLAMA_BASE_URL=http://localhost:11434/v1
 ```
 
-Provider classes live under `backend/app/services/llm/` (`GroqLLMService`, `OllamaLLMService`, `OpenAILLMService`). Restart the API after changing `LLM_PROVIDER`.
+Provider classes live under `backend/app/ai/llm/` (`GroqLLMService`, `OllamaLLMService`, `OpenAILLMService`). `app/services/llm/` may re-export for compatibility. Restart the API after changing `LLM_PROVIDER`.
 
 ---
 
@@ -163,7 +164,7 @@ Provider classes live under `backend/app/services/llm/` (`GroqLLMService`, `Olla
 ```
 Browser mic → LiveKit room ← JWT from POST /api/v1/livekit/token
                  ↓
-         Python voice worker (agent.py)
+         Python voice worker (backend/agent.py → app.ai.agent)
          STT → retrieve_context + tools → LLM → TTS
                  ↓
          knowledge_chunk (pgvector) → hydrate Service cards
@@ -242,33 +243,51 @@ Details: [`docs/postman/README.md`](docs/postman/README.md).
 ## Project layout
 
 ```
+AGENTS.md         Monorepo agent guide (backend + pointers to frontend)
 .husky/           Git hooks (pre-commit for frontend + backend)
 package.json      Root husky + lint-staged + validate scripts
 lint-staged.config.mjs
-backend/          FastAPI app, models, APIs, seed script (Ruff + pytest)
-frontend/         Next.js portals (client / merchant / admin) (ESLint + Prettier)
-docs/             Feature schema, PRD, Postman notes
+backend/
+  agent.py        LiveKit worker CLI
+  app/
+    api/deps/     Shared FastAPI dependencies
+    api/v1/       shared | platform | org | client | webhooks routers
+    ai/           RAG, LLM, LiveKit agent worker, tools
+    models/       SQLAlchemy models
+    services/     Domain services
+    tasks/        Scheduled / background jobs
+  scripts/        seed, ingest_knowledge (CLI)
+  tests/          pytest (api, services, integrations)
+frontend/
+  AGENTS.md       Next.js conventions (RTK, portals, client components)
+  app/            App Router portals + Providers.tsx
+  store/          Redux + RTK Query API slices
 postman/          Generated collection.json
 docker-compose.yml
 ```
 
-Feature schema: [`docs/features.md`](docs/features.md)  
-Product requirements: [`docs/writing-block.md`](docs/writing-block.md)
+**Agent docs:** [AGENTS.md](AGENTS.md) (repo) · [frontend/AGENTS.md](frontend/AGENTS.md) (Next.js detail).  
+Postman notes (if present): [`docs/postman/README.md`](docs/postman/README.md).
 
 ---
 
 ## Useful API prefixes
+
+Routers are grouped under `backend/app/api/v1/{shared,platform,org,client,webhooks}/`; HTTP paths below are unchanged for clients.
 
 | Prefix | Area |
 |---|---|
 | `/api/v1/auth` | Sign-up, sign-in, profile, password reset |
 | `/api/v1/catalog` | Public org/service discovery |
 | `/api/v1/bookings` | Client bookings, consent, cancel |
-| `/api/v1/organizations` | Org portal |
+| `/api/v1/organizations` | Org portal (settings, staff, services, finance) |
 | `/api/v1/admin` | Platform admin |
 | `/api/v1/payments` | Authorization holds |
 | `/api/v1/settlements` | Mark show / no-show |
 | `/api/v1/ai` | Booking assistant / owner copilot |
 | `/api/v1/chat` | RAG text chat |
 | `/api/v1/livekit` | Voice room tokens |
+| `/api/v1/webhooks` | PayPal (and other) webhooks |
 | `/health` | Health check |
+
+Frontend RTK Query clients: `frontend/store/api/{shared,platform,org,client}Api.ts`.

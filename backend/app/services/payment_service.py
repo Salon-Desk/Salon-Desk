@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.models.booking import Booking
-from app.models.consent import Consent
 from app.models.enums import (
     BookingStatus,
     PaymentCaptureType,
@@ -16,7 +15,8 @@ from app.models.enums import (
 )
 from app.models.ledger import LedgerEntry
 from app.models.payment import PaymentCapture, PaymentHold, PaypalWebhookEvent
-from app.services.audit_service import append_ledger_hash, build_consent_signature
+from app.models.policy import Consent
+from app.services.ledger_service import append_ledger_hash, build_consent_signature
 from app.services.paypal_rest import PayPalRestClient
 
 GENESIS_HASH = "0" * 64

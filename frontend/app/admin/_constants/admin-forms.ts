@@ -1,7 +1,7 @@
 import type { PlatformRole } from '@/types'
 
-export const ADMIN_DEMO_EMAIL = 'admin@salondesk.io'
-export const ADMIN_DEMO_PASSWORD = 'JudgeAccess2026!'
+export const ADMIN_DEMO_EMAIL = 'admin@salondesk.local'
+export const ADMIN_DEMO_PASSWORD = 'Password123!'
 
 export const EMPTY_SALON_FORM = {
   name: '',

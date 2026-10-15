@@ -11,10 +11,11 @@ import FormProvider from '@/components/forms/FormProvider'
 import RHFEmailField from '@/components/forms/RHFEmailField'
 import RHFPasswordField from '@/components/forms/RHFPasswordField'
 import useFormSubmitHandler from '@/hooks/formHandler'
+import { useBookingContext } from '@/hooks/use-booking-context'
 import { pathForUserRole } from '@/lib/authSession'
 import { signInDefaultValues, type SignInFormData, signInSchema } from '@/lib/schema/auth'
 import { zodResolver } from '@/lib/schema/resolver'
-import type { AppDispatch } from '@/store/app'
+import type { AppDispatch } from '@/store'
 import {
   type AppPortal,
   isAdminUser,
@@ -50,6 +51,7 @@ export const SignInForm: FC<SignInFormProps> = ({
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { closeAuthModal } = useAuthModal()
+  const { resumeAfterAuth, pending: bookingPending } = useBookingContext()
   const [signIn, { isLoading }] = useSignInMutation()
 
   const methods = useForm<SignInFormData>({
@@ -73,6 +75,10 @@ export const SignInForm: FC<SignInFormProps> = ({
     )
     dispatch(setActiveApp(portal))
     closeAuthModal()
+
+    if (bookingPending && portal === 'client' && resumeAfterAuth()) {
+      return
+    }
 
     const destination = roleMatchesPortal(portal, data.user)
       ? `/${portal}`
