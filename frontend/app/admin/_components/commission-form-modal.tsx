@@ -15,7 +15,7 @@ import { zodResolver } from '@/lib/schema/resolver'
 import {
   useCreateAdminCommissionMutation,
   useUpdateAdminCommissionMutation,
-} from '@/store/slice/adminApi'
+} from '@/store/api/platformApi'
 import type { ApiServiceCategory, PlatformCommission } from '@/types/api-org'
 
 import {

@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import secrets
 from dataclasses import dataclass
+from datetime import timedelta
 
 from app.core.config import Settings, get_settings
 from app.core.exceptions import SalonDeskError
+
+logger = logging.getLogger("salondesk.voice")
 
 
 class LiveKitConfigError(SalonDeskError):
@@ -33,6 +37,7 @@ def create_participant_token(
     language: str = "en",
     participant_name: str | None = None,
     metadata: str | None = None,
+    room_name: str | None = None,
     settings: Settings | None = None,
 ) -> LiveKitCredentials:
     cfg = settings or get_settings()
@@ -43,13 +48,12 @@ def create_participant_token(
 
     try:
         from livekit.api import AccessToken, VideoGrants
-        from livekit.api.access_token import RoomAgentDispatch, RoomConfiguration
     except ImportError as exc:
         raise LiveKitConfigError(
-            "livekit package is required. Install backend dependencies with uv sync."
+            "livekit package is required. From backend/: uv sync --group dev"
         ) from exc
 
-    room_name = build_room_name(language=language)
+    resolved_room_name = (room_name or "").strip() or build_room_name(language=language)
     identity = participant_name or f"client-{secrets.token_hex(4)}"
     room_meta = {
         "app": "salondesk",
@@ -61,7 +65,7 @@ def create_participant_token(
 
     grants = VideoGrants(
         room_join=True,
-        room=room_name,
+        room=resolved_room_name,
         can_publish=True,
         can_subscribe=True,
         can_publish_data=True,
@@ -73,29 +77,37 @@ def create_participant_token(
         .with_name(identity)
         .with_grants(grants)
         .with_metadata(json.dumps(room_meta))
-        .with_ttl(60 * 60)
+        .with_ttl(timedelta(hours=1))
     )
 
-    # Auto-dispatch registered worker into the room.
+    # Auto-dispatch registered worker into the room (protobuf shape varies by SDK version).
     try:
-        room_config = RoomConfiguration(
-            agents=[
-                RoomAgentDispatch(
-                    agent_name=cfg.livekit_agent_name or "salondesk-voice",
-                    metadata=json.dumps(room_meta),
-                )
-            ]
+        from google.protobuf.json_format import ParseDict
+        from livekit.protocol.room import RoomConfiguration
+
+        agent_name = cfg.livekit_agent_name or "salondesk-voice"
+        room_config = ParseDict(
+            {
+                "agents": [
+                    {
+                        "agentName": agent_name,
+                        "metadata": json.dumps(room_meta),
+                    }
+                ]
+            },
+            RoomConfiguration(),
         )
         token_builder = token_builder.with_room_config(room_config)
     except Exception:
-        # Older livekit SDK variants may lack RoomConfiguration; JWT still works.
-        pass
+        logger.exception(
+            "Failed to attach LiveKit agent dispatch to token; worker will not auto-join"
+        )
 
     jwt = token_builder.to_jwt()
     return LiveKitCredentials(
         token=jwt,
         server_url=cfg.livekit_url,
-        room_name=room_name,
+        room_name=resolved_room_name,
     )
 
 

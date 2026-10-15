@@ -22,7 +22,7 @@ router = APIRouter(prefix="/admin", tags=["platform"])
 async def list_change_requests(
     user: PlatformAdmin,
     db: DbSession,
-    status_filter: str | None = Query(default="PENDING", alias="status"),
+    status_filter: str | None = Query(default=None, alias="status"),
 ) -> list[ChangeRequestOut]:
     _ = user
     status_enum: ChangeRequestStatus | None = None

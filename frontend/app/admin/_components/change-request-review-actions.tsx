@@ -11,7 +11,7 @@ import { zodResolver } from '@/lib/schema/resolver'
 import {
   useApproveChangeRequestMutation,
   useRejectChangeRequestMutation,
-} from '@/store/slice/adminApi'
+} from '@/store/api/platformApi'
 import type { ApiChangeRequest } from '@/types/api-org'
 
 import {

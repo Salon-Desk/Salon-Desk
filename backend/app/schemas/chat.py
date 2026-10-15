@@ -49,6 +49,7 @@ class LiveKitTokenRequest(BaseModel):
     language: str = Field(default="en", pattern="^(en|am)$")
     participant_name: str | None = None
     metadata: str | None = None
+    room_name: str | None = None
 
 
 class LiveKitTokenResponse(BaseModel):

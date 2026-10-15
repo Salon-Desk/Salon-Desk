@@ -1,7 +1,7 @@
 /** Backend FastAPI shapes for org / catalog / admin RTK slices. */
 
 export type ApiOrgStatus = 'pending' | 'approved' | 'suspended' | string
-export type ApiChangeRequestStatus = 'pending' | 'approved' | 'rejected' | string
+export type ApiChangeRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | string
 
 export interface ApiOrganization {
   id: string

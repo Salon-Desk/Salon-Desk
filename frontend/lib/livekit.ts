@@ -2,6 +2,7 @@ import axiosInstance from '@/lib/axios'
 import type { AgentLanguage } from '@/lib/features'
 
 export interface LiveKitTokenOptions {
+  roomName?: string
   language?: AgentLanguage
   participantName?: string
   metadata?: string | Record<string, unknown>
@@ -38,6 +39,7 @@ export async function getLiveKitToken(
     language,
     participant_name: options.participantName,
     metadata,
+    room_name: options.roomName,
   })
 
   return {

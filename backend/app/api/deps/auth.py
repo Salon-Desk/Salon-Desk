@@ -49,4 +49,26 @@ async def get_current_user(
     return user
 
 
+async def get_optional_current_user(
+    db: DbSession,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security_scheme)],
+) -> User | None:
+    if credentials is None:
+        return None
+    try:
+        payload = decode_access_token(credentials.credentials)
+        user_id = UUID(str(payload["sub"]))
+    except (ValueError, KeyError):
+        return None
+
+    result = await db.execute(
+        select(User).options(selectinload(User.profile)).where(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+    if user is None or user.status != UserStatus.ACTIVE:
+        return None
+    return user
+
+
 CurrentUser = Annotated[User, Depends(get_current_user)]
+OptionalUser = Annotated[User | None, Depends(get_optional_current_user)]

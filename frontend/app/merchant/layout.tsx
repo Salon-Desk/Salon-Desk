@@ -2,7 +2,7 @@
 
 import { ShieldCheck, Sparkles } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, Suspense, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 
@@ -10,6 +10,7 @@ import { ConsoleShell } from '@/components/layout/console-shell'
 import { PortalGuard } from '@/components/layout/portal-guard'
 import { Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
+import { useMerchantSession } from '@/hooks/use-merchant-session'
 import { mapBookingStatusToHoldState } from '@/lib/mappers/booking'
 import type { AppDispatch } from '@/store/app'
 import { logout } from '@/store/authSlice'
@@ -37,13 +38,14 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
   const currentTab = getMerchantTabFromPathname(pathname)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const dispatch = useDispatch<AppDispatch>()
+  const { skipOrgApi } = useMerchantSession()
 
-  const { data: org } = useGetMyOrganizationQuery()
-  const { data: account } = useGetMyOrgAccountQuery()
-  const { data: apiBookings = [] } = useGetMyOrgBookingsQuery()
-  const { data: employees = [] } = useGetMyEmployeesQuery()
-  const { data: services = [] } = useGetMyServicesQuery()
-  const { data: changeRequests = [] } = useGetMyChangeRequestsQuery()
+  const { data: org } = useGetMyOrganizationQuery(undefined, { skip: skipOrgApi })
+  const { data: account } = useGetMyOrgAccountQuery(undefined, { skip: skipOrgApi })
+  const { data: apiBookings = [] } = useGetMyOrgBookingsQuery(undefined, { skip: skipOrgApi })
+  const { data: employees = [] } = useGetMyEmployeesQuery(undefined, { skip: skipOrgApi })
+  const { data: services = [] } = useGetMyServicesQuery(undefined, { skip: skipOrgApi })
+  const { data: changeRequests = [] } = useGetMyChangeRequestsQuery(undefined, { skip: skipOrgApi })
   const [createChangeRequest, { isLoading: submittingCr }] = useCreateMyChangeRequestMutation()
 
   const activeHoldsCount = useMemo(
@@ -253,7 +255,9 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
 export default function MerchantLayout({ children }: { children: ReactNode }) {
   return (
     <MerchantProvider>
-      <MerchantLayoutInner>{children}</MerchantLayoutInner>
+      <Suspense fallback={null}>
+        <MerchantLayoutInner>{children}</MerchantLayoutInner>
+      </Suspense>
     </MerchantProvider>
   )
 }

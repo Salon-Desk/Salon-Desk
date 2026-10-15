@@ -14,7 +14,7 @@ import { zodResolver } from '@/lib/schema/resolver'
 import {
   useCreateAdminCategoryMutation,
   useUpdateAdminCategoryMutation,
-} from '@/store/slice/adminApi'
+} from '@/store/api/platformApi'
 import type { ApiServiceCategory } from '@/types/api-org'
 
 import {

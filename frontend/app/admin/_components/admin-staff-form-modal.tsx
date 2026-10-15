@@ -12,7 +12,7 @@ import RHFTextField from '@/components/forms/RHFTextField'
 import { Modal } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { zodResolver } from '@/lib/schema/resolver'
-import { useCreateAdminStaffMutation } from '@/store/slice/adminApi'
+import { useCreateAdminStaffMutation } from '@/store/api/platformApi'
 
 import {
   adminStaffDefaultValues,
@@ -23,7 +23,7 @@ import {
 interface AdminStaffFormModalProps {
   open: boolean
   onClose: () => void
-  onCreated?: () => void
+  onCreated?: (email: string) => void
 }
 
 export function AdminStaffFormModal({ open, onClose, onCreated }: AdminStaffFormModalProps) {
@@ -35,8 +35,9 @@ export function AdminStaffFormModal({ open, onClose, onCreated }: AdminStaffForm
 
   const onSubmit = async (data: AdminStaffFormData) => {
     try {
+      const email = (data.email ?? '').trim()
       await createStaff({
-        email: (data.email ?? '').trim(),
+        email,
         password: data.password ?? '',
         first_name: (data.first_name ?? '').trim(),
         last_name: (data.last_name ?? '').trim(),
@@ -45,7 +46,7 @@ export function AdminStaffFormModal({ open, onClose, onCreated }: AdminStaffForm
       }).unwrap()
       toast.success('Platform staff invited', toastColor.success)
       methods.reset(adminStaffDefaultValues)
-      onCreated?.()
+      onCreated?.(email)
       onClose()
     } catch (err) {
       toast.error(

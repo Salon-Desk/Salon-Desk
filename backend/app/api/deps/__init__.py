@@ -1,6 +1,6 @@
 """FastAPI dependency injection and RBAC guards."""
 
-from app.api.deps.auth import CurrentUser, get_current_user
+from app.api.deps.auth import CurrentUser, OptionalUser, get_current_user
 from app.api.deps.database import DbSession
 from app.api.deps.permissions import (
     ClientUser,
@@ -16,6 +16,7 @@ __all__ = [
     "DbSession",
     "get_current_user",
     "CurrentUser",
+    "OptionalUser",
     "require_roles",
     "require_org_member",
     "OrgMember",

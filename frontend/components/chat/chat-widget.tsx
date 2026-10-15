@@ -110,7 +110,7 @@ export function ChatWidget({
             role="dialog"
             aria-modal="true"
             aria-label="AI Concierge"
-            className="relative z-10 flex h-[90vh] sm:h-full w-full max-w-full sm:max-w-md flex-col rounded-t-3xl sm:rounded-none bg-[#fbfbfa] text-stone-900 sm:border-l sm:border-stone-200/50 overflow-hidden animate-in slide-in-from-bottom-8 sm:slide-in-from-right-8 duration-300"
+            className="relative z-10 flex h-[90vh] sm:h-full w-full max-w-full sm:max-w-md flex-col rounded-t-3xl sm:rounded-none bg-[#faf9f7] text-stone-900 shadow-2xl sm:border-l sm:border-stone-200/60 overflow-hidden animate-in slide-in-from-bottom-8 sm:slide-in-from-right-8 duration-300"
           >
             <div className="pt-3 pb-1 sm:hidden flex justify-center">
               <div className="h-1 w-10 rounded-full bg-stone-300" />

@@ -1,22 +1,34 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 
-import PrimaryButton from '@/components/button/PrimaryButton'
 import { Card } from '@/components/ui'
-import { useGetAdminChangeRequestsQuery } from '@/store/slice/adminApi'
+import { useAdminSession } from '@/hooks/use-admin-session'
+import { useGetAdminChangeRequestsQuery } from '@/store/api/platformApi'
 
+import { AdminQueryState } from '../_components/admin-query-state'
 import { ChangeRequestReviewActions } from '../_components/change-request-review-actions'
 
+type CrFilter = 'PENDING' | 'APPROVED' | 'REJECTED' | 'all'
+
+const FILTER_LABELS: Record<CrFilter, string> = {
+  PENDING: 'Pending',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  all: 'All',
+}
+
 export default function AdminRequestsPage() {
-  const [status, setStatus] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending')
+  const { skipAdminApi } = useAdminSession()
+  const [status, setStatus] = useState<CrFilter>('PENDING')
   const {
     data: requests = [],
     isLoading,
     isError,
     refetch,
-  } = useGetAdminChangeRequestsQuery(status === 'all' ? undefined : { status })
+  } = useGetAdminChangeRequestsQuery(status === 'all' ? undefined : { status }, {
+    skip: skipAdminApi,
+  })
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-5 animate-in fade-in duration-300">
@@ -26,66 +38,59 @@ export default function AdminRequestsPage() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {(['pending', 'approved', 'rejected', 'all'] as const).map((key) => (
+        {(['PENDING', 'APPROVED', 'REJECTED', 'all'] as const).map((key) => (
           <button
             key={key}
             type="button"
             onClick={() => setStatus(key)}
-            className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${
+            className={`rounded-full px-3 py-1 text-xs font-medium ${
               status === key ? 'bg-stone-950 text-white' : 'bg-slate-100 text-slate-700'
             }`}
           >
-            {key}
+            {FILTER_LABELS[key]}
           </button>
         ))}
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
-          <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
-          Loading requests…
-        </div>
-      ) : null}
-
-      {isError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700">
-          <p>Could not load change requests.</p>
-          <PrimaryButton
-            title="Retry"
-            variant="outline"
-            size="sm"
-            fullWidth={false}
-            className="mt-3 h-9 rounded-xl px-4"
-            onClick={() => void refetch()}
-          />
-        </div>
-      ) : null}
-
-      <div className="space-y-3">
-        {requests.map((cr) => (
-          <Card key={cr.id} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="font-bold text-sm text-slate-900 capitalize">
-                  {cr.request_type.replace(/_/g, ' ')}
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  Org {cr.org_id.slice(0, 8)}… · {new Date(cr.created_at).toLocaleString()}
-                </p>
+      <AdminQueryState
+        isLoading={isLoading}
+        isError={isError}
+        onRetry={() => void refetch()}
+        loadingLabel="Loading requests…"
+        errorLabel="Could not load change requests."
+      >
+        <div className="space-y-3">
+          {requests.map((cr) => (
+            <Card
+              key={cr.id}
+              className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="font-bold text-sm text-slate-900 capitalize">
+                    {cr.request_type.replace(/_/g, ' ').toLowerCase()}
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Org {cr.org_id.slice(0, 8)}… · {new Date(cr.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium capitalize">
+                  {cr.status.toLowerCase()}
+                </span>
               </div>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium capitalize">
-                {cr.status}
-              </span>
-            </div>
-            <pre className="overflow-x-auto rounded-xl bg-slate-50 p-3 text-[11px] text-slate-600">
-              {JSON.stringify(cr.payload_json, null, 2)}
-            </pre>
-            {cr.status === 'pending' || cr.status === 'PENDING' ? (
-              <ChangeRequestReviewActions request={cr} />
-            ) : null}
-          </Card>
-        ))}
-      </div>
+              <pre className="overflow-x-auto rounded-xl bg-slate-50 p-3 text-[11px] text-slate-600">
+                {JSON.stringify(cr.payload_json, null, 2)}
+              </pre>
+              {cr.status === 'PENDING' ? <ChangeRequestReviewActions request={cr} /> : null}
+            </Card>
+          ))}
+          {requests.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-500">
+              No change requests in this view.
+            </p>
+          ) : null}
+        </div>
+      </AdminQueryState>
     </div>
   )
 }

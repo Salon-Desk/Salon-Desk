@@ -1,9 +1,11 @@
 import json
 from functools import lru_cache
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+from app.core.database_url import resolve_database_url
 
 LLMProvider = Literal["groq", "ollama", "openai"]
 
@@ -64,6 +66,8 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/salondesk"
+    # Host-mapped Compose port when rewriting ``@db`` → ``localhost`` (see database_url.py).
+    postgres_port: int = Field(default=5432, validation_alias="POSTGRES_PORT")
 
     secret_key: str = "change-me-in-production"
     access_token_expire_minutes: int = 60 * 24
@@ -132,6 +136,24 @@ class Settings(BaseSettings):
                 return None
             return text
         return None
+
+    @model_validator(mode="after")
+    def normalize_database_url_for_host(self) -> Self:
+        self.database_url = resolve_database_url(
+            self.database_url,
+            host_port=self.postgres_port,
+        )
+        return self
+
+    @field_validator("livekit_agent_name", mode="before")
+    @classmethod
+    def normalize_livekit_agent_name(cls, value: object) -> str:
+        # Empty LIVEKIT_AGENT_NAME= in .env would otherwise register an unnamed
+        # worker while tokens still dispatch "salondesk-voice" — no job is assigned.
+        if value is None:
+            return "salondesk-voice"
+        text = str(value).strip()
+        return text or "salondesk-voice"
 
     @field_validator("llm_provider", mode="before")
     @classmethod

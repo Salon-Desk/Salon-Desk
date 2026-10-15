@@ -1,18 +1,20 @@
 'use client'
 
-import { Edit2, Loader2, Percent, Plus } from 'lucide-react'
+import { Edit2, Percent, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
 import { Card, IconButton } from '@/components/ui'
+import { useAdminSession } from '@/hooks/use-admin-session'
 import { formatUsd } from '@/lib/format'
 import {
   useGetAdminCategoriesQuery,
   useGetAdminCommissionsQuery,
   useGetAdminDashboardQuery,
-} from '@/store/slice/adminApi'
+} from '@/store/api/platformApi'
 import type { PlatformCommission } from '@/types/api-org'
 
+import { AdminQueryState } from '../_components/admin-query-state'
 import { CommissionFormModal } from '../_components/commission-form-modal'
 
 function formatCommissionRate(c: PlatformCommission): string {
@@ -24,9 +26,15 @@ function formatCommissionRate(c: PlatformCommission): string {
 }
 
 export default function AdminCommissionPage() {
-  const { data: commissions = [], isLoading, isError, refetch } = useGetAdminCommissionsQuery()
-  const { data: categories = [] } = useGetAdminCategoriesQuery()
-  const { data: dashboard } = useGetAdminDashboardQuery()
+  const { skipAdminApi } = useAdminSession()
+  const {
+    data: commissions = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useGetAdminCommissionsQuery(undefined, { skip: skipAdminApi })
+  const { data: categories = [] } = useGetAdminCategoriesQuery(undefined, { skip: skipAdminApi })
+  const { data: dashboard } = useGetAdminDashboardQuery(undefined, { skip: skipAdminApi })
 
   const [isOpen, setIsOpen] = useState(false)
   const [editing, setEditing] = useState<PlatformCommission | null>(null)
@@ -70,96 +78,87 @@ export default function AdminCommissionPage() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
-          <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
-          Loading commissions…
-        </div>
-      ) : null}
-
-      {isError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700">
-          <p>Could not load commissions.</p>
-          <PrimaryButton
-            title="Retry"
-            variant="outline"
-            size="sm"
-            fullWidth={false}
-            className="mt-3 h-9 rounded-xl px-4"
-            onClick={() => void refetch()}
-          />
-        </div>
-      ) : null}
-
-      {!isLoading && !isError && commissions.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center">
-          <Percent className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm font-medium text-slate-700">No commission rules yet</p>
-          <PrimaryButton
-            title="Create first rule"
-            size="sm"
-            fullWidth={false}
-            className="mt-4 h-9 rounded-xl px-4"
-            onClick={() => {
-              setEditing(null)
-              setIsOpen(true)
-            }}
-          />
-        </div>
-      ) : null}
-
-      <Card
-        padding="lg"
-        className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs"
+      <AdminQueryState
+        isLoading={isLoading}
+        isError={isError}
+        onRetry={() => void refetch()}
+        loadingLabel="Loading commissions…"
+        errorLabel="Could not load commissions."
       >
-        <div className="flex items-center justify-between border-slate-100 border-b pb-3">
-          <div>
-            <h2 className="font-bold text-slate-900 text-sm">Category take-rates</h2>
-            <p className="text-slate-500 text-xs">Applied when bookings capture</p>
+        {!isLoading && !isError && commissions.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center">
+            <Percent className="mx-auto h-8 w-8 text-slate-300" />
+            <p className="mt-3 text-sm font-medium text-slate-700">No commission rules yet</p>
+            <PrimaryButton
+              title="Create first rule"
+              size="sm"
+              fullWidth={false}
+              className="mt-4 h-9 rounded-xl px-4"
+              onClick={() => {
+                setEditing(null)
+                setIsOpen(true)
+              }}
+            />
           </div>
-          <span className="font-mono text-[11px] text-slate-400">{commissions.length} rules</span>
-        </div>
+        ) : null}
 
-        <div className="overflow-x-auto rounded-2xl border border-slate-200/90">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-slate-200 border-b bg-slate-50 font-semibold text-slate-700">
-                <th className="px-4 py-2.5">Name</th>
-                <th className="px-4 py-2.5">Category</th>
-                <th className="px-4 py-2.5">Type</th>
-                <th className="px-4 py-2.5">Rate</th>
-                <th className="px-4 py-2.5 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {commissions.map((c) => (
-                <tr key={c.id} className="transition-colors hover:bg-slate-50/60">
-                  <td className="px-4 py-3 font-semibold text-slate-900">{c.name}</td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {categoryNameById.get(c.service_category_id) ||
-                      c.service_category_id.slice(0, 8)}
-                  </td>
-                  <td className="px-4 py-3 capitalize text-slate-600">{c.type}</td>
-                  <td className="px-4 py-3 font-bold text-emerald-800 font-mono">
-                    {formatCommissionRate(c)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <IconButton
-                      aria-label="Edit commission"
-                      onClick={() => {
-                        setEditing(c)
-                        setIsOpen(true)
-                      }}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </IconButton>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+        {commissions.length > 0 ? (
+          <Card
+            padding="lg"
+            className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs"
+          >
+            <div className="flex items-center justify-between border-slate-100 border-b pb-3">
+              <div>
+                <h2 className="font-bold text-slate-900 text-sm">Category take-rates</h2>
+                <p className="text-slate-500 text-xs">Applied when bookings capture</p>
+              </div>
+              <span className="font-mono text-[11px] text-slate-400">
+                {commissions.length} rules
+              </span>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-slate-200/90">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-slate-200 border-b bg-slate-50 font-semibold text-slate-700">
+                    <th className="px-4 py-2.5">Name</th>
+                    <th className="px-4 py-2.5">Category</th>
+                    <th className="px-4 py-2.5">Type</th>
+                    <th className="px-4 py-2.5">Rate</th>
+                    <th className="px-4 py-2.5 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {commissions.map((c) => (
+                    <tr key={c.id} className="transition-colors hover:bg-slate-50/60">
+                      <td className="px-4 py-3 font-semibold text-slate-900">{c.name}</td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {categoryNameById.get(c.service_category_id) ||
+                          c.service_category_id.slice(0, 8)}
+                      </td>
+                      <td className="px-4 py-3 capitalize text-slate-600">{c.type}</td>
+                      <td className="px-4 py-3 font-bold text-emerald-800 font-mono">
+                        {formatCommissionRate(c)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <IconButton
+                          aria-label="Edit commission"
+                          onClick={() => {
+                            setEditing(c)
+                            setIsOpen(true)
+                          }}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </IconButton>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        ) : null}
+      </AdminQueryState>
 
       <CommissionFormModal
         open={isOpen}

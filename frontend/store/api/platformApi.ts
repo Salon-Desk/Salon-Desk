@@ -77,7 +77,10 @@ export const platformApi = baseApi.injectEndpoints({
       invalidatesTags: ['admin', 'catalog'],
     }),
 
-    getAdminChangeRequests: builder.query<ApiChangeRequest[], { status?: string } | void>({
+    getAdminChangeRequests: builder.query<
+      ApiChangeRequest[],
+      { status?: 'PENDING' | 'APPROVED' | 'REJECTED' } | void
+    >({
       query: (params) => ({
         url: '/api/v1/admin/change-requests',
         method: 'GET',

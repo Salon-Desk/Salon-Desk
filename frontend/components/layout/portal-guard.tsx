@@ -8,6 +8,7 @@ import { useSelector } from 'react-redux'
 import { useAuthModal } from '@/components/auth/auth-context'
 import { Logo } from '@/components/brand/logo'
 import { Button } from '@/components/ui'
+import { useClientHydrated } from '@/hooks/use-client-hydrated'
 import { ROUTES } from '@/lib/constants'
 import {
   type AppPortal,
@@ -36,19 +37,24 @@ function roleAllowed(portal: AppPortal, user: ReturnType<typeof userSelector>): 
 /**
  * Gates portal UI on Redux session + role. Waits for fetchAuthData before deciding.
  */
+function PortalGuardLoading() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-50">
+      <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+      <p className="text-xs text-slate-500">Checking session…</p>
+    </div>
+  )
+}
+
 export function PortalGuard({ portal, children, allowAnonymous = false }: PortalGuardProps) {
+  const hydrated = useClientHydrated()
   const { openAuthModal } = useAuthModal()
   const user = useSelector(userSelector)
   const isAuthenticated = useSelector(isAuthenticatedSelector)
   const isLoading = useSelector(isLoadingSelector)
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-50">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
-        <p className="text-xs text-slate-500">Checking session…</p>
-      </div>
-    )
+  if (!hydrated || isLoading) {
+    return <PortalGuardLoading />
   }
 
   // Client catalog stays public; booking actions gate themselves.

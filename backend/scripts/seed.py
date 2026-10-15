@@ -10,10 +10,8 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
-import socket
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from urllib.parse import urlparse
 
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -21,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 import app.models  # noqa: F401 — register all models on metadata
 from app.core.config import get_settings
 from app.core.database import Base
+from app.core.database_url import resolve_database_url
 from app.core.security import hash_password
 from app.models.booking import Booking, BookingService
 from app.models.enums import (
@@ -467,31 +466,6 @@ async def already_seeded(session: AsyncSession) -> bool:
         select(User.id).where(User.email == "admin@salondesk.local").limit(1)
     )
     return result.scalar_one_or_none() is not None
-
-
-def resolve_database_url(url: str) -> str:
-    """Rewrite Compose hostname `db` → `localhost` when running on the host.
-
-    Root `.env` uses `@db:5432` for containers. That hostname does not resolve
-    outside Docker, which causes: nodename nor servname provided, or not known.
-    """
-    parsed = urlparse(url)
-    host = parsed.hostname
-    if host != "db":
-        return url
-
-    port = parsed.port or 5432
-    try:
-        socket.getaddrinfo(host, port)
-        return url
-    except OSError:
-        rewritten = url.replace("@db:", "@localhost:").replace("@db/", "@localhost/")
-        logger.warning(
-            "Hostname 'db' is not resolvable from this machine "
-            "(Docker Compose service name). Using localhost instead:\n  %s",
-            rewritten,
-        )
-        return rewritten
 
 
 async def run_seed(*, clear: bool, database_url: str | None = None) -> None:

@@ -10,7 +10,7 @@ import { AdminStaffFormModal } from '../_components/admin-staff-form-modal'
 
 /**
  * Platform staff invite UI.
- * Backend has create/delete but no list endpoint — invited users appear after they sign in.
+ * Backend: POST /api/v1/admin/staff (platform_admin only). No list endpoint yet.
  */
 export default function AdminStaffPage() {
   const [isOpen, setIsOpen] = useState(false)
@@ -22,7 +22,7 @@ export default function AdminStaffPage() {
         <div>
           <h1 className="font-extrabold text-xl text-slate-900 sm:text-2xl">Platform staff</h1>
           <p className="text-xs text-slate-500">
-            Invite platform_staff accounts. There is no list API yet — use invite below.
+            Invite platform_staff accounts via the admin API (platform admin role required).
           </p>
         </div>
         <PrimaryButton
@@ -39,18 +39,18 @@ export default function AdminStaffPage() {
         <Shield className="h-8 w-8 text-amber-500" />
         <p className="mt-3 text-sm font-medium text-slate-800">
           {lastInvitedEmail
-            ? `Last invite sent to ${lastInvitedEmail}`
+            ? `Last invite: ${lastInvitedEmail}`
             : 'No invites sent in this session.'}
         </p>
         <p className="mt-1 text-xs text-slate-500">
-          Created staff can sign in at the Admin portal with their email and temporary password.
+          Created staff can sign in at the Admin portal with their email and password.
         </p>
       </Card>
 
       <AdminStaffFormModal
         open={isOpen}
         onClose={() => setIsOpen(false)}
-        onCreated={() => setLastInvitedEmail('invite recorded')}
+        onCreated={(email) => setLastInvitedEmail(email)}
       />
     </div>
   )

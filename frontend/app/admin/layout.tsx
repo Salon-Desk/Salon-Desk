@@ -2,15 +2,16 @@
 
 import { Sparkles } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, Suspense, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { ConsoleShell } from '@/components/layout/console-shell'
 import { PortalGuard } from '@/components/layout/portal-guard'
 import { Toast } from '@/components/ui'
-import type { AppDispatch } from '@/store/app'
+import { useAdminSession } from '@/hooks/use-admin-session'
+import type { AppDispatch } from '@/store'
+import { useGetAdminCategoriesQuery, useGetAdminDashboardQuery } from '@/store/api/platformApi'
 import { logout, userSelector } from '@/store/authSlice'
-import { useGetAdminDashboardQuery } from '@/store/slice/adminApi'
 import type { PlatformUser } from '@/types'
 
 import { AdminHeader } from './_components/admin-header'
@@ -24,7 +25,9 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const dispatch = useDispatch<AppDispatch>()
   const user = useSelector(userSelector)
-  const { data: dashboard } = useGetAdminDashboardQuery()
+  const { skipAdminApi } = useAdminSession()
+  const { data: dashboard } = useGetAdminDashboardQuery(undefined, { skip: skipAdminApi })
+  const { data: categories = [] } = useGetAdminCategoriesQuery(undefined, { skip: skipAdminApi })
   const { isResetting, message, handleResetData } = useAdminContext()
 
   const handleLockSession = () => {
@@ -34,14 +37,14 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
   return (
     <PortalGuard portal="admin">
       <div className="relative min-h-screen overflow-x-hidden bg-slate-50 font-sans text-slate-900 selection:bg-amber-500/20">
-        {message && (
+        {message ? (
           <Toast
             message={message}
             position="top-right"
             theme="dark"
             icon={<Sparkles className="h-4 w-4 text-amber-400" />}
           />
-        )}
+        ) : null}
 
         <ConsoleShell
           isMobileSidebarOpen={isMobileSidebarOpen}
@@ -51,7 +54,7 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
               activeTab={currentTab}
               onCloseMobile={() => setIsMobileSidebarOpen(false)}
               organizationCount={dashboard?.total_organizations ?? 0}
-              categoryCount={0}
+              categoryCount={categories.length}
               staffCount={0}
               pendingCrCount={dashboard?.pending_change_requests ?? 0}
               pendingSalonCount={dashboard?.pending_organizations ?? 0}
@@ -95,7 +98,9 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <AdminProvider>
-      <AdminLayoutInner>{children}</AdminLayoutInner>
+      <Suspense fallback={null}>
+        <AdminLayoutInner>{children}</AdminLayoutInner>
+      </Suspense>
     </AdminProvider>
   )
 }

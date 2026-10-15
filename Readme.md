@@ -12,36 +12,129 @@ Stack: **FastAPI** (`backend/`) + **Next.js** (`frontend/`) + **PostgreSQL**.
 
 ## Quick start
 
-```bash
-# 1. Environment
-cp .env.example .env
-# Edit .env (PayPal, LLM keys, secrets)
-
-# 2. Database (Compose)
-docker compose up -d db
-
-# 3. Root tooling (Husky git hooks — once per clone)
-pnpm install
-
-# 4. Backend
-cd backend
-uv sync --group dev
-uv run fastapi dev app/main.py
-# API: http://127.0.0.1:8000  ·  Docs: http://127.0.0.1:8000/docs
-
-# 5. Frontend (separate terminal)
-cd frontend
-pnpm install
-pnpm dev
-# App: http://localhost:3000
-# Conventions: frontend/AGENTS.md
-```
-
-Full stack via Compose:
+**Docker (everything in Compose):**
 
 ```bash
+cp .env.example .env   # edit secrets as needed
 docker compose up --build
+# Web + API via Compose networking; see compose file for ports.
 ```
+
+**Local dev (recommended for day-to-day coding):** run Postgres (often via Compose **db only**), then backend + frontend on the host — see [Local development without Docker](#local-development-without-docker).
+
+---
+
+## Local development (without Docker)
+
+Run the **API**, **Next.js app**, and optional **voice worker** as normal processes on your machine. You do **not** need `docker compose up --build` for the full stack; many teams only use Docker for Postgres (pgvector).
+
+### Prerequisites
+
+| Tool | Purpose |
+|------|---------|
+| [Node.js](https://nodejs.org/) 18+ and **pnpm** | Frontend + root Husky |
+| [uv](https://docs.astral.sh/uv/) | Backend Python env |
+| **PostgreSQL with pgvector** | Required for app + RAG (`vector` extension) |
+
+### 1. Environment files
+
+```bash
+# Repo root — backend reads this (and backend/.env if present)
+cp .env.example .env
+
+# Frontend — copy from example or root NEXT_PUBLIC_* vars
+cp frontend/.env.example frontend/.env
+```
+
+In **root `.env`**:
+
+- `DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/salondesk` is fine for Compose.
+- On the **host**, FastAPI rewrites `@db` → `localhost:${POSTGRES_PORT}` when `db` does not resolve (see `backend/app/core/database_url.py`).
+- Set **`POSTGRES_PORT`** to the port Postgres listens on **your machine** (Compose maps `POSTGRES_PORT:5432`, e.g. `5433` if 5432 is taken).
+
+In **`frontend/.env`**:
+
+- `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000` — Next.js proxies `/api/v1/*` to the API in dev (`frontend/next.config.ts`).
+
+### 2. Database (Postgres only — minimal Docker)
+
+Use the pgvector image (plain Postgres will fail on `CREATE EXTENSION vector`):
+
+```bash
+docker compose up -d db
+make seed          # or: make seed-clear for a fresh demo DB
+```
+
+Native Postgres instead of Compose: install **pgvector**, create DB `salondesk`, and set `DATABASE_URL` / `POSTGRES_PORT` to match your host.
+
+### 3. One-time install
+
+```bash
+pnpm install                    # repo root (Husky hooks)
+cd backend && uv sync --group dev
+cd frontend && pnpm install
+```
+
+### 4. Run the app (three terminals)
+
+Use **separate terminals** so each process can be restarted independently.
+
+| Terminal | Directory | Command | URL |
+|----------|-----------|---------|-----|
+| **A — API** | `backend/` | `uv run fastapi dev app/main.py` | http://127.0.0.1:8000 · [Docs](http://127.0.0.1:8000/docs) |
+| **B — Web** | `frontend/` | `pnpm dev` | http://localhost:3000 |
+| **C — Voice** (optional) | repo root or `backend/` | `make voice-agent` | LiveKit worker (see below) |
+
+**Terminal A — Backend**
+
+```bash
+cd backend
+uv run fastapi dev app/main.py
+```
+
+**Terminal B — Frontend**
+
+```bash
+cd frontend
+pnpm dev
+```
+
+Restart frontend after changing any `NEXT_PUBLIC_*` variable.
+
+**Terminal C — Voice agent (optional)**
+
+Requires LiveKit + Deepgram (and LLM) in root `.env`: `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `DEEPGRAM_API_KEY`, plus `LLM_PROVIDER` / API keys.
+
+```bash
+# From repo root
+make voice-agent
+
+# Equivalent
+cd backend && uv run python agent.py start
+```
+
+Match **`NEXT_PUBLIC_LIVEKIT_URL`** in `frontend/.env` to **`LIVEKIT_URL`** in root `.env`. The browser gets a JWT from `POST /api/v1/livekit/token`; secrets stay on the server.
+
+For **RAG** (chat + voice grounding), after seeding:
+
+```bash
+docker compose up -d ollama   # optional, for local embeddings
+ollama pull all-minilm
+make ingest-knowledge
+```
+
+Text concierge without voice: enable `NEXT_PUBLIC_ENABLE_AGENT_CHAT=true` and use `POST /api/v1/chat` (no Terminal C).
+
+### 5. Smoke check
+
+```bash
+curl -s http://127.0.0.1:8000/health
+curl -s http://127.0.0.1:8000/api/v1/catalog/categories   # public catalog
+```
+
+Open http://localhost:3000 — client catalog is public; sign in with [demo accounts](#demo-accounts) for admin/merchant/client portals.
+
+**UI conventions:** [frontend/AGENTS.md](frontend/AGENTS.md) · **Monorepo layout:** [AGENTS.md](AGENTS.md)
 
 ---
 
@@ -94,7 +187,7 @@ Skip hooks for an emergency commit only: `HUSKY=0 git commit …` (prefer fixing
 
 Demo data includes **Selam Hair Studio**, platform admin/staff, categories, commissions, services, clients, and sample bookings.
 
-**Important:** root `.env` uses hostname `db` for Docker Compose. `make seed` / `make ingest-knowledge` connect to **`localhost:$POSTGRES_PORT`** (default `5432`). Use image `pgvector/pgvector:pg16` — plain Postgres cannot create the `vector` extension. If Homebrew Postgres already owns `5432`, set `POSTGRES_PORT=5433` in `.env`. Start Postgres first:
+**Important:** root `.env` may use hostname `db` for Compose; **`make seed`** / **`make ingest-knowledge`** and the running API on the host use **`localhost:$POSTGRES_PORT`**. Use image `pgvector/pgvector:pg16` — plain Postgres cannot create the `vector` extension. If Homebrew Postgres already owns `5432`, set `POSTGRES_PORT=5433` in `.env`. Start Postgres first:
 
 ```bash
 docker compose up -d db
@@ -117,7 +210,7 @@ uv run python -m app.scripts.seed --clear \
   --database-url 'postgresql+asyncpg://postgres:postgres@localhost:5432/salondesk'
 ```
 
-If you run the seed script without `--database-url` and `.env` still points at `@db:…`, the script rewrites `db` → `localhost` automatically when `db` is not resolvable.
+If you run the seed script without `--database-url` and `.env` still points at `@db:…`, the seed script and FastAPI settings rewrite `db` → `localhost:${POSTGRES_PORT}` when `db` is not resolvable on the host.
 
 ### Demo accounts
 
@@ -186,15 +279,7 @@ Text chat POST /api/v1/chat  (same pipeline + recommendation cards)
    make ingest-knowledge
    ```
 4. Configure LiveKit + Deepgram in `.env` (`LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `DEEPGRAM_API_KEY`).
-5. Run **two processes**:
-   ```bash
-   # Terminal A — API
-   cd backend && uv run fastapi dev app/main.py
-
-   # Terminal B — voice worker
-   make voice-agent
-   # or: cd backend && uv run python agent.py start
-   ```
+5. Run the API plus the voice worker — same as [Local development without Docker](#local-development-without-docker) (Terminal A + Terminal C).
 
 ### APIs
 
