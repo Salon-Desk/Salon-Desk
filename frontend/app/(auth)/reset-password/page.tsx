@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
 import { ForgotPasswordForm } from '@/components/auth/forgot-password-form'
 
-export default function ResetPasswordPage() {
+function ResetPasswordPageContent() {
   const params = useSearchParams()
   const token = params.get('token') ?? params.get('password_reset_token') ?? undefined
 
@@ -23,5 +24,20 @@ export default function ResetPasswordPage() {
         </Link>
       </p>
     </main>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
+          <h1 className="mb-2 text-2xl font-semibold text-slate-900">Reset password</h1>
+          <p className="text-sm text-slate-600">Loading…</p>
+        </main>
+      }
+    >
+      <ResetPasswordPageContent />
+    </Suspense>
   )
 }

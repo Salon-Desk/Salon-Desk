@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import React, { useEffect } from 'react'
+import React, { Suspense, useEffect } from 'react'
 import { Provider, useDispatch } from 'react-redux'
 import { Toaster } from 'sonner'
 
@@ -18,19 +18,9 @@ interface ProvidersProps {
   children: React.ReactNode
 }
 
-function SessionBootstrap({ children }: { children: React.ReactNode }) {
+/** Runs once on the client — no navigation hooks (safe during static prerender). */
+function ClientSessionInit({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch<AppDispatch>()
-  const pathname = usePathname()
-
-  useEffect(() => {
-    let app: AppPortal = 'client'
-    if (pathname.startsWith('/admin')) {
-      app = 'admin'
-    } else if (pathname.startsWith('/merchant') || pathname.startsWith('/org')) {
-      app = 'merchant'
-    }
-    dispatch(setActiveApp(app))
-  }, [pathname, dispatch])
 
   useEffect(() => {
     dispatch(hydrateMerchantDemo(readMerchantDemoFromStorage()))
@@ -49,7 +39,24 @@ function SessionBootstrap({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function GlobalChatWidget() {
+function ActiveAppSync() {
+  const dispatch = useDispatch<AppDispatch>()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    let app: AppPortal = 'client'
+    if (pathname.startsWith('/admin')) {
+      app = 'admin'
+    } else if (pathname.startsWith('/merchant') || pathname.startsWith('/org')) {
+      app = 'merchant'
+    }
+    dispatch(setActiveApp(app))
+  }, [pathname, dispatch])
+
+  return null
+}
+
+function GlobalChatWidgetInner() {
   const pathname = usePathname()
   const onClientPortal =
     pathname === '/client' || pathname.startsWith('/client/') || pathname === '/book'
@@ -57,16 +64,27 @@ function GlobalChatWidget() {
   return <ChatWidget showTriggers />
 }
 
+function GlobalChatWidget() {
+  return (
+    <Suspense fallback={null}>
+      <GlobalChatWidgetInner />
+    </Suspense>
+  )
+}
+
 export default function Providers({ children }: ProvidersProps) {
   return (
     <Provider store={store}>
       <AuthProvider>
-        <SessionBootstrap>
+        <ClientSessionInit>
           {children}
+          <Suspense fallback={null}>
+            <ActiveAppSync />
+          </Suspense>
           <GlobalChatWidget />
           <AuthModalHost />
           <Toaster position="top-right" duration={3500} richColors closeButton />
-        </SessionBootstrap>
+        </ClientSessionInit>
       </AuthProvider>
     </Provider>
   )
