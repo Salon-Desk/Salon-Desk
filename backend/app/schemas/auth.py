@@ -1,8 +1,12 @@
 from uuid import UUID
 
+import email_validator
 from pydantic import BaseModel, EmailStr, Field
 
 from app.schemas.user import ProfileOut, UserOut
+
+if "local" in email_validator.SPECIAL_USE_DOMAIN_NAMES:
+    email_validator.SPECIAL_USE_DOMAIN_NAMES.remove("local")
 
 
 class SignUpRequest(BaseModel):
