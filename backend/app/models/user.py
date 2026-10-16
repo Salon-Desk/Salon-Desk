@@ -61,6 +61,11 @@ class Profile(TimestampedModel):
 
     user = relationship("User", back_populates="profile")
 
+    @property
+    def full_name(self) -> str:
+        parts = [self.first_name, self.last_name]
+        return " ".join(p for p in parts if p).strip()
+
 
 class PasswordResetToken(BaseModel):
     __tablename__ = "password_reset_token"

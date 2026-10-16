@@ -32,11 +32,11 @@ def resolve_database_url(url: str, *, host_port: int | None = None) -> str:
         username = parsed.username or ""
         password = parsed.password or ""
         if username and password:
-            netloc = f"{username}:{password}@localhost:{host_port}"
+            netloc = f"{username}:{password}@localhost:{local_port}"
         elif username:
-            netloc = f"{username}@localhost:{host_port}"
+            netloc = f"{username}@localhost:{local_port}"
         else:
-            netloc = f"localhost:{host_port}"
+            netloc = f"localhost:{local_port}"
 
         rewritten = urlunparse(parsed._replace(netloc=netloc))
         logger.warning(

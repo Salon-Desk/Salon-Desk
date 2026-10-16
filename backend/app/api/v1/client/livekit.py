@@ -16,11 +16,13 @@ async def create_livekit_token(
     """Issue a LiveKit JWT for the voice agent room (browser never sees API secret)."""
     participant_name = body.participant_name
     if not participant_name and user is not None:
-        participant_name = (
-            user.profile.full_name
-            if user.profile and user.profile.full_name
-            else f"user-{str(user.id)[:8]}"
-        )
+        profile_name = ""
+        if user.profile:
+            profile_name = (
+                getattr(user.profile, "full_name", None)
+                or f"{getattr(user.profile, 'first_name', '')} {getattr(user.profile, 'last_name', '')}".strip()
+            )
+        participant_name = profile_name or f"user-{str(user.id)[:8]}"
     try:
         creds = create_participant_token(
             language=body.language,

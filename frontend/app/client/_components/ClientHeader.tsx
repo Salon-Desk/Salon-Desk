@@ -5,7 +5,6 @@ import Link from 'next/link'
 
 import { UserMenu } from '@/components/auth/user-menu'
 import { Logo } from '@/components/brand/logo'
-import { PortalSwitcher } from '@/components/layout/portal-switcher'
 import { ROUTES } from '@/lib/constants'
 
 export type ClientTab = 'catalog' | 'my-bookings'
@@ -28,12 +27,9 @@ export function ClientHeader({
   return (
     <header className="sticky top-0 z-40 border-b border-stone-100 bg-white/80 backdrop-blur-xl transition-all">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        {/* Left Side: Boutique Logo & Wordmark */}
+        {/* Left Side: Boutique Logo */}
         <Link href={ROUTES.client} className="flex items-center gap-2.5">
           <Logo theme="light" size="sm" linkToHome={false} />
-          <span className="font-extrabold text-stone-950 text-base tracking-tight hidden sm:inline">
-            Crown & Blade Atelier
-          </span>
         </Link>
 
         {/* Center: Desktop Navigation Tabs (Clean minimal underline / soft pills) */}
@@ -102,8 +98,6 @@ export function ClientHeader({
             <Sparkles className="h-3.5 w-3.5 text-amber-400" />
             <span className="hidden sm:inline">AI Concierge</span>
           </button>
-
-          <PortalSwitcher current="client" />
 
           <UserMenu portal="client" />
         </div>
