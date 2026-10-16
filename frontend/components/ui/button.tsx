@@ -14,21 +14,21 @@ const buttonVariants = cva(
         default:
           'rounded-lg border border-transparent bg-primary font-medium text-sm text-primary-foreground hover:bg-primary/80',
         primary:
-          'rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 font-bold text-white shadow-sm hover:from-amber-600 hover:to-amber-700 active:scale-[0.98]',
+          'rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 font-bold text-white shadow-xs hover:from-amber-600 hover:to-amber-700 active:scale-[0.98]',
         outline:
           'rounded-lg border border-border bg-background font-medium text-sm hover:bg-muted hover:text-foreground',
         secondary:
-          'rounded-xl border border-slate-200 bg-slate-100 font-bold text-slate-700 shadow-xs hover:bg-slate-200 hover:text-slate-900',
-        ghost: 'rounded-xl font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+          'rounded-lg border border-slate-200/80 bg-slate-100 font-bold text-slate-700 shadow-xs hover:bg-slate-200 hover:text-slate-900',
+        ghost: 'rounded-lg font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900',
         destructive:
           'rounded-lg bg-destructive/10 font-medium text-destructive text-sm hover:bg-destructive/20',
         danger:
-          'rounded-xl border border-rose-200 bg-rose-50 font-bold text-rose-700 hover:bg-rose-100',
+          'rounded-lg border border-rose-200/80 bg-rose-50 font-bold text-rose-700 hover:bg-rose-100',
         success:
-          'rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 font-bold text-white shadow-sm hover:from-emerald-700 hover:to-teal-700',
-        dark: 'rounded-xl bg-slate-900 font-bold text-white hover:bg-slate-800',
+          'rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 font-bold text-white shadow-xs hover:from-emerald-700 hover:to-teal-700',
+        dark: 'rounded-lg bg-slate-900 font-bold text-white hover:bg-slate-800',
         paypal:
-          'rounded-xl bg-[#FFC439] font-bold text-[#003087] shadow-md hover:bg-[#F4B41A] hover:shadow-lg',
+          'rounded-lg bg-[#FFC439] font-bold text-[#003087] shadow-sm hover:bg-[#F4B41A] hover:shadow-md',
         link: 'font-medium text-primary underline-offset-4 hover:underline',
       },
       size: {

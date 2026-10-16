@@ -25,13 +25,13 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center',
+        'mx-auto max-w-md rounded-xl border border-slate-200/80 bg-white p-8 text-center shadow-[0_1px_2px_rgba(0,0,0,0.02)]',
         className,
       )}
     >
       <div
         className={cn(
-          'mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border',
+          'mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border',
           TONE_ICON_CHIP[tone],
         )}
       >

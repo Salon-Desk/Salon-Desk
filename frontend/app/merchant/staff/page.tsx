@@ -1,11 +1,11 @@
 'use client'
 
-import { Loader2, Plus, Trash2, UserRound } from 'lucide-react'
+import { CheckCircle2, Copy, Loader2, Plus, Trash2, UserRound, Users } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { Card, ConfirmDialog, IconButton } from '@/components/ui'
+import { Badge, Card, ConfirmDialog, EmptyState, IconButton } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useDeleteMyEmployeeMutation, useGetMyEmployeesQuery } from '@/store/slice/organizationApi'
 import type { User } from '@/types/user'
@@ -19,11 +19,36 @@ function displayName(user: User): string {
   return user.email
 }
 
+const AVATAR_GRADIENTS = [
+  'from-amber-500 to-amber-700',
+  'from-stone-900 to-slate-800',
+  'from-teal-600 to-emerald-700',
+  'from-sky-600 to-indigo-700',
+  'from-rose-600 to-purple-700',
+]
+
+function getAvatarGradient(seed: string): string {
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    hash = seed.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const index = Math.abs(hash) % AVATAR_GRADIENTS.length
+  return AVATAR_GRADIENTS[index]
+}
+
 export default function MerchantStaffPage() {
   const { data: employees = [], isLoading, isError, refetch } = useGetMyEmployeesQuery()
   const [deleteEmployee, { isLoading: isDeleting }] = useDeleteMyEmployeeMutation()
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [deleting, setDeleting] = useState<User | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const handleCopyId = (id: string) => {
+    void navigator.clipboard.writeText(id)
+    setCopiedId(id)
+    toast.success('Staff ID copied to clipboard', toastColor.success)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   const handleConfirmDelete = async () => {
     if (!deleting) return
@@ -44,10 +69,12 @@ export default function MerchantStaffPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
-            Staff &amp; Stylists
+            Stylists &amp; Staff Directory
           </h1>
           <p className="text-slate-500 text-xs">
-            {isLoading ? 'Loading…' : `${employees.length} team members from your organization`}
+            {isLoading
+              ? 'Loading…'
+              : `${employees.length} team members managing schedule and appointment fulfillment`}
           </p>
         </div>
 
@@ -56,7 +83,7 @@ export default function MerchantStaffPage() {
           size="sm"
           fullWidth={false}
           icon={<Plus className="h-4 w-4" />}
-          className="h-9 rounded-xl px-4 text-xs font-semibold shadow-xs"
+          className="h-9 rounded-lg px-4 text-xs font-semibold shadow-xs"
           onClick={() => setIsAddOpen(true)}
         />
       </div>
@@ -69,34 +96,35 @@ export default function MerchantStaffPage() {
       ) : null}
 
       {isError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
           <p>Could not load employees. Sign in as an org owner and try again.</p>
           <PrimaryButton
             title="Retry"
             variant="outline"
             size="sm"
             fullWidth={false}
-            className="mt-3 h-9 rounded-xl px-4"
+            className="mt-3 h-8.5 rounded-lg px-4"
             onClick={() => void refetch()}
           />
         </div>
       ) : null}
 
       {!isLoading && !isError && employees.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center">
-          <UserRound className="mx-auto h-9 w-9 text-slate-300" />
-          <p className="mt-2.5 text-sm font-semibold text-slate-700">No team members yet</p>
-          <p className="mt-1 text-xs text-slate-500">
-            Add a stylist or reception account to assign bookings and manage schedule availability.
-          </p>
-          <PrimaryButton
-            title="Add first team member"
-            size="sm"
-            fullWidth={false}
-            className="mt-4 h-9 rounded-lg px-4"
-            onClick={() => setIsAddOpen(true)}
-          />
-        </div>
+        <EmptyState
+          icon={Users}
+          title="No staff members registered yet"
+          description="Add a stylist, receptionist, or manager account to assign appointments and configure schedule availability."
+          action={
+            <PrimaryButton
+              title="Add first team member"
+              size="sm"
+              fullWidth={false}
+              icon={<Plus className="h-3.5 w-3.5" />}
+              className="h-8.5 rounded-lg px-4 text-xs"
+              onClick={() => setIsAddOpen(true)}
+            />
+          }
+        />
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -109,40 +137,61 @@ export default function MerchantStaffPage() {
             .slice(0, 2)
             .join('')
             .toUpperCase()
+          const gradient = getAvatarGradient(member.id || name)
+          const roleTone =
+            member.role === 'org_owner' ? 'amber' : member.role === 'reception' ? 'sky' : 'emerald'
 
           return (
             <Card
               key={member.id}
-              hoverTone="amber"
-              className="flex flex-col justify-between space-y-4 rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+              className="flex flex-col justify-between space-y-4 rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
             >
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 <div className="flex items-center justify-between">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 font-bold text-sm text-amber-800">
+                  {/* Monogram Gradient Avatar */}
+                  <div
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white font-bold text-sm shadow-xs`}
+                  >
                     {initials || <UserRound className="h-5 w-5" />}
                   </div>
-                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 font-semibold text-[11px] text-emerald-800 capitalize">
-                    {member.status || 'active'}
-                  </span>
+                  <Badge tone="emerald" size="sm">
+                    {member.status || 'Active'}
+                  </Badge>
                 </div>
+
                 <div>
-                  <h3 className="font-bold text-base text-slate-900">{name}</h3>
-                  <p className="text-xs font-semibold text-amber-800 capitalize">
-                    {member.role.replace('_', ' ')}
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-500 font-mono">{member.email}</p>
+                  <h3 className="font-bold text-base text-slate-900 tracking-tight">{name}</h3>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <Badge tone={roleTone} size="sm">
+                      {member.role.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500 font-mono truncate">{member.email}</p>
                 </div>
               </div>
+
               <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                <span className="font-mono text-[10px] text-slate-400">
-                  ID: {member.id.slice(0, 8)}…
-                </span>
+                <div className="flex items-center gap-1 font-mono text-[11px] text-slate-400">
+                  <span>ID: {member.id.slice(0, 8)}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyId(member.id)}
+                    className="p-0.5 hover:text-slate-700 transition-colors"
+                    title="Copy user ID"
+                  >
+                    {copiedId === member.id ? (
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </button>
+                </div>
                 <IconButton
                   aria-label="Remove team member"
                   onClick={() => setDeleting(member)}
-                  className="text-rose-600 hover:bg-rose-50"
+                  className="rounded-lg text-rose-600 hover:bg-rose-50 hover:border-rose-200"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </IconButton>
               </div>
             </Card>
@@ -155,8 +204,8 @@ export default function MerchantStaffPage() {
       {deleting ? (
         <ConfirmDialog
           title="Remove team member?"
-          description={`Remove ${displayName(deleting)} (${deleting.email}) from your salon?`}
-          confirmLabel={isDeleting ? 'Removing…' : 'Remove'}
+          description={`Are you sure you want to remove ${displayName(deleting)} (${deleting.email}) from your salon roster?`}
+          confirmLabel={isDeleting ? 'Removing…' : 'Remove Team Member'}
           onConfirm={() => void handleConfirmDelete()}
           onClose={() => setDeleting(null)}
         />

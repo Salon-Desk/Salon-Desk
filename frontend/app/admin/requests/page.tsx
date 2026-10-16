@@ -1,9 +1,11 @@
 'use client'
 
-import { Clock, CreditCard, ShieldCheck, Sliders } from 'lucide-react'
-import { useState } from 'react'
+import { CheckCircle2, Clock, Copy, CreditCard, ShieldCheck, Sliders } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
-import { Card } from '@/components/ui'
+import { Badge, Card, EmptyState } from '@/components/ui'
+import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { useGetAdminChangeRequestsQuery } from '@/store/api/platformApi'
 import type { ApiChangeRequest } from '@/types/api-org'
@@ -20,23 +22,67 @@ const FILTER_LABELS: Record<CrFilter, string> = {
   all: 'All',
 }
 
-function renderPayloadSummary(cr: ApiChangeRequest) {
+function PayloadParameterCard({ cr }: { cr: ApiChangeRequest }) {
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const payload = cr.payload_json as Record<string, unknown>
+
+  const handleCopy = (text: string, key: string) => {
+    void navigator.clipboard.writeText(text)
+    setCopiedKey(key)
+    toast.success('Value copied to clipboard', toastColor.success)
+    setTimeout(() => setCopiedKey(null), 2000)
+  }
+
   if (cr.request_type === 'PAYPAL_ACCOUNT') {
+    const merchantId = String(payload.merchant_id || '—')
+    const currency = String(payload.currency || 'USD')
+
     return (
-      <div className="rounded-xl border border-sky-100 bg-sky-50/50 p-3.5 text-xs text-slate-700 space-y-1.5">
-        <div className="font-semibold text-sky-950 flex items-center gap-1.5">
-          <CreditCard className="h-3.5 w-3.5 text-sky-600" />
-          <span>Proposed PayPal Merchant Account</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
-          <div>
-            <span className="text-slate-400">Merchant ID: </span>
-            <span className="font-bold text-slate-900">{String(payload.merchant_id || '—')}</span>
+      <div className="rounded-xl border border-sky-200/80 bg-gradient-to-br from-sky-50/60 to-slate-50/40 p-4 text-xs text-slate-700 space-y-3 shadow-xs">
+        <div className="flex items-center justify-between border-b border-sky-100 pb-2">
+          <div className="font-bold text-sky-950 flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-100 text-sky-700">
+              <CreditCard className="h-3.5 w-3.5" />
+            </div>
+            <span>Proposed PayPal Merchant Payout Configuration</span>
           </div>
-          <div>
-            <span className="text-slate-400">Currency: </span>
-            <span className="font-bold text-slate-900">{String(payload.currency || 'USD')}</span>
+          <span className="rounded-md bg-sky-100 px-2 py-0.5 font-mono text-[10px] font-bold text-sky-800">
+            Orders v2 Direct
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
+          <div className="rounded-lg border border-slate-200/70 bg-white p-2.5 shadow-xs">
+            <span className="text-[10px] uppercase text-slate-400 block font-sans">
+              Merchant Payer ID
+            </span>
+            <div className="flex items-center justify-between mt-1">
+              <span className="font-bold text-slate-900 text-xs">{merchantId}</span>
+              <button
+                type="button"
+                onClick={() => handleCopy(merchantId, 'merchantId')}
+                className="text-slate-400 hover:text-slate-700 p-0.5 transition-colors"
+                title="Copy merchant ID"
+              >
+                {copiedKey === 'merchantId' ? (
+                  <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200/70 bg-white p-2.5 shadow-xs">
+            <span className="text-[10px] uppercase text-slate-400 block font-sans">
+              Settlement Currency
+            </span>
+            <div className="flex items-center gap-1.5 mt-1 font-bold text-slate-900">
+              <span className="rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-1.5 py-0.2 text-[11px]">
+                {currency}
+              </span>
+              <span className="text-slate-500 font-sans text-xs">· US Dollar Payouts</span>
+            </div>
           </div>
         </div>
       </div>
@@ -45,26 +91,56 @@ function renderPayloadSummary(cr: ApiChangeRequest) {
 
   if (cr.request_type === 'CANCELLATION_POLICY') {
     const data = (payload.data as Record<string, unknown>) || {}
+    const freeCancelHours = String(data.free_cancel_hours || '24')
+    const noShowFee = String(data.no_show_fee || '0')
+    const holdPercent = String(data.hold_percent || '100')
+
     return (
-      <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-3.5 text-xs text-slate-700 space-y-1.5">
-        <div className="font-semibold text-amber-950 flex items-center gap-1.5">
-          <ShieldCheck className="h-3.5 w-3.5 text-amber-600" />
-          <span>Proposed Policy Amendment</span>
+      <div className="rounded-xl border border-amber-200/80 bg-gradient-to-br from-amber-50/50 to-slate-50/40 p-4 text-xs text-slate-700 space-y-3 shadow-xs">
+        <div className="flex items-center justify-between border-b border-amber-100 pb-2">
+          <div className="font-bold text-amber-950 flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-100 text-amber-800">
+              <ShieldCheck className="h-3.5 w-3.5" />
+            </div>
+            <span>Proposed Cancellation &amp; No-Show Policy Amendment</span>
+          </div>
+          <span className="rounded-md bg-amber-100 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-900">
+            Escrow Guarded
+          </span>
         </div>
-        <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
-          <div>
-            <span className="text-slate-400">Cancel Window: </span>
-            <span className="font-bold text-slate-900">
-              {String(data.free_cancel_hours || '24')}h
+
+        <div className="grid grid-cols-3 gap-2.5 font-mono text-xs">
+          <div className="rounded-lg border border-slate-200/70 bg-white p-2.5 shadow-xs">
+            <span className="text-[10px] uppercase text-slate-400 block font-sans">
+              Notice Window
+            </span>
+            <div className="mt-1 font-bold text-slate-900 text-sm">
+              {freeCancelHours}
+              <span className="text-xs font-normal text-slate-500 ml-0.5">hrs</span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-sans block mt-0.5">
+              Free cancel cutoff
             </span>
           </div>
-          <div>
-            <span className="text-slate-400">No-show Fee: </span>
-            <span className="font-bold text-slate-900">${String(data.no_show_fee || '0')}</span>
+
+          <div className="rounded-lg border border-slate-200/70 bg-white p-2.5 shadow-xs">
+            <span className="text-[10px] uppercase text-slate-400 block font-sans">
+              No-Show Penalty
+            </span>
+            <div className="mt-1 font-bold text-rose-800 text-sm">${noShowFee}</div>
+            <span className="text-[10px] text-slate-400 font-sans block mt-0.5">
+              Captured on missed slot
+            </span>
           </div>
-          <div>
-            <span className="text-slate-400">Hold %: </span>
-            <span className="font-bold text-slate-900">{String(data.hold_percent || '100')}%</span>
+
+          <div className="rounded-lg border border-slate-200/70 bg-white p-2.5 shadow-xs">
+            <span className="text-[10px] uppercase text-slate-400 block font-sans">
+              Authorization Hold
+            </span>
+            <div className="mt-1 font-bold text-amber-900 text-sm">{holdPercent}%</div>
+            <span className="text-[10px] text-slate-400 font-sans block mt-0.5">
+              Zero-debit hold share
+            </span>
           </div>
         </div>
       </div>
@@ -72,7 +148,7 @@ function renderPayloadSummary(cr: ApiChangeRequest) {
   }
 
   return (
-    <pre className="overflow-x-auto rounded-xl bg-slate-50 p-3 text-[11px] text-slate-600 font-mono">
+    <pre className="overflow-x-auto rounded-xl border border-slate-200/80 bg-slate-50 p-3 text-[11px] text-slate-600 font-mono shadow-xs">
       {JSON.stringify(cr.payload_json, null, 2)}
     </pre>
   )
@@ -82,40 +158,66 @@ export default function AdminRequestsPage() {
   const { skipAdminApi } = useAdminSession()
   const [status, setStatus] = useState<CrFilter>('PENDING')
   const {
-    data: requests = [],
+    data: allRequests = [],
     isLoading,
     isError,
     refetch,
-  } = useGetAdminChangeRequestsQuery(status === 'all' ? undefined : { status }, {
+  } = useGetAdminChangeRequestsQuery(undefined, {
     skip: skipAdminApi,
   })
+
+  const counts = useMemo(
+    () => ({
+      all: allRequests.length,
+      PENDING: allRequests.filter((r) => r.status.toUpperCase() === 'PENDING').length,
+      APPROVED: allRequests.filter((r) => r.status.toUpperCase() === 'APPROVED').length,
+      REJECTED: allRequests.filter((r) => r.status.toUpperCase() === 'REJECTED').length,
+    }),
+    [allRequests],
+  )
+
+  const requests = useMemo(() => {
+    if (status === 'all') return allRequests
+    return allRequests.filter((r) => r.status.toUpperCase() === status)
+  }, [allRequests, status])
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 animate-in fade-in duration-300">
       <div>
         <h1 className="font-extrabold text-xl text-slate-900 tracking-tight sm:text-2xl">
-          Change Requests
+          Change Request Governance
         </h1>
         <p className="text-xs text-slate-500">
-          Review and audit merchant policy amendments and PayPal payout configuration changes.
+          Review, approve, and audit merchant policy amendments and PayPal payout configuration
+          changes.
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+      {/* Segmented Tabbed Status Filters with Reactive Counts */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
         {(['PENDING', 'APPROVED', 'REJECTED', 'all'] as const).map((key) => {
           const isActive = status === key
+          const count = counts[key]
+
           return (
             <button
               key={key}
               type="button"
               onClick={() => setStatus(key)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-stone-950 text-white shadow-xs'
+                  ? 'bg-slate-900 text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
-              {FILTER_LABELS[key]}
+              <span>{FILTER_LABELS[key]}</span>
+              <span
+                className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
+                  isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-500'
+                }`}
+              >
+                {count}
+              </span>
             </button>
           )
         })}
@@ -125,18 +227,19 @@ export default function AdminRequestsPage() {
         isLoading={isLoading}
         isError={isError}
         onRetry={() => void refetch()}
-        loadingLabel="Loading requests…"
+        loadingLabel="Loading change requests…"
         errorLabel="Could not load change requests."
       >
         <div className="space-y-3.5">
           {requests.map((cr) => {
-            const isPending = cr.status === 'PENDING'
-            const isApproved = cr.status === 'APPROVED'
+            const isPending = cr.status.toUpperCase() === 'PENDING'
+            const isApproved = cr.status.toUpperCase() === 'APPROVED'
+            const statusTone = isApproved ? 'emerald' : isPending ? 'amber' : 'rose'
 
             return (
               <Card
                 key={cr.id}
-                className="space-y-3.5 rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+                className="space-y-3.5 rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
@@ -155,29 +258,12 @@ export default function AdminRequestsPage() {
                     </div>
                   </div>
 
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize ${
-                      isApproved
-                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        : isPending
-                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                          : 'bg-rose-50 text-rose-800 border border-rose-200'
-                    }`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        isApproved
-                          ? 'bg-emerald-500'
-                          : isPending
-                            ? 'bg-amber-500 animate-pulse'
-                            : 'bg-rose-500'
-                      }`}
-                    />
+                  <Badge tone={statusTone} size="sm">
                     {cr.status.toLowerCase()}
-                  </span>
+                  </Badge>
                 </div>
 
-                {renderPayloadSummary(cr)}
+                <PayloadParameterCard cr={cr} />
 
                 {isPending && (
                   <div className="pt-2 border-t border-slate-100">
@@ -189,15 +275,11 @@ export default function AdminRequestsPage() {
           })}
 
           {requests.length === 0 && (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center">
-              <Sliders className="mx-auto h-8 w-8 text-slate-300" />
-              <p className="mt-2.5 text-sm font-semibold text-slate-700">
-                No requests in this view
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                All merchant policy and PayPal account requests for this filter have been handled.
-              </p>
-            </div>
+            <EmptyState
+              icon={Sliders}
+              title="No requests in this category"
+              description="All merchant policy and PayPal payout configuration requests for this status view have been resolved."
+            />
           )}
         </div>
       </AdminQueryState>

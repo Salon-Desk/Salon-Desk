@@ -78,7 +78,7 @@ export function PortalGuard({ portal, children, allowAnonymous = false }: Portal
 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4">
-        <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="w-full max-w-md rounded-xl border border-slate-200/80 bg-white p-8 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
           <div className="mb-6 flex flex-col items-center text-center">
             <Logo size="md" linkToHome theme="light" />
             <h1 className="mt-4 font-bold text-lg text-slate-900">{title}</h1>

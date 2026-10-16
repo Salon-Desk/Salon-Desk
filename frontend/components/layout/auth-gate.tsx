@@ -28,14 +28,14 @@ export function AuthGate({
 }: AuthGateProps) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="w-full max-w-md rounded-xl border border-slate-200/80 bg-white p-8 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
         <div className="mb-6 flex flex-col items-center text-center">
           <Logo size="md" linkToHome theme="light" />
           <h1 className="mt-4 font-bold text-lg text-slate-900">{title}</h1>
           <p className="mt-1 text-slate-500 text-xs leading-relaxed">{subtitle}</p>
         </div>
 
-        <div className="mb-5 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs">
+        <div className="mb-5 space-y-2 rounded-lg border border-slate-200/80 bg-slate-50 p-4 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-slate-500">Sandbox email</span>
             <span className="font-mono font-semibold text-slate-800">{email}</span>

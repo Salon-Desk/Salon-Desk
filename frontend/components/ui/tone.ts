@@ -8,13 +8,13 @@ import type { Tone } from '@/lib/status'
 
 /** Pale fill + tinted text + matching hairline. Used by badges and info panels. */
 export const TONE_SOFT: Record<Tone, string> = {
-  amber: 'bg-amber-50 text-amber-800 border-amber-200',
-  emerald: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-  sky: 'bg-sky-50 text-sky-800 border-sky-200',
-  rose: 'bg-rose-50 text-rose-800 border-rose-200',
-  slate: 'bg-slate-100 text-slate-600 border-slate-200',
-  purple: 'bg-purple-50 text-purple-800 border-purple-200',
-  blue: 'bg-blue-50 text-blue-800 border-blue-200',
+  amber: 'bg-amber-50 text-amber-800 border-amber-200/60',
+  emerald: 'bg-emerald-50 text-emerald-800 border-emerald-200/60',
+  sky: 'bg-sky-50 text-sky-800 border-sky-200/60',
+  rose: 'bg-rose-50 text-rose-800 border-rose-200/60',
+  slate: 'bg-slate-100 text-slate-600 border-slate-200/60',
+  purple: 'bg-purple-50 text-purple-800 border-purple-200/60',
+  blue: 'bg-blue-50 text-blue-800 border-blue-200/60',
 }
 
 /** Saturated fill for emphasis chips and selected pills. */

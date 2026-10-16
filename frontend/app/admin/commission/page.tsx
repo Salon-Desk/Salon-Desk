@@ -1,10 +1,10 @@
 'use client'
 
-import { Edit2, Percent, Plus } from 'lucide-react'
+import { Clock, CreditCard, Edit2, Percent, Plus, RefreshCw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { Card, IconButton } from '@/components/ui'
+import { Badge, Card, EmptyState, IconButton } from '@/components/ui'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { formatUsd } from '@/lib/format'
 import {
@@ -49,27 +49,39 @@ export default function AdminCommissionPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
+      {/* Header bar */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
-            Commission &amp; Fees
+            Take-Rate &amp; Commission Engine
           </h1>
-          <p className="text-slate-500 text-xs">Platform take-rate rules by service category.</p>
+          <p className="text-slate-500 text-xs">
+            Manage platform take-rate splits, percentage rules, and flat fees by service taxonomy.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl border border-slate-200/90 bg-white px-3.5 py-1.5 shadow-xs">
-            <span className="text-slate-400 text-[10px] block uppercase font-medium">
-              Ledger volume
-            </span>
-            <span className="text-emerald-800 font-bold text-sm">{formatUsd(ledgerSum)}</span>
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-3 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+            <span className="text-slate-400 text-[10px] uppercase font-mono">Ledger volume:</span>
+            <span className="text-emerald-800 font-bold text-xs">{formatUsd(ledgerSum)}</span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all hover:bg-slate-50 hover:text-slate-900"
+            title="Refresh rules"
+          >
+            <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+            <span>Sync</span>
+          </button>
+
           <PrimaryButton
-            title="Add commission"
+            title="Add Commission Rule"
             size="sm"
             fullWidth={false}
             icon={<Plus className="h-3.5 w-3.5" />}
-            className="h-9 rounded-xl px-3.5 text-xs"
+            className="h-9 rounded-lg px-3.5 text-xs font-semibold shadow-xs"
             onClick={() => {
               setEditing(null)
               setIsOpen(true)
@@ -86,73 +98,103 @@ export default function AdminCommissionPage() {
         errorLabel="Could not load commissions."
       >
         {!isLoading && !isError && commissions.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center">
-            <Percent className="mx-auto h-8 w-8 text-slate-300" />
-            <p className="mt-2.5 text-sm font-medium text-slate-700">No commission rules yet</p>
-            <PrimaryButton
-              title="Create first rule"
-              size="sm"
-              fullWidth={false}
-              className="mt-4 h-9 rounded-lg px-4"
-              onClick={() => {
-                setEditing(null)
-                setIsOpen(true)
-              }}
-            />
-          </div>
+          <EmptyState
+            icon={Percent}
+            title="No commission rules configured"
+            description="Create your first platform take-rate rule to automatically split captured revenue upon appointment settlement."
+            action={
+              <PrimaryButton
+                title="Create first rule"
+                size="sm"
+                fullWidth={false}
+                icon={<Plus className="h-3.5 w-3.5" />}
+                className="h-8.5 rounded-lg px-4 text-xs"
+                onClick={() => {
+                  setEditing(null)
+                  setIsOpen(true)
+                }}
+              />
+            }
+          />
         ) : null}
 
         {commissions.length > 0 ? (
           <Card
-            padding="lg"
-            className="space-y-4 rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
+            padding="none"
+            className="rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
           >
-            <div className="flex items-center justify-between border-slate-100 border-b pb-3">
+            <div className="flex items-center justify-between border-slate-100 border-b p-4">
               <div>
-                <h2 className="font-bold text-slate-900 text-sm">Category take-rates</h2>
-                <p className="text-slate-500 text-xs">Applied when bookings capture</p>
+                <h2 className="font-bold text-slate-900 text-sm">
+                  Categorization Take-Rate Matrix
+                </h2>
+                <p className="text-slate-500 text-xs">
+                  Automated settlement split applied when bookings are captured via PayPal Orders v2
+                </p>
               </div>
-              <span className="font-mono text-[11px] text-slate-400">
-                {commissions.length} rules
+              <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/70">
+                {commissions.length} active rules
               </span>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-slate-200/80">
+            <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-slate-200 border-b bg-slate-50 font-semibold text-slate-700">
-                    <th className="px-4 py-2.5">Name</th>
-                    <th className="px-4 py-2.5">Category</th>
-                    <th className="px-4 py-2.5">Type</th>
-                    <th className="px-4 py-2.5">Rate</th>
-                    <th className="px-4 py-2.5 text-right">Action</th>
+                  <tr className="border-slate-200/80 border-b bg-slate-50/80 font-semibold text-slate-700">
+                    <th className="px-4 py-3">Rule Name</th>
+                    <th className="px-4 py-3">Target Category</th>
+                    <th className="px-4 py-3">Model Type</th>
+                    <th className="px-4 py-3">Platform Rate</th>
+                    <th className="px-4 py-3">Audit Timestamp</th>
+                    <th className="px-4 py-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {commissions.map((c) => (
-                    <tr key={c.id} className="transition-colors hover:bg-slate-50/60">
-                      <td className="px-4 py-3 font-semibold text-slate-900">{c.name}</td>
-                      <td className="px-4 py-3 text-slate-700">
-                        {categoryNameById.get(c.service_category_id) ||
-                          c.service_category_id.slice(0, 8)}
-                      </td>
-                      <td className="px-4 py-3 capitalize text-slate-600">{c.type}</td>
-                      <td className="px-4 py-3 font-bold text-emerald-800 font-mono">
-                        {formatCommissionRate(c)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <IconButton
-                          aria-label="Edit commission"
-                          onClick={() => {
-                            setEditing(c)
-                            setIsOpen(true)
-                          }}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </IconButton>
-                      </td>
-                    </tr>
-                  ))}
+                  {commissions.map((c) => {
+                    const typeTone =
+                      c.type === 'percentage' ? 'emerald' : c.type === 'flat' ? 'sky' : 'purple'
+
+                    return (
+                      <tr key={c.id} className="transition-colors hover:bg-slate-50/60">
+                        <td className="px-4 py-3.5 font-bold text-slate-900">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4 text-slate-400" />
+                            <span>{c.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-700 font-medium">
+                          {categoryNameById.get(c.service_category_id) ||
+                            c.service_category_id.slice(0, 8)}
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <Badge tone={typeTone} size="sm">
+                            {c.type}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3.5 font-bold text-emerald-800 font-mono text-sm">
+                          {formatCommissionRate(c)}
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-400 font-mono text-[11px]">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>Active Policy</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-right">
+                          <IconButton
+                            aria-label="Edit commission"
+                            onClick={() => {
+                              setEditing(c)
+                              setIsOpen(true)
+                            }}
+                            className="rounded-lg"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </IconButton>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -167,6 +209,7 @@ export default function AdminCommissionPage() {
         onClose={() => {
           setIsOpen(false)
           setEditing(null)
+          void refetch()
         }}
       />
     </div>

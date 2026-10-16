@@ -1,11 +1,11 @@
 'use client'
 
-import { CheckCircle2, Copy, FileSpreadsheet, Loader2, ShieldCheck } from 'lucide-react'
+import { Calendar, CheckCircle2, Copy, FileSpreadsheet, Loader2, ShieldCheck } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { type Column, DataTable, HoldStateBadge, SearchInput } from '@/components/ui'
+import { type Column, DataTable, EmptyState, HoldStateBadge, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { formatUsd } from '@/lib/format'
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
@@ -39,8 +39,17 @@ export default function MerchantAppointmentsPage() {
   const handleCopy = (id: string, text: string) => {
     void navigator.clipboard.writeText(text)
     setCopiedId(id)
+    toast.success('Booking reference copied to clipboard', toastColor.success)
     setTimeout(() => setCopiedId(null), 2000)
   }
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: bookings.length }
+    HOLD_STATES.forEach((st) => {
+      counts[st] = bookings.filter((b) => b.status === st).length
+    })
+    return counts
+  }, [bookings])
 
   const filteredAppointments = useMemo(
     () =>
@@ -62,7 +71,7 @@ export default function MerchantAppointmentsPage() {
     try {
       await markShow(booking.id).unwrap()
       toast.success(
-        `Marked show — capture started for ${booking.id.slice(0, 8)}`,
+        `Marked show — full ticket capture completed for ${booking.id.slice(0, 8)}`,
         toastColor.success,
       )
       setSelectedBooking(null)
@@ -76,7 +85,10 @@ export default function MerchantAppointmentsPage() {
   const handleMarkNoShow = async (booking: Booking) => {
     try {
       await markNoShow(booking.id).unwrap()
-      toast.success(`No-show fee capture started for ${booking.id.slice(0, 8)}`, toastColor.success)
+      toast.success(
+        `No-show fee captured and escrow released for ${booking.id.slice(0, 8)}`,
+        toastColor.success,
+      )
       setSelectedBooking(null)
       void refetch()
     } catch (err) {
@@ -89,7 +101,10 @@ export default function MerchantAppointmentsPage() {
   const handleCancelAndVoid = async (booking: Booking) => {
     try {
       await cancelBooking({ bookingId: booking.id, body: { reason: 'Merchant void' } }).unwrap()
-      toast.success(`Booking ${booking.id.slice(0, 8)} cancelled`, toastColor.success)
+      toast.success(
+        `Booking ${booking.id.slice(0, 8)} cancelled and hold voided`,
+        toastColor.success,
+      )
       setSelectedBooking(null)
       void refetch()
     } catch (err) {
@@ -105,11 +120,13 @@ export default function MerchantAppointmentsPage() {
       header: 'Booking Ref',
       cell: (b) => (
         <div className="flex items-center gap-1.5 font-mono text-xs">
-          <span className="font-semibold text-slate-800">{b.id.slice(0, 8)}</span>
+          <span className="font-semibold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-200/80">
+            {b.id.slice(0, 8)}
+          </span>
           <button
             type="button"
             onClick={() => handleCopy(b.id, b.id)}
-            className="text-slate-400 hover:text-slate-700 transition-colors"
+            className="text-slate-400 hover:text-slate-700 transition-colors p-1"
             title="Copy reference"
           >
             {copiedId === b.id ? (
@@ -123,7 +140,7 @@ export default function MerchantAppointmentsPage() {
     },
     {
       key: 'client',
-      header: 'Client',
+      header: 'Client Details',
       cell: (b) => (
         <div>
           <div className="font-bold text-slate-900 text-xs">{b.clientName}</div>
@@ -143,16 +160,16 @@ export default function MerchantAppointmentsPage() {
     },
     {
       key: 'slot',
-      header: 'Time',
+      header: 'Appointment Time',
       cell: (b) => <span className="font-medium text-slate-700 text-xs">{b.appointmentTime}</span>,
     },
     {
       key: 'hold',
-      header: 'Ticket',
+      header: 'Financials',
       cell: (b) => (
         <div>
           <div className="font-bold text-slate-900 text-xs">{formatUsd(b.servicePrice)}</div>
-          <div className="text-[11px] text-amber-800 font-mono font-medium">
+          <div className="text-[11px] text-amber-800 font-mono font-semibold">
             Hold: {formatUsd(b.holdAmount)}
           </div>
         </div>
@@ -160,7 +177,7 @@ export default function MerchantAppointmentsPage() {
     },
     {
       key: 'status',
-      header: 'Status',
+      header: 'Escrow Status',
       cell: (b) => <HoldStateBadge status={b.status} />,
     },
     {
@@ -172,7 +189,7 @@ export default function MerchantAppointmentsPage() {
           <button
             type="button"
             onClick={() => setInspectConsentBooking(b)}
-            className="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+            className="rounded-lg border border-slate-200/80 bg-white p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors shadow-xs"
             title="Inspect Authorization Receipt"
           >
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
@@ -181,7 +198,7 @@ export default function MerchantAppointmentsPage() {
             title="Settle"
             size="sm"
             fullWidth={false}
-            className="h-7 rounded-xl px-3 text-xs shadow-xs"
+            className="h-7.5 rounded-lg px-3 text-xs shadow-xs font-semibold"
             onClick={() => setSelectedBooking(b)}
           />
         </div>
@@ -196,17 +213,19 @@ export default function MerchantAppointmentsPage() {
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
-            Appointments
+            Appointments &amp; Settlements
           </h1>
           <p className="text-slate-500 text-xs">
-            {isLoading ? 'Loading…' : `${bookings.length} organization bookings`}
+            {isLoading
+              ? 'Loading…'
+              : `${bookings.length} reservations tracked via PayPal escrow hold rails`}
           </p>
         </div>
 
-        <div className="flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-xs">
-          <div className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 font-semibold text-xs text-white shadow-xs">
+        <div className="flex items-center rounded-lg border border-slate-200/80 bg-white p-0.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-1.5 font-semibold text-xs text-white shadow-xs">
             <FileSpreadsheet className="h-3.5 w-3.5" />
-            <span>Bookings ({bookings.length})</span>
+            <span>Active Ledger ({bookings.length})</span>
           </div>
         </div>
       </div>
@@ -219,44 +238,58 @@ export default function MerchantAppointmentsPage() {
       ) : null}
 
       {isError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
           <p>Could not load bookings.</p>
           <PrimaryButton
             title="Retry"
             variant="outline"
             size="sm"
             fullWidth={false}
-            className="mt-3 h-9 rounded-xl px-4"
+            className="mt-3 h-8.5 rounded-lg px-4"
             onClick={() => void refetch()}
           />
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:flex-row sm:items-center sm:justify-between">
+      {/* Instant Search Bar & Filter Pills with Reactive Count Chips */}
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)] sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
           <SearchInput
             value={appointmentSearch}
             onChange={setAppointmentSearch}
-            placeholder="Search by client, reference, or stylist..."
+            placeholder="Search client, reference, stylist, or status..."
+            shortcut="⌘K"
             className="w-full text-xs"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
-          {filterOptions.map((st) => (
-            <button
-              key={st}
-              type="button"
-              onClick={() => setAppointmentFilter(st)}
-              className={`rounded-lg px-2.5 py-1 font-medium text-xs transition-all ${
-                appointmentFilter === st
-                  ? 'bg-slate-900 text-white font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-            >
-              {st === 'ALL' ? 'All' : HOLD_STATE_FILTER_LABEL[st]}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          {filterOptions.map((st) => {
+            const count = filterCounts[st] ?? 0
+            const isActive = appointmentFilter === st
+
+            return (
+              <button
+                key={st}
+                type="button"
+                onClick={() => setAppointmentFilter(st)}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <span>{st === 'ALL' ? 'All' : HOLD_STATE_FILTER_LABEL[st]}</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
+                    isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -265,7 +298,29 @@ export default function MerchantAppointmentsPage() {
           columns={bookingColumns}
           rows={filteredAppointments}
           rowKey={(b) => b.id}
-          className="rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden"
+          className="rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
+          emptyState={
+            <EmptyState
+              icon={Calendar}
+              title="No appointments found"
+              description={
+                appointmentSearch
+                  ? `No reservations matching "${appointmentSearch}". Try clearing your search filters.`
+                  : 'No appointments found in this status category.'
+              }
+              action={
+                appointmentSearch ? (
+                  <PrimaryButton
+                    title="Clear search"
+                    size="sm"
+                    fullWidth={false}
+                    className="h-8 rounded-lg px-3 text-xs"
+                    onClick={() => setAppointmentSearch('')}
+                  />
+                ) : null
+              }
+            />
+          }
         />
       ) : null}
 

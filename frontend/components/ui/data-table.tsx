@@ -36,13 +36,13 @@ export function DataTable<T>({
   return (
     <div
       className={cn(
-        'overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm',
+        'overflow-x-auto rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]',
         className,
       )}
     >
       <table className={cn('w-full text-left text-xs', mono && 'font-mono')}>
         <thead>
-          <tr className="border-slate-200 border-b bg-slate-50 font-semibold text-slate-700">
+          <tr className="border-slate-200/80 border-b bg-slate-50/80 font-semibold text-slate-700">
             {columns.map((column) => (
               <th
                 key={column.key}

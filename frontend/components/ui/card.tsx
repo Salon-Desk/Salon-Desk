@@ -16,12 +16,11 @@ export function Card({ children, hoverTone, padding = 'md', className }: CardPro
   return (
     <div
       className={cn(
-        'rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]',
+        'rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]',
         padding === 'sm' && 'p-3.5',
         padding === 'md' && 'p-4 sm:p-5',
         padding === 'lg' && 'p-5 sm:p-6',
-        hoverTone &&
-          `transition-all hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${TONE_HOVER_BORDER[hoverTone]}`,
+        hoverTone && `hover:border-slate-300 ${TONE_HOVER_BORDER[hoverTone]}`,
         className,
       )}
     >

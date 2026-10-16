@@ -51,7 +51,7 @@ export function ConsoleSidebarNav<T extends string>({
                 const Icon = tab.icon
                 const isActive = tab.id === activeTab
                 const itemClasses = cn(
-                  'group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 font-medium text-xs transition-all duration-150',
+                  'group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 font-medium text-xs transition-all duration-150',
                   isDark
                     ? isActive
                       ? 'bg-white/[0.12] text-white font-semibold shadow-xs border border-white/[0.08]'

@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { Card, SearchInput } from '@/components/ui'
+import { Badge, Card, EmptyState, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import {
@@ -64,17 +64,18 @@ export default function AdminSalonsPage() {
   const handleCopyId = (id: string) => {
     void navigator.clipboard.writeText(id)
     setCopiedId(id)
-    toast.success('Salon ID copied to clipboard', toastColor.success)
+    toast.success(`Salon UUID (${id.slice(0, 8)}…) copied`, toastColor.success)
     setTimeout(() => setCopiedId(null), 2000)
   }
 
   const handleApprove = async (org: ApiOrganization) => {
     try {
       await approveOrg(org.id).unwrap()
-      toast.success(`${org.name} approved successfully`, toastColor.success)
+      toast.success(`${org.name} successfully approved`, toastColor.success)
+      void refetch()
     } catch (err) {
       toast.error(
-        String((err as { data?: { detail?: string } })?.data?.detail || 'Approve failed'),
+        String((err as { data?: { detail?: string } })?.data?.detail || 'Approval failed'),
         toastColor.error,
       )
     }
@@ -84,9 +85,10 @@ export default function AdminSalonsPage() {
     try {
       await suspendOrg(org.id).unwrap()
       toast.success(`${org.name} suspended`, toastColor.success)
+      void refetch()
     } catch (err) {
       toast.error(
-        String((err as { data?: { detail?: string } })?.data?.detail || 'Suspend failed'),
+        String((err as { data?: { detail?: string } })?.data?.detail || 'Suspension failed'),
         toastColor.error,
       )
     }
@@ -98,16 +100,17 @@ export default function AdminSalonsPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-extrabold text-xl text-slate-900 tracking-tight sm:text-2xl">
-            Partner Salons
+            Partner Salons Directory
           </h1>
           <p className="text-xs text-slate-500">
-            Verify, approve, and manage multi-tenant salon organizations and sandbox credentials.
+            Verify, approve, and audit multi-tenant salon organizations, take-rate rules, and
+            sandbox credentials.
           </p>
         </div>
       </div>
 
       {/* Filter bar & Search */}
-      <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)] sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-1.5">
           {(['all', 'pending', 'approved', 'suspended'] as const).map((key) => {
             const isActive = filter === key
@@ -116,16 +119,16 @@ export default function AdminSalonsPage() {
                 key={key}
                 type="button"
                 onClick={() => setFilter(key)}
-                className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-stone-950 text-white shadow-xs'
+                    ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <span>{key}</span>
                 <span
-                  className={`ml-1.5 rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
+                    isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'
                   }`}
                 >
                   {counts[key]}
@@ -139,7 +142,8 @@ export default function AdminSalonsPage() {
           <SearchInput
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search salon name or ID…"
+            placeholder="Search salon name or UUID…"
+            shortcut="⌘K"
             className="w-full text-xs"
           />
         </div>
@@ -166,59 +170,53 @@ export default function AdminSalonsPage() {
               .join('')
               .toUpperCase()
 
+            const statusTone = isApproved ? 'emerald' : isPending ? 'amber' : 'rose'
+
             return (
               <Card
                 key={org.id}
-                className="flex flex-col gap-4 rounded-xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-4 rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 font-extrabold text-xs text-stone-950 shadow-xs">
-                    {initials || <Building2 className="h-4.5 w-4.5" />}
+                <div className="flex items-start gap-3.5">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 font-extrabold text-xs text-stone-950 shadow-xs">
+                    {initials || <Building2 className="h-5 w-5" />}
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-bold text-sm text-slate-900">{org.name}</h3>
-
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize ${
-                          isApproved
-                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                            : isPending
-                              ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                              : 'bg-rose-50 text-rose-800 border border-rose-200'
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            isApproved
-                              ? 'bg-emerald-500'
-                              : isPending
-                                ? 'bg-amber-500 animate-pulse'
-                                : 'bg-rose-500'
-                          }`}
-                        />
+                      <h3 className="font-bold text-sm text-slate-900 tracking-tight">
+                        {org.name}
+                      </h3>
+                      <Badge tone={statusTone} size="sm">
                         {org.status}
-                      </span>
+                      </Badge>
                     </div>
 
                     <p className="text-xs text-slate-500 line-clamp-1 max-w-xl">
-                      {org.description || 'Modern boutique salon on SalonDesk network.'}
+                      {org.description ||
+                        'Modern boutique salon operating with PayPal zero-debit authorization holds.'}
                     </p>
 
-                    <div className="flex items-center gap-2 pt-0.5 text-[11px] text-slate-400 font-mono">
-                      <span>ID: {org.id.slice(0, 12)}…</span>
+                    <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-500">
+                      {/* Interactive UUID copy chip */}
                       <button
                         type="button"
                         onClick={() => handleCopyId(org.id)}
-                        className="inline-flex items-center gap-1 hover:text-slate-700 cursor-pointer text-[10px]"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-slate-50 px-2 py-0.5 font-mono text-[11px] text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 cursor-pointer shadow-xs"
                         title="Copy full UUID"
                       >
-                        <Copy className="h-2.5 w-2.5" />
-                        <span>{copiedId === org.id ? 'Copied' : 'Copy'}</span>
+                        <span>UUID: {org.id.slice(0, 8)}…</span>
+                        {copiedId === org.id ? (
+                          <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-3 w-3 text-slate-400" />
+                        )}
                       </button>
+
                       <span>·</span>
-                      <span>Owner: {org.owner_id ? `${org.owner_id.slice(0, 8)}…` : 'Direct'}</span>
+                      <span className="font-mono text-slate-400">
+                        Owner: {org.owner_id ? `${org.owner_id.slice(0, 8)}…` : 'Direct'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -231,7 +229,7 @@ export default function AdminSalonsPage() {
                       fullWidth={false}
                       isLoading={approving}
                       icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-                      className="h-9 rounded-xl px-4 text-xs font-semibold shadow-xs"
+                      className="h-8.5 rounded-lg px-3.5 text-xs font-semibold shadow-xs"
                       onClick={() => void handleApprove(org)}
                     />
                   )}
@@ -243,7 +241,7 @@ export default function AdminSalonsPage() {
                       fullWidth={false}
                       isLoading={suspending}
                       icon={<PauseCircle className="h-3.5 w-3.5" />}
-                      className="h-9 rounded-xl px-3.5 text-xs shadow-xs"
+                      className="h-8.5 rounded-lg px-3.5 text-xs font-semibold shadow-xs"
                       onClick={() => void handleSuspend(org)}
                     />
                   )}
@@ -253,27 +251,29 @@ export default function AdminSalonsPage() {
           })}
 
           {organizations.length === 0 && (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center">
-              <Building2 className="mx-auto h-8 w-8 text-slate-300" />
-              <p className="mt-2.5 text-sm font-semibold text-slate-700">No salons found</p>
-              <p className="mt-1 text-xs text-slate-400">
-                {searchQuery
-                  ? `No salons matching "${searchQuery}".`
-                  : 'No organizations match the selected filter.'}
-              </p>
-              {(filter !== 'all' || searchQuery) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilter('all')
-                    setSearchQuery('')
-                  }}
-                  className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
+            <EmptyState
+              icon={Building2}
+              title="No salons found"
+              description={
+                searchQuery
+                  ? `No salons matching "${searchQuery}". Clear your search query or switch filters.`
+                  : 'No salons match the selected status category.'
+              }
+              action={
+                filter !== 'all' || searchQuery ? (
+                  <PrimaryButton
+                    title="Clear filters"
+                    size="sm"
+                    fullWidth={false}
+                    className="h-8 rounded-lg px-4 text-xs"
+                    onClick={() => {
+                      setFilter('all')
+                      setSearchQuery('')
+                    }}
+                  />
+                ) : null
+              }
+            />
           )}
         </div>
       </AdminQueryState>
