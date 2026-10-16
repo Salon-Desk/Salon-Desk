@@ -275,10 +275,10 @@ export default function MerchantCalendarPage() {
                               <div className="text-slate-500 text-xs truncate">{b.serviceName}</div>
 
                               <div className="mt-2.5 flex items-center justify-between border-slate-200/60 border-t pt-2 text-[11px]">
-                                <span className="font-bold text-slate-800">
+                                <span className="font-bold text-slate-800 font-mono tabular-nums tracking-tight">
                                   {formatUsd(b.servicePrice)}
                                 </span>
-                                <span className="font-mono text-amber-800 font-semibold">
+                                <span className="font-mono tabular-nums text-amber-800 font-semibold">
                                   Hold: {formatUsd(b.holdAmount)}
                                 </span>
                               </div>
@@ -308,8 +308,8 @@ export default function MerchantCalendarPage() {
                                       <span className="truncate">{b.clientEmail}</span>
                                     </div>
                                   )}
-                                  <div className="flex items-center gap-1.5 pt-1 text-slate-200">
-                                    <ShieldCheck className="h-3 w-3 text-emerald-400" />
+                                  <div className="flex items-center gap-1.5 pt-1 text-slate-200 font-mono tabular-nums">
+                                    <ShieldCheck className="h-3 w-3 text-emerald-400 shrink-0" />
                                     <span>
                                       Escrow Hold: {formatUsd(b.holdAmount)} (Total:{' '}
                                       {formatUsd(b.servicePrice)})

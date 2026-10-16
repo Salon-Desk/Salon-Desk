@@ -50,7 +50,7 @@ export function SearchInput({
         aria-label={ariaLabel ?? placeholder}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-slate-200/80 bg-white py-2 pr-14 pl-9 text-xs text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all placeholder:text-slate-400 focus:border-amber-500 focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-amber-500"
+        className="w-full rounded-lg border border-slate-200/80 bg-white py-2 pr-14 pl-9 text-xs text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] transition-all placeholder:text-slate-400 focus:border-amber-500 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20"
       />
       {value ? (
         <button

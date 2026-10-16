@@ -16,7 +16,7 @@ export function Card({ children, hoverTone, padding = 'md', className }: CardPro
   return (
     <div
       className={cn(
-        'rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]',
+        'rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] transition-all duration-200 hover:shadow-[0_6px_16px_-4px_rgba(0,0,0,0.06),0_2px_4px_-1px_rgba(0,0,0,0.03)]',
         padding === 'sm' && 'p-3.5',
         padding === 'md' && 'p-4 sm:p-5',
         padding === 'lg' && 'p-5 sm:p-6',

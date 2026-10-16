@@ -76,7 +76,7 @@ export default function MerchantDashboardPage() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-7 animate-in fade-in duration-300">
       {/* Executive Hero Banner */}
-      <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-gradient-to-br from-white/95 via-slate-50/90 to-amber-50/30 p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] backdrop-blur-md sm:p-6">
+      <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-gradient-to-br from-white/95 via-slate-50/90 to-amber-50/30 p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03),inset_0_1px_0_0_rgba(255,255,255,0.85)] backdrop-blur-md sm:p-6">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 h-72 w-72 rounded-full bg-gradient-to-br from-amber-400/15 via-champagne-300/10 to-transparent blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col justify-between gap-5 md:flex-row md:items-center">
           <div className="space-y-1.5">

@@ -155,7 +155,7 @@ export default function AdminCommissionPage() {
                       c.type === 'percentage' ? 'emerald' : c.type === 'flat' ? 'sky' : 'purple'
 
                     return (
-                      <tr key={c.id} className="transition-colors hover:bg-slate-50/60">
+                      <tr key={c.id} className="group transition-colors hover:bg-slate-50/60">
                         <td className="px-4 py-3.5 font-bold text-slate-900">
                           <div className="flex items-center gap-2">
                             <CreditCard className="h-4 w-4 text-slate-400" />
@@ -171,10 +171,10 @@ export default function AdminCommissionPage() {
                             {c.type}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3.5 font-bold text-emerald-800 font-mono text-sm">
+                        <td className="px-4 py-3.5 font-bold text-emerald-800 font-mono tabular-nums tracking-tight text-sm">
                           {formatCommissionRate(c)}
                         </td>
-                        <td className="px-4 py-3.5 text-slate-400 font-mono text-[11px]">
+                        <td className="px-4 py-3.5 text-slate-400 font-mono tabular-nums text-[11px]">
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             <span>Active Policy</span>
@@ -187,7 +187,7 @@ export default function AdminCommissionPage() {
                               setEditing(c)
                               setIsOpen(true)
                             }}
-                            className="rounded-lg"
+                            className="rounded-lg opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </IconButton>

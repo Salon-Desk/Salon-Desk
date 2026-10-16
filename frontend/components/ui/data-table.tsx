@@ -36,7 +36,7 @@ export function DataTable<T>({
   return (
     <div
       className={cn(
-        'overflow-x-auto rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]',
+        'overflow-x-auto rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)]',
         className,
       )}
     >
@@ -70,7 +70,7 @@ export function DataTable<T>({
             </tr>
           ) : (
             rows.map((row) => (
-              <tr key={rowKey(row)} className="transition-colors hover:bg-slate-50">
+              <tr key={rowKey(row)} className="group transition-colors hover:bg-slate-50/80">
                 {columns.map((column) => (
                   <td
                     key={column.key}

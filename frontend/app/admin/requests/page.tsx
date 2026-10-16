@@ -114,7 +114,7 @@ function PayloadParameterCard({ cr }: { cr: ApiChangeRequest }) {
             <span className="text-[10px] uppercase text-slate-400 block font-sans">
               Notice Window
             </span>
-            <div className="mt-1 font-bold text-slate-900 text-sm">
+            <div className="mt-1 font-bold text-slate-900 text-sm tabular-nums tracking-tight">
               {freeCancelHours}
               <span className="text-xs font-normal text-slate-500 ml-0.5">hrs</span>
             </div>
@@ -127,7 +127,9 @@ function PayloadParameterCard({ cr }: { cr: ApiChangeRequest }) {
             <span className="text-[10px] uppercase text-slate-400 block font-sans">
               No-Show Penalty
             </span>
-            <div className="mt-1 font-bold text-rose-800 text-sm">${noShowFee}</div>
+            <div className="mt-1 font-bold text-rose-800 text-sm tabular-nums tracking-tight">
+              ${noShowFee}
+            </div>
             <span className="text-[10px] text-slate-400 font-sans block mt-0.5">
               Captured on missed slot
             </span>
@@ -137,7 +139,9 @@ function PayloadParameterCard({ cr }: { cr: ApiChangeRequest }) {
             <span className="text-[10px] uppercase text-slate-400 block font-sans">
               Authorization Hold
             </span>
-            <div className="mt-1 font-bold text-amber-900 text-sm">{holdPercent}%</div>
+            <div className="mt-1 font-bold text-amber-900 text-sm tabular-nums tracking-tight">
+              {holdPercent}%
+            </div>
             <span className="text-[10px] text-slate-400 font-sans block mt-0.5">
               Zero-debit hold share
             </span>

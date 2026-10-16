@@ -62,7 +62,7 @@ export function Modal({
   useDismissableLayer(onClose)
 
   return (
-    <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm duration-200 fade-in">
+    <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs duration-200 fade-in">
       {/* Backdrop click target, kept separate from the panel so clicks inside do not bubble out. */}
       <button
         type="button"
@@ -77,13 +77,13 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         className={cn(
-          'relative flex max-h-[90vh] w-full animate-in flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl duration-200 zoom-in-95',
+          'relative flex max-h-[90vh] w-full animate-in flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_24px_48px_-12px_rgba(0,0,0,0.15),inset_0_1px_0_0_rgba(255,255,255,0.9)] duration-200 zoom-in-95',
           MODAL_SIZES[size],
           className,
         )}
       >
         {!hideHeader && (
-          <div className="flex shrink-0 items-start justify-between gap-4 border-slate-200 border-b bg-slate-50/80 px-6 py-4">
+          <div className="flex shrink-0 items-start justify-between gap-4 border-slate-200/80 border-b bg-slate-50/90 px-6 py-4">
             <div className="flex items-start gap-2.5">
               {icon}
               <div>
@@ -111,7 +111,7 @@ export function Modal({
         <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
 
         {footer && (
-          <div className="flex shrink-0 items-center justify-end gap-2 border-slate-200 border-t bg-slate-50 px-6 py-3">
+          <div className="flex shrink-0 items-center justify-end gap-2 border-slate-200/80 border-t bg-slate-50/80 px-6 py-3">
             {footer}
           </div>
         )}
@@ -144,7 +144,7 @@ export function Drawer({
   useDismissableLayer(onClose)
 
   return (
-    <div className="fixed inset-0 z-50 flex animate-in justify-end bg-slate-900/40 backdrop-blur-sm fade-in">
+    <div className="fixed inset-0 z-50 flex animate-in justify-end bg-slate-900/35 backdrop-blur-xs fade-in">
       <button
         type="button"
         aria-label="Close panel"
@@ -158,12 +158,12 @@ export function Drawer({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         className={cn(
-          'relative flex h-full w-full max-w-md animate-in flex-col border-slate-200 border-l bg-white shadow-2xl duration-200 slide-in-from-right-8',
+          'relative flex h-full w-full max-w-md animate-in flex-col border-slate-200/90 border-l bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.14),inset_0_1px_0_0_rgba(255,255,255,0.9)] duration-200 slide-in-from-right-8',
           className,
         )}
       >
         {(title || subtitle) && (
-          <div className="flex shrink-0 items-center justify-between gap-3 border-slate-200 border-b bg-slate-50 px-4 py-3.5">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-slate-200/80 border-b bg-slate-50/90 backdrop-blur-md px-4 py-3.5">
             <div className="flex items-center gap-2">
               {icon}
               <div>
@@ -188,7 +188,11 @@ export function Drawer({
 
         <div className="flex-1 overflow-y-auto">{children}</div>
 
-        {footer && <div className="shrink-0 border-slate-200 border-t bg-white p-4">{footer}</div>}
+        {footer && (
+          <div className="shrink-0 border-slate-200/80 border-t bg-white/95 backdrop-blur-md p-4">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   )

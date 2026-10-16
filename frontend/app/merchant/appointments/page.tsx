@@ -126,7 +126,7 @@ export default function MerchantAppointmentsPage() {
           <button
             type="button"
             onClick={() => handleCopy(b.id, b.id)}
-            className="text-slate-400 hover:text-slate-700 transition-colors p-1"
+            className="text-slate-400 hover:text-slate-700 transition-colors p-1 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150"
             title="Copy reference"
           >
             {copiedId === b.id ? (
@@ -168,8 +168,10 @@ export default function MerchantAppointmentsPage() {
       header: 'Financials',
       cell: (b) => (
         <div>
-          <div className="font-bold text-slate-900 text-xs">{formatUsd(b.servicePrice)}</div>
-          <div className="text-[11px] text-amber-800 font-mono font-semibold">
+          <div className="font-bold text-slate-900 text-xs font-mono tabular-nums tracking-tight">
+            {formatUsd(b.servicePrice)}
+          </div>
+          <div className="text-[11px] text-amber-800 font-mono tabular-nums font-semibold">
             Hold: {formatUsd(b.holdAmount)}
           </div>
         </div>
@@ -185,7 +187,7 @@ export default function MerchantAppointmentsPage() {
       header: 'Actions',
       align: 'right',
       cell: (b) => (
-        <div className="flex items-center justify-end gap-1.5">
+        <div className="flex items-center justify-end gap-1.5 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
           <button
             type="button"
             onClick={() => setInspectConsentBooking(b)}

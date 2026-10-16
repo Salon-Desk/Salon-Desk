@@ -63,7 +63,7 @@ export default function AdminOverviewPage() {
       {data ? (
         <div className="mx-auto w-full max-w-7xl space-y-7 animate-in fade-in duration-300">
           {/* Executive Header Banner */}
-          <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-gradient-to-br from-white/95 via-slate-50/90 to-amber-50/30 p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] backdrop-blur-md sm:p-6">
+          <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-gradient-to-br from-white/95 via-slate-50/90 to-amber-50/30 p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03),inset_0_1px_0_0_rgba(255,255,255,0.85)] backdrop-blur-md sm:p-6">
             <div className="absolute top-0 right-0 -mt-10 -mr-10 h-72 w-72 rounded-full bg-gradient-to-br from-amber-400/15 via-sky-400/10 to-transparent blur-3xl pointer-events-none" />
             <div className="relative z-10 flex flex-col justify-between gap-5 md:flex-row md:items-center">
               <div className="space-y-1.5">
@@ -166,7 +166,7 @@ export default function AdminOverviewPage() {
               </div>
               <div className="mt-3 flex items-end justify-between">
                 <div>
-                  <div className="text-2xl font-extrabold text-slate-900 tracking-tight sm:text-3xl tabular-nums">
+                  <div className="text-2xl font-extrabold text-slate-900 tracking-tight sm:text-3xl font-mono tabular-nums">
                     {totalOrgs}
                   </div>
                   <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
@@ -195,7 +195,7 @@ export default function AdminOverviewPage() {
               </div>
               <div className="mt-3 flex items-end justify-between">
                 <div>
-                  <div className="text-2xl font-extrabold text-slate-900 tracking-tight sm:text-3xl tabular-nums">
+                  <div className="text-2xl font-extrabold text-slate-900 tracking-tight sm:text-3xl font-mono tabular-nums">
                     {pendingOrgs + data.pending_change_requests}
                   </div>
                   <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
@@ -224,7 +224,7 @@ export default function AdminOverviewPage() {
               </div>
               <div className="mt-3 flex items-end justify-between">
                 <div>
-                  <div className="text-2xl font-extrabold text-slate-900 tracking-tight sm:text-3xl tabular-nums">
+                  <div className="text-2xl font-extrabold text-slate-900 tracking-tight sm:text-3xl font-mono tabular-nums">
                     {formatUsd(Number(data.ledger_amount_sum))}
                   </div>
                   <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
@@ -251,7 +251,7 @@ export default function AdminOverviewPage() {
               </div>
               <div className="mt-3 flex items-end justify-between">
                 <div>
-                  <div className="text-2xl font-extrabold text-slate-900 tracking-tight sm:text-3xl tabular-nums">
+                  <div className="text-2xl font-extrabold text-slate-900 tracking-tight sm:text-3xl font-mono tabular-nums">
                     {data.pending_change_requests}
                   </div>
                   <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
@@ -348,7 +348,7 @@ export default function AdminOverviewPage() {
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                     <span>Approved</span>
                   </div>
-                  <div className="mt-1.5 text-xl font-extrabold text-slate-900 tabular-nums">
+                  <div className="mt-1.5 text-xl font-extrabold text-slate-900 font-mono tabular-nums tracking-tight">
                     {approvedOrgs}
                   </div>
                   <div className="text-[11px] text-slate-500">{approvedPct}% of network</div>
@@ -359,7 +359,7 @@ export default function AdminOverviewPage() {
                     <Clock className="h-3.5 w-3.5 text-amber-600" />
                     <span>Pending</span>
                   </div>
-                  <div className="mt-1.5 text-xl font-extrabold text-slate-900 tabular-nums">
+                  <div className="mt-1.5 text-xl font-extrabold text-slate-900 font-mono tabular-nums tracking-tight">
                     {pendingOrgs}
                   </div>
                   <div className="text-[11px] text-slate-500">{pendingPct}% awaiting review</div>
@@ -370,7 +370,7 @@ export default function AdminOverviewPage() {
                     <ShieldAlert className="h-3.5 w-3.5 text-rose-600" />
                     <span>Suspended</span>
                   </div>
-                  <div className="mt-1.5 text-xl font-extrabold text-slate-900 tabular-nums">
+                  <div className="mt-1.5 text-xl font-extrabold text-slate-900 font-mono tabular-nums tracking-tight">
                     {suspendedOrgs}
                   </div>
                   <div className="text-[11px] text-slate-500">{suspendedPct}% quarantined</div>

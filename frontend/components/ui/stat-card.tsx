@@ -133,7 +133,7 @@ export function StatCard({
           : undefined
       }
       className={cn(
-        'group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4.5 sm:p-5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-200 hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]',
+        'group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4.5 sm:p-5 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] transition-all duration-200 hover:border-slate-300 hover:shadow-[0_6px_16px_-4px_rgba(0,0,0,0.06),0_2px_4px_-1px_rgba(0,0,0,0.03)]',
         isClickable && 'cursor-pointer select-none active:scale-[0.99]',
         className,
       )}
@@ -147,7 +147,7 @@ export function StatCard({
         </span>
         <div
           className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-lg border transition-transform duration-200 group-hover:scale-105',
+            'flex h-8 w-8 items-center justify-center rounded-lg border transition-transform duration-200 group-hover:scale-105 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4)]',
             TONE_BG[tone],
           )}
         >
@@ -159,7 +159,7 @@ export function StatCard({
         <div>
           <div
             className={cn(
-              'font-extrabold text-2xl sm:text-3xl tracking-tight tabular-nums',
+              'font-mono font-extrabold text-2xl sm:text-3xl tracking-tight tabular-nums',
               emphasizeValue ? TONE_TEXT[tone] : 'text-slate-900',
             )}
           >

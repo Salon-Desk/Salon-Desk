@@ -10,10 +10,13 @@ import { Badge, type BadgeProps } from './badge'
 
 type StatusBadgeProps = Omit<BadgeProps, 'children' | 'tone'>
 
-/** Renders a hold state with its canonical colour. */
+/** Renders a hold state with its canonical colour and micro-dot kinetic pulse. */
 export function HoldStateBadge({ status, ...props }: StatusBadgeProps & { status: HoldState }) {
+  const isLive = status === 'HELD' || status === 'REAUTHORIZED'
+  const isCaptured = status === 'CAPTURED'
+
   return (
-    <Badge tone={HOLD_STATE_TONE[status]} {...props}>
+    <Badge tone={HOLD_STATE_TONE[status]} dot={isLive || isCaptured} pulsing={isLive} {...props}>
       {status}
     </Badge>
   )
@@ -23,8 +26,16 @@ export function OrganizationStatusBadge({
   status,
   ...props
 }: StatusBadgeProps & { status: OrganizationStatus }) {
+  const isApproved = status === 'APPROVED'
+  const isPending = status === 'PENDING_REVIEW'
+
   return (
-    <Badge tone={ORGANIZATION_STATUS_TONE[status]} {...props}>
+    <Badge
+      tone={ORGANIZATION_STATUS_TONE[status]}
+      dot={isApproved || isPending}
+      pulsing={isPending}
+      {...props}
+    >
       {status.replace(/_/g, ' ')}
     </Badge>
   )
@@ -34,8 +45,10 @@ export function ChangeRequestStatusBadge({
   status,
   ...props
 }: StatusBadgeProps & { status: ChangeRequestStatus }) {
+  const isPending = status === 'PENDING_REVIEW'
+
   return (
-    <Badge tone={CHANGE_REQUEST_STATUS_TONE[status]} {...props}>
+    <Badge tone={CHANGE_REQUEST_STATUS_TONE[status]} dot={isPending} pulsing={isPending} {...props}>
       {status.replace(/_/g, ' ')}
     </Badge>
   )
