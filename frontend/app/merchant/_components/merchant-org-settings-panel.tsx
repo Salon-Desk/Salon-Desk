@@ -55,7 +55,10 @@ export function MerchantOrgSettingsPanel() {
   }
 
   return (
-    <Card padding="lg" className="rounded-3xl border border-slate-200/90 bg-white shadow-xs">
+    <Card
+      padding="lg"
+      className="rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
+    >
       <h2 className="font-bold text-slate-900 text-sm">Salon location &amp; timezone</h2>
       <p className="mt-1 text-xs text-slate-500">
         Used for calendar availability and client-facing salon profile.

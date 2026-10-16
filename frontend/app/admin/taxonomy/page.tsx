@@ -53,15 +53,18 @@ export default function AdminTaxonomyPage() {
         errorLabel="Could not load categories."
       >
         {!isLoading && !isError && categories.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center">
             <Tags className="mx-auto h-8 w-8 text-slate-300" />
-            <p className="mt-3 text-sm font-medium text-slate-700">No categories yet</p>
+            <p className="mt-2.5 text-sm font-medium text-slate-700">No categories yet</p>
           </div>
         ) : null}
 
         <div className="grid gap-3 sm:grid-cols-2">
           {categories.map((category) => (
-            <Card key={category.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+            <Card
+              key={category.id}
+              className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="font-bold text-sm text-slate-900">{category.name}</h3>

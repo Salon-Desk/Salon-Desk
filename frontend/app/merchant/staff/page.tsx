@@ -31,6 +31,7 @@ export default function MerchantStaffPage() {
       await deleteEmployee(deleting.id).unwrap()
       toast.success('Team member removed', toastColor.success)
       setDeleting(null)
+      void refetch()
     } catch (err) {
       const message =
         (err as { data?: { detail?: string } })?.data?.detail || 'Could not remove employee'
@@ -39,7 +40,7 @@ export default function MerchantStaffPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300">
+    <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
@@ -55,7 +56,7 @@ export default function MerchantStaffPage() {
           size="sm"
           fullWidth={false}
           icon={<Plus className="h-4 w-4" />}
-          className="h-9 rounded-xl px-3.5 text-xs shadow-xs"
+          className="h-9 rounded-xl px-4 text-xs font-semibold shadow-xs"
           onClick={() => setIsAddOpen(true)}
         />
       </div>
@@ -82,50 +83,71 @@ export default function MerchantStaffPage() {
       ) : null}
 
       {!isLoading && !isError && employees.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center">
-          <UserRound className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm font-medium text-slate-700">No team members yet</p>
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center">
+          <UserRound className="mx-auto h-9 w-9 text-slate-300" />
+          <p className="mt-2.5 text-sm font-semibold text-slate-700">No team members yet</p>
           <p className="mt-1 text-xs text-slate-500">
-            Add a stylist or reception account to get started.
+            Add a stylist or reception account to assign bookings and manage schedule availability.
           </p>
+          <PrimaryButton
+            title="Add first team member"
+            size="sm"
+            fullWidth={false}
+            className="mt-4 h-9 rounded-lg px-4"
+            onClick={() => setIsAddOpen(true)}
+          />
         </div>
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {employees.map((member) => (
-          <Card
-            key={member.id}
-            hoverTone="amber"
-            className="flex flex-col justify-between space-y-4 rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs"
-          >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-                  <UserRound className="h-6 w-6" />
+        {employees.map((member) => {
+          const name = displayName(member)
+          const initials = name
+            .split(' ')
+            .map((w) => w[0])
+            .filter(Boolean)
+            .slice(0, 2)
+            .join('')
+            .toUpperCase()
+
+          return (
+            <Card
+              key={member.id}
+              hoverTone="amber"
+              className="flex flex-col justify-between space-y-4 rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 font-bold text-sm text-amber-800">
+                    {initials || <UserRound className="h-5 w-5" />}
+                  </div>
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 font-semibold text-[11px] text-emerald-800 capitalize">
+                    {member.status || 'active'}
+                  </span>
                 </div>
-                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 font-medium text-[11px] text-emerald-800 capitalize">
-                  {member.status || 'active'}
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">{name}</h3>
+                  <p className="text-xs font-semibold text-amber-800 capitalize">
+                    {member.role.replace('_', ' ')}
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500 font-mono">{member.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                <span className="font-mono text-[10px] text-slate-400">
+                  ID: {member.id.slice(0, 8)}…
                 </span>
+                <IconButton
+                  aria-label="Remove team member"
+                  onClick={() => setDeleting(member)}
+                  className="text-rose-600 hover:bg-rose-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </IconButton>
               </div>
-              <div>
-                <h3 className="font-bold text-base text-slate-900">{displayName(member)}</h3>
-                <p className="text-xs font-medium text-amber-800 capitalize">
-                  {member.role.replace('_', ' ')}
-                </p>
-                <p className="mt-1 text-[11px] text-slate-500">{member.email}</p>
-              </div>
-            </div>
-            <div className="flex justify-end border-t border-slate-100 pt-3">
-              <IconButton
-                aria-label="Remove team member"
-                onClick={() => setDeleting(member)}
-                className="text-rose-600 hover:bg-rose-50"
-              >
-                <Trash2 className="h-4 w-4" />
-              </IconButton>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          )
+        })}
       </div>
 
       <EmployeeFormModal open={isAddOpen} onClose={() => setIsAddOpen(false)} />

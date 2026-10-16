@@ -24,7 +24,11 @@ type CalendarDay = 'TODAY' | 'TOMORROW'
 export default function MerchantCalendarPage() {
   const { data: org } = useGetMyOrganizationQuery()
   const { data: employees = [], isLoading: staffLoading } = useGetMyEmployeesQuery()
-  const { data: apiBookings = [], isLoading: bookingsLoading } = useGetMyOrgBookingsQuery()
+  const {
+    data: apiBookings = [],
+    isLoading: bookingsLoading,
+    refetch: refetchBookings,
+  } = useGetMyOrgBookingsQuery()
 
   const [markShow, { isLoading: markingShow }] = useMarkBookingShowMutation()
   const [markNoShow, { isLoading: markingNoShow }] = useMarkBookingNoShowMutation()
@@ -142,13 +146,13 @@ export default function MerchantCalendarPage() {
       ) : null}
 
       {!isLoading && staff.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
           Add staff members to see the schedule grid.
         </div>
       ) : null}
 
       {!isLoading && staff.length > 0 ? (
-        <div className="overflow-x-auto rounded-3xl border border-slate-200/90 bg-white shadow-xs">
+        <div className="overflow-x-auto rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
           <div className="min-w-[850px]">
             <div
               className="grid border-slate-200/80 border-b bg-slate-50/70"
@@ -157,13 +161,16 @@ export default function MerchantCalendarPage() {
               }}
             >
               {filteredStaff.map((stylist) => (
-                <div key={stylist.id} className="border-slate-200/80 border-r p-4 last:border-r-0">
+                <div
+                  key={stylist.id}
+                  className="border-slate-200/80 border-r p-3.5 last:border-r-0"
+                >
                   <div className="flex items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={stylist.avatar}
                       alt={stylist.name}
-                      className="h-10 w-10 rounded-full border border-slate-200 object-cover"
+                      className="h-9 w-9 rounded-full border border-slate-200 object-cover"
                     />
                     <div className="min-w-0">
                       <div className="truncate font-bold text-slate-900 text-sm">
@@ -179,7 +186,7 @@ export default function MerchantCalendarPage() {
             </div>
 
             <div
-              className="grid min-h-[500px] gap-3 divide-x divide-slate-100 bg-slate-50/30 p-3"
+              className="grid min-h-[500px] gap-2.5 divide-x divide-slate-100 bg-slate-50/30 p-2.5"
               style={{
                 gridTemplateColumns: `repeat(${filteredStaff.length}, minmax(0, 1fr))`,
               }}
@@ -206,9 +213,9 @@ export default function MerchantCalendarPage() {
                 })
 
                 return (
-                  <div key={stylist.id} className="space-y-2.5">
+                  <div key={stylist.id} className="space-y-2">
                     {stylistBookings.length === 0 ? (
-                      <div className="rounded-2xl border border-slate-200/60 border-dashed p-6 text-center text-slate-400 text-xs">
+                      <div className="rounded-lg border border-slate-200/60 border-dashed p-5 text-center text-slate-400 text-xs">
                         No bookings scheduled.
                       </div>
                     ) : (
@@ -223,15 +230,15 @@ export default function MerchantCalendarPage() {
                             key={b.id}
                             type="button"
                             onClick={() => setSelectedBooking(b)}
-                            className={`group relative w-full cursor-pointer rounded-2xl border p-3.5 text-left transition-all hover:shadow-sm ${
+                            className={`group relative w-full cursor-pointer rounded-lg border p-3 text-left transition-all hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${
                               isHeld
-                                ? 'border-amber-200 bg-amber-50/70 hover:border-amber-300'
+                                ? 'border-amber-200/90 bg-amber-50/60 hover:border-amber-300'
                                 : isReauth
-                                  ? 'border-sky-200 bg-sky-50/70 hover:border-sky-300'
+                                  ? 'border-sky-200/90 bg-sky-50/60 hover:border-sky-300'
                                   : isCaptured
-                                    ? 'border-emerald-200 bg-emerald-50/70 hover:border-emerald-300'
+                                    ? 'border-emerald-200/90 bg-emerald-50/60 hover:border-emerald-300'
                                     : isNoShow
-                                      ? 'border-rose-200 bg-rose-50/70 hover:border-rose-300'
+                                      ? 'border-rose-200/90 bg-rose-50/60 hover:border-rose-300'
                                       : 'border-slate-200 bg-slate-100/60 opacity-60'
                             }`}
                           >
@@ -277,6 +284,7 @@ export default function MerchantCalendarPage() {
               .then(() => {
                 toast.success('Marked show', toastColor.success)
                 setSelectedBooking(null)
+                void refetchBookings()
               })
               .catch((err) =>
                 toast.error(
@@ -291,6 +299,7 @@ export default function MerchantCalendarPage() {
               .then(() => {
                 toast.success('No-show captured', toastColor.success)
                 setSelectedBooking(null)
+                void refetchBookings()
               })
               .catch((err) =>
                 toast.error(
@@ -305,6 +314,7 @@ export default function MerchantCalendarPage() {
               .then(() => {
                 toast.success('Booking cancelled', toastColor.success)
                 setSelectedBooking(null)
+                void refetchBookings()
               })
               .catch((err) =>
                 toast.error(

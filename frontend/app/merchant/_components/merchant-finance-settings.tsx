@@ -164,11 +164,11 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
         {showPaypal ? (
           <Card
             padding="lg"
-            className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs"
+            className="space-y-4 rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
           >
             <div className="flex items-center justify-between border-slate-100 border-b pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-900 border border-amber-200/80">
                   <CreditCard className="h-4 w-4 text-amber-700" />
                 </div>
                 <div>
@@ -181,7 +181,7 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
               </span>
             </div>
 
-            <div className="space-y-2 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 font-mono text-xs">
+            <div className="space-y-2 rounded-lg border border-slate-200/80 bg-slate-50/70 p-3 font-mono text-xs">
               <div className="flex justify-between items-center">
                 <span className="font-sans text-slate-500">Merchant ID:</span>
                 <div className="flex items-center gap-1.5">
@@ -223,7 +223,7 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
               isDisabled={submitting}
               onClick={() => setIsPaypalOpen(true)}
               icon={<ExternalLink className="h-3.5 w-3.5" />}
-              className="h-10 rounded-xl text-xs"
+              className="h-9 rounded-lg text-xs"
             />
           </Card>
         ) : null}
@@ -231,11 +231,11 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
         {showPolicies ? (
           <Card
             padding="lg"
-            className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs"
+            className="space-y-4 rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
           >
             <div className="flex items-center justify-between border-slate-100 border-b pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-900 border border-amber-200/80">
                   <Clock className="h-4 w-4 text-amber-700" />
                 </div>
                 <div>
@@ -250,7 +250,7 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
               </span>
             </div>
 
-            <div className="space-y-2 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 text-xs">
+            <div className="space-y-2 rounded-lg border border-slate-200/80 bg-slate-50/70 p-3 text-xs">
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Free Notice Cutoff:</span>
                 <span className="font-bold text-slate-900 font-mono">≥ {policyHours} hours</span>
@@ -274,7 +274,7 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
               isDisabled={submitting}
               onClick={() => setIsPolicyOpen(true)}
               icon={<Sliders className="h-3.5 w-3.5" />}
-              className="h-10 rounded-xl text-xs"
+              className="h-9 rounded-lg text-xs"
             />
           </Card>
         ) : null}
@@ -282,7 +282,7 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
 
       <Card
         padding="lg"
-        className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs"
+        className="space-y-4 rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
       >
         <div className="flex items-center justify-between border-slate-100 border-b pb-3">
           <div>
@@ -294,7 +294,7 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
           </span>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {changeRequests.length === 0 ? (
             <div className="py-8 text-center text-slate-400 text-xs">
               No change requests on record.
@@ -311,7 +311,7 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
               .map((cr) => (
                 <div
                   key={cr.id}
-                  className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5 text-xs transition-colors hover:bg-white sm:flex-row sm:items-center"
+                  className="flex flex-col justify-between gap-3 rounded-lg border border-slate-200/80 bg-slate-50/50 p-3 text-xs transition-colors hover:bg-white sm:flex-row sm:items-center"
                 >
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">

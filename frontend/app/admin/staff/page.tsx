@@ -30,12 +30,12 @@ export default function AdminStaffPage() {
           size="sm"
           fullWidth={false}
           icon={<Plus className="h-4 w-4" />}
-          className="h-9 rounded-xl px-3.5 text-xs"
+          className="h-9 rounded-lg px-3.5 text-xs"
           onClick={() => setIsOpen(true)}
         />
       </div>
 
-      <Card className="rounded-3xl border border-slate-200 bg-white p-6">
+      <Card className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
         <Shield className="h-8 w-8 text-amber-500" />
         <p className="mt-3 text-sm font-medium text-slate-800">
           {lastInvitedEmail

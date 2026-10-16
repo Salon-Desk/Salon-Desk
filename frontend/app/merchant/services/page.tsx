@@ -1,6 +1,6 @@
 'use client'
 
-import { Clock, Edit2, Loader2, Plus } from 'lucide-react'
+import { Clock, Edit2, Loader2, Plus, Scissors } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -56,6 +56,7 @@ export default function MerchantServicesPage() {
         body: { status: 'inactive' },
       }).unwrap()
       toast.success('Service marked inactive', toastColor.success)
+      void refetch()
     } catch (err) {
       const message =
         (err as { data?: { detail?: string } })?.data?.detail || 'Could not update service'
@@ -133,11 +134,23 @@ export default function MerchantServicesPage() {
         </div>
       ) : null}
 
+      {!isLoading && !isError && filteredServices.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center">
+          <Scissors className="mx-auto h-7 w-7 text-slate-300" />
+          <p className="mt-2.5 text-sm font-medium text-slate-700">No services found</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {services.length === 0
+              ? 'Get started by creating your first service menu item.'
+              : 'Try clearing your search query or choosing another category filter.'}
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredServices.map((service) => (
           <Card
             key={service.id}
-            className="flex flex-col justify-between rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs"
+            className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
           >
             <div className="space-y-2">
               <div className="flex items-start justify-between gap-2">

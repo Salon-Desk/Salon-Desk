@@ -66,6 +66,7 @@ export default function MerchantAppointmentsPage() {
         toastColor.success,
       )
       setSelectedBooking(null)
+      void refetch()
     } catch (err) {
       const message = (err as { data?: { detail?: string } })?.data?.detail || 'Could not mark show'
       toast.error(String(message), toastColor.error)
@@ -77,6 +78,7 @@ export default function MerchantAppointmentsPage() {
       await markNoShow(booking.id).unwrap()
       toast.success(`No-show fee capture started for ${booking.id.slice(0, 8)}`, toastColor.success)
       setSelectedBooking(null)
+      void refetch()
     } catch (err) {
       const message =
         (err as { data?: { detail?: string } })?.data?.detail || 'Could not mark no-show'
@@ -89,6 +91,7 @@ export default function MerchantAppointmentsPage() {
       await cancelBooking({ bookingId: booking.id, body: { reason: 'Merchant void' } }).unwrap()
       toast.success(`Booking ${booking.id.slice(0, 8)} cancelled`, toastColor.success)
       setSelectedBooking(null)
+      void refetch()
     } catch (err) {
       const message =
         (err as { data?: { detail?: string } })?.data?.detail || 'Could not cancel booking'
@@ -229,7 +232,7 @@ export default function MerchantAppointmentsPage() {
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
           <SearchInput
             value={appointmentSearch}
@@ -262,7 +265,7 @@ export default function MerchantAppointmentsPage() {
           columns={bookingColumns}
           rows={filteredAppointments}
           rowKey={(b) => b.id}
-          className="rounded-3xl border border-slate-200/90 bg-white shadow-xs"
+          className="rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden"
         />
       ) : null}
 

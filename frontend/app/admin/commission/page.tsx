@@ -86,14 +86,14 @@ export default function AdminCommissionPage() {
         errorLabel="Could not load commissions."
       >
         {!isLoading && !isError && commissions.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center">
             <Percent className="mx-auto h-8 w-8 text-slate-300" />
-            <p className="mt-3 text-sm font-medium text-slate-700">No commission rules yet</p>
+            <p className="mt-2.5 text-sm font-medium text-slate-700">No commission rules yet</p>
             <PrimaryButton
               title="Create first rule"
               size="sm"
               fullWidth={false}
-              className="mt-4 h-9 rounded-xl px-4"
+              className="mt-4 h-9 rounded-lg px-4"
               onClick={() => {
                 setEditing(null)
                 setIsOpen(true)
@@ -105,7 +105,7 @@ export default function AdminCommissionPage() {
         {commissions.length > 0 ? (
           <Card
             padding="lg"
-            className="space-y-4 rounded-3xl border border-slate-200/90 bg-white shadow-xs"
+            className="space-y-4 rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
           >
             <div className="flex items-center justify-between border-slate-100 border-b pb-3">
               <div>
@@ -117,7 +117,7 @@ export default function AdminCommissionPage() {
               </span>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-slate-200/90">
+            <div className="overflow-x-auto rounded-lg border border-slate-200/80">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-slate-200 border-b bg-slate-50 font-semibold text-slate-700">
