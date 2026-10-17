@@ -34,6 +34,7 @@ __all__ = [
 ]
 
 _BOOKING_LOAD_OPTIONS = (
+    selectinload(Booking.organization),
     selectinload(Booking.client).selectinload(User.profile),
     selectinload(Booking.stylist).selectinload(User.profile),
     selectinload(Booking.booking_services).selectinload(BookingService.service),

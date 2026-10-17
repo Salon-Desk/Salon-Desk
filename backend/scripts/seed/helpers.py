@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from functools import lru_cache
 
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -17,6 +18,11 @@ from .constants import DEFAULT_PASSWORD, PLATFORM_ADMIN_EMAIL
 from .images import SERVICE_COVER_IMAGES
 
 logger = logging.getLogger("seed")
+
+
+@lru_cache(maxsize=1)
+def _demo_password_hash() -> str:
+    return hash_password(DEFAULT_PASSWORD)
 
 
 async def ensure_schema(engine: AsyncEngine) -> None:
@@ -56,7 +62,7 @@ def build_user(
 ) -> User:
     user = User(
         email=email.lower(),
-        password_hash=hash_password(DEFAULT_PASSWORD),
+        password_hash=_demo_password_hash(),
         role=role,
         status=UserStatus.ACTIVE,
         org_id=org_id,

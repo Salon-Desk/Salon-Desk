@@ -42,9 +42,7 @@ from .constants import (
     CONSENT_TERMS,
     CONSENT_TERMS_VERSION,
     DEFAULT_COMMISSION_RATE,
-    DEFAULT_CURRENCY,
     DEFAULT_PASSWORD,
-    DEFAULT_TIMEZONE,
     DEFAULT_WORKING_HOURS,
     FALLBACK_SERVICE_CATEGORY,
     MORNING_SHIFT_DATA,
@@ -139,7 +137,7 @@ async def seed_organizations(session: AsyncSession, platform: dict) -> list[dict
         session.add(
             OrgSettings(
                 org_id=org.id,
-                timezone=DEFAULT_TIMEZONE,
+                timezone=org_def["timezone"],
                 physical_address=org_def["address"],
                 lat=org_def["lat"],
                 lng=org_def["lng"],
@@ -161,7 +159,7 @@ async def seed_organizations(session: AsyncSession, platform: dict) -> list[dict
                 merchant_id=org_def["merchant_id"],
                 merchant_email=org_def["merchant_email"],
                 display_name=f"{org.name} PayPal Account",
-                currency=DEFAULT_CURRENCY,
+                currency=org_def["currency"],
                 status=OrgAccountStatus.APPROVED,
                 approved_at=datetime.now(UTC),
                 approved_by=platform["admin"].id,
@@ -264,6 +262,7 @@ async def _add_authorized_booking(
     service: Service,
     starts_at: datetime,
     customer_notes: str | None,
+    currency: str,
 ) -> None:
     booking = Booking(
         org_id=org.id,
@@ -308,7 +307,7 @@ async def _add_authorized_booking(
             paypal_order_id=f"SEED-ORDER-{booking.id}",
             paypal_authorization_id=f"SEED-AUTH-{booking.id}",
             amount=booking.total_price,
-            currency=DEFAULT_CURRENCY,
+            currency=currency,
             status=PaymentHoldStatus.AUTHORIZED,
             honor_expires_at=datetime.now(UTC) + timedelta(days=3),
             idempotency_key=f"seed-hold-{booking.id}",
@@ -336,9 +335,9 @@ async def seed_clients_and_bookings(session: AsyncSession, org_data_list: list[d
     session.add_all([client_a, client_b])
     await session.flush()
 
-    selam_data = org_data_list[0]
-    org = selam_data["org"]
-    services = selam_data["services"]
+    primary = org_data_list[0]
+    org = primary["org"]
+    services = primary["services"]
     starts = datetime.now(UTC).replace(minute=0, second=0, microsecond=0) + timedelta(
         days=2, hours=2
     )
@@ -347,19 +346,21 @@ async def seed_clients_and_bookings(session: AsyncSession, org_data_list: list[d
         session,
         org=org,
         client=client_a,
-        stylist=selam_data["stylists"][0],
+        stylist=primary["stylists"][0],
         service=services[0],
         starts_at=starts,
         customer_notes="First visit — prefer quiet station",
+        currency=ORGANIZATION_DEFINITIONS[0]["currency"],
     )
     await _add_authorized_booking(
         session,
         org=org,
         client=client_b,
-        stylist=selam_data["stylists"][1],
+        stylist=primary["stylists"][1],
         service=services[1],
         starts_at=starts + timedelta(days=1),
         customer_notes=None,
+        currency=ORGANIZATION_DEFINITIONS[0]["currency"],
     )
     logger.info("Seeded clients and sample bookings (pending + confirmed/hold)")
 

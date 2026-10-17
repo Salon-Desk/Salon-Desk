@@ -4,9 +4,9 @@ import type { DemoPersona } from '@/components/auth/demo-personas-panel'
 
 export const MERCHANT_DEMO_PERSONAS: DemoPersona[] = [
   {
-    email: 'owner@selam.local',
-    label: 'Salon Owner (Selam Owner)',
-    subtitle: 'owner@selam.local · Selam Hair Studio',
+    email: 'owner@abibeautysalon.local',
+    label: 'Salon Owner (Abel Bekele)',
+    subtitle: 'owner@abibeautysalon.local · Abi Beauty Salon',
     destination: '/merchant',
     portal: 'merchant',
     icon: (
@@ -18,9 +18,9 @@ export const MERCHANT_DEMO_PERSONAS: DemoPersona[] = [
     badgeClass: 'bg-amber-100 text-amber-700',
   },
   {
-    email: 'reception@selam.local',
-    label: 'Receptionist (Hanna Reception)',
-    subtitle: 'reception@selam.local · Selam Hair Studio',
+    email: 'reception@abibeautysalon.local',
+    label: 'Receptionist (Hanna Tadesse)',
+    subtitle: 'reception@abibeautysalon.local · Abi Beauty Salon',
     destination: '/merchant',
     portal: 'merchant',
     icon: (
@@ -32,9 +32,9 @@ export const MERCHANT_DEMO_PERSONAS: DemoPersona[] = [
     badgeClass: 'bg-slate-200 text-slate-700',
   },
   {
-    email: 'stylist1@selam.local',
-    label: 'Stylist (Meron Stylist)',
-    subtitle: 'stylist1@selam.local · Selam Hair Studio',
+    email: 'stylist1@abibeautysalon.local',
+    label: 'Stylist (Meron Alemu)',
+    subtitle: 'stylist1@abibeautysalon.local · Abi Beauty Salon',
     destination: '/merchant',
     portal: 'merchant',
     icon: (
@@ -46,9 +46,9 @@ export const MERCHANT_DEMO_PERSONAS: DemoPersona[] = [
     badgeClass: 'bg-slate-200 text-slate-700',
   },
   {
-    email: 'stylist2@selam.local',
-    label: 'Stylist (Kidist Stylist)',
-    subtitle: 'stylist2@selam.local · Selam Hair Studio',
+    email: 'stylist2@abibeautysalon.local',
+    label: 'Stylist (Kidist Haile)',
+    subtitle: 'stylist2@abibeautysalon.local · Abi Beauty Salon',
     destination: '/merchant',
     portal: 'merchant',
     icon: (

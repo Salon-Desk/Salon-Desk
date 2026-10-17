@@ -1,8 +1,10 @@
 'use client'
 
 import { Calendar, Clock, FileText, Lock, Plus, Shield, User, XCircle } from 'lucide-react'
+import Image from 'next/image'
 
 import { EmptyState, HoldStateBadge } from '@/components/ui'
+import { formatBookingRef, formatUsd } from '@/lib/format'
 import type { Booking } from '@/types'
 
 interface BookingsPanelProps {
@@ -117,12 +119,15 @@ export function BookingsPanel({
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <span className="text-[10px] font-mono text-stone-400 uppercase">
-                        {booking.id}
+                        {formatBookingRef(booking.id)}
                       </span>
                       <h4 className="font-serif text-base font-medium text-stone-950">
                         {booking.serviceName}
                       </h4>
-                      <p className="text-xs text-stone-500">{booking.stylistName}</p>
+                      <p className="text-xs text-stone-500">
+                        {booking.stylistName}
+                        {booking.salonName ? ` · ${booking.salonName}` : ''}
+                      </p>
                     </div>
                     <HoldStateBadge status={booking.status} />
                   </div>
@@ -160,13 +165,16 @@ export function BookingsPanel({
                   {pastBookings.map((booking) => (
                     <tr key={booking.id} className="hover:bg-stone-50/50 transition-colors">
                       <td className="px-6 py-4 font-mono font-medium text-stone-900">
-                        {booking.id}
+                        {formatBookingRef(booking.id)}
                       </td>
                       <td className="px-6 py-4">
                         <div className="font-serif text-sm font-normal text-stone-950">
                           {booking.serviceName}
                         </div>
-                        <div className="text-[11px] text-stone-400">{booking.stylistName}</div>
+                        <div className="text-[11px] text-stone-400">
+                          {booking.stylistName}
+                          {booking.salonName ? ` · ${booking.salonName}` : ''}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-stone-600">{booking.appointmentTime}</td>
                       <td className="px-6 py-4">
@@ -212,7 +220,8 @@ function ActiveHoldCard({
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="space-y-1">
             <span className="text-[11px] font-mono font-semibold uppercase tracking-widest text-amber-700">
-              {booking.id} • {booking.salonName}
+              {formatBookingRef(booking.id)}
+              {booking.salonName ? ` · ${booking.salonName}` : ''}
             </span>
             <h3 className="font-serif text-xl sm:text-2xl font-normal text-stone-950">
               {booking.serviceName}
@@ -220,7 +229,7 @@ function ActiveHoldCard({
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 shrink-0">
             <Lock className="h-3 w-3 text-amber-600" />
-            <span>Held (${booking.holdAmount})</span>
+            <span>Held ({formatUsd(booking.holdAmount)})</span>
           </span>
         </div>
 
@@ -228,10 +237,20 @@ function ActiveHoldCard({
         <div className="mb-5 grid grid-cols-2 gap-3 rounded-2xl bg-stone-50/80 p-4 text-xs">
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
-              Master Stylist
+              Stylist
             </span>
             <div className="flex items-center gap-1.5 font-medium text-stone-900">
-              <User className="h-3.5 w-3.5 text-stone-500" />
+              {booking.stylistPicture ? (
+                <Image
+                  src={booking.stylistPicture}
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="h-5 w-5 rounded-full object-cover"
+                />
+              ) : (
+                <User className="h-3.5 w-3.5 text-stone-500" />
+              )}
               <span>{booking.stylistName}</span>
             </div>
           </div>
@@ -250,7 +269,7 @@ function ActiveHoldCard({
             <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
               Full Service Value
             </span>
-            <div className="font-semibold text-stone-900">${booking.servicePrice}.00</div>
+            <div className="font-semibold text-stone-900">{formatUsd(booking.servicePrice)}</div>
           </div>
 
           <div className="space-y-0.5">
@@ -261,14 +280,22 @@ function ActiveHoldCard({
           </div>
         </div>
 
-        {/* Cryptographic verification strip */}
-        <div className="mb-6 flex items-center justify-between rounded-xl bg-stone-100/60 px-3.5 py-2 text-[11px] text-stone-500 font-mono">
-          <div className="flex max-w-[240px] items-center gap-1.5 truncate">
-            <Shield className="h-3.5 w-3.5 shrink-0 text-amber-600" />
-            <span className="truncate">{booking.consentHash}</span>
+        {booking.customerNotes ? (
+          <p className="mb-5 flex items-start gap-2 rounded-xl bg-stone-50 px-3.5 py-2.5 text-xs text-stone-600">
+            <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
+            <span>{booking.customerNotes}</span>
+          </p>
+        ) : null}
+
+        {booking.consentHash && booking.consentHash !== '—' ? (
+          <div className="mb-6 flex items-center justify-between rounded-xl bg-stone-100/60 px-3.5 py-2 text-[11px] text-stone-500 font-mono">
+            <div className="flex max-w-[240px] items-center gap-1.5 truncate">
+              <Shield className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+              <span className="truncate">{booking.consentHash}</span>
+            </div>
+            <span className="text-stone-400 font-medium">PayPal v6</span>
           </div>
-          <span className="text-stone-400 font-medium">PayPal v6</span>
-        </div>
+        ) : null}
       </div>
 
       {/* Action buttons */}
@@ -298,11 +325,13 @@ function ActiveHoldCard({
 function SettlementLabel({ booking }: { booking: Booking }) {
   if (booking.status === 'CAPTURED') {
     return (
-      <span className="font-medium text-emerald-700">${booking.servicePrice}.00 Full Captured</span>
+      <span className="font-medium text-emerald-700">
+        {formatUsd(booking.servicePrice)} captured
+      </span>
     )
   }
   if (booking.status === 'NO_SHOW_CAPTURED') {
-    return <span className="font-medium text-rose-700">${booking.noShowFee}.00 No-Show Fee</span>
+    return <span className="font-medium text-rose-700">{formatUsd(booking.noShowFee)} no-show</span>
   }
   if (booking.status === 'VOIDED') {
     return <span className="font-medium text-stone-400">$0.00 (Hold Voided)</span>

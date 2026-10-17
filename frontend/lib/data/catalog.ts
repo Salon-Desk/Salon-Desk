@@ -60,6 +60,16 @@ export const INITIAL_SERVICES: SalonService[] = [
   },
 ]
 
+export const ANY_AVAILABLE_STYLIST: StaffMember = {
+  id: 'any-available',
+  name: 'Any available stylist',
+  role: 'Assigned at the salon',
+  avatar: '',
+  rating: 0,
+  reviewsCount: 0,
+  specialties: [],
+}
+
 export const INITIAL_STAFF: StaffMember[] = [
   {
     id: 'stf-1',

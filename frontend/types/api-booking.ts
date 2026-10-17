@@ -27,6 +27,7 @@ export interface ApiBooking {
   stylist_name?: string | null
   stylist_picture?: string | null
   service_name?: string | null
+  organization_name?: string | null
 }
 
 export interface OrgBookingsQuery {

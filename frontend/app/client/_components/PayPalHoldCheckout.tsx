@@ -1,14 +1,17 @@
 'use client'
 
-import { CheckCircle2, Lock, Shield, Sparkles, Star, User } from 'lucide-react'
+import { Calendar, CheckCircle2, Clock, Lock, Sparkles, Star, User } from 'lucide-react'
+import Image from 'next/image'
 
-import { Button, DetailRow, Modal, Panel } from '@/components/ui'
-import { BUYER_PERSONAS, type BuyerPersonaId } from '@/lib/constants'
-import { INITIAL_STAFF } from '@/lib/data/catalog'
-import { formatSlot, TIME_SLOTS } from '@/lib/data/service-content'
+import { Button, Modal } from '@/components/ui'
+import { ANY_AVAILABLE_STYLIST, INITIAL_STAFF } from '@/lib/data/catalog'
+import { formatSlot, serviceImage, TIME_SLOTS } from '@/lib/data/service-content'
+import { formatBookingRef, formatDuration, formatUsd, isPlaceholderValue } from '@/lib/format'
 import type { Booking, SalonService, StaffMember } from '@/types'
 
 export type AuthStep = 'review' | 'authorizing' | 'success'
+
+const CHECKOUT_STYLISTS: StaffMember[] = [ANY_AVAILABLE_STYLIST, ...INITIAL_STAFF]
 
 interface PaypalAuthModalProps {
   service: SalonService
@@ -16,7 +19,6 @@ interface PaypalAuthModalProps {
   slot: string
   step: AuthStep
   confirmedBooking: Booking | null
-  buyerPersona: BuyerPersonaId
   onSelectStylist: (staff: StaffMember) => void
   onSelectSlot: (slot: string) => void
   onApprove: () => void
@@ -30,201 +32,234 @@ export function PayPalHoldCheckout({
   slot,
   step,
   confirmedBooking,
-  buyerPersona,
   onSelectStylist,
   onSelectSlot,
   onApprove,
   onClose,
   onViewBookings,
 }: PaypalAuthModalProps) {
-  const buyer = BUYER_PERSONAS[buyerPersona]
+  const salonName = service.organizationName
+  const coverSrc = service.imageUrl || serviceImage(service.id)
 
   return (
     <Modal
       onClose={onClose}
       size="md"
       hideHeader={step !== 'review'}
-      icon={<Lock className="h-4 w-4 text-amber-600" />}
-      title="PayPal Authorization Hold"
-      description="Reserve chair with intent: AUTHORIZE ($0 debited today)"
+      icon={<Lock className="h-4 w-4" />}
+      title="Reserve this visit"
+      description="PayPal places a hold only. Nothing is charged until you sit in the chair."
+      footer={
+        step === 'review' ? (
+          <div className="w-full space-y-2">
+            <Button
+              variant="paypal"
+              size="lg"
+              fullWidth
+              onClick={onApprove}
+              className="rounded-full"
+            >
+              <Lock className="h-4 w-4" />
+              Authorize {formatUsd(service.holdDeposit)} hold
+            </Button>
+            <p className="text-center text-[11px] text-stone-400">
+              PayPal sandbox. No money leaves the account today.
+            </p>
+          </div>
+        ) : undefined
+      }
     >
       {step === 'review' && (
         <div>
-          <Panel className="mb-4">
-            <div className="mb-2 flex items-start justify-between">
-              <div>
-                <span className="font-bold text-[10px] text-amber-600 uppercase tracking-wider">
-                  {service.category}
-                </span>
-                <h4 className="font-bold text-slate-900 text-sm">{service.name}</h4>
-              </div>
-              <span className="font-black text-base text-slate-900">${service.price}</span>
+          <div className="mb-5 flex gap-3 rounded-2xl bg-stone-50/90 p-3">
+            <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-stone-200">
+              <Image src={coverSrc} alt="" fill className="object-cover" sizes="96px" />
             </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                {service.category}
+              </p>
+              <h4 className="font-serif text-lg font-normal leading-snug text-stone-950">
+                {service.name}
+              </h4>
+              {salonName ? <p className="mt-0.5 text-xs text-stone-500">{salonName}</p> : null}
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-stone-500">
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {formatDuration(service.durationMin)}
+                </span>
+                <span className="font-semibold text-stone-900">{formatUsd(service.price)}</span>
+              </div>
+            </div>
+          </div>
 
-            <span className="mb-1 block font-bold text-[11px] text-slate-700">
-              Choose Master Stylist:
-            </span>
-            <div className="mb-3 grid grid-cols-3 gap-2">
-              {INITIAL_STAFF.map((staff) => (
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+            Stylist
+          </p>
+          <div className="mb-5 grid grid-cols-2 gap-2">
+            {CHECKOUT_STYLISTS.map((staff) => {
+              const selected = stylist.id === staff.id
+              return (
                 <button
                   key={staff.id}
                   type="button"
                   onClick={() => onSelectStylist(staff)}
-                  className={`rounded-xl border p-2 text-left transition-all ${
-                    stylist.id === staff.id
-                      ? 'border-amber-500 bg-white shadow-xs ring-1 ring-amber-500'
-                      : 'border-slate-200 bg-white/60 hover:bg-white'
+                  className={`flex items-center gap-2 rounded-2xl border px-2.5 py-2 text-left transition-all ${
+                    selected
+                      ? 'border-amber-400 bg-amber-50 ring-1 ring-amber-300'
+                      : 'border-stone-200 bg-white hover:border-stone-300'
                   }`}
                 >
-                  <div className="truncate font-bold text-[11px] text-slate-900">{staff.name}</div>
-                  <div className="flex items-center gap-0.5 text-[9px] text-slate-500">
-                    <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
-                    <span>{staff.rating}</span>
-                  </div>
+                  {staff.avatar ? (
+                    <Image
+                      src={staff.avatar}
+                      alt=""
+                      width={32}
+                      height={32}
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-stone-500">
+                      <User className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-medium text-stone-950">
+                      {staff.name}
+                    </span>
+                    {staff.rating > 0 ? (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] text-stone-500">
+                        <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                        {staff.rating.toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-stone-400">Salon assigns</span>
+                    )}
+                  </span>
                 </button>
-              ))}
-            </div>
-
-            <span className="mb-1 block font-bold text-[11px] text-slate-700">
-              Select Time Slot:
-            </span>
-            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-              {TIME_SLOTS.slice(0, 4).map((item) => {
-                const slotStr = formatSlot(item)
-                const selected = slot === slotStr
-                return (
-                  <button
-                    key={slotStr}
-                    type="button"
-                    onClick={() => onSelectSlot(slotStr)}
-                    className={`rounded-lg border px-2 py-1.5 text-center font-semibold text-[10px] transition-all ${
-                      selected
-                        ? 'border-amber-500 bg-amber-500 font-bold text-slate-950 shadow-xs'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                )
-              })}
-            </div>
-          </Panel>
-
-          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-            <div className="mb-2 flex items-center gap-1.5 font-bold text-amber-900 text-xs">
-              <Shield className="h-4 w-4 text-amber-600" />
-              <span>Transparent Deposit Policy</span>
-            </div>
-            <div className="space-y-1.5">
-              <DetailRow
-                label="Total Service Price (Settled at Salon):"
-                value={`$${service.price}.00`}
-                emphasis="bold"
-              />
-              <DetailRow
-                label="Due Today at Checkout:"
-                value="$0.00"
-                tone="emerald"
-                emphasis="bold"
-              />
-              <DetailRow
-                label="Temporary Authorization Hold:"
-                value={`$${service.holdDeposit}.00`}
-                tone="amber"
-                emphasis="bold"
-                divider
-              />
-              <DetailRow
-                label="No-Show Protection Fee:"
-                value={`$${service.noShowFee}.00 (Only charged if missed without notice)`}
-              />
-            </div>
+              )
+            })}
           </div>
 
-          <div className="mb-5 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-100 p-3">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-slate-500" />
-              <div>
-                <div className="font-bold text-slate-900 text-xs">{buyer.name}</div>
-                <div className="text-[10px] text-slate-500">{buyer.card}</div>
-              </div>
-            </div>
-            <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-bold text-[10px] text-emerald-700">
-              Sandbox Ready
-            </span>
-          </div>
-
-          <Button variant="paypal" size="lg" fullWidth onClick={onApprove}>
-            <Lock className="h-4 w-4" />
-            Authorize ${service.holdDeposit} Hold with PayPal ($0 Today)
-          </Button>
-          <p className="mt-2.5 text-center text-[11px] text-slate-400">
-            Authorization Hold: No money leaves your account today. Free cancellation ≥ 24 hours.
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+            Time slot
           </p>
+          <div className="mb-5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+            {TIME_SLOTS.slice(0, 4).map((item) => {
+              const slotStr = formatSlot(item)
+              const selected = slot === slotStr
+              return (
+                <button
+                  key={slotStr}
+                  type="button"
+                  onClick={() => onSelectSlot(slotStr)}
+                  className={`rounded-xl border px-2 py-2 text-center text-[11px] font-medium transition-all ${
+                    selected
+                      ? 'border-stone-950 bg-stone-950 text-white'
+                      : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
+                  }`}
+                >
+                  <span className="block text-[10px] opacity-70">{item.day}</span>
+                  {item.label}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="mb-5 space-y-2 rounded-2xl border border-amber-200/70 bg-amber-50/70 px-4 py-3 text-xs">
+            <div className="flex justify-between gap-3 text-stone-700">
+              <span>Service total</span>
+              <span className="font-semibold text-stone-950">{formatUsd(service.price)}</span>
+            </div>
+            <div className="flex justify-between gap-3 text-stone-700">
+              <span>Authorization hold</span>
+              <span className="font-semibold text-amber-800">{formatUsd(service.holdDeposit)}</span>
+            </div>
+            <div className="flex justify-between gap-3 border-t border-amber-200/70 pt-2">
+              <span className="text-emerald-800">Due today</span>
+              <span className="font-semibold text-emerald-800">{formatUsd(0)}</span>
+            </div>
+            <p className="pt-1 text-[11px] leading-relaxed text-amber-900/80">
+              No-show protection is {formatUsd(service.noShowFee)}, only if the visit is missed
+              without notice. Cancel 24 hours ahead and the hold is released.
+            </p>
+          </div>
         </div>
       )}
 
       {step === 'authorizing' && (
-        <div className="py-12 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 animate-spin items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-600">
-            <Sparkles className="h-8 w-8" />
+        <div className="py-14 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 animate-spin items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-600">
+            <Sparkles className="h-6 w-6" />
           </div>
-          <h4 className="mb-2 font-bold text-base text-slate-900">
-            Contacting PayPal Payments v2 Engine...
-          </h4>
-          <div className="mx-auto max-w-xs space-y-1.5 font-mono text-slate-500 text-xs">
-            <p>• Setting payment intent to AUTHORIZE...</p>
-            <p>• Verifying card authorization availability...</p>
-            <p>• Generating cryptographic consent hash...</p>
-          </div>
+          <h4 className="mb-2 font-serif text-xl font-normal text-stone-950">Placing your hold…</h4>
+          <p className="mx-auto max-w-xs text-xs leading-relaxed text-stone-500">
+            Confirming {service.name}
+            {salonName ? ` at ${salonName}` : ''} and asking PayPal to authorize{' '}
+            {formatUsd(service.holdDeposit)} without charging you.
+          </p>
         </div>
       )}
 
       {step === 'success' && confirmedBooking && (
-        <div className="py-4 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600">
-            <CheckCircle2 className="h-8 w-8" />
+        <div className="py-2">
+          <div className="mb-4 flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full px-2 py-1 text-xs text-stone-400 hover:text-stone-700"
+            >
+              Close
+            </button>
           </div>
-          <span className="mb-2 inline-block rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-bold text-amber-700 text-xs">
-            HELD • ${confirmedBooking.holdAmount} Authorization Placed
-          </span>
-          <h3 className="mb-1 font-black text-lg text-slate-900">Appointment Confirmed!</h3>
-          <p className="mb-5 text-slate-500 text-xs">
-            Zero dollars charged today. Your stylist {confirmedBooking.stylistName} is reserved for{' '}
-            {confirmedBooking.appointmentTime}.
-          </p>
+          <div className="mb-4 flex flex-col items-center text-center">
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <CheckCircle2 className="h-7 w-7" />
+            </div>
+            <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+              <Lock className="h-3 w-3" />
+              Held {formatUsd(confirmedBooking.holdAmount)} · charged {formatUsd(0)}
+            </p>
+            <h3 className="font-serif text-2xl font-normal text-stone-950">You are booked</h3>
+            <p className="mt-1 max-w-sm text-xs leading-relaxed text-stone-500">
+              {confirmedBooking.serviceName} with {confirmedBooking.stylistName}
+              {confirmedBooking.salonName ? ` at ${confirmedBooking.salonName}` : ''}.
+            </p>
+          </div>
 
-          <Panel className="mb-6 space-y-2 text-left text-xs">
-            <DetailRow
-              label="Booking Reference:"
-              value={<span className="font-mono font-bold">{confirmedBooking.id}</span>}
-            />
-            <DetailRow
-              label="PayPal Auth ID:"
-              value={<span className="font-mono font-bold">{confirmedBooking.paypalAuthId}</span>}
-            />
-            <DetailRow
-              label="Consent Hash:"
-              value={
-                <span className="max-w-[200px] truncate font-mono text-[10px] text-slate-600">
-                  {confirmedBooking.consentHash}
-                </span>
-              }
-            />
-            <DetailRow
-              label="Charged Today:"
-              value="$0.00"
-              tone="emerald"
-              emphasis="bold"
-              divider
-            />
-          </Panel>
+          <div className="mb-6 space-y-3 rounded-2xl bg-stone-50/90 p-4 text-sm">
+            <div className="flex items-start gap-2.5">
+              <Calendar className="mt-0.5 h-3.5 w-3.5 text-stone-400" />
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">
+                  Appointment
+                </p>
+                <p className="font-medium text-stone-900">{confirmedBooking.appointmentTime}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <User className="mt-0.5 h-3.5 w-3.5 text-stone-400" />
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">
+                  Reference
+                </p>
+                <p className="font-mono text-xs font-medium text-stone-900">
+                  {formatBookingRef(confirmedBooking.id)}
+                </p>
+              </div>
+            </div>
+            {!isPlaceholderValue(confirmedBooking.paypalAuthId) ? (
+              <p className="font-mono text-[11px] text-stone-400">
+                PayPal {confirmedBooking.paypalAuthId}
+              </p>
+            ) : null}
+          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="dark" onClick={onViewBookings}>
-              View in My Bookings
+          <div className="grid grid-cols-2 gap-2.5">
+            <Button variant="dark" onClick={onViewBookings} className="rounded-full">
+              View bookings
             </Button>
-            <Button variant="secondary" onClick={onClose}>
+            <Button variant="secondary" onClick={onClose} className="rounded-full">
               Done
             </Button>
           </div>

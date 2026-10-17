@@ -270,9 +270,7 @@ export function ClientExperience({
             [user?.first_name, user?.last_name].filter(Boolean).join(' ') ||
             user?.email ||
             'You',
-          salonName: orgNameById.get(b.org_id) || 'Salon',
-          serviceName: 'Service',
-          stylistName: 'Stylist',
+          salonName: orgNameById.get(b.org_id) || b.organization_name || undefined,
         }),
       ),
     [apiBookings, orgNameById, user],
@@ -309,7 +307,11 @@ export function ClientExperience({
       showToast('Sign in to continue checkout — your selection is saved.')
       return
     }
-    setSelectedService(service)
+    setSelectedService({
+      ...service,
+      organizationId: catalog.organization_id || service.organizationId,
+      organizationName: catalog.organization_name || service.organizationName,
+    })
     setSelectedCatalogService(catalog)
     setSelectedStylist(stylist ?? stylistForCategory(service.category))
     if (slot) setSelectedSlot(slot)
@@ -685,7 +687,6 @@ export function ClientExperience({
           slot={selectedSlot}
           step={authStep}
           confirmedBooking={confirmedBooking}
-          buyerPersona={buyerPersona}
           onSelectStylist={setSelectedStylist}
           onSelectSlot={setSelectedSlot}
           onApprove={() => void handleApproveHold()}

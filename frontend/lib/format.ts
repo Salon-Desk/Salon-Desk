@@ -1,3 +1,12 @@
+/** Short public reference from a UUID booking id. */
+export function formatBookingRef(id: string): string {
+  return id.replace(/-/g, '').slice(0, 8).toUpperCase()
+}
+
+export function isPlaceholderValue(value?: string | null): boolean {
+  return !value || value === '—'
+}
+
 /** Money is always displayed with two decimals so hold vs. capture amounts line up in tables. */
 export function formatUsd(amount: number): string {
   return amount.toLocaleString('en-US', {

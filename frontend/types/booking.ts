@@ -12,7 +12,9 @@ export interface Booking {
   serviceName: string
   stylistId: string
   stylistName: string
+  stylistPicture?: string | null
   appointmentTime: string
+  customerNotes?: string | null
   durationMin: number
   servicePrice: number
   holdAmount: number

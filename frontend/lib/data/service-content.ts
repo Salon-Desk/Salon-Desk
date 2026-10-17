@@ -1,3 +1,5 @@
+import type { SalonService } from '@/types'
+
 /** Editorial content that dresses up the client-facing service catalog. */
 
 export const SERVICE_IMAGE_FALLBACK =
@@ -81,6 +83,26 @@ export const SERVICE_PROTOCOLS: Record<string, ServiceProtocol> = {
     idealFor:
       'Decongesting urban skin, smoothing rough beard follicles, and instant radiant complexion.',
   },
+}
+
+/** Live catalog services use UUIDs, so fall back to a readable visit outline. */
+export function protocolForService(service: SalonService): ServiceProtocol {
+  const exact = SERVICE_PROTOCOLS[service.id]
+  if (exact) return exact
+
+  const consult = Math.max(5, Math.round(service.durationMin * 0.15))
+  const finish = Math.max(5, Math.round(service.durationMin * 0.1))
+  const main = Math.max(10, service.durationMin - consult - finish)
+
+  return {
+    steps: [
+      `Consultation and look confirmation (${consult} min)`,
+      `${service.name} (${main} min)`,
+      `Finish, aftercare, and checkout (${finish} min)`,
+    ],
+    products: 'Professional salon products selected for this visit',
+    idealFor: service.description || service.category,
+  }
 }
 
 export interface TimeSlot {

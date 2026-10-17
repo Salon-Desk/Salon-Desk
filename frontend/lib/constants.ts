@@ -70,10 +70,10 @@ export const SANDBOX_CREDENTIALS = {
     card: '•••• 4242 (Visa Mock)',
   },
   merchantAccount: {
-    email: 'owner@selam.local',
+    email: 'owner@abibeautysalon.local',
     password: 'Password123!',
-    salonName: 'Selam Hair Studio',
-    merchantId: 'SELAM-MERCHANT-DEMO',
+    salonName: 'Abi Beauty Salon',
+    merchantId: 'DEMO-0001-ABIBEAUTYSALON',
   },
   techStack: {
     framework: 'Next.js 16 App Router',

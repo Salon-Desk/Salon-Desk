@@ -62,7 +62,7 @@ export function Modal({
   useDismissableLayer(onClose)
 
   return (
-    <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs duration-200 fade-in">
+    <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-stone-950/40 p-3 sm:p-6 backdrop-blur-sm duration-200 fade-in">
       {/* Backdrop click target, kept separate from the panel so clicks inside do not bubble out. */}
       <button
         type="button"
@@ -77,23 +77,30 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         className={cn(
-          'relative flex max-h-[90vh] w-full animate-in flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_24px_48px_-12px_rgba(0,0,0,0.15),inset_0_1px_0_0_rgba(255,255,255,0.9)] duration-200 zoom-in-95',
+          'relative flex max-h-[min(92vh,44rem)] w-full animate-in flex-col overflow-hidden rounded-3xl border border-stone-200/70 bg-white shadow-[0_28px_64px_-16px_rgba(28,25,23,0.28)] duration-200 zoom-in-95',
           MODAL_SIZES[size],
           className,
         )}
       >
         {!hideHeader && (
-          <div className="flex shrink-0 items-start justify-between gap-4 border-slate-200/80 border-b bg-slate-50/90 px-6 py-4">
-            <div className="flex items-start gap-2.5">
-              {icon}
-              <div>
+          <div className="flex shrink-0 items-start justify-between gap-4 border-stone-100 border-b px-5 py-4 sm:px-6">
+            <div className="flex min-w-0 items-start gap-3">
+              {icon ? (
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700">
+                  {icon}
+                </div>
+              ) : null}
+              <div className="min-w-0">
                 {title && (
-                  <h2 id={titleId} className="font-bold text-base text-slate-900">
+                  <h2
+                    id={titleId}
+                    className="font-serif text-lg font-normal tracking-tight text-stone-950 sm:text-xl"
+                  >
                     {title}
                   </h2>
                 )}
                 {description && (
-                  <p className="mt-0.5 text-slate-500 text-xs leading-relaxed">{description}</p>
+                  <p className="mt-1 text-stone-500 text-xs leading-relaxed">{description}</p>
                 )}
               </div>
             </div>
@@ -101,17 +108,17 @@ export function Modal({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              className="shrink-0 rounded-full p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
 
         {footer && (
-          <div className="flex shrink-0 items-center justify-end gap-2 border-slate-200/80 border-t bg-slate-50/80 px-6 py-3">
+          <div className="flex w-full shrink-0 flex-col items-stretch justify-end gap-2 border-stone-100 border-t bg-stone-50/80 px-5 py-3.5 sm:px-6 sm:flex-row sm:items-center">
             {footer}
           </div>
         )}
