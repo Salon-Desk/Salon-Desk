@@ -10,8 +10,11 @@ import {
 import { ConnectionState, type RemoteParticipant, RoomEvent } from 'livekit-client'
 import { Loader2, MapPin, Mic, MicOff, PhoneOff, Send, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { toast } from 'sonner'
 
 import { VoiceVisualizerOrb } from '@/components/chat/voice-visualizer-orb'
+import { toastColor } from '@/constant/toast-color'
 import { VOICE_AGENT_STATUS, VOICE_AGENT_SUGGESTIONS } from '@/constant/voice-agent'
 import type { AgentLanguage } from '@/lib/features'
 import type { GeoCoords } from '@/lib/util/geo'
@@ -21,6 +24,7 @@ import {
   parseAgentControlPayload,
 } from '@/lib/util/voice-agent'
 import { cn } from '@/lib/utils'
+import { setAuthData } from '@/store/authSlice'
 
 export interface InnerVoiceAssistantUIProps {
   language: AgentLanguage
@@ -43,6 +47,7 @@ export function InnerVoiceAssistantUI({
   onStartVoiceSession,
   onSetLocation,
 }: InnerVoiceAssistantUIProps) {
+  const dispatch = useDispatch()
   const { state, agentTranscriptions } = useVoiceAssistant()
   const connectionState = useConnectionState()
   const { localParticipant } = useLocalParticipant()
@@ -131,6 +136,31 @@ export function InnerVoiceAssistantUI({
       _kind?: unknown,
       topic?: string,
     ) => {
+      try {
+        const text = new TextDecoder().decode(payload)
+        const parsed = JSON.parse(text)
+        if (parsed?.type === 'auth_success' && parsed?.access_token && parsed?.user) {
+          dispatch(
+            setAuthData({
+              user: parsed.user,
+              access_token: parsed.access_token,
+            }),
+          )
+          const name = parsed.user.first_name || parsed.user.email
+          toast.success(`Logged in as ${name}`, toastColor.success)
+          return
+        }
+        if (parsed?.type === 'booking_confirmed') {
+          toast.success(
+            `Appointment for ${parsed.service_name || 'Service'} confirmed! $0 PayPal hold active.`,
+            toastColor.success,
+          )
+          return
+        }
+      } catch {
+        /* non-json message */
+      }
+
       if (topic && topic !== 'lk.agent.control') return
       const msg = parseAgentControlPayload(payload)
       if (msg?.type === 'call_ended') finishFromAgent()

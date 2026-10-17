@@ -2,9 +2,9 @@
 
 export const VOICE_AGENT_SUGGESTIONS = [
   'Find salons near me',
-  'Book a Precision Fade',
+  'Log into my account',
+  'Sign up for an account',
   'What is the hold policy?',
-  'Goodbye',
 ] as const
 
 export const VOICE_AGENT_STATUS = {

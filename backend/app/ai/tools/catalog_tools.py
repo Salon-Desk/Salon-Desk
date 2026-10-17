@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -64,6 +65,8 @@ def build_catalog_tools(
                         "category_name": r.category_name,
                         "physical_address": r.physical_address,
                         "distance_km": r.distance_km,
+                        "image_url": getattr(r, "image_url", None),
+                        "organization_picture": getattr(r, "organization_picture", None),
                     }
                     for r in retrieved.recommendations
                 ],
@@ -77,14 +80,18 @@ def build_catalog_tools(
 def build_voice_tools(
     session_factory: async_sessionmaker[AsyncSession],
     user_location_getter: Callable[[], tuple[float | None, float | None]] | None = None,
+    on_auth_success: Callable[[dict[str, Any]], Any] | None = None,
+    on_booking_success: Callable[[dict[str, Any]], Any] | None = None,
 ):
-    """Aggregate catalog, schedule, and booking tools for the voice worker."""
+    """Aggregate catalog, schedule, booking, and auth tools for the voice worker."""
+    from app.ai.tools.auth_tools import build_auth_tools
     from app.ai.tools.booking_tools import build_booking_tools
     from app.ai.tools.schedule_tools import build_schedule_tools
 
     tools = build_catalog_tools(session_factory, user_location_getter=user_location_getter)
     tools.extend(build_schedule_tools(session_factory))
-    tools.extend(build_booking_tools(session_factory))
+    tools.extend(build_booking_tools(session_factory, on_booking_success=on_booking_success))
+    tools.extend(build_auth_tools(session_factory, on_auth_success=on_auth_success))
     return tools
 
 

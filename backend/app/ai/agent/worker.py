@@ -251,10 +251,30 @@ async def entrypoint(ctx: Any) -> None:
         except Exception:
             pass
 
+    async def _publish_auth_success(payload: dict[str, Any]) -> None:
+        try:
+            if room.local_participant:
+                data = json.dumps(payload)
+                await room.local_participant.publish_data(data, topic="lk.client.auth")
+                logger.info("Published auth_success message to room participant")
+        except Exception as exc:
+            logger.warning("Failed to publish auth_success data: %s", exc)
+
+    async def _publish_booking_success(payload: dict[str, Any]) -> None:
+        try:
+            if room.local_participant:
+                data = json.dumps(payload)
+                await room.local_participant.publish_data(data, topic="lk.client.booking")
+                logger.info("Published booking_confirmed message to room participant")
+        except Exception as exc:
+            logger.warning("Failed to publish booking data: %s", exc)
+
     session_factory = _build_session_factory()
     tools = build_voice_tools(
         session_factory,
         user_location_getter=lambda: (user_location["lat"], user_location["lng"]),
+        on_auth_success=_publish_auth_success,
+        on_booking_success=_publish_booking_success,
     )
 
     location_ctx_text = await _build_location_context(

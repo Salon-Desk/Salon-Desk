@@ -1643,13 +1643,13 @@ async def seed_clients_and_bookings(session: AsyncSession, org_data_list: list[d
         days=2, hours=2
     )
 
-    pending = Booking(
+    confirmed_client_a = Booking(
         org_id=org.id,
         client_id=client_a.id,
         stylist_id=stylist.id,
         starts_at=starts,
         ends_at=starts + timedelta(minutes=services[0].duration_minutes),
-        status=BookingStatus.PENDING,
+        status=BookingStatus.CONFIRMED,
         total_price=services[0].base_price,
         commission_snapshot={
             "type": "percentage",
@@ -1658,13 +1658,39 @@ async def seed_clients_and_bookings(session: AsyncSession, org_data_list: list[d
         },
         customer_notes="First visit — prefer quiet station",
     )
-    session.add(pending)
+    session.add(confirmed_client_a)
     await session.flush()
     session.add(
         BookingService(
-            booking_id=pending.id,
+            booking_id=confirmed_client_a.id,
             service_id=services[0].id,
             base_price=services[0].base_price,
+        )
+    )
+
+    terms_a = "I authorize a PayPal hold for this booking under the salon cancellation policy."
+    terms_hash_a, signature_a = build_consent_signature(terms_a)
+    session.add(
+        Consent(
+            booking_id=confirmed_client_a.id,
+            client_id=client_a.id,
+            terms_version="v1",
+            terms_text_hash=terms_hash_a,
+            signature_b64=signature_a,
+            signed_payload=f"booking={confirmed_client_a.id};accepted=true",
+        )
+    )
+    session.add(
+        PaymentHold(
+            booking_id=confirmed_client_a.id,
+            org_id=org.id,
+            paypal_order_id=f"SEED-ORDER-{confirmed_client_a.id}",
+            paypal_authorization_id=f"SEED-AUTH-{confirmed_client_a.id}",
+            amount=confirmed_client_a.total_price,
+            currency="USD",
+            status=PaymentHoldStatus.AUTHORIZED,
+            honor_expires_at=datetime.now(UTC) + timedelta(days=3),
+            idempotency_key=f"seed-hold-{confirmed_client_a.id}",
         )
     )
 

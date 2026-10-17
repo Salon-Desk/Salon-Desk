@@ -1,17 +1,33 @@
 'use client'
 
-import { Bot, Clock, Lock, Mic, Send, Sparkles, User, X } from 'lucide-react'
+import {
+  Bot,
+  Building2,
+  CalendarCheck,
+  CheckCircle2,
+  Clock,
+  Lock,
+  MapPin,
+  Mic,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  User,
+  X,
+} from 'lucide-react'
+import Image from 'next/image'
 import { useEffect, useRef } from 'react'
 
 import { VoiceAgentView } from '@/components/chat'
 import { Button } from '@/components/ui'
 import type { ConciergeMessage } from '@/hooks/use-ai-concierge'
 import { INITIAL_STAFF } from '@/lib/data/catalog'
-import { DEFAULT_TIME_SLOT } from '@/lib/data/service-content'
+import { DEFAULT_TIME_SLOT, SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import { features } from '@/lib/features'
 import type { GeoCoords } from '@/lib/util/geo'
 import { cn } from '@/lib/utils'
-import type { SalonService, StaffMember } from '@/types'
+import type { SalonService, ServiceCategory, StaffMember } from '@/types'
 
 interface AiConciergeProps {
   mode: 'voice' | 'chat'
@@ -196,9 +212,225 @@ function ChatSurface({
                 <p className="whitespace-pre-wrap">{msg.text}</p>
               </div>
 
-              {!isUser && msg.hasProposal && msg.proposedService && (
-                <ProposalCard message={msg} onAuthorize={onAuthorize} />
+              {/* Confirmed Booking Banner */}
+              {!isUser && msg.confirmedBooking && (
+                <div className="mt-2.5 w-full max-w-[94%] rounded-xl border border-emerald-300 bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/40 p-4 text-slate-900 shadow-[0_4px_12px_rgba(16,185,129,0.08),inset_0_1px_0_0_rgba(255,255,255,0.9)] animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-center gap-2 mb-2 text-emerald-800">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                    <span className="font-bold text-xs uppercase tracking-wider">
+                      Appointment Confirmed
+                    </span>
+                  </div>
+                  <h4 className="font-serif text-base font-bold text-slate-950">
+                    {msg.confirmedBooking.serviceName}
+                  </h4>
+                  {msg.confirmedBooking.organizationName && (
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      at {msg.confirmedBooking.organizationName}
+                    </p>
+                  )}
+                  <div className="mt-2.5 flex items-center justify-between border-t border-emerald-200/60 pt-2 text-xs">
+                    <span className="text-slate-600 font-medium">
+                      {msg.confirmedBooking.formattedTime || msg.confirmedBooking.startsAt}
+                    </span>
+                    <span className="font-mono font-bold text-emerald-800">
+                      $0 hold today · ${msg.confirmedBooking.totalPrice}
+                    </span>
+                  </div>
+                </div>
               )}
+
+              {/* Organization Cards */}
+              {!isUser && msg.organizations && msg.organizations.length > 0 && (
+                <div className="mt-2.5 w-full max-w-[94%] space-y-2">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
+                    <Building2 className="h-3.5 w-3.5 text-amber-600" />
+                    <span>Recommended Salons</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {msg.organizations.map((org) => (
+                      <div
+                        key={org.id}
+                        className="group relative flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-3 text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] hover:border-amber-300 hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-slate-200/80 bg-amber-50 flex items-center justify-center">
+                            {org.picture ? (
+                              <Image
+                                src={org.picture}
+                                alt={org.name}
+                                fill
+                                sizes="44px"
+                                className="object-cover"
+                              />
+                            ) : (
+                              <Building2 className="h-5 w-5 text-amber-700" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <h4 className="truncate font-bold text-xs sm:text-sm text-slate-900 group-hover:text-amber-900 transition-colors">
+                                {org.name}
+                              </h4>
+                              <ShieldCheck className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                            </div>
+                            <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-500">
+                              <span className="flex items-center text-amber-700 font-medium">
+                                <Star className="h-3 w-3 fill-amber-400 text-amber-500 mr-0.5" />
+                                {org.rating || 4.9}
+                              </span>
+                              {org.physicalAddress && (
+                                <span className="truncate max-w-[140px] flex items-center">
+                                  <MapPin className="h-3 w-3 mr-0.5 shrink-0" />
+                                  {org.physicalAddress}
+                                </span>
+                              )}
+                              {org.distanceKm !== null && org.distanceKm !== undefined && (
+                                <span className="font-mono text-amber-800">
+                                  · {org.distanceKm} km
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => onSend(`Show services for ${org.name}`)}
+                          className="shrink-0 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/70 px-2.5 py-1 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                        >
+                          View Services
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Service Recommendation Cards */}
+              {!isUser && msg.recommendations && msg.recommendations.length > 0 && (
+                <div className="mt-2.5 w-full max-w-[94%] space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                      Verified Services
+                    </span>
+                    <span className="text-emerald-700 font-mono lowercase">$0 hold today</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {msg.recommendations.map((rec) => {
+                      const salonService: SalonService = {
+                        id: rec.serviceId,
+                        name: rec.name,
+                        category: (rec.categoryName || 'Haircuts') as ServiceCategory,
+                        durationMin: rec.durationMinutes,
+                        price: rec.basePrice,
+                        holdDeposit: Math.max(10, Math.round(rec.basePrice * 0.2)),
+                        noShowFee: Math.min(
+                          rec.basePrice,
+                          Math.max(15, Math.round(rec.basePrice * 0.15)),
+                        ),
+                        description: rec.description || 'Salon service',
+                        popular: rec.basePrice >= 80,
+                        imageUrl: rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK,
+                        organizationId: rec.organizationId,
+                        organizationName: rec.organizationName,
+                        distanceKm: rec.distanceKm ?? undefined,
+                      }
+
+                      return (
+                        <div
+                          key={rec.serviceId}
+                          onClick={() =>
+                            onAuthorize({
+                              service: salonService,
+                              stylist: INITIAL_STAFF[0],
+                              slot: DEFAULT_TIME_SLOT,
+                            })
+                          }
+                          className="group relative rounded-xl border border-amber-200/90 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/30 p-3.5 text-slate-900 shadow-[0_2px_6px_rgba(245,158,11,0.06),inset_0_1px_0_0_rgba(255,255,255,0.9)] hover:border-amber-400 hover:shadow-md transition-all cursor-pointer"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-200/80 bg-slate-100">
+                              <Image
+                                src={
+                                  rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK
+                                }
+                                alt={rec.name}
+                                fill
+                                sizes="64px"
+                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <h4 className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-amber-900 transition-colors line-clamp-1">
+                                    {rec.name}
+                                  </h4>
+                                  <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+                                    {rec.organizationName}
+                                  </p>
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  <span className="font-mono tabular-nums tracking-tight font-extrabold text-sm text-amber-950">
+                                    ${rec.basePrice}
+                                  </span>
+                                  <span className="block text-[10px] text-emerald-700 font-medium">
+                                    $0 today
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600 pt-2 border-t border-amber-100">
+                                <div className="flex items-center gap-2">
+                                  {rec.durationMinutes ? (
+                                    <span className="flex items-center gap-1 font-mono text-[11px] text-slate-500">
+                                      <Clock className="h-3 w-3 text-amber-600" />
+                                      {rec.durationMinutes} min
+                                    </span>
+                                  ) : null}
+                                  {rec.distanceKm !== null && rec.distanceKm !== undefined ? (
+                                    <span className="flex items-center gap-0.5 font-mono text-[11px] text-amber-800">
+                                      <MapPin className="h-3 w-3 text-amber-600" />
+                                      {rec.distanceKm} km
+                                    </span>
+                                  ) : null}
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    onAuthorize({
+                                      service: salonService,
+                                      stylist: INITIAL_STAFF[0],
+                                      slot: DEFAULT_TIME_SLOT,
+                                    })
+                                  }}
+                                  className="flex items-center gap-1 rounded-lg bg-stone-950 hover:bg-amber-600 text-white px-2.5 py-1 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                                >
+                                  <CalendarCheck className="h-3.5 w-3.5" />
+                                  <span>Select &amp; Book</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Fallback Single Proposal Card */}
+              {!isUser &&
+                (!msg.recommendations || msg.recommendations.length === 0) &&
+                msg.hasProposal &&
+                msg.proposedService && <ProposalCard message={msg} onAuthorize={onAuthorize} />}
             </div>
           )
         })}

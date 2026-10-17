@@ -1,11 +1,51 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { toast } from 'sonner'
 
+import { toastColor } from '@/constant/toast-color'
 import { features } from '@/lib/features'
 import { formatClockTime } from '@/lib/format'
 import { createSequentialId } from '@/lib/ids'
 import { useClientConciergeChatMutation } from '@/store/api/clientApi'
+import { setAuthData } from '@/store/authSlice'
+
+export interface AgentServiceRecommendation {
+  serviceId: string
+  organizationId: string
+  name: string
+  organizationName: string
+  organizationPicture?: string | null
+  imageUrl?: string | null
+  basePrice: number
+  durationMinutes: number
+  categoryName?: string | null
+  description?: string | null
+  physicalAddress?: string | null
+  distanceKm?: number | null
+}
+
+export interface AgentOrganizationRecommendation {
+  id: string
+  name: string
+  description?: string | null
+  picture?: string | null
+  physicalAddress?: string | null
+  rating?: number
+  serviceCount?: number
+  distanceKm?: number | null
+}
+
+export interface AgentConfirmedBooking {
+  id: string
+  serviceName: string
+  organizationName?: string | null
+  startsAt: string
+  formattedTime?: string | null
+  totalPrice: number
+  status: string
+}
 
 export interface AgentChatMessage {
   id: string
@@ -13,17 +53,8 @@ export interface AgentChatMessage {
   text: string
   time: string
   recommendations?: AgentServiceRecommendation[]
-}
-
-export interface AgentServiceRecommendation {
-  serviceId: string
-  organizationId: string
-  name: string
-  organizationName: string
-  basePrice: number
-  durationMinutes: number
-  categoryName?: string | null
-  description?: string | null
+  organizations?: AgentOrganizationRecommendation[]
+  confirmedBooking?: AgentConfirmedBooking | null
 }
 
 const WELCOME: AgentChatMessage = {
@@ -34,6 +65,7 @@ const WELCOME: AgentChatMessage = {
 }
 
 export function useAgentChat() {
+  const dispatch = useDispatch()
   const [messages, setMessages] = useState<AgentChatMessage[]>([WELCOME])
   const [prompt, setPrompt] = useState('')
   const [isThinking, setIsThinking] = useState(false)
@@ -66,6 +98,16 @@ export function useAgentChat() {
           history: historyRef.current,
         }).unwrap()
 
+        if (data.auth_token && data.user) {
+          dispatch(
+            setAuthData({
+              user: data.user,
+              access_token: data.auth_token,
+            }),
+          )
+          toast.success(`Signed in as ${data.user.email}`, toastColor.success)
+        }
+
         const nextHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [
           ...historyRef.current,
           { role: 'user', content: query },
@@ -78,11 +120,45 @@ export function useAgentChat() {
           organizationId: r.organization_id,
           name: r.name,
           organizationName: r.organization_name,
+          organizationPicture: r.organization_picture,
+          imageUrl: r.image_url,
           basePrice: Number(r.base_price),
           durationMinutes: r.duration_minutes,
           categoryName: r.category_name,
           description: r.description,
+          physicalAddress: r.physical_address,
+          distanceKm: r.distance_km,
         }))
+
+        const organizations = (data.organizations ?? []).map((o) => ({
+          id: o.id,
+          name: o.name,
+          description: o.description,
+          picture: o.picture,
+          physicalAddress: o.physical_address,
+          rating: o.rating ?? 4.9,
+          serviceCount: o.service_count ?? 0,
+          distanceKm: o.distance_km,
+        }))
+
+        const confirmedBooking = data.confirmed_booking
+          ? {
+              id: data.confirmed_booking.id,
+              serviceName: data.confirmed_booking.service_name,
+              organizationName: data.confirmed_booking.organization_name,
+              startsAt: data.confirmed_booking.starts_at,
+              formattedTime: data.confirmed_booking.formatted_time,
+              totalPrice: Number(data.confirmed_booking.total_price),
+              status: data.confirmed_booking.status,
+            }
+          : null
+
+        if (confirmedBooking) {
+          toast.success(
+            `Booking confirmed for ${confirmedBooking.serviceName}! $0 hold placed.`,
+            toastColor.success,
+          )
+        }
 
         setMessages((prev) => [
           ...prev,
@@ -92,6 +168,8 @@ export function useAgentChat() {
             text: data.reply,
             time: formatClockTime(),
             recommendations,
+            organizations,
+            confirmedBooking,
           },
         ])
       } catch (err) {

@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -73,13 +73,30 @@ class ServiceRecommendation:
     description: str | None = None
     physical_address: str | None = None
     distance_km: float | None = None
+    organization_picture: str | None = None
+    image_url: str | None = None
     score: float = 0.0
+
+
+@dataclass
+class OrganizationRecommendation:
+    """Interactive organization / salon card payload for chat UI."""
+
+    id: UUID
+    name: str
+    description: str | None = None
+    picture: str | None = None
+    physical_address: str | None = None
+    rating: float = 4.9
+    service_count: int = 0
+    distance_km: float | None = None
 
 
 @dataclass
 class RetrievedContext:
     chunks: list[RetrievedChunk] = field(default_factory=list)
     recommendations: list[ServiceRecommendation] = field(default_factory=list)
+    organizations: list[OrganizationRecommendation] = field(default_factory=list)
     context_text: str = ""
     detected_language: str = "en"
     is_greeting: bool = False
@@ -295,12 +312,18 @@ async def _hydrate_service_recommendations(
                     ),
                     1,
                 )
+        cover_img = None
+        if isinstance(service.images, dict):
+            cover_img = service.images.get("cover") or service.images.get("image")
+
         cards.append(
             ServiceRecommendation(
                 service_id=service.id,
                 organization_id=service.organization_id,
                 name=service.name,
                 organization_name=org.name,
+                organization_picture=org.picture,
+                image_url=cover_img,
                 base_price=service.base_price,
                 duration_minutes=service.duration_minutes,
                 category_name=service.category.name if service.category else None,
@@ -496,12 +519,17 @@ async def retrieve_context(
             scored_services.append((dist if dist is not None else 999999.0, s, s_set))
         scored_services.sort(key=lambda x: x[0])
         for dist, s, s_set in scored_services[:limit]:
+            cover_img = None
+            if isinstance(s.images, dict):
+                cover_img = s.images.get("cover") or s.images.get("image")
             recommendations.append(
                 ServiceRecommendation(
                     service_id=s.id,
                     organization_id=s.organization_id,
                     name=s.name,
                     organization_name=s.organization.name if s.organization else "Salon",
+                    organization_picture=s.organization.picture if s.organization else None,
+                    image_url=cover_img,
                     base_price=s.base_price,
                     duration_minutes=s.duration_minutes,
                     category_name=s.category.name if s.category else None,
@@ -512,10 +540,126 @@ async def retrieve_context(
                 )
             )
 
+    # General direct DB fallback if vector/keyword chunks were empty
+    if not recommendations:
+        tokens = [t for t in re.split(r"\W+", query.lower()) if len(t) >= 3][:5]
+        stmt = (
+            select(Service, OrgSettings)
+            .join(Organization, Service.organization_id == Organization.id)
+            .outerjoin(OrgSettings, Organization.id == OrgSettings.org_id)
+            .options(
+                selectinload(Service.organization),
+                selectinload(Service.category),
+            )
+            .where(
+                Organization.status == OrganizationStatus.APPROVED,
+                Service.status == ServiceStatus.ACTIVE,
+            )
+        )
+        if org_id is not None:
+            stmt = stmt.where(Service.organization_id == org_id)
+        if tokens:
+            clauses = [Service.name.ilike(f"%{t}%") for t in tokens]
+            clauses.extend(Organization.name.ilike(f"%{t}%") for t in tokens)
+            stmt = stmt.where(or_(*clauses))
+        stmt = stmt.limit(limit)
+        res = await session.execute(stmt)
+        for s, s_set in res.all():
+            cover_img = None
+            if isinstance(s.images, dict):
+                cover_img = s.images.get("cover") or s.images.get("image")
+            dist = None
+            if (
+                user_lat is not None
+                and user_lng is not None
+                and s_set
+                and s_set.lat is not None
+                and s_set.lng is not None
+            ):
+                dist = round(
+                    haversine_km(user_lat, user_lng, float(s_set.lat), float(s_set.lng)),
+                    1,
+                )
+            recommendations.append(
+                ServiceRecommendation(
+                    service_id=s.id,
+                    organization_id=s.organization_id,
+                    name=s.name,
+                    organization_name=s.organization.name if s.organization else "Salon",
+                    organization_picture=s.organization.picture if s.organization else None,
+                    image_url=cover_img,
+                    base_price=s.base_price,
+                    duration_minutes=s.duration_minutes,
+                    category_name=s.category.name if s.category else None,
+                    description=s.description,
+                    physical_address=s_set.physical_address if s_set else None,
+                    distance_km=dist,
+                    score=0.9,
+                )
+            )
+
+    # Hydrate organization cards
+    seen_org_ids = {r.organization_id for r in recommendations}
+    if not seen_org_ids or any(w in query.lower() for w in ("salon", "salons", "org", "place")):
+        org_query = (
+            select(Organization.id)
+            .where(Organization.status == OrganizationStatus.APPROVED)
+            .limit(6)
+        )
+        if org_id is not None:
+            org_query = org_query.where(Organization.id == org_id)
+        extra_orgs = await session.execute(org_query)
+        for oid in extra_orgs.scalars().all():
+            seen_org_ids.add(oid)
+
+    organizations: list[OrganizationRecommendation] = []
+    if seen_org_ids:
+        org_rows = await session.execute(
+            select(Organization, OrgSettings)
+            .outerjoin(OrgSettings, Organization.id == OrgSettings.org_id)
+            .where(
+                Organization.id.in_(list(seen_org_ids)[:6]),
+                Organization.status == OrganizationStatus.APPROVED,
+            )
+        )
+        for org, o_settings in org_rows.all():
+            srv_count_res = await session.execute(
+                select(func.count(Service.id)).where(
+                    Service.organization_id == org.id,
+                    Service.status == ServiceStatus.ACTIVE,
+                )
+            )
+            count = srv_count_res.scalar() or 0
+            dist = None
+            if (
+                user_lat is not None
+                and user_lng is not None
+                and o_settings
+                and o_settings.lat is not None
+                and o_settings.lng is not None
+            ):
+                dist = round(
+                    haversine_km(user_lat, user_lng, float(o_settings.lat), float(o_settings.lng)),
+                    1,
+                )
+            organizations.append(
+                OrganizationRecommendation(
+                    id=org.id,
+                    name=org.name,
+                    description=org.description,
+                    picture=org.picture,
+                    physical_address=o_settings.physical_address if o_settings else None,
+                    rating=4.9,
+                    service_count=count,
+                    distance_km=dist,
+                )
+            )
+
     context_text = format_context_text(merged, recommendations)
     return RetrievedContext(
         chunks=merged,
         recommendations=recommendations,
+        organizations=organizations,
         context_text=context_text,
         detected_language=detected,
         is_greeting=False,

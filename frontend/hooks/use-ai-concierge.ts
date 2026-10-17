@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import type {
+  AgentConfirmedBooking,
+  AgentOrganizationRecommendation,
+  AgentServiceRecommendation,
+} from '@/components/chat/use-agent-chat'
 import { INITIAL_SERVICES, INITIAL_STAFF } from '@/lib/data/catalog'
 import { DEFAULT_TIME_SLOT } from '@/lib/data/service-content'
 import { features } from '@/lib/features'
@@ -19,6 +24,9 @@ export interface ConciergeMessage {
   proposedStylist?: StaffMember
   proposedSlot?: string
   hasProposal?: boolean
+  recommendations?: AgentServiceRecommendation[]
+  organizations?: AgentOrganizationRecommendation[]
+  confirmedBooking?: AgentConfirmedBooking | null
 }
 
 const WELCOME: ConciergeMessage = {
@@ -99,6 +107,44 @@ export function useAiConcierge() {
           ]
           historyRef.current = nextHistory.slice(-12)
 
+          const recommendations = (data.recommendations ?? []).map((r) => ({
+            serviceId: r.service_id,
+            organizationId: r.organization_id,
+            name: r.name,
+            organizationName: r.organization_name,
+            organizationPicture: r.organization_picture,
+            imageUrl: r.image_url,
+            basePrice: Number(r.base_price),
+            durationMinutes: r.duration_minutes,
+            categoryName: r.category_name,
+            description: r.description,
+            physicalAddress: r.physical_address,
+            distanceKm: r.distance_km,
+          }))
+
+          const organizations = (data.organizations ?? []).map((o) => ({
+            id: o.id,
+            name: o.name,
+            description: o.description,
+            picture: o.picture,
+            physicalAddress: o.physical_address,
+            rating: o.rating ?? 4.9,
+            serviceCount: o.service_count ?? 0,
+            distanceKm: o.distance_km,
+          }))
+
+          const confirmedBooking = data.confirmed_booking
+            ? {
+                id: data.confirmed_booking.id,
+                serviceName: data.confirmed_booking.service_name,
+                organizationName: data.confirmed_booking.organization_name,
+                startsAt: data.confirmed_booking.starts_at,
+                formattedTime: data.confirmed_booking.formatted_time,
+                totalPrice: Number(data.confirmed_booking.total_price),
+                status: data.confirmed_booking.status,
+              }
+            : null
+
           const top = data.recommendations?.[0]
           const proposedFromApi: SalonService | undefined = top
             ? {
@@ -108,6 +154,9 @@ export function useAiConcierge() {
                 price: Number(top.base_price),
                 durationMin: top.duration_minutes,
                 description: top.description ?? service.description,
+                imageUrl: top.image_url ?? undefined,
+                organizationId: top.organization_id,
+                organizationName: top.organization_name,
               }
             : undefined
 
@@ -122,6 +171,9 @@ export function useAiConcierge() {
               proposedStylist: INITIAL_STAFF[0],
               proposedSlot: DEFAULT_TIME_SLOT,
               hasProposal: Boolean(proposedFromApi ?? service),
+              recommendations,
+              organizations,
+              confirmedBooking,
             },
           ])
           return

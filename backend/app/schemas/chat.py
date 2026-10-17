@@ -27,12 +27,28 @@ class ServiceCardOut(BaseModel):
     organization_id: UUID
     name: str
     organization_name: str
+    organization_picture: str | None = None
+    image_url: str | None = None
     base_price: Decimal
     duration_minutes: int
     category_name: str | None = None
     description: str | None = None
     physical_address: str | None = None
+    distance_km: float | None = None
     score: float = 0.0
+
+
+class OrganizationCardOut(BaseModel):
+    """Organization / Salon card for chat UI."""
+
+    id: UUID
+    name: str
+    description: str | None = None
+    picture: str | None = None
+    physical_address: str | None = None
+    rating: float = 4.9
+    service_count: int = 0
+    distance_km: float | None = None
 
 
 class ChatResponse(BaseModel):
@@ -43,6 +59,10 @@ class ChatResponse(BaseModel):
     intent: str
     citations: list[ChatCitation] = Field(default_factory=list)
     recommendations: list[ServiceCardOut] = Field(default_factory=list)
+    organizations: list[OrganizationCardOut] = Field(default_factory=list)
+    confirmed_booking: dict[str, str | None] | None = None
+    auth_token: str | None = None
+    user: dict[str, str | None] | None = None
 
 
 class LiveKitTokenRequest(BaseModel):
