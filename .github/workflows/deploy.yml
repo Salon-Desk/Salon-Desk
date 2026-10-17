@@ -53,13 +53,61 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
+  # Prefer this when GitHub-hosted runners cannot SSH to the VPS (firewall / private host).
+  deploy-self-hosted:
+    needs: build-and-push
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main' && vars.USE_SELF_HOSTED_DEPLOY == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Roll out container
+        env:
+          CONTAINER_NAME: salondesk
+          APP_PORT: ${{ vars.VPS_APP_PORT || '8080' }}
+        run: |
+          IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]'):latest"
+          export IMAGE CONTAINER_NAME APP_PORT
+          chmod +x deploy/vps-rollout.sh
+          ./deploy/vps-rollout.sh
+
+  deploy-ssh:
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.USE_SELF_HOSTED_DEPLOY != 'true'
     steps:
       - name: Set image ref
         run: echo "IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]'):latest" >> "$GITHUB_ENV"
+
+      - name: Check VPS SSH reachability (fail fast)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VPS_HOST:-}" ]; then
+            echo "::error::Secret VPS_HOST is not set."
+            exit 1
+          fi
+          PORT="${VPS_SSH_PORT:-22}"
+          echo "Probing TCP ${VPS_HOST}:${PORT} (12s max) ..."
+          if timeout 12 bash -c "echo >/dev/tcp/${VPS_HOST}/${PORT}" 2>/dev/null; then
+            echo "SSH port is reachable from GitHub Actions."
+            exit 0
+          fi
+          echo "::error::Cannot open TCP to VPS (${VPS_HOST}:${PORT}) from GitHub Actions — dial tcp i/o timeout."
+          echo "Fix options:"
+          echo "  • Cloud firewall / security group: allow inbound TCP ${PORT} (from GitHub Actions IPs or 0.0.0.0/0 with key-only SSH)."
+          echo "  • VPS_HOST must be a public IP or DNS name reachable from the internet."
+          echo "  • Confirm sshd listens on ${PORT} (ss -tlnp | grep ssh)."
+          echo "  • Or set repository variable USE_SELF_HOSTED_DEPLOY=true and register a self-hosted runner on the VPS (no inbound SSH from GitHub)."
+          exit 1
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -68,28 +116,24 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
           IMAGE: ${{ env.IMAGE }}
           CONTAINER_NAME: salondesk
-          # Host port for the all-in-one image. Default 8080 — VPS nginx already owns :80/:443.
-          # Override with repo variable VPS_APP_PORT if needed.
           APP_PORT: ${{ vars.VPS_APP_PORT || '8080' }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT || 22 }}
-          # Connection timeout (seconds). i/o timeout usually means firewall / wrong host/port.
-          timeout: 60s
-          command_timeout: 30m
+          port: ${{ secrets.VPS_SSH_PORT != '' && secrets.VPS_SSH_PORT || '22' }}
+          timeout: 30s
+          command_timeout: 15m
           envs: GHCR_USER,GHCR_TOKEN,IMAGE,CONTAINER_NAME,APP_PORT
           script: |
             set -euo pipefail
             PUBLISH_PORT="${APP_PORT:-8080}"
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-            docker pull "$IMAGE"
-            # Free the publish port by stopping our previous container first.
+            docker pull --quiet "$IMAGE"
             docker stop "$CONTAINER_NAME" 2>/dev/null || true
             docker rm "$CONTAINER_NAME" 2>/dev/null || true
             if ss -tln | grep -qE ":${PUBLISH_PORT}\\b"; then
-              echo "ERROR: host port ${PUBLISH_PORT} is still in use by another process. Set GitHub variable VPS_APP_PORT to a free port."
+              echo "ERROR: host port ${PUBLISH_PORT} is still in use. Set GitHub variable VPS_APP_PORT."
               ss -tlnp | grep -E ":${PUBLISH_PORT}\\b" || true
               exit 1
             fi
@@ -100,13 +144,13 @@ jobs:
               -v salondesk_pgdata:/var/lib/postgresql/data \
               --env-file /opt/salondesk/.env \
               "$IMAGE"
-            for i in $(seq 1 36); do
-              if curl -sf "http://127.0.0.1:${PUBLISH_PORT}/health" >/dev/null; then
+            for i in $(seq 1 40); do
+              if curl -sf --max-time 3 "http://127.0.0.1:${PUBLISH_PORT}/health" >/dev/null; then
                 echo "SalonDesk healthy on 127.0.0.1:${PUBLISH_PORT}"
-                docker image prune -f
+                docker image prune -f >/dev/null 2>&1 || true
                 exit 0
               fi
-              sleep 5
+              sleep 3
             done
             echo "Deployed container failed health check"
             docker logs "$CONTAINER_NAME" --tail 120 || true
