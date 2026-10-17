@@ -1,5 +1,6 @@
 export type { AgentChatViewProps } from './AgentChatView'
 export { AgentChatView } from './AgentChatView'
+export * from './chat-ui'
 export type { ChatWidgetProps } from './ChatWidget'
 export { ChatWidget } from './ChatWidget'
 export type { InnerVoiceAssistantUIProps } from './InnerVoiceAssistantUI'

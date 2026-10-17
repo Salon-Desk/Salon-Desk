@@ -6,7 +6,7 @@ import type {
   AgentConfirmedBooking,
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
-} from '@/components/chat'
+} from '@/components/chat/useAgentChat'
 import { INITIAL_SERVICES, INITIAL_STAFF } from '@/lib/data/catalog'
 import { DEFAULT_TIME_SLOT } from '@/lib/data/service-content'
 import { features } from '@/lib/features'
@@ -33,12 +33,9 @@ export interface ConciergeMessage {
 const WELCOME: ConciergeMessage = {
   id: 'msg-welcome',
   sender: 'assistant',
-  text: 'Hello! I am your SalonDesk AI Concierge at Crown & Blade Atelier. With our PayPal authorization hold guarantee, $0 is debited today to lock in your appointment. How may I style you today?',
+  text: 'Hello! I am your SalonDesk AI Concierge. With our PayPal authorization hold guarantee, $0 is debited today to lock in your appointment. How may I style you today?',
   time: 'Just now',
-  proposedService: INITIAL_SERVICES[0],
-  proposedStylist: INITIAL_STAFF[0],
-  proposedSlot: DEFAULT_TIME_SLOT,
-  hasProposal: true,
+  hasProposal: false,
 }
 
 function initialMode(): 'voice' | 'chat' {
@@ -47,16 +44,13 @@ function initialMode(): 'voice' | 'chat' {
   return 'chat'
 }
 
-function demoFallbackMessage(service: SalonService): ConciergeMessage {
+function demoFallbackMessage(_service?: SalonService): ConciergeMessage {
   return {
     id: createSequentialId('ast'),
     sender: 'assistant',
-    text: `I have reserved ${service.name} with ${INITIAL_STAFF[0].name} for ${DEFAULT_TIME_SLOT}. Remember: $0 leaves your account today—only an authorization hold of $${service.holdDeposit} is created via PayPal.`,
+    text: 'I could not reach the booking assistant just now. Please try again in a moment, or select a service directly from the catalog.',
     time: formatClockTime(),
-    proposedService: service,
-    proposedStylist: INITIAL_STAFF[0],
-    proposedSlot: DEFAULT_TIME_SLOT,
-    hasProposal: true,
+    hasProposal: false,
   }
 }
 
@@ -69,6 +63,7 @@ export function useAiConcierge() {
   const [location, setLocation] = useState<GeoCoords | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const historyRef = useRef<Array<{ role: 'user' | 'assistant'; content: string }>>([])
+  const isThinkingRef = useRef(false)
   const [clientConciergeChat] = useClientConciergeChatMutation()
 
   useEffect(() => {
@@ -79,14 +74,9 @@ export function useAiConcierge() {
       })
   }, [])
 
-  const messageCount = messages.length
-  useEffect(() => {
-    if (!isOpen || mode !== 'chat' || messageCount < 1) return
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [isOpen, mode, messageCount])
-
   const send = useCallback(
     async (customPrompt?: string, serviceOverride?: SalonService) => {
+      if (isThinkingRef.current) return
       const query = customPrompt || prompt
       if (!query.trim()) return
 
@@ -100,6 +90,7 @@ export function useAiConcierge() {
 
       setMessages((prev) => [...prev, userMsg])
       setPrompt('')
+      isThinkingRef.current = true
       setIsThinking(true)
 
       try {
@@ -214,10 +205,11 @@ export function useAiConcierge() {
       } catch {
         setMessages((prev) => [...prev, demoFallbackMessage(service)])
       } finally {
+        isThinkingRef.current = false
         setIsThinking(false)
       }
     },
-    [clientConciergeChat, prompt],
+    [clientConciergeChat, prompt, location],
   )
 
   return {
