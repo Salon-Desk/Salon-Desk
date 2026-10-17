@@ -6,12 +6,13 @@ import type {
   AgentConfirmedBooking,
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
-} from '@/components/chat/use-agent-chat'
+} from '@/components/chat'
 import { INITIAL_SERVICES, INITIAL_STAFF } from '@/lib/data/catalog'
 import { DEFAULT_TIME_SLOT } from '@/lib/data/service-content'
 import { features } from '@/lib/features'
 import { formatClockTime } from '@/lib/format'
 import { createSequentialId } from '@/lib/ids'
+import { type GeoCoords, requestGeolocation } from '@/lib/util/geo'
 import { useClientConciergeChatMutation } from '@/store/api/clientApi'
 import type { SalonService, StaffMember } from '@/types'
 
@@ -65,9 +66,18 @@ export function useAiConcierge() {
   const [prompt, setPrompt] = useState('')
   const [isThinking, setIsThinking] = useState(false)
   const [messages, setMessages] = useState<ConciergeMessage[]>([WELCOME])
+  const [location, setLocation] = useState<GeoCoords | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const historyRef = useRef<Array<{ role: 'user' | 'assistant'; content: string }>>([])
   const [clientConciergeChat] = useClientConciergeChatMutation()
+
+  useEffect(() => {
+    void requestGeolocation({ enableHighAccuracy: false, timeout: 5000 })
+      .then(setLocation)
+      .catch(() => {
+        /* best-effort fallback */
+      })
+  }, [])
 
   const messageCount = messages.length
   useEffect(() => {
@@ -98,6 +108,8 @@ export function useAiConcierge() {
             message: query,
             language: features.defaultLanguage,
             history: historyRef.current,
+            user_lat: location?.lat ?? null,
+            user_lng: location?.lng ?? null,
           }).unwrap()
 
           const nextHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [

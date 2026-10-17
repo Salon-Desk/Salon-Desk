@@ -248,6 +248,7 @@ async def entrypoint(ctx: Any) -> None:
                             p_lat,
                             p_lng,
                         )
+                        asyncio.create_task(_publish_nearby_orgs(p_lat, p_lng))
         except Exception:
             pass
 
@@ -269,12 +270,66 @@ async def entrypoint(ctx: Any) -> None:
         except Exception as exc:
             logger.warning("Failed to publish booking data: %s", exc)
 
+    async def _publish_discovery_results(payload: dict[str, Any]) -> None:
+        try:
+            if room.local_participant:
+                data = json.dumps(
+                    {
+                        "type": "catalog_results",
+                        "recommendations": payload.get("recommendations", []),
+                        "organizations": payload.get("organizations", []),
+                    }
+                )
+                await room.local_participant.publish_data(data, topic="lk.client.catalog")
+                logger.info("Published catalog_results message to room participant")
+        except Exception as exc:
+            logger.warning("Failed to publish catalog data: %s", exc)
+
+    async def _publish_nearby_orgs(lat: float, lng: float) -> None:
+        try:
+            from sqlalchemy import select
+
+            async with session_factory() as session:
+                result = await session.execute(
+                    select(Organization, OrgSettings)
+                    .join(OrgSettings, Organization.id == OrgSettings.org_id)
+                    .where(Organization.status == OrganizationStatus.APPROVED)
+                )
+                org_list = []
+                for org, s_row in result.all():
+                    if s_row.lat is not None and s_row.lng is not None:
+                        dist = haversine_km(lat, lng, float(s_row.lat), float(s_row.lng))
+                        org_list.append(
+                            {
+                                "id": str(org.id),
+                                "name": org.name,
+                                "description": org.description,
+                                "picture": org.picture,
+                                "physical_address": s_row.physical_address,
+                                "rating": 4.9,
+                                "distance_km": round(dist, 1),
+                            }
+                        )
+                org_list.sort(key=lambda x: x["distance_km"])
+                if room.local_participant and org_list:
+                    data = json.dumps(
+                        {
+                            "type": "nearby_organizations",
+                            "organizations": org_list[:6],
+                        }
+                    )
+                    await room.local_participant.publish_data(data, topic="lk.client.organizations")
+                    logger.info("Published nearby_organizations to room")
+        except Exception as exc:
+            logger.warning("Failed to publish nearby orgs: %s", exc)
+
     session_factory = _build_session_factory()
     tools = build_voice_tools(
         session_factory,
         user_location_getter=lambda: (user_location["lat"], user_location["lng"]),
         on_auth_success=_publish_auth_success,
         on_booking_success=_publish_booking_success,
+        on_discovery_results=_publish_discovery_results,
     )
 
     location_ctx_text = await _build_location_context(

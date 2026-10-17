@@ -16,6 +16,7 @@ from app.core.config import get_settings
 def build_catalog_tools(
     session_factory: async_sessionmaker[AsyncSession],
     user_location_getter: Callable[[], tuple[float | None, float | None]] | None = None,
+    on_discovery_results: Callable[[dict[str, Any]], Any] | None = None,
 ):
     """Return LiveKit ``@function_tool`` callables for semantic catalog search."""
 
@@ -50,29 +51,50 @@ def build_catalog_tools(
                 user_lat=u_lat,
                 user_lng=u_lng,
             )
-        return json.dumps(
-            {
-                "intent": retrieved.intent,
-                "language": retrieved.detected_language,
-                "recommendations": [
-                    {
-                        "service_id": str(r.service_id),
-                        "organization_id": str(r.organization_id),
-                        "name": r.name,
-                        "organization_name": r.organization_name,
-                        "base_price": str(r.base_price),
-                        "duration_minutes": r.duration_minutes,
-                        "category_name": r.category_name,
-                        "physical_address": r.physical_address,
-                        "distance_km": r.distance_km,
-                        "image_url": getattr(r, "image_url", None),
-                        "organization_picture": getattr(r, "organization_picture", None),
-                    }
-                    for r in retrieved.recommendations
-                ],
-                "context": retrieved.context_text,
-            }
-        )
+        payload = {
+            "intent": retrieved.intent,
+            "language": retrieved.detected_language,
+            "recommendations": [
+                {
+                    "service_id": str(r.service_id),
+                    "organization_id": str(r.organization_id),
+                    "name": r.name,
+                    "organization_name": r.organization_name,
+                    "base_price": str(r.base_price),
+                    "duration_minutes": r.duration_minutes,
+                    "category_name": r.category_name,
+                    "physical_address": r.physical_address,
+                    "distance_km": r.distance_km,
+                    "image_url": getattr(r, "image_url", None),
+                    "organization_picture": getattr(r, "organization_picture", None),
+                }
+                for r in retrieved.recommendations
+            ],
+            "organizations": [
+                {
+                    "id": str(o.id),
+                    "name": o.name,
+                    "description": o.description,
+                    "picture": o.picture,
+                    "physical_address": o.physical_address,
+                    "rating": o.rating,
+                    "service_count": o.service_count,
+                    "distance_km": o.distance_km,
+                }
+                for o in retrieved.organizations
+            ],
+            "context": retrieved.context_text,
+        }
+        if on_discovery_results:
+            try:
+                import inspect
+
+                res = on_discovery_results(payload)
+                if inspect.isawaitable(res):
+                    await res
+            except Exception:
+                pass
+        return json.dumps(payload)
 
     return [search_salon_services]
 
@@ -82,13 +104,18 @@ def build_voice_tools(
     user_location_getter: Callable[[], tuple[float | None, float | None]] | None = None,
     on_auth_success: Callable[[dict[str, Any]], Any] | None = None,
     on_booking_success: Callable[[dict[str, Any]], Any] | None = None,
+    on_discovery_results: Callable[[dict[str, Any]], Any] | None = None,
 ):
     """Aggregate catalog, schedule, booking, and auth tools for the voice worker."""
     from app.ai.tools.auth_tools import build_auth_tools
     from app.ai.tools.booking_tools import build_booking_tools
     from app.ai.tools.schedule_tools import build_schedule_tools
 
-    tools = build_catalog_tools(session_factory, user_location_getter=user_location_getter)
+    tools = build_catalog_tools(
+        session_factory,
+        user_location_getter=user_location_getter,
+        on_discovery_results=on_discovery_results,
+    )
     tools.extend(build_schedule_tools(session_factory))
     tools.extend(build_booking_tools(session_factory, on_booking_success=on_booking_success))
     tools.extend(build_auth_tools(session_factory, on_auth_success=on_auth_success))

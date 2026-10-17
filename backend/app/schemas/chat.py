@@ -11,6 +11,8 @@ class ChatRequest(BaseModel):
     history: list[ChatMessage] = Field(default_factory=list)
     language: str | None = Field(default=None, description="en | am")
     org_id: UUID | None = Field(default=None, description="Optional org scope for semantic search")
+    user_lat: float | None = Field(default=None, description="Client GPS latitude")
+    user_lng: float | None = Field(default=None, description="Client GPS longitude")
 
 
 class ChatCitation(BaseModel):

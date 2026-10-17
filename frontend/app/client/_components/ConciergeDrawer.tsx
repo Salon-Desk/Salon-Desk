@@ -200,6 +200,9 @@ function ChatSurface({
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
         {messages.map((msg) => {
           const isUser = msg.sender === 'user'
+          const effectiveOrgs = !isUser && msg.organizations ? msg.organizations : []
+          const effectiveRecs = !isUser && msg.recommendations ? msg.recommendations : []
+
           return (
             <div key={msg.id} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
               <div
@@ -241,14 +244,14 @@ function ChatSurface({
               )}
 
               {/* Organization Cards */}
-              {!isUser && msg.organizations && msg.organizations.length > 0 && (
+              {!isUser && effectiveOrgs.length > 0 && (
                 <div className="mt-2.5 w-full max-w-[94%] space-y-2">
                   <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
                     <Building2 className="h-3.5 w-3.5 text-amber-600" />
                     <span>Recommended Salons</span>
                   </div>
                   <div className="grid grid-cols-1 gap-2">
-                    {msg.organizations.map((org) => (
+                    {effectiveOrgs.map((org) => (
                       <div
                         key={org.id}
                         className="group relative flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-3 text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] hover:border-amber-300 hover:shadow-md transition-all"
@@ -308,7 +311,7 @@ function ChatSurface({
               )}
 
               {/* Service Recommendation Cards */}
-              {!isUser && msg.recommendations && msg.recommendations.length > 0 && (
+              {!isUser && effectiveRecs.length > 0 && (
                 <div className="mt-2.5 w-full max-w-[94%] space-y-2">
                   <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
                     <span className="flex items-center gap-1.5">
@@ -319,7 +322,7 @@ function ChatSurface({
                   </div>
 
                   <div className="grid grid-cols-1 gap-2.5">
-                    {msg.recommendations.map((rec) => {
+                    {effectiveRecs.map((rec) => {
                       const salonService: SalonService = {
                         id: rec.serviceId,
                         name: rec.name,

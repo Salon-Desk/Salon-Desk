@@ -3,9 +3,9 @@
 import { Bot, Mic, Sparkles, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { AgentChatView } from '@/components/chat/agent-chat-view'
-import { useAgentChat } from '@/components/chat/use-agent-chat'
-import { VoiceAgentView } from '@/components/chat/voice-agent-view'
+import { AgentChatView } from '@/components/chat/AgentChatView'
+import { useAgentChat } from '@/components/chat/useAgentChat'
+import { VoiceAgentView } from '@/components/chat/VoiceAgentView'
 import { anyChatFeatureEnabled, features } from '@/lib/features'
 import { cn } from '@/lib/utils'
 
@@ -17,7 +17,7 @@ function initialMode(): Mode {
   return 'text'
 }
 
-interface ChatWidgetProps {
+export interface ChatWidgetProps {
   /** Controlled open state — omit for floating FAB ownership. */
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -27,8 +27,8 @@ interface ChatWidgetProps {
 }
 
 /**
- * Floating text + LiveKit voice agent shell (see frontend voice-agent guide).
- * Browser only joins LiveKit / renders UI — STT/LLM/TTS/RAG run on the worker.
+ * Floating text + LiveKit voice agent shell.
+ * Browser only joins LiveKit / renders UI — STT/LLM/TTS/RAG run on the backend worker.
  */
 export function ChatWidget({
   open: openProp,
@@ -58,14 +58,7 @@ export function ChatWidget({
 
   if (!anyChatFeatureEnabled) return null
 
-  const handleOpenVoice = () => {
-    if (!features.voiceAgent) return
-    setMode('voice')
-    setIsOpen(true)
-  }
-
   const handleOpenChat = () => {
-    if (!features.agentChat) return
     setMode('text')
     setIsOpen(true)
   }
@@ -73,31 +66,21 @@ export function ChatWidget({
   return (
     <>
       {showTriggers && !isOpen && (
-        <div
-          className={cn('fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2.5', className)}
-        >
-          {features.voiceAgent && (
-            <button
-              type="button"
-              onClick={handleOpenVoice}
-              aria-label="Open voice agent"
-              className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 border border-slate-700/80 text-white shadow-[0_8px_20px_-4px_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.15)] hover:bg-slate-800 hover:scale-105 transition-all cursor-pointer group"
-              title="Speak with Voice Concierge"
-            >
-              <Mic className="h-5 w-5 text-amber-300 transition-transform group-hover:scale-110" />
-            </button>
-          )}
-          {features.agentChat && (
-            <button
-              type="button"
-              onClick={handleOpenChat}
-              aria-label="Open AI chat"
-              className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 border border-amber-300/60 text-slate-950 shadow-[0_8px_24px_-4px_rgba(245,158,11,0.45),inset_0_1px_0_0_rgba(255,255,255,0.35)] hover:scale-105 transition-all cursor-pointer group"
-              title="Open AI Concierge Chat"
-            >
-              <Sparkles className="h-6 w-6 text-slate-950 transition-transform group-hover:scale-110" />
-            </button>
-          )}
+        <div className={cn('fixed bottom-5 right-5 z-40', className)}>
+          <button
+            type="button"
+            onClick={handleOpenChat}
+            aria-label="Open SalonDesk AI Concierge"
+            className="group flex cursor-pointer items-center gap-2.5 rounded-full border border-stone-800 bg-stone-950/95 py-2.5 pl-3.5 pr-4 text-white shadow-lg shadow-black/20 backdrop-blur-md transition-all hover:border-stone-700 hover:bg-stone-900 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+            title="Open AI Concierge"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-400/15 text-amber-400 transition-transform group-hover:scale-110">
+              <Sparkles className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-xs font-semibold tracking-tight text-stone-100">
+              AI Concierge
+            </span>
+          </button>
         </div>
       )}
 

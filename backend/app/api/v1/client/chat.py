@@ -63,6 +63,8 @@ async def chat(
         room_language=body.language,
         prior_turns=prior,
         org_id=body.org_id,
+        user_lat=body.user_lat,
+        user_lng=body.user_lng,
     )
     system = build_chat_system_prompt(retrieved)
     messages = [{"role": "system", "content": system}]

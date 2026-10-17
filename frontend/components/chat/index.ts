@@ -1,12 +1,19 @@
-export { AgentChatView } from './agent-chat-view'
-export { ChatWidget } from './chat-widget'
-export { InnerVoiceAssistantUI } from './inner-voice-assistant-ui'
+export type { AgentChatViewProps } from './AgentChatView'
+export { AgentChatView } from './AgentChatView'
+export type { ChatWidgetProps } from './ChatWidget'
+export { ChatWidget } from './ChatWidget'
+export type { InnerVoiceAssistantUIProps } from './InnerVoiceAssistantUI'
+export { InnerVoiceAssistantUI } from './InnerVoiceAssistantUI'
 export {
   type AgentChatMessage,
+  type AgentConfirmedBooking,
+  type AgentOrganizationRecommendation,
   type AgentServiceRecommendation,
   useAgentChat,
-} from './use-agent-chat'
-export { VoiceAgentShell } from './voice-agent-shell'
-export type { VoiceAgentViewProps } from './voice-agent-view'
-export { VoiceAgentView } from './voice-agent-view'
-export { VoiceVisualizerOrb } from './voice-visualizer-orb'
+} from './useAgentChat'
+export type { VoiceAgentShellProps } from './VoiceAgentShell'
+export { VoiceAgentShell } from './VoiceAgentShell'
+export type { VoiceAgentViewProps } from './VoiceAgentView'
+export { VoiceAgentView } from './VoiceAgentView'
+export type { OrbState, VoiceVisualizerOrbProps } from './VoiceVisualizerOrb'
+export { VoiceVisualizerOrb } from './VoiceVisualizerOrb'

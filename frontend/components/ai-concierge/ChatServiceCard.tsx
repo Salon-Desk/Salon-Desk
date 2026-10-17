@@ -3,7 +3,7 @@
 import { Send, Sparkles } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
-import type { AgentChatMessage } from '@/components/chat/use-agent-chat'
+import type { AgentChatMessage } from '@/components/chat/useAgentChat'
 import { cn } from '@/lib/utils'
 
 interface AgentChatViewProps {

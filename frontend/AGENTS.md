@@ -99,10 +99,10 @@ JWT lives in **localStorage**; edge `middleware.ts` does not enforce auth (use `
 
 ### AI concierge hooks
 
-| Hook             | Location                            | Transport                                                                                   |
-| ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
-| `useAiConcierge` | `hooks/use-ai-concierge.ts`         | RTK `useClientConciergeChatMutation` when `features.agentChat`; else `app/api/ai/concierge` |
-| `useAgentChat`   | `components/chat/use-agent-chat.ts` | RTK → `/api/v1/chat` (global chat widget)                                                   |
+| Hook             | Location                          | Transport                                                                                   |
+| ---------------- | --------------------------------- | ------------------------------------------------------------------------------------------- |
+| `useAiConcierge` | `hooks/use-ai-concierge.ts`       | RTK `useClientConciergeChatMutation` when `features.agentChat`; else `app/api/ai/concierge` |
+| `useAgentChat`   | `components/chat/useAgentChat.ts` | RTK → `/api/v1/chat` (global chat widget)                                                   |
 
 Client drawer UI: `app/client/_components/ConciergeDrawer.tsx` (export alias `ConciergeDrawer`; legacy name `AiConcierge`).
 

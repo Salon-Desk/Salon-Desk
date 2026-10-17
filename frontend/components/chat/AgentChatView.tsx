@@ -19,11 +19,11 @@ import type {
   AgentChatMessage,
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
-} from '@/components/chat/use-agent-chat'
+} from '@/components/chat/useAgentChat'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import { cn } from '@/lib/utils'
 
-interface AgentChatViewProps {
+export interface AgentChatViewProps {
   messages: AgentChatMessage[]
   messagesEndRef: React.RefObject<HTMLDivElement | null>
   isThinking: boolean
@@ -69,6 +69,9 @@ export function AgentChatView({
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
         {messages.map((msg) => {
           const isUser = msg.sender === 'user'
+          const effectiveOrgs = !isUser && msg.organizations ? msg.organizations : []
+          const effectiveRecs = !isUser && msg.recommendations ? msg.recommendations : []
+
           return (
             <div key={msg.id} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
               <div
@@ -109,15 +112,15 @@ export function AgentChatView({
                 </div>
               )}
 
-              {/* Organization Cards */}
-              {!isUser && msg.organizations && msg.organizations.length > 0 && (
-                <div className="mt-2.5 w-full max-w-[94%] space-y-2">
+              {/* Real Organization Cards */}
+              {!isUser && effectiveOrgs.length > 0 && (
+                <div className="mt-2.5 w-full max-w-[94%] space-y-2 animate-in fade-in duration-200">
                   <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
                     <Building2 className="h-3.5 w-3.5 text-amber-600" />
                     <span>Recommended Salons</span>
                   </div>
                   <div className="grid grid-cols-1 gap-2">
-                    {msg.organizations.map((org: AgentOrganizationRecommendation) => (
+                    {effectiveOrgs.map((org: AgentOrganizationRecommendation) => (
                       <div
                         key={org.id}
                         className="group relative flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-3 text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] hover:border-amber-300 hover:shadow-md transition-all"
@@ -176,9 +179,9 @@ export function AgentChatView({
                 </div>
               )}
 
-              {/* Service Cards */}
-              {!isUser && msg.recommendations && msg.recommendations.length > 0 && (
-                <div className="mt-2.5 w-full max-w-[94%] space-y-2">
+              {/* Real Service Cards */}
+              {!isUser && effectiveRecs.length > 0 && (
+                <div className="mt-2.5 w-full max-w-[94%] space-y-2 animate-in fade-in duration-200">
                   <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
                     <span className="flex items-center gap-1.5">
                       <Sparkles className="h-3.5 w-3.5 text-amber-600" />
@@ -188,7 +191,7 @@ export function AgentChatView({
                   </div>
 
                   <div className="grid grid-cols-1 gap-2.5">
-                    {msg.recommendations.map((rec: AgentServiceRecommendation) => (
+                    {effectiveRecs.map((rec: AgentServiceRecommendation) => (
                       <div
                         key={rec.serviceId}
                         onClick={() => handleSelectService(rec)}
@@ -301,9 +304,9 @@ export function AgentChatView({
       {/* Suggested Quick Prompts */}
       <div className="flex items-center gap-1.5 overflow-x-auto border-t border-slate-200/70 bg-white/80 px-4 py-2 scrollbar-none">
         {[
-          'Find a fade near me',
+          'Find salons near me',
           'Book haircut tomorrow at 2pm',
-          'Show salons nearby',
+          'Show available services',
           'How does the $0 hold work?',
         ].map((chip) => (
           <button

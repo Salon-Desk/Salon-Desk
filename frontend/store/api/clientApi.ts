@@ -30,6 +30,8 @@ export interface ClientChatRequest {
   language?: string
   org_id?: string
   history?: ClientChatMessage[]
+  user_lat?: number | null
+  user_lng?: number | null
 }
 
 export interface ClientChatResponse {

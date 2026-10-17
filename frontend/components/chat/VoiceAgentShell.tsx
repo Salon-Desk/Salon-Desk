@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
-interface VoiceAgentShellProps {
+export interface VoiceAgentShellProps {
   children: ReactNode
   className?: string
 }

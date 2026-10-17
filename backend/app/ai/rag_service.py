@@ -618,7 +618,7 @@ async def retrieve_context(
             select(Organization, OrgSettings)
             .outerjoin(OrgSettings, Organization.id == OrgSettings.org_id)
             .where(
-                Organization.id.in_(list(seen_org_ids)[:6]),
+                Organization.id.in_(list(seen_org_ids)[:8]),
                 Organization.status == OrganizationStatus.APPROVED,
             )
         )
@@ -652,6 +652,64 @@ async def retrieve_context(
                     rating=4.9,
                     service_count=count,
                     distance_km=dist,
+                )
+            )
+
+    if any(o.distance_km is not None for o in organizations):
+        organizations.sort(key=lambda o: (o.distance_km is None, o.distance_km or 0.0))
+
+    # If recommendations are few, hydrate top services from the top organizations for interactive booking
+    if len(recommendations) < 3 and organizations:
+        rec_srv_ids = {r.service_id for r in recommendations}
+        top_org_ids = [o.id for o in organizations[:4]]
+        extra_srv_res = await session.execute(
+            select(Service, OrgSettings)
+            .join(Organization, Service.organization_id == Organization.id)
+            .outerjoin(OrgSettings, Organization.id == OrgSettings.org_id)
+            .options(
+                selectinload(Service.organization),
+                selectinload(Service.category),
+            )
+            .where(
+                Service.organization_id.in_(top_org_ids),
+                Service.status == ServiceStatus.ACTIVE,
+            )
+            .limit(6)
+        )
+        for s, s_set in extra_srv_res.all():
+            if s.id in rec_srv_ids:
+                continue
+            rec_srv_ids.add(s.id)
+            cover_img = None
+            if isinstance(s.images, dict):
+                cover_img = s.images.get("cover") or s.images.get("image")
+            dist = None
+            if (
+                user_lat is not None
+                and user_lng is not None
+                and s_set
+                and s_set.lat is not None
+                and s_set.lng is not None
+            ):
+                dist = round(
+                    haversine_km(user_lat, user_lng, float(s_set.lat), float(s_set.lng)),
+                    1,
+                )
+            recommendations.append(
+                ServiceRecommendation(
+                    service_id=s.id,
+                    organization_id=s.organization_id,
+                    name=s.name,
+                    organization_name=s.organization.name if s.organization else "Salon",
+                    organization_picture=s.organization.picture if s.organization else None,
+                    image_url=cover_img,
+                    base_price=s.base_price,
+                    duration_minutes=s.duration_minutes,
+                    category_name=s.category.name if s.category else None,
+                    description=s.description,
+                    physical_address=s_set.physical_address if s_set else None,
+                    distance_km=dist,
+                    score=0.85,
                 )
             )
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 
@@ -8,6 +8,7 @@ import { toastColor } from '@/constant/toast-color'
 import { features } from '@/lib/features'
 import { formatClockTime } from '@/lib/format'
 import { createSequentialId } from '@/lib/ids'
+import { type GeoCoords, requestGeolocation } from '@/lib/util/geo'
 import { useClientConciergeChatMutation } from '@/store/api/clientApi'
 import { setAuthData } from '@/store/authSlice'
 
@@ -57,22 +58,31 @@ export interface AgentChatMessage {
   confirmedBooking?: AgentConfirmedBooking | null
 }
 
-const WELCOME: AgentChatMessage = {
+const WELCOME_MESSAGE: AgentChatMessage = {
   id: 'msg-welcome',
   sender: 'assistant',
-  text: 'Hello! I am your SalonDesk AI Concierge. Ask about services, holds, or availability — $0 is debited today when you lock a PayPal authorization hold.',
+  text: 'Hello! I am your SalonDesk AI Concierge. Ask about salons, services, or appointments — $0 is debited today when you lock a PayPal authorization hold.',
   time: 'Just now',
 }
 
 export function useAgentChat() {
   const dispatch = useDispatch()
-  const [messages, setMessages] = useState<AgentChatMessage[]>([WELCOME])
+  const [messages, setMessages] = useState<AgentChatMessage[]>([WELCOME_MESSAGE])
   const [prompt, setPrompt] = useState('')
   const [isThinking, setIsThinking] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [location, setLocation] = useState<GeoCoords | null>(null)
   const historyRef = useRef<Array<{ role: 'user' | 'assistant'; content: string }>>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [clientConciergeChat] = useClientConciergeChatMutation()
+
+  useEffect(() => {
+    void requestGeolocation({ enableHighAccuracy: false, timeout: 5000 })
+      .then(setLocation)
+      .catch(() => {
+        /* best-effort fallback */
+      })
+  }, [])
 
   const send = useCallback(
     async (customPrompt?: string) => {
@@ -96,6 +106,8 @@ export function useAgentChat() {
           message: query,
           language: features.defaultLanguage,
           history: historyRef.current,
+          user_lat: location?.lat ?? null,
+          user_lng: location?.lng ?? null,
         }).unwrap()
 
         if (data.auth_token && data.user) {
@@ -115,33 +127,37 @@ export function useAgentChat() {
         ]
         historyRef.current = nextHistory.slice(-12)
 
-        const recommendations = (data.recommendations ?? []).map((r) => ({
-          serviceId: r.service_id,
-          organizationId: r.organization_id,
-          name: r.name,
-          organizationName: r.organization_name,
-          organizationPicture: r.organization_picture,
-          imageUrl: r.image_url,
-          basePrice: Number(r.base_price),
-          durationMinutes: r.duration_minutes,
-          categoryName: r.category_name,
-          description: r.description,
-          physicalAddress: r.physical_address,
-          distanceKm: r.distance_km,
-        }))
+        const recommendations: AgentServiceRecommendation[] = (data.recommendations ?? []).map(
+          (r) => ({
+            serviceId: r.service_id,
+            organizationId: r.organization_id,
+            name: r.name,
+            organizationName: r.organization_name,
+            organizationPicture: r.organization_picture,
+            imageUrl: r.image_url,
+            basePrice: Number(r.base_price),
+            durationMinutes: r.duration_minutes,
+            categoryName: r.category_name,
+            description: r.description,
+            physicalAddress: r.physical_address,
+            distanceKm: r.distance_km,
+          }),
+        )
 
-        const organizations = (data.organizations ?? []).map((o) => ({
-          id: o.id,
-          name: o.name,
-          description: o.description,
-          picture: o.picture,
-          physicalAddress: o.physical_address,
-          rating: o.rating ?? 4.9,
-          serviceCount: o.service_count ?? 0,
-          distanceKm: o.distance_km,
-        }))
+        const organizations: AgentOrganizationRecommendation[] = (data.organizations ?? []).map(
+          (o) => ({
+            id: o.id,
+            name: o.name,
+            description: o.description,
+            picture: o.picture,
+            physicalAddress: o.physical_address,
+            rating: o.rating ?? 4.9,
+            serviceCount: o.service_count ?? 0,
+            distanceKm: o.distance_km,
+          }),
+        )
 
-        const confirmedBooking = data.confirmed_booking
+        const confirmedBooking: AgentConfirmedBooking | null = data.confirmed_booking
           ? {
               id: data.confirmed_booking.id,
               serviceName: data.confirmed_booking.service_name,
@@ -167,8 +183,8 @@ export function useAgentChat() {
             sender: 'assistant',
             text: data.reply,
             time: formatClockTime(),
-            recommendations,
-            organizations,
+            recommendations: recommendations.length > 0 ? recommendations : undefined,
+            organizations: organizations.length > 0 ? organizations : undefined,
             confirmedBooking,
           },
         ])
@@ -192,7 +208,7 @@ export function useAgentChat() {
         setIsThinking(false)
       }
     },
-    [clientConciergeChat, prompt],
+    [clientConciergeChat, prompt, location, dispatch],
   )
 
   return {
