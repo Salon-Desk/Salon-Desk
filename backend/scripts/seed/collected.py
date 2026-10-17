@@ -15,7 +15,11 @@ from pathlib import Path
 from .images import AVATAR_IMAGES, SERVICE_COVER_IMAGES
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
-SOURCE_FILES = ("addis-batch1.json", "us-top10-cities.json")
+SOURCE_FILES = (
+    "ethiopia-addis-ababa-salons.json",
+    "ethiopia-other-cities-salons.json",
+    "united-states-top10-cities-salons.json",
+)
 
 ORG_CATEGORY = {
     "beauty_salon": "Hair",
@@ -245,6 +249,18 @@ FALLBACK_MINUTES = {
 
 CITY_COORDS: dict[tuple[str, str], tuple[str, str]] = {
     ("Ethiopia", "Addis Ababa"): ("9.0300000", "38.7400000"),
+    ("Ethiopia", "Dire Dawa"): ("9.5931000", "41.8661000"),
+    ("Ethiopia", "Hawassa"): ("7.0504000", "38.4955000"),
+    ("Ethiopia", "Adama"): ("8.5410000", "39.2683000"),
+    ("Ethiopia", "Bahir Dar"): ("11.5742000", "37.3614000"),
+    ("Ethiopia", "Mekelle"): ("13.4967000", "39.4753000"),
+    ("Ethiopia", "Jimma"): ("7.6734000", "36.8344000"),
+    ("Ethiopia", "Jijiga"): ("9.3500000", "42.8000000"),
+    ("Ethiopia", "Gondar"): ("12.6030000", "37.4521000"),
+    ("Ethiopia", "Bishoftu"): ("8.7523000", "38.9785000"),
+    ("Ethiopia", "Nekemte"): ("9.0833000", "36.5500000"),
+    ("Ethiopia", "Shashemene"): ("7.2004000", "38.6035000"),
+    ("Ethiopia", "Dessie"): ("11.1333000", "39.6333000"),
     ("United States", "New York"): ("40.7128000", "-74.0060000"),
     ("United States", "Los Angeles"): ("34.0522000", "-118.2437000"),
     ("United States", "Chicago"): ("41.8781000", "-87.6298000"),
