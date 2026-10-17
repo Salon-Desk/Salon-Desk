@@ -1,6 +1,7 @@
 /** Copy and defaults for the LiveKit voice concierge UI. */
 
 export const VOICE_AGENT_SUGGESTIONS = [
+  'Find salons near me',
   'Book a Precision Fade',
   'What is the hold policy?',
   'Goodbye',

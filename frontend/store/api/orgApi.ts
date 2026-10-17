@@ -72,6 +72,15 @@ export const orgApi = baseApi.injectEndpoints({
       invalidatesTags: ['organizations'],
     }),
 
+    uploadOrgLogo: builder.mutation<ApiOrganization, FormData>({
+      query: (formData) => ({
+        url: '/api/v1/organizations/me/logo',
+        method: 'POST',
+        data: formData,
+      }),
+      invalidatesTags: ['organizations'],
+    }),
+
     getMyOrgSettings: builder.query<ApiOrgSettings, void>({
       query: () => ({ url: '/api/v1/organizations/me/settings', method: 'GET' }),
       providesTags: ['organizations'],
@@ -266,6 +275,7 @@ export const {
   useSignUpOrgOwnerMutation,
   useGetMyOrganizationQuery,
   useUpdateMyOrganizationMutation,
+  useUploadOrgLogoMutation,
   useGetMyOrgSettingsQuery,
   useUpdateMyOrgSettingsMutation,
   useGetMyEmployeesQuery,

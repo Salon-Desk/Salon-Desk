@@ -127,6 +127,16 @@ export const sharedApi = baseApi.injectEndpoints({
       invalidatesTags: ['auth'],
     }),
 
+    // Upload Avatar
+    uploadAvatar: builder.mutation<Profile, FormData>({
+      query: (formData) => ({
+        url: `${prefix}me/avatar`,
+        method: 'POST',
+        data: formData,
+      }),
+      invalidatesTags: ['auth'],
+    }),
+
     // 10. Client Logout
     logout: builder.mutation<{ detail: string }, void>({
       queryFn: () => {
@@ -146,6 +156,7 @@ export const {
   useLazyMeQuery,
   useGetProfileQuery,
   useUpdateProfileMutation,
+  useUploadAvatarMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useJudgeDemoAuthMutation,

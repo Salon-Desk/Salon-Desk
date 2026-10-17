@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -11,7 +12,10 @@ from app.ai.rag_service import retrieve_context
 from app.core.config import get_settings
 
 
-def build_catalog_tools(session_factory: async_sessionmaker[AsyncSession]):
+def build_catalog_tools(
+    session_factory: async_sessionmaker[AsyncSession],
+    user_location_getter: Callable[[], tuple[float | None, float | None]] | None = None,
+):
     """Return LiveKit ``@function_tool`` callables for semantic catalog search."""
 
     try:
@@ -29,6 +33,12 @@ def build_catalog_tools(session_factory: async_sessionmaker[AsyncSession]):
                 parsed_org = UUID(org_id)
             except ValueError:
                 parsed_org = None
+        u_lat, u_lng = None, None
+        if user_location_getter:
+            try:
+                u_lat, u_lng = user_location_getter()
+            except Exception:
+                u_lat, u_lng = None, None
         async with session_factory() as session:
             retrieved = await retrieve_context(
                 session,
@@ -36,6 +46,8 @@ def build_catalog_tools(session_factory: async_sessionmaker[AsyncSession]):
                 chunk_limit=settings.voice_rag_chunk_limit,
                 org_id=parsed_org,
                 settings=settings,
+                user_lat=u_lat,
+                user_lng=u_lng,
             )
         return json.dumps(
             {
@@ -51,6 +63,7 @@ def build_catalog_tools(session_factory: async_sessionmaker[AsyncSession]):
                         "duration_minutes": r.duration_minutes,
                         "category_name": r.category_name,
                         "physical_address": r.physical_address,
+                        "distance_km": r.distance_km,
                     }
                     for r in retrieved.recommendations
                 ],
@@ -61,12 +74,15 @@ def build_catalog_tools(session_factory: async_sessionmaker[AsyncSession]):
     return [search_salon_services]
 
 
-def build_voice_tools(session_factory: async_sessionmaker[AsyncSession]):
+def build_voice_tools(
+    session_factory: async_sessionmaker[AsyncSession],
+    user_location_getter: Callable[[], tuple[float | None, float | None]] | None = None,
+):
     """Aggregate catalog, schedule, and booking tools for the voice worker."""
     from app.ai.tools.booking_tools import build_booking_tools
     from app.ai.tools.schedule_tools import build_schedule_tools
 
-    tools = build_catalog_tools(session_factory)
+    tools = build_catalog_tools(session_factory, user_location_getter=user_location_getter)
     tools.extend(build_schedule_tools(session_factory))
     tools.extend(build_booking_tools(session_factory))
     return tools

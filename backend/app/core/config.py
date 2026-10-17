@@ -120,6 +120,20 @@ class Settings(BaseSettings):
     # Ed25519 signing key (PEM or base64); empty = generate ephemeral in dev
     ed25519_private_key: str = ""
 
+    # Redis
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_password: str | None = None
+    redis_db: int = 0
+
+    # RustFS Object Storage (S3-compatible)
+    rustfs_endpoint_url: str = "http://localhost:9000"
+    rustfs_access_key: str = "rustfsadmin"
+    rustfs_secret_key: str = "rustfsadmin"
+    rustfs_bucket: str = "salondesk-assets"
+    rustfs_region: str = "us-east-1"
+    storage_public_base_url: str = "http://localhost:8000/api/v1/storage"
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def normalize_cors_origins(cls, value: object) -> list[str]:

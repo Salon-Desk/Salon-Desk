@@ -24,7 +24,7 @@ from app.api.v1.platform import (
     requests,
     users,
 )
-from app.api.v1.shared import auth, profile
+from app.api.v1.shared import auth, profile, storage
 from app.api.v1.webhooks import paypal
 
 api_router = APIRouter()
@@ -32,6 +32,7 @@ api_router = APIRouter()
 # Shared (all portals)
 api_router.include_router(auth.router)
 api_router.include_router(profile.router)
+api_router.include_router(storage.router)
 
 # Platform admin dashboard
 for platform_router in (

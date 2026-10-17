@@ -10,6 +10,7 @@ from app.models.organization import Organization, OrgSettings
 from app.models.service import Service, ServiceCategory
 from app.schemas.organization import CatalogHeroOut, CatalogOrganizationOut, OrganizationOut
 from app.schemas.service import CatalogServiceOut, CatalogServicesPage, ServiceCategoryOut
+from app.services.cache_service import cache_service
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
 
@@ -51,6 +52,14 @@ def _service_to_out(service: Service, distance_km: float | None = None) -> Catal
 @router.get("/hero", response_model=CatalogHeroOut)
 async def get_catalog_hero(db: DbSession) -> CatalogHeroOut:
     """Landing hero content derived from approved salons and active services."""
+    cache_key = "catalog:hero"
+    cached = await cache_service.get_json(cache_key)
+    if cached is not None:
+        try:
+            return CatalogHeroOut.model_validate(cached)
+        except Exception:
+            pass
+
     org_result = await db.execute(
         select(Organization, OrgSettings)
         .outerjoin(OrgSettings, OrgSettings.org_id == Organization.id)
@@ -92,7 +101,7 @@ async def get_catalog_hero(db: DbSession) -> CatalogHeroOut:
     address = featured_settings.physical_address if featured_settings else None
     picture = featured_org.picture if featured_org else None
 
-    return CatalogHeroOut(
+    hero = CatalogHeroOut(
         eyebrow=name if featured_org else "SalonDesk marketplace",
         headline="Book salon services with",
         highlight="zero upfront charge.",
@@ -105,6 +114,8 @@ async def get_catalog_hero(db: DbSession) -> CatalogHeroOut:
         salon_count=salon_count,
         service_count=service_count,
     )
+    await cache_service.set_json(cache_key, hero.model_dump(mode="json"), ttl_seconds=120)
+    return hero
 
 
 @router.get("/organizations", response_model=list[CatalogOrganizationOut])
@@ -142,8 +153,22 @@ async def get_organization(org_id: UUID, db: DbSession) -> OrganizationOut:
 
 @router.get("/categories", response_model=list[ServiceCategoryOut])
 async def list_categories(db: DbSession) -> list[ServiceCategoryOut]:
+    cache_key = "catalog:categories"
+    cached = await cache_service.get_json(cache_key)
+    if cached is not None:
+        try:
+            return [ServiceCategoryOut.model_validate(c) for c in cached]
+        except Exception:
+            pass
+
     result = await db.execute(select(ServiceCategory).order_by(ServiceCategory.name))
-    return [ServiceCategoryOut.model_validate(c) for c in result.scalars().all()]
+    categories = [ServiceCategoryOut.model_validate(c) for c in result.scalars().all()]
+    await cache_service.set_json(
+        cache_key,
+        [c.model_dump(mode="json") for c in categories],
+        ttl_seconds=300,
+    )
+    return categories
 
 
 @router.get("/services", response_model=CatalogServicesPage)

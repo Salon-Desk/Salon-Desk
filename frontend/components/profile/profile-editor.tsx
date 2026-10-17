@@ -3,22 +3,28 @@
 import type { FC } from 'react'
 import { useForm } from 'react-hook-form'
 import { useSelector } from 'react-redux'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
 import FormProvider from '@/components/forms/FormProvider'
+import RHFAvatarImage from '@/components/forms/RHFAvatarImage'
 import RHFTextField from '@/components/forms/RHFTextField'
-import useFormSubmitHandler from '@/hooks/formHandler'
+import { toastColor } from '@/constant/toast-color'
 import { zodResolver } from '@/lib/schema/resolver'
 import { userSelector } from '@/store/authSlice'
-import { useGetProfileQuery, useUpdateProfileMutation } from '@/store/slice/authApi'
-import type { ProfileUpdatePayload } from '@/types/user'
+import {
+  useGetProfileQuery,
+  useUpdateProfileMutation,
+  useUploadAvatarMutation,
+} from '@/store/slice/authApi'
 
 const profileSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   phone: z.string().optional(),
   middle_name: z.string().optional(),
+  picture: z.any().optional(),
 })
 
 type ProfileFormData = z.infer<typeof profileSchema>
@@ -35,6 +41,7 @@ export const ProfileEditor: FC<ProfileEditorProps> = ({
   const user = useSelector(userSelector)
   const { data: profile, isLoading } = useGetProfileQuery(undefined, { skip: !user })
   const [updateProfile, { isLoading: saving }] = useUpdateProfileMutation()
+  const [uploadAvatar, { isLoading: uploadingAvatar }] = useUploadAvatarMutation()
 
   const methods = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -43,21 +50,41 @@ export const ProfileEditor: FC<ProfileEditorProps> = ({
       last_name: profile?.last_name || user?.last_name || '',
       phone: profile?.phone || '',
       middle_name: profile?.middle_name || '',
+      picture: profile?.picture || null,
     },
   })
 
-  const submitHandler = useFormSubmitHandler<ProfileUpdatePayload, unknown>(
-    (body: ProfileUpdatePayload) =>
-      updateProfile(body)
-        .unwrap()
-        .then((data) => ({ data })),
-    () => undefined,
-    'Profile updated',
-  )
-
   const onSubmit = async (data: ProfileFormData) => {
-    await submitHandler(data)
+    try {
+      let pictureUrl: string | null = profile?.picture ?? null
+
+      if (data.picture instanceof File) {
+        const formData = new FormData()
+        formData.append('file', data.picture)
+        const updatedProfile = await uploadAvatar(formData).unwrap()
+        pictureUrl = updatedProfile.picture ?? null
+      } else if (data.picture === null) {
+        pictureUrl = null
+      }
+
+      await updateProfile({
+        first_name: data.first_name,
+        last_name: data.last_name,
+        middle_name: data.middle_name || null,
+        phone: data.phone || null,
+        picture: pictureUrl,
+      }).unwrap()
+
+      toast.success('Profile updated successfully', toastColor.success)
+    } catch (err) {
+      toast.error(
+        String((err as { data?: { detail?: string } })?.data?.detail || 'Update failed'),
+        toastColor.error,
+      )
+    }
   }
+
+  const isBusy = saving || uploadingAvatar
 
   if (isLoading) {
     return <p className="text-sm text-slate-500">Loading profile…</p>
@@ -74,12 +101,24 @@ export const ProfileEditor: FC<ProfileEditorProps> = ({
       </div>
 
       <FormProvider methods={methods} onSubmit={(e) => void methods.handleSubmit(onSubmit)(e)}>
-        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-          <RHFTextField name="first_name" label="First name" isRequired />
+        <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="flex justify-center pb-2">
+            <RHFAvatarImage name="picture" label="Profile Photo" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <RHFTextField name="first_name" label="First name" isRequired />
+            <RHFTextField name="last_name" label="Last name" isRequired />
+          </div>
           <RHFTextField name="middle_name" label="Middle name" />
-          <RHFTextField name="last_name" label="Last name" isRequired />
           <RHFTextField name="phone" label="Phone" />
-          <PrimaryButton title="Save profile" type="submit" isLoading={saving} className="w-full" />
+
+          <PrimaryButton
+            title={isBusy ? 'Saving…' : 'Save profile'}
+            type="submit"
+            isLoading={isBusy}
+            className="w-full"
+          />
         </div>
       </FormProvider>
     </div>

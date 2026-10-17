@@ -8,12 +8,13 @@ import {
   useVoiceAssistant,
 } from '@livekit/components-react'
 import { ConnectionState, type RemoteParticipant, RoomEvent } from 'livekit-client'
-import { Loader2, Mic, MicOff, PhoneOff, Send, Sparkles } from 'lucide-react'
+import { Loader2, MapPin, Mic, MicOff, PhoneOff, Send, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { VoiceVisualizerOrb } from '@/components/chat/voice-visualizer-orb'
 import { VOICE_AGENT_STATUS, VOICE_AGENT_SUGGESTIONS } from '@/constant/voice-agent'
 import type { AgentLanguage } from '@/lib/features'
+import type { GeoCoords } from '@/lib/util/geo'
 import {
   isAgentGoodbyeTranscript,
   isAgentParticipant,
@@ -23,20 +24,24 @@ import { cn } from '@/lib/utils'
 
 export interface InnerVoiceAssistantUIProps {
   language: AgentLanguage
+  location?: GeoCoords | null
   locationError: string | null
   onEndCall: () => void
   onAgentEnded: () => void
   clearLocationError: () => void
   onStartVoiceSession: () => void
+  onSetLocation?: (coords: GeoCoords) => void
 }
 
 export function InnerVoiceAssistantUI({
   language,
+  location,
   locationError,
   onEndCall,
   onAgentEnded,
   clearLocationError,
   onStartVoiceSession,
+  onSetLocation,
 }: InnerVoiceAssistantUIProps) {
   const { state, agentTranscriptions } = useVoiceAssistant()
   const connectionState = useConnectionState()
@@ -57,14 +62,12 @@ export function InnerVoiceAssistantUI({
   }, [connectionState])
 
   const enableMic = useCallback(async () => {
-    if (!localParticipant) return
+    if (!localParticipant || connectionState !== ConnectionState.Connected) return
     setEnablingMic(true)
     try {
-      try {
-        void localParticipant.setAttributes({ language, lang: language })
-      } catch {
+      await localParticipant.setAttributes({ language, lang: language }).catch(() => {
         /* best-effort */
-      }
+      })
       await localParticipant.setMicrophoneEnabled(true)
       setMicBlocked(false)
       setIsMuted(false)
@@ -74,13 +77,44 @@ export function InnerVoiceAssistantUI({
     } finally {
       setEnablingMic(false)
     }
-  }, [localParticipant, language])
+  }, [localParticipant, language, connectionState])
 
   useEffect(() => {
-    if (localParticipant) {
+    if (localParticipant && connectionState === ConnectionState.Connected) {
       void enableMic()
     }
-  }, [localParticipant, enableMic])
+  }, [localParticipant, connectionState, enableMic])
+
+  useEffect(() => {
+    if (!localParticipant || !location || connectionState !== ConnectionState.Connected) return
+    localParticipant
+      .setAttributes({
+        language,
+        lang: language,
+        lat: String(location.lat),
+        lng: String(location.lng),
+      })
+      .catch(() => {
+        /* best-effort */
+      })
+
+    if (room && connectionState === ConnectionState.Connected) {
+      const payload = JSON.stringify({
+        type: 'user_location',
+        lat: location.lat,
+        lng: location.lng,
+      })
+      const encoder = new TextEncoder()
+      localParticipant
+        .publishData(encoder.encode(payload), {
+          reliable: true,
+          topic: 'lk.client.location',
+        })
+        .catch(() => {
+          /* best-effort */
+        })
+    }
+  }, [localParticipant, room, language, location, connectionState])
 
   useEffect(() => {
     if (!room) return
@@ -232,35 +266,60 @@ export function InnerVoiceAssistantUI({
               <span>Enable microphone</span>
             </button>
           </div>
-        ) : locationError ? (
-          <div className="mt-2 rounded-xl border border-amber-200/80 bg-amber-50/90 p-4 text-center shadow-xs">
-            <p className="text-xs leading-relaxed text-amber-800">{locationError}</p>
-            <button
-              type="button"
-              className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-amber-700 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-800"
-              onClick={() => {
-                clearLocationError()
-                void onStartVoiceSession()
-              }}
-            >
-              Retry location permission
-            </button>
-          </div>
         ) : (
-          <div className="rounded-xl border border-slate-200/80 bg-white/95 p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] backdrop-blur-sm">
-            <div className="mb-2 flex items-center justify-between border-b border-slate-100 pb-1.5">
-              <span className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                <Sparkles className="h-3 w-3 text-amber-500" />
-                Live Transcription
-              </span>
-              <span className="rounded-md border border-emerald-200/50 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-mono font-semibold text-emerald-600">
-                16kHz Opus
-              </span>
+          <>
+            {location && (
+              <div className="mb-2 flex items-center justify-center gap-1.5 rounded-full border border-emerald-200/70 bg-emerald-50/90 px-3 py-0.5 text-[11px] font-medium text-emerald-800 shadow-2xs">
+                <MapPin className="h-3 w-3 text-emerald-600" />
+                <span>
+                  Location active ({location.lat.toFixed(4)}, {location.lng.toFixed(4)})
+                </span>
+              </div>
+            )}
+            {locationError && !location && (
+              <div className="mb-2.5 rounded-lg border border-amber-200/80 bg-amber-50/90 p-2.5 text-center shadow-2xs">
+                <p className="text-[11px] leading-snug text-amber-800">{locationError}</p>
+                <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    className="inline-flex cursor-pointer items-center gap-1 rounded bg-amber-700 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-amber-800"
+                    onClick={() => {
+                      clearLocationError()
+                      void onStartVoiceSession()
+                    }}
+                  >
+                    Retry GPS
+                  </button>
+                  {onSetLocation && (
+                    <button
+                      type="button"
+                      className="inline-flex cursor-pointer items-center gap-1 rounded border border-amber-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-amber-900 shadow-2xs hover:bg-amber-100"
+                      onClick={() => {
+                        clearLocationError()
+                        onSetLocation({ lat: 8.9806, lng: 38.7578 })
+                      }}
+                    >
+                      Use Addis Ababa (Bole) demo
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="rounded-xl border border-slate-200/80 bg-white/95 p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] backdrop-blur-sm">
+              <div className="mb-2 flex items-center justify-between border-b border-slate-100 pb-1.5">
+                <span className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                  <Sparkles className="h-3 w-3 text-amber-500" />
+                  Live Transcription
+                </span>
+                <span className="rounded-md border border-emerald-200/50 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-mono font-semibold text-emerald-600">
+                  16kHz Opus
+                </span>
+              </div>
+              <p className="flex min-h-10 items-center justify-center text-center text-xs font-medium leading-relaxed text-slate-800 sm:text-sm">
+                {latestTranscript || 'Say hello, or ask for available stylists and services.'}
+              </p>
             </div>
-            <p className="flex min-h-10 items-center justify-center text-center text-xs font-medium leading-relaxed text-slate-800 sm:text-sm">
-              {latestTranscript || 'Say hello, or ask for available stylists and services.'}
-            </p>
-          </div>
+          </>
         )}
       </div>
 

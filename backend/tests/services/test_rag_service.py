@@ -110,3 +110,25 @@ def test_room_name_encodes_language() -> None:
     name = build_room_name(language="am")
     assert parse_language_from_room_name(name) == "am"
     assert "-agent-am-" in name
+
+
+def test_haversine_km_and_distance_format() -> None:
+    from app.ai.rag_service import haversine_km
+
+    # Distance between Bole (8.9806, 38.7578) and Kazanchis (9.0175, 38.7692) is approx 4.3 km
+    dist = haversine_km(8.9806, 38.7578, 9.0175, 38.7692)
+    assert 3.5 < dist < 5.0
+
+    card = ServiceRecommendation(
+        service_id=uuid4(),
+        organization_id=uuid4(),
+        name="Precision Fade",
+        organization_name="The Executive Barber Club",
+        base_price=Decimal("25.00"),
+        duration_minutes=30,
+        physical_address="Bole Atlas",
+        distance_km=1.2,
+    )
+    formatted = format_context_text([], [card])
+    assert "1.2 km away" in formatted
+    assert "Bole Atlas" in formatted

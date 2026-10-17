@@ -18,6 +18,8 @@ dependencies = [
     "pgvector>=0.3.6",
     "livekit>=1.0.0",
     "livekit-agents[openai,silero,deepgram]>=1.0.0",
+    "redis>=5.2.0",
+    "boto3>=1.35.0",
 ]
 
 [dependency-groups]

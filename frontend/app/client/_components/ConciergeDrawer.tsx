@@ -9,6 +9,7 @@ import type { ConciergeMessage } from '@/hooks/use-ai-concierge'
 import { INITIAL_STAFF } from '@/lib/data/catalog'
 import { DEFAULT_TIME_SLOT } from '@/lib/data/service-content'
 import { features } from '@/lib/features'
+import type { GeoCoords } from '@/lib/util/geo'
 import { cn } from '@/lib/utils'
 import type { SalonService, StaffMember } from '@/types'
 
@@ -23,6 +24,7 @@ interface AiConciergeProps {
   onSend: (prompt?: string, service?: SalonService) => void
   onAuthorize: (opts: { service: SalonService; stylist?: StaffMember; slot?: string }) => void
   onClose: () => void
+  userCoords?: GeoCoords | null
 }
 
 export function AiConcierge({
@@ -36,6 +38,7 @@ export function AiConcierge({
   onSend,
   onAuthorize,
   onClose,
+  userCoords,
 }: AiConciergeProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -134,6 +137,7 @@ export function AiConcierge({
         {activeMode === 'voice' ? (
           <VoiceAgentView
             language={features.defaultLanguage}
+            initialLocation={userCoords}
             onClose={onClose}
             onSwitchToText={features.agentChat ? () => onModeChange('chat') : onClose}
           />

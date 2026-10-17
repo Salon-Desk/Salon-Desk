@@ -11,10 +11,12 @@ import { VoiceAgentShell } from '@/components/chat/voice-agent-shell'
 import { VOICE_AGENT_STATUS } from '@/constant/voice-agent'
 import { useVoiceAgentSession } from '@/hooks/use-voice-agent-session'
 import type { AgentLanguage } from '@/lib/features'
+import type { GeoCoords } from '@/lib/util/geo'
 import { cn } from '@/lib/utils'
 
 export interface VoiceAgentViewProps {
   language?: AgentLanguage
+  initialLocation?: GeoCoords | null
   onClose?: () => void
   onSwitchToText?: () => void
   className?: string
@@ -22,6 +24,7 @@ export interface VoiceAgentViewProps {
 
 export function VoiceAgentView({
   language = 'en',
+  initialLocation,
   onClose,
   onSwitchToText,
   className,
@@ -31,14 +34,16 @@ export function VoiceAgentView({
     isLoading,
     error,
     ended,
+    location,
     locationError,
     startVoiceSession,
+    setManualLocation,
     closeAndLeaveVoice,
     clearLocationError,
     markSessionConnected,
     hasSessionConnected,
     isClosing,
-  } = useVoiceAgentSession({ language })
+  } = useVoiceAgentSession({ language, initialLocation })
 
   const handleEndCall = useCallback(() => {
     closeAndLeaveVoice()
@@ -187,11 +192,13 @@ export function VoiceAgentView({
         <RoomAudioRenderer />
         <InnerVoiceAssistantUI
           language={language}
+          location={location}
           locationError={locationError}
           onEndCall={handleEndCall}
           onAgentEnded={handleAgentEnded}
           clearLocationError={clearLocationError}
           onStartVoiceSession={() => void startVoiceSession()}
+          onSetLocation={setManualLocation}
         />
       </LiveKitRoom>
     </div>

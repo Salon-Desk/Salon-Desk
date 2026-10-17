@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 
 from app.api.deps import DbSession, OrgMember, OrgOwner
@@ -23,6 +23,7 @@ from app.schemas.organization import (
     OrgShiftUpdate,
 )
 from app.services.org_service import get_org_for_member as _get_my_org
+from app.services.storage_service import storage_service
 
 router = APIRouter(prefix="/organizations", tags=["org"])
 
@@ -40,6 +41,29 @@ async def update_my_organization(
     org = await _get_my_org(db, user)
     for key, value in body.model_dump(exclude_unset=True).items():
         setattr(org, key, value)
+    await db.flush()
+    return OrganizationOut.model_validate(org)
+
+
+@router.post("/me/logo", response_model=OrganizationOut)
+async def upload_my_organization_logo(
+    file: UploadFile = File(...),
+    user: OrgOwner = None,
+    db: DbSession = None,
+) -> OrganizationOut:
+    org = await _get_my_org(db, user)
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Uploaded file must be an image")
+    data = await file.read()
+    if len(data) > 10 * 1024 * 1024:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Image exceeds 10MB limit")
+    _key, url = await storage_service.async_upload_bytes(
+        data=data,
+        filename=file.filename or "logo.jpg",
+        content_type=file.content_type,
+        folder="logos",
+    )
+    org.picture = url
     await db.flush()
     return OrganizationOut.model_validate(org)
 

@@ -27,16 +27,20 @@ Rules:
 - If the user says goodbye, thank them and end the call.
 """.strip()
 
-FAREWELL_HINTS = (
-    "bye",
-    "by",
-    "goodbye",
+
+def build_voice_instructions(language: str = "en", location_summary: str | None = None) -> str:
+    base = INSTRUCTIONS_EN
+    if location_summary:
+        return f"{base}\n\n{location_summary}"
+    return base
+
+
+# Multi-word farewells (word-boundary match only — never raw substring).
+_FAREWELL_PHRASES = (
     "good bye",
-    "goodbuy",
     "good buy",
     "see you",
     "see ya",
-    "cya",
     "that's all",
     "that is all",
     "that's it",
@@ -46,12 +50,44 @@ FAREWELL_HINTS = (
     "end the call",
     "close call",
     "stop call",
-    "quit",
-    "exit",
-    "farewell",
     "ደህና ሁን",
     "ደህና ሁኑ",
-    "ቻው",
+)
+
+# Single-token farewells. Never use `token in text` for short tokens like "bye"
+# — that falsely matches words such as "nearby".
+_FAREWELL_TOKENS = frozenset(
+    {
+        "bye",
+        "by",
+        "goodbye",
+        "goodbuy",
+        "cya",
+        "farewell",
+        "quit",
+        "exit",
+        "ቻው",
+    }
+)
+
+# Clear booking/search intent must never end the call.
+_ACTIVE_REQUEST_HINTS = (
+    "search",
+    "find",
+    "looking",
+    "book",
+    "booking",
+    "appointment",
+    "schedule",
+    "available",
+    "nearby",
+    "near me",
+    "haircut",
+    "service",
+    "salon",
+    "price",
+    "reserve",
+    "slot",
 )
 
 BOOKING_HINTS = (
@@ -65,17 +101,33 @@ BOOKING_HINTS = (
     "slot",
 )
 
-_FAREWELL_TOKENS = frozenset({"bye", "by", "goodbye", "goodbuy", "cya", "farewell", "quit", "exit"})
-
 
 def is_farewell(text: str) -> bool:
+    """True only for clear goodbye utterances — not booking/search requests.
+
+    Important: do not use naive ``\"bye\" in text`` matching; that fires on
+    words like ``nearby``.
+    """
     cleaned = (text or "").lower().strip()
     if not cleaned:
         return False
+
+    # Long active requests should never end the call.
+    if any(h in cleaned for h in _ACTIVE_REQUEST_HINTS) and len(cleaned) > 24:
+        return False
+
     words = set(re.findall(r"\b\w+\b", cleaned))
     if words.intersection(_FAREWELL_TOKENS):
-        return True
-    return any(h in cleaned for h in FAREWELL_HINTS)
+        # Prefer short goodbye turns ("bye", "ok bye thanks") over long mixed text.
+        if len(words) <= 8:
+            return True
+        non_farewell = words - _FAREWELL_TOKENS - {"ok", "okay", "thanks", "thank", "you", "please"}
+        return len(non_farewell) <= 2
+
+    for phrase in _FAREWELL_PHRASES:
+        if re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", cleaned):
+            return True
+    return False
 
 
 def is_booking_flow(text: str) -> bool:

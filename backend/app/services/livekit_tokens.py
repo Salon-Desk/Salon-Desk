@@ -62,6 +62,14 @@ def create_participant_token(
     }
     if metadata:
         room_meta["client_metadata"] = metadata
+        try:
+            parsed = json.loads(metadata) if isinstance(metadata, str) else metadata
+            if isinstance(parsed, dict):
+                for k in ("lat", "lng", "latitude", "longitude", "city", "address"):
+                    if k in parsed and parsed[k] is not None:
+                        room_meta[k] = parsed[k]
+        except Exception:
+            pass
 
     grants = VideoGrants(
         room_join=True,

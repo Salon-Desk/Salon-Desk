@@ -9,6 +9,7 @@ PRD alignment:
 from __future__ import annotations
 
 import logging
+import math
 import re
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -22,7 +23,7 @@ from app.ai.embeddings import EmbeddingError, get_embedding
 from app.core.config import Settings, get_settings
 from app.models.enums import KnowledgeEntityType, OrganizationStatus, ServiceStatus
 from app.models.knowledge import KnowledgeChunk
-from app.models.organization import OrgSettings
+from app.models.organization import Organization, OrgSettings
 from app.models.service import Service
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,19 @@ _GREETING_RE = re.compile(
     r"^\s*(hi|hello|hey|good\s+(morning|afternoon|evening)|selam)\b",
     re.I,
 )
+
+
+def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance between two points on Earth in kilometers."""
+    r = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (
+        math.sin(dlat / 2.0) ** 2
+        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2.0) ** 2
+    )
+    c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+    return r * c
 
 
 @dataclass
@@ -58,6 +72,7 @@ class ServiceRecommendation:
     category_name: str | None = None
     description: str | None = None
     physical_address: str | None = None
+    distance_km: float | None = None
     score: float = 0.0
 
 
@@ -216,6 +231,10 @@ def _merge_chunks(
 async def _hydrate_service_recommendations(
     session: AsyncSession,
     chunks: list[RetrievedChunk],
+    *,
+    user_lat: float | None = None,
+    user_lng: float | None = None,
+    sort_by_distance: bool = False,
 ) -> list[ServiceRecommendation]:
     """Turn SERVICE chunk hits into live ORM-backed recommendation cards."""
     service_ids = [
@@ -260,9 +279,22 @@ async def _hydrate_service_recommendations(
         if org is None or org.status != OrganizationStatus.APPROVED:
             continue
         addr = None
+        dist_km: float | None = None
         settings_row = org_settings.get(service.organization_id)
         if settings_row:
             addr = settings_row.physical_address
+            if (
+                user_lat is not None
+                and user_lng is not None
+                and settings_row.lat is not None
+                and settings_row.lng is not None
+            ):
+                dist_km = round(
+                    haversine_km(
+                        user_lat, user_lng, float(settings_row.lat), float(settings_row.lng)
+                    ),
+                    1,
+                )
         cards.append(
             ServiceRecommendation(
                 service_id=service.id,
@@ -274,10 +306,14 @@ async def _hydrate_service_recommendations(
                 category_name=service.category.name if service.category else None,
                 description=service.description,
                 physical_address=addr,
+                distance_km=dist_km,
                 score=float(score_by_id.get(service.id, 0.0)),
             )
         )
-    cards.sort(key=lambda c: c.score, reverse=True)
+    if sort_by_distance and any(c.distance_km is not None for c in cards):
+        cards.sort(key=lambda c: (c.distance_km is None, c.distance_km or 0.0, -c.score))
+    else:
+        cards.sort(key=lambda c: c.score, reverse=True)
     return cards
 
 
@@ -289,8 +325,9 @@ def format_context_text(
     if recommendations:
         lines.append("Recommended services (from live platform data):")
         for card in recommendations:
+            dist_part = f" ({card.distance_km} km away)" if card.distance_km is not None else ""
             lines.append(
-                f"- {card.name} at {card.organization_name}: "
+                f"- {card.name} at {card.organization_name}{dist_part}: "
                 f"${card.base_price} / {card.duration_minutes} min"
                 + (f" ({card.category_name})" if card.category_name else "")
                 + (f" @ {card.physical_address}" if card.physical_address else "")
@@ -359,6 +396,8 @@ async def retrieve_context(
     prior_turns: list[str] | None = None,
     org_id: UUID | None = None,
     settings: Settings | None = None,
+    user_lat: float | None = None,
+    user_lng: float | None = None,
 ) -> RetrievedContext:
     cfg = settings or get_settings()
     limit = chunk_limit or cfg.rag_chunk_limit
@@ -395,24 +434,21 @@ async def retrieve_context(
         embedding = await get_embedding(query, settings=cfg)
     except EmbeddingError as exc:
         logger.warning("RAG embedding failed: %s", exc)
-        return RetrievedContext(
-            chunks=[],
-            recommendations=[],
-            context_text="",
-            detected_language=detected,
-            is_greeting=False,
-            intent=intent,
-        )
+        embedding = None
 
     merged: list[RetrievedChunk] = []
     for lang in languages:
-        vector_hits = await _vector_search(
-            session,
-            embedding=embedding,
-            language=lang,
-            limit=limit * 3,
-            org_id=org_id,
-            entity_types=prefer_types,
+        vector_hits = (
+            await _vector_search(
+                session,
+                embedding=embedding,
+                language=lang,
+                limit=limit * 3,
+                org_id=org_id,
+                entity_types=prefer_types,
+            )
+            if embedding is not None
+            else []
         )
         keyword_hits = await _keyword_search(
             session,
@@ -426,7 +462,56 @@ async def retrieve_context(
             detected = lang
             break
 
-    recommendations = await _hydrate_service_recommendations(session, merged)
+    is_nearby = any(
+        h in query.lower() for h in ("near", "closest", "nearby", "location", "close to", "around")
+    )
+    recommendations = await _hydrate_service_recommendations(
+        session,
+        merged,
+        user_lat=user_lat,
+        user_lng=user_lng,
+        sort_by_distance=(is_nearby and user_lat is not None),
+    )
+
+    if is_nearby and not recommendations and user_lat is not None and user_lng is not None:
+        res = await session.execute(
+            select(Service, OrgSettings)
+            .join(Organization, Service.organization_id == Organization.id)
+            .join(OrgSettings, Organization.id == OrgSettings.org_id)
+            .options(
+                selectinload(Service.organization),
+                selectinload(Service.category),
+            )
+            .where(
+                Organization.status == OrganizationStatus.APPROVED,
+                Service.status == ServiceStatus.ACTIVE,
+            )
+            .limit(30)
+        )
+        scored_services = []
+        for s, s_set in res.all():
+            dist = None
+            if s_set.lat is not None and s_set.lng is not None:
+                dist = haversine_km(user_lat, user_lng, float(s_set.lat), float(s_set.lng))
+            scored_services.append((dist if dist is not None else 999999.0, s, s_set))
+        scored_services.sort(key=lambda x: x[0])
+        for dist, s, s_set in scored_services[:limit]:
+            recommendations.append(
+                ServiceRecommendation(
+                    service_id=s.id,
+                    organization_id=s.organization_id,
+                    name=s.name,
+                    organization_name=s.organization.name if s.organization else "Salon",
+                    base_price=s.base_price,
+                    duration_minutes=s.duration_minutes,
+                    category_name=s.category.name if s.category else None,
+                    description=s.description,
+                    physical_address=s_set.physical_address,
+                    distance_km=round(dist, 1) if dist < 99999 else None,
+                    score=1.0,
+                )
+            )
+
     context_text = format_context_text(merged, recommendations)
     return RetrievedContext(
         chunks=merged,

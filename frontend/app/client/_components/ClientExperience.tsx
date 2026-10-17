@@ -674,6 +674,7 @@ export function ClientExperience({
           onSend={concierge.send}
           onAuthorize={({ service, stylist, slot }) => void openCheckout(service, stylist, slot)}
           onClose={() => concierge.setIsOpen(false)}
+          userCoords={userCoords}
         />
       )}
 

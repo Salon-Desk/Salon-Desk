@@ -48,3 +48,19 @@ def test_empty_livekit_agent_name_defaults_for_dispatch(monkeypatch):
     creds = create_participant_token(language="en", settings=settings)
     payload = _jwt_payload(creds.token)
     assert payload["roomConfig"]["agents"][0]["agentName"] == "salondesk-voice"
+
+
+def test_location_metadata_preserved_in_token():
+    settings = _settings(
+        livekit_url="wss://example.livekit.cloud",
+        livekit_api_key="testkey",
+        livekit_api_secret="testsecret" * 4,
+        livekit_agent_name="salondesk-voice",
+    )
+    meta = json.dumps({"lat": 8.9806, "lng": 38.7578, "city": "Addis Ababa"})
+    creds = create_participant_token(language="en", metadata=meta, settings=settings)
+    payload = _jwt_payload(creds.token)
+    meta_parsed = json.loads(payload["metadata"])
+    assert meta_parsed["lat"] == 8.9806
+    assert meta_parsed["lng"] == 38.7578
+    assert meta_parsed["city"] == "Addis Ababa"
