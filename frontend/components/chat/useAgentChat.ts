@@ -61,7 +61,7 @@ export interface AgentChatMessage {
 const WELCOME_MESSAGE: AgentChatMessage = {
   id: 'msg-welcome',
   sender: 'assistant',
-  text: 'Hello! I am your SalonDesk AI Concierge. Ask about salons, services, or appointments — $0 is debited today when you lock a PayPal authorization hold.',
+  text: 'Hey — I can help you find a salon or book a time. What are you in the mood for?',
   time: 'Just now',
 }
 
@@ -193,7 +193,7 @@ export function useAgentChat() {
         const fallback =
           status === 401
             ? 'Sign in to chat with the AI concierge grounded in live salon data.'
-            : 'I could not reach the assistant just now. Please try again in a moment.'
+            : "I couldn't reach the assistant just now. Try again in a moment."
         setError(fallback)
         setMessages((prev) => [
           ...prev,

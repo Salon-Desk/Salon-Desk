@@ -3,10 +3,9 @@
 import {
   Bot,
   Building2,
-  CalendarCheck,
+  Calendar,
   CheckCircle2,
   ChevronDown,
-  Clock,
   MapPin,
   Mic,
   Send,
@@ -25,6 +24,9 @@ import type {
 } from '@/components/chat/useAgentChat'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import { cn } from '@/lib/utils'
+
+export const CONCIERGE_RECOMMENDATION_LIMIT = 3
+export const SHOW_MORE_PROMPT = 'Show me a few more options'
 
 export interface ChatMessageItem {
   id: string
@@ -54,9 +56,9 @@ export function ConciergeAvatar({
   showDot?: boolean
 }) {
   const sizeClasses = {
-    sm: 'h-7 w-7 text-xs rounded-lg',
-    md: 'h-8.5 w-8.5 text-sm rounded-xl',
-    lg: 'h-10 w-10 text-base rounded-2xl',
+    sm: 'h-7 w-7 rounded-full',
+    md: 'h-9 w-9 rounded-full',
+    lg: 'h-11 w-11 rounded-full',
   }
   const iconSizes = {
     sm: 'h-3.5 w-3.5',
@@ -67,7 +69,7 @@ export function ConciergeAvatar({
   return (
     <div
       className={cn(
-        'relative flex shrink-0 items-center justify-center bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-white shadow-xs',
+        'relative flex shrink-0 items-center justify-center bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-white shadow-[0_1px_2px_rgba(180,83,9,0.25)]',
         sizeClasses[size],
         className,
       )}
@@ -75,9 +77,9 @@ export function ConciergeAvatar({
     >
       <Sparkles className={cn(iconSizes[size], 'text-amber-50')} />
       {showDot && (
-        <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+        <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
           <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 ring-2 ring-white" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
         </span>
       )}
     </div>
@@ -103,7 +105,7 @@ export function ChatPanelShell({
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:flex-row sm:justify-end bg-slate-950/40 backdrop-blur-xs motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-stone-950/35 backdrop-blur-[2px] sm:flex-row sm:justify-end motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
       <button
         type="button"
         aria-label="Close concierge"
@@ -116,36 +118,29 @@ export function ChatPanelShell({
         role="dialog"
         aria-modal="true"
         aria-label="SalonDesk Concierge"
-        className="relative z-10 flex h-[92dvh] sm:h-[calc(100dvh-2rem)] w-full max-w-full sm:max-w-[26rem] sm:m-4 flex-col rounded-t-2xl sm:rounded-2xl bg-white text-slate-900 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.18),0_4px_16px_rgba(0,0,0,0.04),inset_0_1px_0_0_rgba(255,255,255,0.9)] border border-slate-200/90 overflow-hidden motion-safe:animate-in motion-safe:slide-in-from-bottom-6 sm:motion-safe:slide-in-from-right-6 motion-safe:duration-250"
+        className="relative z-10 flex h-[92dvh] w-full max-w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-stone-200/80 bg-[#F7F5F2] text-stone-900 shadow-[0_24px_64px_-16px_rgba(28,25,23,0.28)] sm:m-4 sm:h-[min(44rem,calc(100dvh-2rem))] sm:max-w-[26.5rem] sm:rounded-[1.75rem] motion-safe:animate-in motion-safe:slide-in-from-bottom-6 sm:motion-safe:slide-in-from-right-6 motion-safe:duration-250"
       >
-        {/* Mobile grab handle */}
-        <div className="pt-2.5 pb-1 sm:hidden flex justify-center bg-white">
-          <div className="h-1 w-10 rounded-full bg-slate-300" aria-hidden="true" />
+        <div className="flex justify-center bg-transparent pb-0.5 pt-2.5 sm:hidden">
+          <div className="h-1 w-10 rounded-full bg-stone-300/90" aria-hidden="true" />
         </div>
 
-        {/* Concierge Header */}
-        <header className="flex items-center justify-between border-b border-slate-200/80 bg-white/95 px-4.5 py-3 backdrop-blur-md">
-          <div className="flex items-center gap-3">
+        <header className="flex items-center justify-between border-b border-stone-200/70 bg-white/80 px-4 py-2.5 backdrop-blur-xl">
+          <div className="flex min-w-0 items-center gap-2.5">
             <ConciergeAvatar size="md" showDot />
-            <div>
-              <h2 className="font-bold text-sm tracking-tight text-slate-900">
-                SalonDesk Concierge
-              </h2>
-              <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
-                <span>
-                  {mode === 'voice' ? 'Live voice · talk naturally' : 'Online · $0 due today'}
-                </span>
-              </div>
+            <div className="min-w-0">
+              <h2 className="text-[13px] font-semibold tracking-tight text-stone-950">Concierge</h2>
+              <p className="truncate text-[11px] font-medium text-stone-500">
+                {mode === 'voice' ? 'Listening — talk naturally' : 'Happy to help you book'}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             {showModeToggle && onModeChange && (
               <div
                 role="tablist"
                 aria-label="Concierge mode"
-                className="flex items-center rounded-full bg-slate-100 p-0.5 border border-slate-200/60"
+                className="flex items-center rounded-full border border-stone-200/80 bg-stone-100/90 p-0.5"
               >
                 <button
                   role="tab"
@@ -153,14 +148,14 @@ export function ChatPanelShell({
                   aria-selected={mode === 'chat'}
                   onClick={() => onModeChange('chat')}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500',
+                    'flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500',
                     mode === 'chat'
-                      ? 'bg-white text-slate-900 shadow-xs border border-slate-200/70'
-                      : 'text-slate-500 hover:text-slate-900',
+                      ? 'bg-white text-stone-950 shadow-xs'
+                      : 'text-stone-500 hover:text-stone-900',
                   )}
                 >
                   <Bot className="h-3.5 w-3.5" />
-                  <span>Chat</span>
+                  Chat
                 </button>
                 <button
                   role="tab"
@@ -168,14 +163,14 @@ export function ChatPanelShell({
                   aria-selected={mode === 'voice'}
                   onClick={() => onModeChange('voice')}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500',
+                    'flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500',
                     mode === 'voice'
-                      ? 'bg-white text-slate-900 shadow-xs border border-slate-200/70'
-                      : 'text-slate-500 hover:text-slate-900',
+                      ? 'bg-white text-stone-950 shadow-xs'
+                      : 'text-stone-500 hover:text-stone-900',
                   )}
                 >
                   <Mic className="h-3.5 w-3.5" />
-                  <span>Voice</span>
+                  Voice
                 </button>
               </div>
             )}
@@ -184,7 +179,7 @@ export function ChatPanelShell({
               type="button"
               onClick={onClose}
               aria-label="Close concierge"
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/80 bg-white text-slate-400 hover:bg-slate-100 hover:text-slate-700 shadow-xs transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
             >
               <X className="h-4 w-4" />
             </button>
@@ -202,7 +197,7 @@ function renderInlineFormatting(text: string): React.ReactNode {
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
       return (
-        <strong key={i} className="font-semibold text-stone-950 dark:text-stone-50">
+        <strong key={i} className="font-semibold text-inherit">
           {part.slice(2, -2)}
         </strong>
       )
@@ -215,7 +210,7 @@ export function RichText({ content, className }: { content: string; className?: 
   const blocks = content.split(/\n{2,}/)
 
   return (
-    <div className={cn('space-y-2', className)}>
+    <div className={cn('space-y-1.5', className)}>
       {blocks.map((block, blockIdx) => {
         const lines = block.split('\n').filter((l) => l.trim().length > 0)
         if (lines.length === 0) return null
@@ -223,7 +218,7 @@ export function RichText({ content, className }: { content: string; className?: 
         const isBulletList = lines.every((line) => /^[-*]\s+/.test(line.trim()))
         if (isBulletList) {
           return (
-            <ul key={blockIdx} className="list-disc pl-4 space-y-1">
+            <ul key={blockIdx} className="list-disc space-y-1 pl-4">
               {lines.map((line, lineIdx) => {
                 const itemText = line.trim().replace(/^[-*]\s+/, '')
                 return <li key={lineIdx}>{renderInlineFormatting(itemText)}</li>
@@ -235,7 +230,7 @@ export function RichText({ content, className }: { content: string; className?: 
         const isNumberedList = lines.every((line) => /^\d+\.\s+/.test(line.trim()))
         if (isNumberedList) {
           return (
-            <ol key={blockIdx} className="list-decimal pl-4 space-y-1">
+            <ol key={blockIdx} className="list-decimal space-y-1 pl-4">
               {lines.map((line, lineIdx) => {
                 const itemText = line.trim().replace(/^\d+\.\s+/, '')
                 return <li key={lineIdx}>{renderInlineFormatting(itemText)}</li>
@@ -262,76 +257,60 @@ export function RichText({ content, className }: { content: string; className?: 
 export function ServiceCard({
   service,
   onSelect,
+  index,
 }: {
   service: AgentServiceRecommendation
   onSelect: (service: AgentServiceRecommendation) => void
+  index?: number
 }) {
+  const meta = [
+    service.durationMinutes ? `${service.durationMinutes} min` : null,
+    service.distanceKm != null ? `${service.distanceKm} km` : null,
+    service.categoryName,
+  ].filter(Boolean)
+
   return (
-    <div
+    <button
+      type="button"
       onClick={() => onSelect(service)}
-      className="group relative rounded-xl border border-amber-200/90 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/30 p-3.5 text-stone-900 shadow-xs hover:border-amber-400 hover:shadow-md transition-all cursor-pointer"
+      className="group flex w-full items-center gap-3 rounded-2xl border border-stone-200/90 bg-white p-2.5 text-left shadow-[0_1px_2px_rgba(28,25,23,0.04)] transition-all hover:border-amber-300 hover:shadow-sm cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
     >
-      <div className="flex items-start gap-3">
-        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-stone-200/80 bg-stone-100">
-          <Image
-            src={service.imageUrl || service.organizationPicture || SERVICE_IMAGE_FALLBACK}
-            alt={service.name}
-            fill
-            sizes="64px"
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h4 className="font-bold text-xs sm:text-sm text-stone-900 group-hover:text-amber-900 transition-colors line-clamp-1">
-                {service.name}
-              </h4>
-              <p className="text-[11px] text-stone-500 font-medium truncate mt-0.5">
-                {service.organizationName}
-              </p>
-            </div>
-
-            <div className="text-right shrink-0">
-              <span className="font-mono tabular-nums tracking-tight font-extrabold text-sm text-amber-950">
-                ${service.basePrice}
-              </span>
-              <span className="block text-[10px] text-emerald-700 font-medium">$0 today</span>
-            </div>
-          </div>
-
-          <div className="mt-2 flex items-center justify-between text-[11px] text-stone-600 pt-2 border-t border-amber-100">
-            <div className="flex items-center gap-2">
-              {service.durationMinutes ? (
-                <span className="flex items-center gap-1 font-mono text-[11px] text-stone-500">
-                  <Clock className="h-3 w-3 text-amber-600" />
-                  {service.durationMinutes} min
-                </span>
-              ) : null}
-              {service.distanceKm !== null && service.distanceKm !== undefined ? (
-                <span className="flex items-center gap-0.5 font-mono text-[11px] text-amber-800">
-                  <MapPin className="h-3 w-3 text-amber-600" />
-                  {service.distanceKm} km
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-stone-100">
+        <Image
+          src={service.imageUrl || service.organizationPicture || SERVICE_IMAGE_FALLBACK}
+          alt=""
+          fill
+          sizes="48px"
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+        {typeof index === 'number' && (
+          <span className="absolute left-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-stone-950/80 text-[9px] font-bold text-white">
+            {index}
+          </span>
+        )}
       </div>
 
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          onSelect(service)
-        }}
-        className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-lg bg-stone-950 hover:bg-amber-600 text-white py-2 text-xs font-semibold shadow-xs transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
-      >
-        <CalendarCheck className="h-3.5 w-3.5" />
-        <span>Select &amp; book</span>
-      </button>
-    </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <h4 className="truncate text-[13px] font-semibold text-stone-950 group-hover:text-amber-900">
+            {service.name}
+          </h4>
+          <span className="shrink-0 font-mono text-[13px] font-bold tabular-nums text-stone-950">
+            ${service.basePrice}
+          </span>
+        </div>
+        <p className="mt-0.5 truncate text-[11px] font-medium text-stone-500">
+          {service.organizationName}
+        </p>
+        {meta.length > 0 && (
+          <p className="mt-0.5 truncate text-[11px] text-stone-400">{meta.join(' · ')}</p>
+        )}
+      </div>
+
+      <span className="inline-flex shrink-0 items-center rounded-full bg-stone-950 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors group-hover:bg-amber-600">
+        Book
+      </span>
+    </button>
   )
 }
 
@@ -343,69 +322,57 @@ export function OrganizationCard({
   onShowServices: (orgName: string) => void
 }) {
   return (
-    <div className="group relative flex items-center justify-between gap-3 rounded-xl border border-stone-200/80 bg-white p-3 text-stone-900 shadow-xs hover:border-amber-300 hover:shadow-md transition-all">
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-stone-200/80 bg-amber-50 flex items-center justify-center">
-          {org.picture ? (
-            <Image src={org.picture} alt={org.name} fill sizes="44px" className="object-cover" />
-          ) : (
-            <Building2 className="h-5 w-5 text-amber-700" />
-          )}
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h4 className="truncate font-bold text-xs sm:text-sm text-stone-900 group-hover:text-amber-900 transition-colors">
-              {org.name}
-            </h4>
-            <ShieldCheck className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-          </div>
-          <div className="mt-0.5 flex items-center gap-2 text-[11px] text-stone-500">
-            <span className="flex items-center text-amber-700 font-medium">
-              <Star className="h-3 w-3 fill-amber-400 text-amber-500 mr-0.5" />
-              {org.rating || 4.9}
-            </span>
-            {org.physicalAddress && (
-              <span className="truncate max-w-[140px] flex items-center">
-                <MapPin className="h-3 w-3 mr-0.5 shrink-0" />
-                {org.physicalAddress}
-              </span>
-            )}
-            {org.distanceKm !== null && org.distanceKm !== undefined && (
-              <span className="font-mono text-amber-800">· {org.distanceKm} km</span>
-            )}
-          </div>
-        </div>
+    <button
+      type="button"
+      onClick={() => onShowServices(org.name)}
+      className="group flex w-full items-center gap-3 rounded-2xl border border-stone-200/90 bg-white p-2.5 text-left shadow-[0_1px_2px_rgba(28,25,23,0.04)] transition-all hover:border-amber-300 hover:shadow-sm cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
+    >
+      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-stone-100 bg-amber-50">
+        {org.picture ? (
+          <Image src={org.picture} alt="" fill sizes="44px" className="object-cover" />
+        ) : (
+          <Building2 className="h-5 w-5 text-amber-700" />
+        )}
       </div>
-
-      <button
-        type="button"
-        onClick={() => onShowServices(org.name)}
-        className="shrink-0 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/70 px-2.5 py-1 text-xs font-semibold shadow-xs transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
-      >
-        Services
-      </button>
-    </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1">
+          <h4 className="truncate text-[13px] font-semibold text-stone-950 group-hover:text-amber-900">
+            {org.name}
+          </h4>
+          <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+        </div>
+        <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-stone-500">
+          <span className="inline-flex items-center font-medium text-amber-800">
+            <Star className="mr-0.5 h-3 w-3 fill-amber-400 text-amber-500" />
+            {org.rating || 4.9}
+          </span>
+          {org.distanceKm != null && <span>{org.distanceKm} km</span>}
+          {org.physicalAddress && <span className="truncate">{org.physicalAddress}</span>}
+        </p>
+      </div>
+      <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-950">
+        See services
+      </span>
+    </button>
   )
 }
 
 export function ConfirmedBookingCard({ booking }: { booking: AgentConfirmedBooking }) {
   return (
-    <div className="mt-2.5 w-full rounded-xl border border-emerald-300 bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/40 p-4 text-stone-900 shadow-xs motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-200">
-      <div className="flex items-center gap-2 mb-2 text-emerald-800">
-        <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-        <span className="font-bold text-xs uppercase tracking-wider">Appointment confirmed</span>
+    <div className="w-full rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white p-3.5 text-stone-900 shadow-[0_1px_2px_rgba(6,95,70,0.06)] motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-200">
+      <div className="mb-1.5 flex items-center gap-1.5 text-emerald-800">
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+        <span className="text-[11px] font-semibold">You are booked</span>
       </div>
-      <h4 className="font-serif text-base font-bold text-stone-950">{booking.serviceName}</h4>
+      <h4 className="text-sm font-semibold text-stone-950">{booking.serviceName}</h4>
       {booking.organizationName && (
-        <p className="text-xs text-stone-600 mt-0.5">at {booking.organizationName}</p>
+        <p className="mt-0.5 text-xs text-stone-500">at {booking.organizationName}</p>
       )}
-      <div className="mt-2.5 flex items-center justify-between border-t border-emerald-200/60 pt-2 text-xs">
-        <span className="text-stone-600 font-medium">
+      <div className="mt-2 flex items-center justify-between border-t border-emerald-100 pt-2 text-xs">
+        <span className="font-medium text-stone-600">
           {booking.formattedTime || booking.startsAt}
         </span>
-        <span className="font-mono font-bold text-emerald-800">
-          $0 hold today · ${booking.totalPrice}
-        </span>
+        <span className="font-medium text-emerald-800">$0 today</span>
       </div>
     </div>
   )
@@ -413,33 +380,51 @@ export function ConfirmedBookingCard({ booking }: { booking: AgentConfirmedBooki
 
 const DEFAULT_WELCOME_SUGGESTIONS = [
   {
-    label: 'Find salons near me',
-    hint: 'Explore top-rated verified stylists',
+    label: 'Near me',
+    hint: 'Salons close by',
     prompt: 'Find salons near me',
+    icon: MapPin,
   },
   {
-    label: 'Book haircut tomorrow',
-    hint: 'Check openings and reserve at 2 PM',
+    label: 'Book a cut',
+    hint: 'Tomorrow around 2',
     prompt: 'Book haircut tomorrow at 2pm',
+    icon: Calendar,
   },
   {
-    label: 'How $0 hold works',
-    hint: 'Learn about PayPal zero-debit holds',
+    label: 'How I pay',
+    hint: 'Nothing leaves today',
     prompt: 'How does the $0 hold work?',
+    icon: ShieldCheck,
   },
   {
-    label: 'Show available services',
-    hint: 'Browse popular salon treatments',
+    label: 'What’s on',
+    hint: 'A few popular picks',
     prompt: 'Show available services',
+    icon: Sparkles,
   },
 ]
 
-const DEFAULT_CHIPS = [
-  'Find salons near me',
-  'Book haircut tomorrow at 2pm',
-  'Show available services',
-  'How does the $0 hold work?',
-]
+const DEFAULT_CHIPS = ['Find salons near me', 'Book a haircut tomorrow', 'How does payment work?']
+
+function conversationChips(messages: ChatMessageItem[]): string[] {
+  const lastAssistant = [...messages].reverse().find((msg) => msg.sender === 'assistant')
+  if (!lastAssistant) return DEFAULT_CHIPS
+  if (lastAssistant.confirmedBooking) {
+    return ['What should I bring?', 'Can I change the time?']
+  }
+  if (lastAssistant.recommendations && lastAssistant.recommendations.length > 0) {
+    const chips = ['Something closer', 'A different salon']
+    if (lastAssistant.recommendations.length === CONCIERGE_RECOMMENDATION_LIMIT) {
+      chips.unshift(SHOW_MORE_PROMPT)
+    }
+    return chips
+  }
+  if (lastAssistant.organizations && lastAssistant.organizations.length > 0) {
+    return ['Show their services', 'Something closer']
+  }
+  return DEFAULT_CHIPS
+}
 
 export interface ChatConversationProps<T extends ChatMessageItem = ChatMessageItem> {
   messages: T[]
@@ -475,8 +460,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
   const isNearBottom = useCallback(() => {
     const el = scrollContainerRef.current
     if (!el) return true
-    const distance = el.scrollHeight - el.scrollTop - el.clientHeight
-    return distance < 96
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 96
   }, [])
 
   const scrollToBottom = useCallback((smooth = true) => {
@@ -490,14 +474,12 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
     setIsScrolledUp(false)
   }, [])
 
-  // Jump to bottom without animation on mount
   useEffect(() => {
     scrollToBottom(false)
     isMountedRef.current = true
     textareaRef.current?.focus()
   }, [scrollToBottom])
 
-  // Auto-scroll when near bottom or just sent
   useEffect(() => {
     if (!isMountedRef.current) return
     const el = scrollContainerRef.current
@@ -514,17 +496,14 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
   const handleScroll = () => {
     const el = scrollContainerRef.current
     if (!el) return
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
-    setIsScrolledUp(distanceFromBottom >= 96)
+    setIsScrolledUp(el.scrollHeight - el.scrollTop - el.clientHeight >= 96)
   }
 
-  // Auto-growing textarea (max 120px)
   useEffect(() => {
     const el = textareaRef.current
     if (!el) return
     el.style.height = 'auto'
-    const newHeight = Math.min(el.scrollHeight, 120)
-    el.style.height = `${newHeight}px`
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`
   }, [prompt])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -547,61 +526,59 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
     }
   }
 
+  const sendPrompt = (value: string) => {
+    justSentRef.current = true
+    onSend(value)
+  }
+
   const isOnlyWelcome = messages.length === 1 && messages[0].sender === 'assistant'
-  const activeChips = suggestions && suggestions.length > 0 ? suggestions : DEFAULT_CHIPS
+  const activeChips =
+    suggestions && suggestions.length > 0 ? suggestions : conversationChips(messages)
+  const canSend = Boolean(prompt.trim()) && !isThinking
 
   return (
-    <div
-      className={cn(
-        'relative flex flex-1 flex-col justify-between overflow-hidden bg-[#FAFAF9]',
-        className,
-      )}
-    >
-      {/* Scrollable conversation log */}
+    <div className={cn('relative flex flex-1 flex-col overflow-hidden bg-[#F7F5F2]', className)}>
       <div
         ref={scrollContainerRef}
         role="log"
         aria-live="polite"
         onScroll={handleScroll}
-        className="flex-1 space-y-3.5 overflow-y-auto p-4 sm:p-5"
+        className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5"
       >
         {messages.map((msg, idx) => {
           const isUser = msg.sender === 'user'
           const isFirstInGroup = idx === 0 || messages[idx - 1].sender !== msg.sender
-          const isLastInGroup =
-            idx === messages.length - 1 || messages[idx + 1].sender !== msg.sender
-          const effectiveOrgs = !isUser && msg.organizations ? msg.organizations : []
+          const isLastMessage = idx === messages.length - 1
           const effectiveRecs = !isUser && msg.recommendations ? msg.recommendations : []
+          const effectiveOrgs =
+            !isUser && effectiveRecs.length === 0 && msg.organizations ? msg.organizations : []
+          const isLatestAssistant = !isUser && isLastMessage && !isThinking
 
           return (
             <div key={msg.id} className={cn('flex flex-col', isUser ? 'items-end' : 'items-start')}>
               <div
                 className={cn(
-                  'flex items-start gap-2 max-w-[88%]',
+                  'flex max-w-[88%] items-end gap-2',
                   isUser ? 'justify-end' : 'justify-start',
                 )}
               >
                 {!isUser && (
-                  <div className="w-7 shrink-0 flex justify-center">
-                    {isFirstInGroup ? (
-                      <ConciergeAvatar size="sm" className="mt-0.5" />
-                    ) : (
-                      <div className="w-7" aria-hidden="true" />
-                    )}
+                  <div className="flex w-7 shrink-0 justify-center">
+                    {isFirstInGroup ? <ConciergeAvatar size="sm" /> : <div className="w-7" />}
                   </div>
                 )}
 
                 <div
                   className={cn(
-                    'rounded-2xl px-4 py-2.5 text-xs sm:text-sm leading-relaxed shadow-xs',
+                    'rounded-[1.15rem] px-3.5 py-2.5 text-[13px] leading-relaxed',
                     isUser
                       ? cn(
-                          'bg-stone-900 text-stone-50 font-normal',
-                          isFirstInGroup && 'rounded-tr-xs',
+                          'bg-stone-950 text-stone-50 shadow-[0_1px_2px_rgba(28,25,23,0.18)]',
+                          isFirstInGroup && 'rounded-br-md',
                         )
                       : cn(
-                          'border border-stone-200/90 bg-white text-stone-900 font-normal',
-                          isFirstInGroup && 'rounded-tl-xs',
+                          'border border-white/80 bg-white text-stone-800 shadow-[0_1px_2px_rgba(28,25,23,0.05)]',
+                          isFirstInGroup && 'rounded-bl-md',
                         ),
                   )}
                 >
@@ -609,164 +586,157 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                 </div>
               </div>
 
-              {/* Timestamp on last message of a group */}
-              {isLastInGroup && (
+              {isLastMessage && (
                 <span
                   className={cn(
-                    'text-[10px] text-stone-400 font-mono mt-1 px-1',
-                    isUser ? 'self-end' : 'self-start ml-9',
+                    'mt-1 px-1 text-[10px] text-stone-400',
+                    isUser ? 'self-end' : 'ml-9 self-start',
                   )}
                 >
                   {msg.time}
                 </span>
               )}
 
-              {/* Confirmed Booking Card */}
               {!isUser && msg.confirmedBooking && (
-                <div className="ml-9 w-[calc(100%-2.25rem)] max-w-[94%]">
+                <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
                   <ConfirmedBookingCard booking={msg.confirmedBooking} />
                 </div>
               )}
 
-              {/* Recommended Salons */}
               {!isUser && effectiveOrgs.length > 0 && (
-                <div className="ml-9 mt-2.5 w-[calc(100%-2.25rem)] max-w-[94%] space-y-2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-stone-500 uppercase tracking-wider px-1">
-                    <Building2 className="h-3.5 w-3.5 text-amber-600" />
-                    <span>Recommended salons</span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {effectiveOrgs.map((org) => (
-                      <OrganizationCard
-                        key={org.id}
-                        org={org}
-                        onShowServices={(name) => {
-                          justSentRef.current = true
-                          onSend(`Show services for ${name}`)
-                        }}
-                      />
-                    ))}
-                  </div>
+                <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%] space-y-1.5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+                  <p className="px-0.5 text-[11px] font-medium text-stone-400">
+                    {effectiveOrgs.length} salon{effectiveOrgs.length === 1 ? '' : 's'} nearby
+                  </p>
+                  {effectiveOrgs.map((org) => (
+                    <OrganizationCard
+                      key={org.id}
+                      org={org}
+                      onShowServices={(name) => sendPrompt(`Show services for ${name}`)}
+                    />
+                  ))}
                 </div>
               )}
 
-              {/* Verified Services */}
               {!isUser && effectiveRecs.length > 0 && (
-                <div className="ml-9 mt-2.5 w-[calc(100%-2.25rem)] max-w-[94%] space-y-2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
-                  <div className="flex items-center justify-between text-[11px] font-semibold text-stone-500 uppercase tracking-wider px-1">
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                      Verified services
-                    </span>
-                    <span className="text-emerald-700 font-mono lowercase">$0 hold today</span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2.5">
-                    {effectiveRecs.map((rec) => (
-                      <ServiceCard
-                        key={rec.serviceId}
-                        service={rec}
-                        onSelect={handleSelectService}
-                      />
-                    ))}
-                  </div>
+                <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%] space-y-1.5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+                  <p className="px-0.5 text-[11px] font-medium text-stone-400">
+                    {effectiveRecs.length === 1
+                      ? 'A pick for you'
+                      : `${effectiveRecs.length} options — tap one to book`}
+                  </p>
+                  {effectiveRecs.map((rec, recIdx) => (
+                    <ServiceCard
+                      key={rec.serviceId}
+                      service={rec}
+                      index={effectiveRecs.length > 1 ? recIdx + 1 : undefined}
+                      onSelect={handleSelectService}
+                    />
+                  ))}
+                  {isLatestAssistant && effectiveRecs.length === CONCIERGE_RECOMMENDATION_LIMIT && (
+                    <button
+                      type="button"
+                      disabled={isThinking}
+                      onClick={() => sendPrompt(SHOW_MORE_PROMPT)}
+                      className="w-full py-1.5 text-center text-xs font-medium text-stone-500 transition-colors hover:text-amber-800 cursor-pointer disabled:opacity-40"
+                    >
+                      Show a few more
+                    </button>
+                  )}
                 </div>
               )}
 
-              {/* Custom extras, e.g. ProposalCard */}
               {!isUser && renderExtras && (
-                <div className="ml-9 w-[calc(100%-2.25rem)] max-w-[94%]">{renderExtras(msg)}</div>
+                <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
+                  {renderExtras(msg)}
+                </div>
               )}
             </div>
           )
         })}
 
-        {/* 2x2 grid of suggestions when only the welcome message exists */}
         {isOnlyWelcome && (
-          <div className="ml-9 mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 w-[calc(100%-2.25rem)]">
-            {DEFAULT_WELCOME_SUGGESTIONS.map((card, i) => (
-              <button
-                key={i}
-                type="button"
-                disabled={isThinking}
-                onClick={() => {
-                  justSentRef.current = true
-                  onSend(card.prompt)
-                }}
-                className="flex flex-col items-start rounded-xl border border-stone-200/90 bg-white p-3 text-left shadow-xs hover:border-amber-300 hover:bg-amber-50/50 hover:shadow-sm transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-40"
-              >
-                <span className="text-xs font-semibold text-stone-900 flex items-center gap-1.5">
-                  <Sparkles className="h-3 w-3 text-amber-500" />
-                  {card.label}
-                </span>
-                {card.hint && (
-                  <span className="text-[11px] text-stone-500 mt-0.5">{card.hint}</span>
-                )}
-              </button>
-            ))}
+          <div className="ml-9 grid w-[calc(100%-2.25rem)] grid-cols-2 gap-2">
+            {DEFAULT_WELCOME_SUGGESTIONS.map((card) => {
+              const Icon = card.icon
+              return (
+                <button
+                  key={card.prompt}
+                  type="button"
+                  disabled={isThinking}
+                  onClick={() => sendPrompt(card.prompt)}
+                  className="flex flex-col items-start rounded-2xl border border-stone-200/80 bg-white p-3 text-left shadow-[0_1px_2px_rgba(28,25,23,0.04)] transition-all hover:border-amber-300 hover:bg-amber-50/40 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-40"
+                >
+                  <span className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-amber-50 text-amber-700">
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="text-[13px] font-semibold text-stone-950">{card.label}</span>
+                  <span className="mt-0.5 text-[11px] leading-snug text-stone-500">
+                    {card.hint}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         )}
 
-        {/* Animated three-dot typing indicator */}
         {isThinking && (
-          <div className="flex items-start gap-2 max-w-[85%] motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
-            <ConciergeAvatar size="sm" className="mt-0.5" />
-            <div className="rounded-2xl rounded-tl-xs border border-stone-200/90 bg-white px-4 py-3 shadow-xs">
-              <span className="sr-only">AI Concierge is typing…</span>
-              <div className="flex items-center gap-1.5" aria-hidden="true">
-                <span className="h-2 w-2 rounded-full bg-amber-500 motion-safe:animate-bounce [animation-delay:-0.3s]" />
-                <span className="h-2 w-2 rounded-full bg-amber-500 motion-safe:animate-bounce [animation-delay:-0.15s]" />
-                <span className="h-2 w-2 rounded-full bg-amber-500 motion-safe:animate-bounce" />
+          <div className="flex max-w-[85%] items-end gap-2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
+            <ConciergeAvatar size="sm" />
+            <div className="rounded-[1.15rem] rounded-bl-md border border-white/80 bg-white px-3.5 py-2.5 shadow-[0_1px_2px_rgba(28,25,23,0.05)]">
+              <span className="sr-only">Concierge is typing</span>
+              <div className="flex items-center gap-2" aria-hidden="true">
+                <div className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 motion-safe:animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 motion-safe:animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 motion-safe:animate-bounce" />
+                </div>
+                <span className="text-[11px] font-medium text-stone-400">Looking that up…</span>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Scrolled-up "Latest" jump button */}
       {isScrolledUp && (
-        <div className="absolute bottom-24 sm:bottom-28 left-1/2 -translate-x-1/2 z-20 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
+        <div className="absolute bottom-[7.5rem] left-1/2 z-20 -translate-x-1/2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
           <button
             type="button"
             onClick={() => scrollToBottom(true)}
-            className="flex items-center gap-1 rounded-full bg-stone-900/95 text-white text-xs font-medium px-3.5 py-1.5 shadow-md shadow-black/20 hover:bg-stone-800 transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
+            className="flex items-center gap-1 rounded-full bg-stone-950/95 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-black/15 transition-colors hover:bg-stone-800 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
           >
-            <span>Latest</span>
+            Latest
             <ChevronDown className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
 
-      {/* Compact suggestion chips (shown after welcome stage) */}
       {!isOnlyWelcome && activeChips.length > 0 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto border-t border-stone-200/70 bg-white/80 px-4 py-2 scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto px-4 pb-1 pt-1 scrollbar-none">
           {activeChips.map((chip) => (
             <button
               key={chip}
               type="button"
               disabled={isThinking}
-              onClick={() => {
-                justSentRef.current = true
-                onSend(chip)
-              }}
-              className="shrink-0 rounded-full border border-stone-200/80 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 shadow-xs hover:border-amber-300 hover:bg-amber-50/60 hover:text-amber-950 transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={() => sendPrompt(chip)}
+              className="shrink-0 rounded-full border border-stone-200/90 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-600 shadow-[0_1px_1px_rgba(28,25,23,0.04)] transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-950 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {chip}
+              {chip === SHOW_MORE_PROMPT ? 'A few more' : chip}
             </button>
           ))}
         </div>
       )}
 
-      {/* Composer container */}
-      <div className="border-t border-stone-200/80 bg-white/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
+      <div className="border-t border-stone-200/60 bg-white/90 px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            if (prompt.trim() && !isThinking) {
+            if (canSend) {
               justSentRef.current = true
               onSend()
             }
           }}
-          className="flex items-end gap-2 rounded-2xl border border-stone-200/90 bg-white p-1.5 pl-3.5 shadow-xs focus-within:ring-2 focus-within:ring-amber-500/20 focus-within:border-amber-500 transition-all"
+          className="flex items-end gap-2 rounded-[1.35rem] border border-stone-200 bg-stone-50/80 p-1.5 pl-3.5 transition-all focus-within:border-amber-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-amber-500/15"
         >
           <textarea
             ref={textareaRef}
@@ -774,8 +744,8 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
             value={prompt}
             onChange={(e) => onPromptChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask or book anything…"
-            className="flex-1 resize-none max-h-[120px] bg-transparent py-1.5 text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 focus:outline-hidden leading-relaxed"
+            placeholder="What are you looking for?"
+            className="max-h-[120px] flex-1 resize-none bg-transparent py-2 text-[13px] leading-relaxed text-stone-900 placeholder:text-stone-400 focus:outline-hidden"
           />
 
           {!prompt.trim() && onTryVoice && (
@@ -783,8 +753,8 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
               type="button"
               onClick={onTryVoice}
               aria-label="Use voice concierge"
-              title="Use voice concierge"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone-500 hover:text-amber-700 hover:bg-amber-100/60 transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
+              title="Talk instead"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-amber-50 hover:text-amber-700 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
             >
               <Mic className="h-4 w-4" />
             </button>
@@ -792,17 +762,16 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
 
           <button
             type="submit"
-            disabled={!prompt.trim() || isThinking}
+            disabled={!canSend}
             aria-label="Send message"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white hover:bg-amber-600 disabled:opacity-30 disabled:hover:bg-stone-950 shadow-xs transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
+            className={cn(
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-xs transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500',
+              canSend ? 'bg-amber-500 hover:bg-amber-600' : 'bg-stone-300',
+            )}
           >
             <Send className="h-3.5 w-3.5" />
           </button>
         </form>
-
-        <p className="mt-1.5 text-center text-[10px] text-stone-400">
-          AI can make mistakes — confirm details before booking.
-        </p>
       </div>
     </div>
   )

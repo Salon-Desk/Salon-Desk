@@ -5,7 +5,11 @@ from fastapi import APIRouter, HTTPException, status
 from app.ai.chat_auth import try_handle_chat_auth
 from app.ai.chat_booking import try_handle_chat_booking
 from app.ai.llm import LLMError, get_llm_service
-from app.ai.rag_service import build_chat_system_prompt, retrieve_context
+from app.ai.rag_service import (
+    CHAT_GREETING_REPLY,
+    build_chat_system_prompt,
+    retrieve_context,
+)
 from app.api.deps import DbSession, OptionalUser
 from app.schemas.chat import (
     ChatCitation,
@@ -66,13 +70,22 @@ async def chat(
         user_lat=body.user_lat,
         user_lng=body.user_lng,
     )
+    if retrieved.intent == "greeting" or retrieved.is_greeting:
+        return ChatResponse(
+            reply=CHAT_GREETING_REPLY,
+            provider=llm.provider_name,
+            model=llm.model,
+            detected_language=retrieved.detected_language,
+            intent=retrieved.intent,
+        )
+
     system = build_chat_system_prompt(retrieved)
     messages = [{"role": "system", "content": system}]
     messages.extend({"role": m.role, "content": m.content} for m in body.history)
     messages.append({"role": "user", "content": body.message})
 
     try:
-        reply = await llm.chat(messages, temperature=0.3)
+        reply = await llm.chat(messages, temperature=0.55, max_tokens=220)
     except LLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=exc.message) from exc
 

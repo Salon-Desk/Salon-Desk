@@ -9,10 +9,10 @@ export const VOICE_AGENT_SUGGESTIONS = [
 
 export const VOICE_AGENT_STATUS = {
   connecting: 'Connecting to voice concierge…',
-  initializing: 'Securing room & waking neural models…',
+  initializing: 'Getting the room ready…',
   listening: 'Listening — speak or type',
-  thinking: 'Synthesizing response…',
-  speaking: 'Concierge speaking…',
+  thinking: 'One moment…',
+  speaking: 'Talking…',
   idle: 'Ready — speak or type below',
   disconnected: 'Session concluded',
   error: 'Voice service unavailable',

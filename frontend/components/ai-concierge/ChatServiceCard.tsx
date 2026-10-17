@@ -71,6 +71,16 @@ export function AgentChatView({
                       </p>
                     </div>
                   ))}
+                  {msg.recommendations.length === 3 && (
+                    <button
+                      type="button"
+                      disabled={isThinking}
+                      onClick={() => onSend('Show me a few more options')}
+                      className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700 hover:border-amber-300 hover:bg-amber-50/60 cursor-pointer disabled:opacity-40"
+                    >
+                      Show a few more
+                    </button>
+                  )}
                 </div>
               )}
             </div>

@@ -96,7 +96,7 @@ export function ClientHeader({
             }`}
           >
             <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-            <span className="hidden sm:inline">AI Concierge</span>
+            <span className="hidden sm:inline">Chat</span>
           </button>
 
           <UserMenu portal="client" />

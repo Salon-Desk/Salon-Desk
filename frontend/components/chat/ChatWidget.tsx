@@ -61,15 +61,15 @@ export function ChatWidget({
           <button
             type="button"
             onClick={handleOpenChat}
-            aria-label="Open SalonDesk AI Concierge"
-            className="group flex cursor-pointer items-center gap-2.5 rounded-full border border-stone-800 bg-stone-950/95 py-2.5 pl-3.5 pr-4 text-white shadow-lg shadow-black/20 backdrop-blur-md transition-all hover:border-stone-700 hover:bg-stone-900 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
-            title="Open AI Concierge"
+            aria-label="Open chat"
+            className="group flex cursor-pointer items-center gap-2.5 rounded-full border border-stone-800 bg-stone-950/95 py-2.5 pl-3 pr-4 text-white shadow-lg shadow-black/20 backdrop-blur-md transition-all hover:border-stone-700 hover:bg-stone-900 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+            title="Chat with us"
           >
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-400/15 text-amber-400 transition-transform group-hover:scale-110">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400/15 text-amber-400 transition-transform group-hover:scale-110">
               <Sparkles className="h-3.5 w-3.5" />
             </span>
             <span className="text-xs font-semibold tracking-tight text-stone-100">
-              AI Concierge
+              Chat with us
             </span>
           </button>
         </div>

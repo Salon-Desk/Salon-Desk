@@ -3,6 +3,8 @@ from uuid import uuid4
 
 from app.services.livekit_tokens import build_room_name, parse_language_from_room_name
 from app.services.rag_service import (
+    DEFAULT_RECOMMENDATION_LIMIT,
+    EXPANDED_RECOMMENDATION_LIMIT,
     RetrievedChunk,
     RetrievedContext,
     ServiceRecommendation,
@@ -12,6 +14,9 @@ from app.services.rag_service import (
     detect_intent,
     detect_language,
     format_context_text,
+    recommendation_limit_for,
+    select_recommendations,
+    wants_more_recommendations,
 )
 
 
@@ -96,7 +101,7 @@ def test_voice_instruction_booking() -> None:
     text = build_voice_rag_instruction(
         RetrievedContext(intent="booking", context_text="service_id=abc")
     )
-    assert "booking" in text.lower() or "scheduling" in text.lower()
+    assert "book" in text.lower() or "scheduling" in text.lower()
     assert "service_id=abc" in text
 
 
@@ -104,6 +109,56 @@ def test_chat_system_prompt_grounds_recommendations() -> None:
     prompt = build_chat_system_prompt(RetrievedContext(context_text="Recommended: Manicure at $25"))
     assert "verified" in prompt.lower() or "Verified" in prompt
     assert "Manicure" in prompt
+    assert "markdown tables" in prompt.lower() or "do not use markdown" in prompt.lower()
+
+
+def test_chat_system_prompt_greeting_is_conversational() -> None:
+    prompt = build_chat_system_prompt(RetrievedContext(intent="greeting", is_greeting=True))
+    assert "hello" in prompt.lower()
+    assert "checklist" in prompt.lower() or "numbered" in prompt.lower()
+
+
+def test_wants_more_recommendations() -> None:
+    assert wants_more_recommendations("show me a few more options")
+    assert wants_more_recommendations("any others?")
+    assert not wants_more_recommendations("am searching for good hair salon")
+    assert recommendation_limit_for("hair salon") == DEFAULT_RECOMMENDATION_LIMIT
+    assert recommendation_limit_for("show more") == EXPANDED_RECOMMENDATION_LIMIT
+
+
+def _card(name: str, category: str, org_name: str, org_id=None) -> ServiceRecommendation:
+    return ServiceRecommendation(
+        service_id=uuid4(),
+        organization_id=org_id or uuid4(),
+        name=name,
+        organization_name=org_name,
+        base_price=Decimal("45.00"),
+        duration_minutes=60,
+        category_name=category,
+    )
+
+
+def test_select_recommendations_caps_at_three() -> None:
+    org_id = uuid4()
+    cards = [
+        _card("Women's Haircut", "Hair", "Selam Hair Studio", org_id),
+        _card("Men's Haircut", "Hair", "Selam Hair Studio", org_id),
+        _card("Hair Color", "Hair", "Selam Hair Studio", org_id),
+        _card("Manicure", "Nails", "Selam Hair Studio", org_id),
+        _card("Express Facial", "Spa", "Selam Hair Studio", org_id),
+    ]
+    picked = select_recommendations(cards, query="am searching for good hair salone")
+    assert len(picked) == 3
+    assert all(card.category_name == "Hair" for card in picked)
+
+
+def test_select_recommendations_expands_when_asked() -> None:
+    org_id = uuid4()
+    cards = [_card(f"Service {i}", "Hair", "Selam Hair Studio", org_id) for i in range(6)]
+    picked = select_recommendations(
+        cards, query="show me more hair options", limit=EXPANDED_RECOMMENDATION_LIMIT
+    )
+    assert len(picked) == 6
 
 
 def test_room_name_encodes_language() -> None:

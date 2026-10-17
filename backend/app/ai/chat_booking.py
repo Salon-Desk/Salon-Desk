@@ -123,7 +123,7 @@ async def try_handle_chat_booking(
     if client is None:
         return (
             True,
-            "Please sign in or create an account first so I can reserve and confirm your appointment.",
+            "I need you signed in before I can hold a chair for you.",
             None,
         )
 
@@ -171,7 +171,7 @@ async def try_handle_chat_booking(
         }
         return (
             True,
-            f"Your booking has been confirmed for {time_str}! A $0 PayPal authorization hold is active with free 24-hour cancellation.",
+            f"You're confirmed for {time_str}. Nothing leaves your card today — just a $0 PayPal hold, and you can cancel free up to 24 hours before.",
             confirmed_info,
         )
 
@@ -220,7 +220,7 @@ async def try_handle_chat_booking(
     if service is None:
         return (
             True,
-            "I could not locate an available service matching your request. Could you specify the salon or service name?",
+            "I couldn't find that service. Which salon or treatment did you have in mind?",
             None,
         )
 
@@ -256,7 +256,7 @@ async def try_handle_chat_booking(
         logger.error("Failed to book via chat: %s", exc)
         return (
             True,
-            f"I encountered an issue reserving that slot: {exc}. Please select a different time or try again.",
+            f"I ran into a snag reserving that slot: {exc}. Want to try another time?",
             None,
         )
 
@@ -276,7 +276,7 @@ async def try_handle_chat_booking(
 
     return (
         True,
-        f"Your appointment for **{service.name}** at **{org_name}** is **confirmed** for **{time_str}**! "
-        f"A $0 PayPal authorization hold of ${booking.total_price} has been placed. You will only pay in person at the salon.",
+        f"You're booked — {service.name} at {org_name} on {time_str}. "
+        f"A $0 PayPal hold is in place; you'll pay at the salon.",
         confirmed_info,
     )

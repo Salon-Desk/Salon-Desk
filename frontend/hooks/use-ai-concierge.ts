@@ -33,7 +33,7 @@ export interface ConciergeMessage {
 const WELCOME: ConciergeMessage = {
   id: 'msg-welcome',
   sender: 'assistant',
-  text: 'Hello! I am your SalonDesk AI Concierge. With our PayPal authorization hold guarantee, $0 is debited today to lock in your appointment. How may I style you today?',
+  text: 'Hey — I can help you find a salon or book a time. What are you in the mood for?',
   time: 'Just now',
   hasProposal: false,
 }
@@ -48,7 +48,7 @@ function demoFallbackMessage(_service?: SalonService): ConciergeMessage {
   return {
     id: createSequentialId('ast'),
     sender: 'assistant',
-    text: 'I could not reach the booking assistant just now. Please try again in a moment, or select a service directly from the catalog.',
+    text: "I couldn't reach the assistant just now. Try again in a moment, or pick a service from the list.",
     time: formatClockTime(),
     hasProposal: false,
   }

@@ -137,6 +137,199 @@ def detect_intent(message: str) -> str:
     return "discover"
 
 
+DEFAULT_RECOMMENDATION_LIMIT = 3
+EXPANDED_RECOMMENDATION_LIMIT = 8
+
+_MORE_RECOMMENDATIONS_RE = re.compile(
+    r"\b("
+    r"more( options| salons| services| please)?"
+    r"|other(s)?"
+    r"|what else"
+    r"|anything else"
+    r"|show more"
+    r"|see more"
+    r"|few more"
+    r"|another"
+    r"|all (the )?options"
+    r"|full list"
+    r")\b",
+    re.I,
+)
+
+_QUERY_STOPWORDS = frozenset(
+    {
+        "searching",
+        "search",
+        "looking",
+        "look",
+        "want",
+        "wanna",
+        "need",
+        "good",
+        "best",
+        "find",
+        "finding",
+        "please",
+        "the",
+        "for",
+        "and",
+        "you",
+        "have",
+        "any",
+        "some",
+        "near",
+        "nearby",
+        "around",
+        "close",
+        "just",
+        "like",
+        "get",
+        "got",
+        "can",
+        "could",
+        "would",
+        "help",
+        "hello",
+        "hey",
+        "salon",
+        "salons",
+        "salone",
+        "place",
+        "places",
+        "studio",
+    }
+)
+
+_SALON_HUNT_HINTS = (
+    "salon",
+    "salons",
+    "salone",
+    "studio",
+    "place",
+    "places",
+    "nearby",
+    "near me",
+)
+
+_SPECIFIC_SERVICE_HINTS = (
+    "haircut",
+    "cut",
+    "color",
+    "fade",
+    "braid",
+    "manicure",
+    "pedicure",
+    "facial",
+    "massage",
+    "spa",
+    "beard",
+    "balayage",
+    "locs",
+    "twist",
+)
+
+
+def wants_more_recommendations(message: str) -> bool:
+    """True when the client asks to see more than the first three picks."""
+    return bool(_MORE_RECOMMENDATIONS_RE.search(message or ""))
+
+
+def recommendation_limit_for(message: str) -> int:
+    if wants_more_recommendations(message):
+        return EXPANDED_RECOMMENDATION_LIMIT
+    return DEFAULT_RECOMMENDATION_LIMIT
+
+
+def _meaningful_query_tokens(query: str) -> list[str]:
+    return [
+        token
+        for token in re.split(r"\W+", (query or "").lower())
+        if len(token) >= 3 and token not in _QUERY_STOPWORDS
+    ]
+
+
+def _card_relevance(card: ServiceRecommendation, tokens: list[str]) -> int:
+    if not tokens:
+        return 0
+    name_hay = f"{card.name} {card.category_name or ''} {card.description or ''}".lower()
+    org_hay = (card.organization_name or "").lower()
+    score = 0
+    for token in tokens:
+        if token in name_hay:
+            score += 3
+        elif token in org_hay:
+            score += 1
+    return score
+
+
+def _is_salon_hunt(query: str) -> bool:
+    lowered = (query or "").lower()
+    looking_for_salon = any(hint in lowered for hint in _SALON_HUNT_HINTS)
+    named_a_service = any(hint in lowered for hint in _SPECIFIC_SERVICE_HINTS)
+    return looking_for_salon and not named_a_service
+
+
+def select_recommendations(
+    cards: list[ServiceRecommendation],
+    *,
+    query: str,
+    limit: int = DEFAULT_RECOMMENDATION_LIMIT,
+) -> list[ServiceRecommendation]:
+    """Rank live cards, prefer what they asked for, and keep the list short."""
+    if not cards or limit <= 0:
+        return []
+
+    tokens = _meaningful_query_tokens(query)
+    ranked = sorted(
+        cards,
+        key=lambda card: (
+            -_card_relevance(card, tokens),
+            card.distance_km is None,
+            card.distance_km if card.distance_km is not None else 0.0,
+            -card.score,
+        ),
+    )
+
+    if _is_salon_hunt(query):
+        picked: list[ServiceRecommendation] = []
+        seen_orgs: set[UUID] = set()
+        for card in ranked:
+            if card.organization_id in seen_orgs:
+                continue
+            picked.append(card)
+            seen_orgs.add(card.organization_id)
+            if len(picked) >= limit:
+                return picked
+        for card in ranked:
+            if card in picked:
+                continue
+            picked.append(card)
+            if len(picked) >= limit:
+                break
+        return picked
+
+    return ranked[:limit]
+
+
+CHAT_GREETING_REPLY = "Hey! What are you hoping to book — a cut, color, or just looking around?"
+
+_CHAT_PERSONA = """
+You are a real person helping someone book a salon — warm, brief, and easy to talk to.
+
+How you talk:
+- Sound like a text to a friend who works the front desk. Short sentences. Contractions are fine.
+- Usually 2–4 sentences. Never write an essay.
+- Do not use markdown tables, headings, numbered "Next Steps", bullet lists, or service IDs.
+- Do not say "based on verified data" or treat distance as a rating. Kilometers are how far they are.
+- Cards in the app already show price, duration, and address. Mention one or two highlights in passing.
+- Recommend at most 3 options unless they asked for more. Invite them to ask if they want others.
+- Ask only one easy follow-up. Never interview them with a numbered checklist.
+- If they only said hi, greet them and ask what they are after. Do not recap how booking works.
+- Stay grounded in the verified services below. Never invent salons, prices, or open slots.
+- If they need to sign in to book, mention it casually and keep their pick.
+""".strip()
+
+
 def build_search_query(message: str, prior_turns: list[str] | None = None) -> str:
     parts = [*(prior_turns or [])[-3:], message]
     return " ".join(p.strip() for p in parts if p and p.strip())
@@ -364,14 +557,14 @@ def format_context_text(
 def build_voice_rag_instruction(retrieved: RetrievedContext) -> str:
     if retrieved.intent == "greeting" or retrieved.is_greeting:
         return (
-            "The user greeted you. Reply briefly and warmly as SalonDesk's "
-            "voice assistant. Offer to help find a salon service or book."
+            "They just said hello. Reply like a person — one warm sentence "
+            "and ask what they are hoping to get done. No lists."
         )
     if retrieved.intent == "booking":
         base = (
-            "User is booking. Stay on scheduling: clarify service, salon, and time. "
+            "They want to book. Stay on service, salon, and time. "
             "Use only verified services below. Do not invent availability. "
-            "Ask one clarifying question if needed. Speak in 1–2 short sentences."
+            "Ask one question if you need it. Speak in 1–2 short sentences."
         )
         if retrieved.context_text:
             return f"{base}\n\n{retrieved.context_text}"
@@ -380,34 +573,50 @@ def build_voice_rag_instruction(retrieved: RetrievedContext) -> str:
         return (
             "No verified salon data matched this turn. "
             "Do not invent salons, prices, or slots. "
-            "Ask what service or area they want, or suggest browsing the app catalog."
+            "Ask what they want or which area, like a person would."
         )
+    more_note = ""
+    if len(retrieved.recommendations) > DEFAULT_RECOMMENDATION_LIMIT:
+        more_note = " They asked for more options — you may mention these extra picks."
     return (
         "Use ONLY the verified platform context below. "
-        "Help the client discover suitable services (name, salon, price). "
-        "Speak conversationally in 1–2 short sentences. No markdown or lists.\n\n"
+        "Mention at most three services unless they asked for more. "
+        "Speak conversationally in 1–2 short sentences. No markdown or lists."
+        f"{more_note}\n\n"
         f"{retrieved.context_text}"
     )
 
 
 def build_chat_system_prompt(retrieved: RetrievedContext) -> str:
-    base = (
-        "You are SalonDesk's client assistant for service discovery and booking. "
-        "Ground every recommendation in verified platform data. "
-        "Never invent salons, prices, or appointment availability. "
-        "When recommending services, mention name, salon, and price. "
-        "Guide the client toward selecting a service and time for booking. "
-        "If authentication is required to book, say they should sign in while "
-        "keeping their selected service context."
-    )
-    if retrieved.intent == "booking":
-        base += (
-            " The user is in a booking flow — clarify service/time and next steps; "
-            "do not digress into unrelated FAQ."
+    parts = [_CHAT_PERSONA]
+    if retrieved.intent == "greeting" or retrieved.is_greeting:
+        parts.append(
+            "They just said hello. Reply in one or two friendly sentences. "
+            "Do not list questions or explain how booking works."
         )
-    if not retrieved.context_text:
-        return base
-    return f"{base}\n\nVerified knowledge:\n{retrieved.context_text}"
+        return "\n\n".join(parts)
+    if retrieved.intent == "farewell":
+        parts.append("They are saying goodbye. Wish them well in one short sentence.")
+        return "\n\n".join(parts)
+    if retrieved.intent == "booking":
+        parts.append(
+            "They are trying to book. Clarify service or time in a natural way; "
+            "do not wander into unrelated FAQ."
+        )
+    if len(retrieved.recommendations) > DEFAULT_RECOMMENDATION_LIMIT:
+        parts.append(
+            "They asked for more options. You may mention these extra picks, still conversationally."
+        )
+    if retrieved.context_text:
+        parts.append(
+            "Verified services you can mention (do not invent others):\n" + retrieved.context_text
+        )
+    else:
+        parts.append(
+            "No matching salon data this turn. Ask what they want or which area — "
+            "do not invent names or prices."
+        )
+    return "\n\n".join(parts)
 
 
 async def retrieve_context(
@@ -424,6 +633,7 @@ async def retrieve_context(
 ) -> RetrievedContext:
     cfg = settings or get_settings()
     limit = chunk_limit or cfg.rag_chunk_limit
+    rec_limit = recommendation_limit_for(message)
     detected = detect_language(message)
     intent = detect_intent(message)
     greeting = intent == "greeting"
@@ -518,7 +728,7 @@ async def retrieve_context(
                 dist = haversine_km(user_lat, user_lng, float(s_set.lat), float(s_set.lng))
             scored_services.append((dist if dist is not None else 999999.0, s, s_set))
         scored_services.sort(key=lambda x: x[0])
-        for dist, s, s_set in scored_services[:limit]:
+        for dist, s, s_set in scored_services[: max(rec_limit * 3, 9)]:
             cover_img = None
             if isinstance(s.images, dict):
                 cover_img = s.images.get("cover") or s.images.get("image")
@@ -562,7 +772,7 @@ async def retrieve_context(
             clauses = [Service.name.ilike(f"%{t}%") for t in tokens]
             clauses.extend(Organization.name.ilike(f"%{t}%") for t in tokens)
             stmt = stmt.where(or_(*clauses))
-        stmt = stmt.limit(limit)
+        stmt = stmt.limit(max(rec_limit * 3, 9))
         res = await session.execute(stmt)
         for s, s_set in res.all():
             cover_img = None
@@ -604,7 +814,7 @@ async def retrieve_context(
         org_query = (
             select(Organization.id)
             .where(Organization.status == OrganizationStatus.APPROVED)
-            .limit(6)
+            .limit(rec_limit)
         )
         if org_id is not None:
             org_query = org_query.where(Organization.id == org_id)
@@ -618,7 +828,7 @@ async def retrieve_context(
             select(Organization, OrgSettings)
             .outerjoin(OrgSettings, Organization.id == OrgSettings.org_id)
             .where(
-                Organization.id.in_(list(seen_org_ids)[:8]),
+                Organization.id.in_(list(seen_org_ids)[: max(rec_limit, 3)]),
                 Organization.status == OrganizationStatus.APPROVED,
             )
         )
@@ -659,9 +869,9 @@ async def retrieve_context(
         organizations.sort(key=lambda o: (o.distance_km is None, o.distance_km or 0.0))
 
     # If recommendations are few, hydrate top services from the top organizations for interactive booking
-    if len(recommendations) < 3 and organizations:
+    if len(recommendations) < rec_limit and organizations:
         rec_srv_ids = {r.service_id for r in recommendations}
-        top_org_ids = [o.id for o in organizations[:4]]
+        top_org_ids = [o.id for o in organizations[:rec_limit]]
         extra_srv_res = await session.execute(
             select(Service, OrgSettings)
             .join(Organization, Service.organization_id == Organization.id)
@@ -674,7 +884,7 @@ async def retrieve_context(
                 Service.organization_id.in_(top_org_ids),
                 Service.status == ServiceStatus.ACTIVE,
             )
-            .limit(6)
+            .limit(max(rec_limit * 2, 6))
         )
         for s, s_set in extra_srv_res.all():
             if s.id in rec_srv_ids:
@@ -712,6 +922,14 @@ async def retrieve_context(
                     score=0.85,
                 )
             )
+
+    recommendations = select_recommendations(recommendations, query=query, limit=rec_limit)
+    if recommendations:
+        rec_org_ids = {card.organization_id for card in recommendations}
+        matched_orgs = [org for org in organizations if org.id in rec_org_ids]
+        organizations = matched_orgs or organizations[:rec_limit]
+    else:
+        organizations = organizations[:rec_limit]
 
     context_text = format_context_text(merged, recommendations)
     return RetrievedContext(

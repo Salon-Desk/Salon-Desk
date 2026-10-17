@@ -112,11 +112,11 @@ async def try_handle_chat_auth(
             if not email:
                 return (
                     True,
-                    "To log in, please provide your email address and password.",
+                    "Sure — what's the email and password you use for SalonDesk?",
                     None,
                     None,
                 )
-            return True, f"Please enter the password for {email}.", None, None
+            return True, f"And the password for {email}?", None, None
 
         try:
             user = await auth_service.authenticate(db, email, password)
@@ -133,18 +133,18 @@ async def try_handle_chat_auth(
                 "name": u_name,
                 "org_id": str(user.org_id) if user.org_id else None,
             }
-            reply = f"You have successfully logged in as {user.email}! Welcome back, {u_first or user.email}."
+            reply = f"You're in. Welcome back, {u_first or user.email}."
             return True, reply, token, user_info
         except (UnauthorizedError, ForbiddenError) as exc:
             return (
                 True,
-                f"Login failed: {exc.message}. Please check your email and password.",
+                f"I couldn't sign you in — {exc.message}. Want to try again?",
                 None,
                 None,
             )
         except Exception as exc:
             logger.error("Login handling error in chat: %s", exc)
-            return True, "Unable to process login right now. Please try again.", None, None
+            return True, "I can't sign you in right now. Mind trying again in a moment?", None, None
 
     elif action == "signup":
         if not first_name or not last_name or not email or not password:
@@ -157,7 +157,7 @@ async def try_handle_chat_auth(
                 missing.append("a secure password")
             return (
                 True,
-                f"To create an account, please provide {', '.join(missing)}.",
+                f"I can set that up — I just need {', '.join(missing)}.",
                 None,
                 None,
             )
@@ -182,12 +182,12 @@ async def try_handle_chat_auth(
                 "name": f"{first_name} {last_name}".strip(),
                 "org_id": None,
             }
-            reply = f"Your account has been created successfully! Welcome to SalonDesk, {first_name}. You are now signed in."
+            reply = f"You're all set, {first_name} — you're signed in."
             return True, reply, token, user_info
         except ForbiddenError as exc:
             return (
                 True,
-                f"Sign-up failed: {exc.message}. Would you like to log in instead?",
+                f"I couldn't create that account — {exc.message}. Want to log in instead?",
                 None,
                 None,
             )
@@ -195,7 +195,7 @@ async def try_handle_chat_auth(
             logger.error("Signup handling error in chat: %s", exc)
             return (
                 True,
-                "Unable to create your account at this moment. Please check your details and try again.",
+                "I couldn't create the account just now. Double-check the details and we can try again.",
                 None,
                 None,
             )

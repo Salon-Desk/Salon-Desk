@@ -303,6 +303,8 @@ export function InnerVoiceAssistantUI({
   const isSpeaking = state === 'speaking'
   const isListening = state === 'listening'
   const isThinking = state === 'thinking'
+  const visibleOrgs = discoveredServices.length > 0 ? [] : discoveredOrgs
+  const canShowMoreServices = discoveredServices.length === 3
 
   const statusLabel =
     connectionState === ConnectionState.Connecting
@@ -432,12 +434,12 @@ export function InnerVoiceAssistantUI({
             </span>
           </div>
           <p className="text-xs sm:text-sm font-normal leading-relaxed text-slate-800 whitespace-pre-wrap">
-            {latestTranscript || 'Say hello, or ask for available stylists and services.'}
+            {latestTranscript || 'Say hi, or tell me what you are hoping to book.'}
           </p>
         </div>
 
         {/* Real Discovered Salons / Organizations Cards (When present) */}
-        {discoveredOrgs.length > 0 && (
+        {visibleOrgs.length > 0 && (
           <div className="space-y-2 pt-1 animate-in fade-in duration-200">
             <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
               <span className="flex items-center gap-1.5">
@@ -448,7 +450,7 @@ export function InnerVoiceAssistantUI({
             </div>
 
             <div className="grid grid-cols-1 gap-2">
-              {discoveredOrgs.map((org) => (
+              {visibleOrgs.map((org) => (
                 <div
                   key={org.id}
                   className="group relative flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-3 text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] hover:border-amber-300 hover:shadow-md transition-all"
@@ -589,6 +591,16 @@ export function InnerVoiceAssistantUI({
                 </div>
               ))}
             </div>
+            {canShowMoreServices && (
+              <button
+                type="button"
+                disabled={isSending || connectionState !== ConnectionState.Connected}
+                onClick={() => void handleSend('Show me a few more options')}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-amber-300 hover:bg-amber-50/60 cursor-pointer disabled:opacity-40"
+              >
+                Show a few more
+              </button>
+            )}
           </div>
         )}
       </div>

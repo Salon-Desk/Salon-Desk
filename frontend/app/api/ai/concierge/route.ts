@@ -94,8 +94,9 @@ ${servicesSummary}
 Available Stylists:
 ${staffSummary}
 
-Respond in concise, warm, highly polished luxury concierge tone (2-3 sentences max).
-Explain that reserving a slot uses a PayPal authorization hold where $0 leaves their account today, and free cancellation is guaranteed up to 24 hours prior.`
+Respond like a real person texting from the front desk (2-3 short sentences).
+No tables, numbered checklists, or service IDs. Mention at most three options unless they ask for more.
+You can mention the $0 PayPal hold in passing if they ask about payment.`
 
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
@@ -131,8 +132,7 @@ Explain that reserving a slot uses a PayPal authorization hold where $0 leaves t
     } else if (matchedService) {
       replyText = `Excellent choice! I have curated the "${matchedService.name}" ($${matchedService.price}, ${matchedService.durationMin} mins) with our ${matchedStylist.role}, ${matchedStylist.name}. Would you like to authorize the $${matchedService.holdDeposit} hold ($0 charged today) for ${proposedTimeSlot}?`
     } else {
-      replyText =
-        'Welcome to Crown & Blade Atelier. I can assist you with booking precision cuts, custom balayage, artisan braids, or facial treatments. All reservations use our $0-down PayPal authorization hold model. How may I style you today?'
+      replyText = 'Hey — I can help you find a salon or book a time. What are you in the mood for?'
     }
 
     return NextResponse.json({
