@@ -123,6 +123,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Next bakes rewrites at build time. Inside this container the API is the Compose service.
+        API_INTERNAL_URL: http://api:8000
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     container_name: salondesk_web
     restart: unless-stopped
     depends_on:
@@ -131,6 +135,7 @@ services:
     env_file:
       - .env
     environment:
+      API_INTERNAL_URL: http://api:8000
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     ports:
       - "${WEB_PORT:-3000}:3000"

@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next'
 
+// API_INTERNAL_URL is the Next server rewrite target (Compose DNS, e.g. http://api:8000).
+// NEXT_PUBLIC_API_URL stays the browser-facing origin and is not used inside the web container.
 const apiOrigin = (
+  process.env.API_INTERNAL_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_BASE_URL ||
   'http://127.0.0.1:8000'
