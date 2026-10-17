@@ -1,3 +1,6 @@
-allowBuilds:
-  sharp: false
-  unrs-resolver: false
+dangerouslyAllowAllBuilds: true
+fetchRetries: 5
+fetchRetryMintimeout: 20000
+fetchRetryMaxtimeout: 300000
+fetchTimeout: 600000
+networkConcurrency: 2
