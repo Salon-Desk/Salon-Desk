@@ -73,15 +73,18 @@ export function ChatWidget({
   return (
     <>
       {showTriggers && !isOpen && (
-        <div className={cn('fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2', className)}>
+        <div
+          className={cn('fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2.5', className)}
+        >
           {features.voiceAgent && (
             <button
               type="button"
               onClick={handleOpenVoice}
               aria-label="Open voice agent"
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-stone-950 text-white shadow-lg hover:bg-amber-600 cursor-pointer"
+              className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 border border-slate-700/80 text-white shadow-[0_8px_20px_-4px_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.15)] hover:bg-slate-800 hover:scale-105 transition-all cursor-pointer group"
+              title="Speak with Voice Concierge"
             >
-              <Mic className="h-5 w-5" />
+              <Mic className="h-5 w-5 text-amber-300 transition-transform group-hover:scale-110" />
             </button>
           )}
           {features.agentChat && (
@@ -89,16 +92,17 @@ export function ChatWidget({
               type="button"
               onClick={handleOpenChat}
               aria-label="Open AI chat"
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-stone-950 shadow-lg hover:bg-amber-400 cursor-pointer"
+              className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 border border-amber-300/60 text-slate-950 shadow-[0_8px_24px_-4px_rgba(245,158,11,0.45),inset_0_1px_0_0_rgba(255,255,255,0.35)] hover:scale-105 transition-all cursor-pointer group"
+              title="Open AI Concierge Chat"
             >
-              <Sparkles className="h-6 w-6" />
+              <Sparkles className="h-6 w-6 text-slate-950 transition-transform group-hover:scale-110" />
             </button>
           )}
         </div>
       )}
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end sm:flex-row sm:justify-end bg-stone-950/30 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex flex-col justify-end sm:flex-row sm:justify-end bg-slate-950/40 backdrop-blur-xs animate-in fade-in duration-200">
           <button
             type="button"
             aria-label="Close chat"
@@ -109,42 +113,45 @@ export function ChatWidget({
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="AI Concierge"
-            className="relative z-10 flex h-[90vh] sm:h-full w-full max-w-full sm:max-w-md flex-col rounded-t-3xl sm:rounded-none bg-[#faf9f7] text-stone-900 shadow-2xl sm:border-l sm:border-stone-200/60 overflow-hidden animate-in slide-in-from-bottom-8 sm:slide-in-from-right-8 duration-300"
+            aria-label="SalonDesk Concierge"
+            className="relative z-10 flex h-[92vh] sm:h-[calc(100vh-2rem)] w-full max-w-full sm:max-w-md sm:m-4 flex-col rounded-t-2xl sm:rounded-xl bg-white text-slate-900 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.18),0_4px_16px_rgba(0,0,0,0.04),inset_0_1px_0_0_rgba(255,255,255,0.9)] border border-slate-200/90 overflow-hidden animate-in slide-in-from-bottom-6 sm:slide-in-from-right-6 duration-250"
           >
-            <div className="pt-3 pb-1 sm:hidden flex justify-center">
-              <div className="h-1 w-10 rounded-full bg-stone-300" />
+            <div className="pt-2.5 pb-1 sm:hidden flex justify-center bg-white">
+              <div className="h-1 w-10 rounded-full bg-slate-300" />
             </div>
 
-            <header className="flex items-center justify-between border-b border-stone-200/60 bg-white/80 px-5 py-3.5 backdrop-blur-md">
+            {/* Concierge Header Bar */}
+            <header className="flex items-center justify-between border-b border-slate-200/80 bg-white/95 px-4.5 py-3 backdrop-blur-md">
               <div className="flex items-center gap-3">
-                <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-stone-900">
+                <div className="relative flex h-8.5 w-8.5 items-center justify-center rounded-lg border border-amber-200/70 bg-gradient-to-br from-amber-50 to-amber-100/60 shadow-xs">
                   <Sparkles className="h-4 w-4 text-amber-600" />
                   <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white animate-pulse" />
                   </span>
                 </div>
                 <div>
-                  <h2 className="font-serif text-sm font-medium tracking-tight text-stone-950">
-                    Atelier Concierge
+                  <h2 className="font-bold text-sm tracking-tight text-slate-900">
+                    SalonDesk Concierge
                   </h2>
-                  <p className="text-[10px] text-stone-500">
-                    {mode === 'voice' ? 'LiveKit voice agent' : 'RAG chat · live catalog'}
+                  <p className="font-mono text-[10px] text-slate-400">
+                    {mode === 'voice'
+                      ? 'LiveKit Voice Rails · Real-time'
+                      : 'RAG Catalog · Zero-Debit Bookings'}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
                 {features.agentChat && features.voiceAgent && (
-                  <div className="flex items-center rounded-full bg-stone-100 p-0.5">
+                  <div className="flex items-center rounded-lg bg-slate-100 p-0.5 border border-slate-200/60">
                     <button
                       type="button"
                       onClick={() => setMode('text')}
                       className={cn(
-                        'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer',
+                        'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer',
                         mode === 'text'
-                          ? 'bg-stone-950 text-white shadow-xs'
-                          : 'text-stone-500 hover:text-stone-950',
+                          ? 'bg-white text-slate-900 shadow-xs border border-slate-200/70'
+                          : 'text-slate-500 hover:text-slate-900',
                       )}
                     >
                       <Bot className="h-3.5 w-3.5" />
@@ -154,10 +161,10 @@ export function ChatWidget({
                       type="button"
                       onClick={() => setMode('voice')}
                       className={cn(
-                        'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer',
+                        'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer',
                         mode === 'voice'
-                          ? 'bg-stone-950 text-white shadow-xs'
-                          : 'text-stone-500 hover:text-stone-950',
+                          ? 'bg-white text-slate-900 shadow-xs border border-slate-200/70'
+                          : 'text-slate-500 hover:text-slate-900',
                       )}
                     >
                       <Mic className="h-3.5 w-3.5" />
@@ -170,9 +177,9 @@ export function ChatWidget({
                   type="button"
                   onClick={() => setIsOpen(false)}
                   aria-label="Close"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-900 cursor-pointer"
+                  className="flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-400 hover:bg-slate-100 hover:text-slate-700 shadow-xs transition-colors cursor-pointer"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             </header>
