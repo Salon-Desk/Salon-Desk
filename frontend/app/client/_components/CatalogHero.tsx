@@ -36,17 +36,17 @@ export function CatalogHero({ hero, isLoading }: CatalogHeroProps) {
         <div className="flex flex-col justify-center lg:col-span-7">
           <div className="mb-3 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-amber-500" />
-            <span className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
+            <span className="truncate text-[11px] font-bold uppercase tracking-widest text-stone-500">
               {hero.eyebrow}
             </span>
           </div>
 
-          <h1 className="text-3xl font-extrabold leading-[1.1] tracking-tight text-stone-950 sm:text-5xl lg:text-6xl">
+          <h1 className="text-[1.75rem] font-extrabold leading-[1.1] tracking-tight text-balance text-stone-950 sm:text-5xl lg:text-6xl">
             {hero.headline}{' '}
             <span className="font-serif font-normal italic text-amber-700">{hero.highlight}</span>
           </h1>
 
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-stone-600 sm:mt-4 sm:text-base">
+          <p className="mt-3 line-clamp-3 max-w-xl text-sm leading-relaxed text-stone-600 sm:mt-4 sm:line-clamp-none sm:text-base">
             {hero.subtitle}
           </p>
 
@@ -66,14 +66,14 @@ export function CatalogHero({ hero, isLoading }: CatalogHeroProps) {
               </span>
             ) : null}
             {hero.physical_address ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700">
+              <span className="hidden items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700 sm:inline-flex">
                 {hero.physical_address}
               </span>
             ) : null}
           </div>
         </div>
 
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl bg-stone-100 sm:aspect-[16/10] lg:col-span-5 lg:aspect-[4/5]">
+        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-3xl bg-stone-100 lg:col-span-5 lg:aspect-[4/5]">
           {hero.image_url ? (
             <Image
               src={hero.image_url}

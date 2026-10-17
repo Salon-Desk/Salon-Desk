@@ -750,7 +750,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
             onChange={(e) => onPromptChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="What are you looking for?"
-            className="max-h-[120px] flex-1 resize-none bg-transparent py-2 text-[13px] leading-relaxed text-stone-900 placeholder:text-stone-400 focus:outline-hidden"
+            className="max-h-[120px] flex-1 resize-none bg-transparent py-2 text-[16px] leading-relaxed sm:text-[13px] text-stone-900 placeholder:text-stone-400 focus:outline-hidden"
           />
 
           {!prompt.trim() && onTryVoice && (

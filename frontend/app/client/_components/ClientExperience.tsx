@@ -433,7 +433,7 @@ export function ClientExperience({
     ))
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#fbfbfa] font-sans text-stone-900 selection:bg-amber-500/20">
+    <div className="flex min-h-dvh flex-col overflow-x-clip bg-[#fbfbfa] font-sans text-stone-900 selection:bg-amber-500/20">
       {toastMessage && <Toast message={toastMessage} onDismiss={dismiss} position="bottom-right" />}
 
       <ClientHeader
@@ -444,7 +444,7 @@ export function ClientExperience({
         onToggleConcierge={() => concierge.setIsOpen((open) => !open)}
       />
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 pb-28 md:pb-16">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-16">
         {activeTab === 'catalog' ? (
           <div>
             <CatalogHero hero={hero} isLoading={heroLoading} />
@@ -623,7 +623,7 @@ export function ClientExperience({
 
       <nav
         aria-label="Mobile quick actions"
-        className="fixed bottom-4 inset-x-4 z-30 md:hidden flex items-center justify-between gap-1 rounded-full bg-stone-950/90 text-white p-1.5 backdrop-blur-xl"
+        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] inset-x-4 z-30 md:hidden flex items-center justify-between gap-1 rounded-full bg-stone-950/90 text-white p-1.5 shadow-[0_12px_32px_-12px_rgba(12,10,9,0.6)] backdrop-blur-xl"
       >
         <button
           type="button"

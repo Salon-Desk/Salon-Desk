@@ -58,7 +58,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ portal, compact = false }) =
           className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:border-amber-400 hover:text-amber-700 transition-colors"
         >
           <UserIcon className="h-3.5 w-3.5 text-slate-500" />
-          <span>Sign In</span>
+          <span className="whitespace-nowrap">Sign In</span>
         </button>
 
         <button
@@ -102,7 +102,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ portal, compact = false }) =
         </div>
 
         {!compact && (
-          <div className="flex items-center gap-1.5 text-left">
+          <div className="hidden items-center gap-1.5 text-left sm:flex">
             <span className="max-w-[100px] truncate font-semibold">{displayName}</span>
             <span
               className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${roleMeta.tone}`}
@@ -116,7 +116,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ portal, compact = false }) =
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-1.5 w-60 rounded-2xl border border-slate-100 bg-white p-2 shadow-xl animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute right-0 z-50 mt-1.5 w-[min(15rem,calc(100vw-2rem))] rounded-2xl border border-slate-100 bg-white p-2 shadow-xl animate-in fade-in zoom-in-95 duration-100">
           <div className="border-b border-slate-100 px-3 py-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-900">{displayName}</span>

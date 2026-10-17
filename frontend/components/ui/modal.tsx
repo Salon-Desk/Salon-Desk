@@ -44,7 +44,7 @@ export interface ModalProps {
 }
 
 /**
- * Centred dialog. Render it conditionally (`{isOpen && <Modal … />}`) so mount
+ * Bottom sheet on phones, centred dialog from `sm` up. Render it conditionally (`{isOpen && <Modal … />}`) so mount
  * and unmount drive the animation and the scroll lock.
  */
 export function Modal({
@@ -62,7 +62,7 @@ export function Modal({
   useDismissableLayer(onClose)
 
   return (
-    <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-stone-950/40 p-3 sm:p-6 backdrop-blur-sm duration-200 fade-in">
+    <div className="fixed inset-0 z-50 flex animate-in items-end justify-center bg-stone-950/40 pt-[max(1.5rem,env(safe-area-inset-top))] backdrop-blur-sm duration-200 fade-in sm:items-center sm:p-6">
       {/* Backdrop click target, kept separate from the panel so clicks inside do not bubble out. */}
       <button
         type="button"
@@ -77,13 +77,16 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         className={cn(
-          'relative flex max-h-[min(92vh,44rem)] w-full animate-in flex-col overflow-hidden rounded-3xl border border-stone-200/70 bg-white shadow-[0_28px_64px_-16px_rgba(28,25,23,0.28)] duration-200 zoom-in-95',
+          'relative flex max-h-[92dvh] w-full animate-in flex-col overflow-hidden rounded-t-3xl border border-stone-200/70 border-b-0 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_28px_64px_-16px_rgba(28,25,23,0.28)] duration-300 slide-in-from-bottom-10 sm:max-h-[min(92vh,44rem)] sm:rounded-3xl sm:border-b sm:pb-0 sm:duration-200 sm:slide-in-from-bottom-0 sm:zoom-in-95',
           MODAL_SIZES[size],
           className,
         )}
       >
+        <div aria-hidden className="flex shrink-0 justify-center pt-2.5 sm:hidden">
+          <span className="h-1 w-10 rounded-full bg-stone-200" />
+        </div>
         {!hideHeader && (
-          <div className="flex shrink-0 items-start justify-between gap-4 border-stone-100 border-b px-5 py-4 sm:px-6">
+          <div className="flex shrink-0 items-start justify-between gap-4 border-stone-100 border-b px-5 pt-2 pb-4 sm:px-6 sm:py-4">
             <div className="flex min-w-0 items-start gap-3">
               {icon ? (
                 <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700">

@@ -23,30 +23,34 @@ export function BookingsPanel({
   onViewReceipt,
 }: BookingsPanelProps) {
   return (
-    <div className="space-y-12">
+    <div className="space-y-8 sm:space-y-12">
       {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-8 border-b border-stone-200/60">
-        <div className="space-y-2 max-w-2xl">
+      <div className="flex items-end justify-between gap-4 border-b border-stone-200/60 pb-6 sm:gap-6 sm:pb-8">
+        <div className="min-w-0 max-w-2xl space-y-2">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
             <Shield className="h-3.5 w-3.5 text-amber-600" />
             <span>PayPal Authorization Holds</span>
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl font-normal tracking-tight text-stone-950">
+          <h1 className="font-serif text-[1.75rem] leading-tight font-normal tracking-tight text-balance text-stone-950 sm:text-4xl">
             Appointments & Holds
           </h1>
-          <p className="text-xs sm:text-sm text-stone-500 font-normal leading-relaxed">
+          <p className="hidden text-sm leading-relaxed font-normal text-stone-500 sm:block">
             Manage your active salon reservations, inspect cryptographic receipts, or cancel before
             the 24-hour cutoff for an automatic $0 charge release.
+          </p>
+          <p className="text-[13px] leading-relaxed text-stone-500 sm:hidden">
+            Cancel 24h ahead for a $0 release.
           </p>
         </div>
 
         <button
           type="button"
           onClick={onBrowseCatalog}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-950 hover:bg-stone-800 text-white font-medium text-xs sm:text-sm px-5 py-2.5 transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
+          aria-label="Book new service"
+          className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-stone-950 text-sm font-medium text-white transition-colors hover:bg-stone-800 sm:h-auto sm:w-auto sm:px-5 sm:py-2.5"
         >
-          <Plus className="h-3.5 w-3.5" />
-          <span>Book New Service</span>
+          <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+          <span className="hidden sm:inline">Book New Service</span>
         </button>
       </div>
 
@@ -214,27 +218,29 @@ function ActiveHoldCard({
   onViewReceipt: (booking: Booking) => void
 }) {
   return (
-    <div className="flex flex-col justify-between rounded-3xl bg-white p-6 sm:p-7 border border-stone-200/60 transition-all hover:border-stone-300">
+    <div className="flex flex-col justify-between rounded-3xl border border-stone-200/60 bg-white p-4 transition-all hover:border-stone-300 sm:p-7">
       <div>
         {/* Top Badges & Service */}
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <span className="text-[11px] font-mono font-semibold uppercase tracking-widest text-amber-700">
+        <div className="mb-4 space-y-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-mono text-[11px] font-semibold tracking-widest text-amber-700 uppercase">
               {formatBookingRef(booking.id)}
-              {booking.salonName ? ` · ${booking.salonName}` : ''}
             </span>
-            <h3 className="font-serif text-xl sm:text-2xl font-normal text-stone-950">
-              {booking.serviceName}
-            </h3>
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+              <Lock className="h-3 w-3 text-amber-600" />
+              <span>Held {formatUsd(booking.holdAmount)}</span>
+            </span>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 shrink-0">
-            <Lock className="h-3 w-3 text-amber-600" />
-            <span>Held ({formatUsd(booking.holdAmount)})</span>
-          </span>
+          <h3 className="font-serif text-xl font-normal text-stone-950 sm:text-2xl">
+            {booking.serviceName}
+          </h3>
+          {booking.salonName ? (
+            <p className="truncate text-xs text-stone-500">{booking.salonName}</p>
+          ) : null}
         </div>
 
         {/* Metadata Grid */}
-        <div className="mb-5 grid grid-cols-2 gap-3 rounded-2xl bg-stone-50/80 p-4 text-xs">
+        <div className="mb-5 grid grid-cols-2 gap-x-3 gap-y-3.5 rounded-2xl bg-stone-50/80 p-3.5 text-xs sm:p-4">
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
               Stylist
@@ -257,7 +263,7 @@ function ActiveHoldCard({
 
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
-              Appointment Slot
+              Appointment
             </span>
             <div className="flex items-center gap-1.5 font-medium text-stone-900">
               <Clock className="h-3.5 w-3.5 text-stone-500" />
@@ -267,16 +273,16 @@ function ActiveHoldCard({
 
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
-              Full Service Value
+              Service total
             </span>
             <div className="font-semibold text-stone-900">{formatUsd(booking.servicePrice)}</div>
           </div>
 
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
-              Cancellation Cutoff
+              Cancellation
             </span>
-            <div className="font-medium text-emerald-700">Free cancel ≥ 24h ($0)</div>
+            <div className="font-medium text-emerald-700">Free until 24h before</div>
           </div>
         </div>
 
@@ -289,7 +295,7 @@ function ActiveHoldCard({
 
         {booking.consentHash && booking.consentHash !== '—' ? (
           <div className="mb-6 flex items-center justify-between rounded-xl bg-stone-100/60 px-3.5 py-2 text-[11px] text-stone-500 font-mono">
-            <div className="flex max-w-[240px] items-center gap-1.5 truncate">
+            <div className="flex min-w-0 items-center gap-1.5 truncate">
               <Shield className="h-3.5 w-3.5 shrink-0 text-amber-600" />
               <span className="truncate">{booking.consentHash}</span>
             </div>
@@ -315,7 +321,8 @@ function ActiveHoldCard({
           className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs sm:text-sm font-medium py-2.5 px-4 transition-colors cursor-pointer"
         >
           <XCircle className="h-3.5 w-3.5 text-rose-600" />
-          <span>Cancel & Void ($0)</span>
+          <span className="sm:hidden">Cancel ($0)</span>
+          <span className="hidden sm:inline">Cancel & Void ($0)</span>
         </button>
       </div>
     </div>

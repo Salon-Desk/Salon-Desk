@@ -32,14 +32,14 @@ export function CatalogSection({
   const hasItems = loadedCount > 0
 
   return (
-    <section className="mb-12 sm:mb-14">
-      <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+    <section className="mb-10 sm:mb-14">
+      <div className="mb-4 flex items-end justify-between gap-3 sm:mb-5">
         <div>
           <h2 className="text-lg font-bold tracking-tight text-stone-950 sm:text-xl">{title}</h2>
           {subtitle ? <p className="mt-0.5 text-xs text-stone-500 sm:text-sm">{subtitle}</p> : null}
         </div>
         {!isLoading && hasItems ? (
-          <p className="text-[11px] font-medium text-stone-400">
+          <p className="shrink-0 text-[11px] font-medium text-stone-400">
             Showing {loadedCount}
             {totalCount > 0 ? ` of ${totalCount}` : ''}
           </p>
@@ -52,7 +52,7 @@ export function CatalogSection({
 
       {!isLoading && hasItems ? (
         <>
-          <div className="grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 sm:gap-y-14 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-9 sm:grid-cols-2 sm:gap-y-14 lg:grid-cols-3">
             {children}
           </div>
           {hasMore ? (

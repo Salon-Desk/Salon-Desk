@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0c0a09" />
+    <title>Offline · SalonDesk</title>
+    <link rel="icon" href="/icons/icon-192.png" />
+    <style>
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        background: #fbfbfa;
+        color: #1c1917;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        padding: 24px;
+        box-sizing: border-box;
+        text-align: center;
+      }
+      img {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+      }
+      h1 {
+        font-family: Georgia, serif;
+        font-weight: 400;
+        font-size: 26px;
+        margin: 20px 0 8px;
+      }
+      p {
+        margin: 0 auto 24px;
+        max-width: 300px;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #78716c;
+      }
+      button {
+        border: 0;
+        border-radius: 999px;
+        background: #0c0a09;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 12px 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/icon-192.png" alt="SalonDesk" />
+      <h1>You are offline</h1>
+      <p>Your bookings and holds are safe. Reconnect to browse services or manage appointments.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" fill="none">
+  <defs>
+    <linearGradient id="shackle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="45%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="pad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="60%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="header" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#EA580C"/>
+      <stop offset="100%" stop-color="#F97316"/>
+    </linearGradient>
+    <linearGradient id="blade" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="50%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+  </defs>
+  <path d="M 95 140 C 95 75, 185 75, 185 140 L 185 160 L 160 160 L 160 140 C 160 95, 120 95, 120 140 L 120 160 L 95 160 Z" fill="url(#shackle)" stroke="#92400E" stroke-width="2.5"/>
+  <rect x="45" y="125" width="190" height="135" rx="18" fill="url(#pad)" stroke="#FDE68A" stroke-width="3"/>
+  <rect x="47" y="127" width="186" height="34" rx="15" fill="url(#header)"/>
+  <rect x="80" y="115" width="14" height="20" rx="4" fill="#78350F"/>
+  <rect x="186" y="115" width="14" height="20" rx="4" fill="#78350F"/>
+  <g opacity="0.9">
+    <rect x="65" y="172" width="30" height="26" rx="6" fill="#D97706"/>
+    <rect x="105" y="172" width="30" height="26" rx="6" fill="#D97706"/>
+    <rect x="145" y="172" width="30" height="26" rx="6" fill="#D97706"/>
+    <rect x="185" y="172" width="30" height="26" rx="6" fill="#FEF08A" stroke="#FFF" stroke-width="2"/>
+    <rect x="65" y="206" width="30" height="26" rx="6" fill="#B45309"/>
+    <rect x="105" y="206" width="30" height="26" rx="6" fill="#B45309"/>
+    <rect x="145" y="206" width="30" height="26" rx="6" fill="#B45309"/>
+    <rect x="185" y="206" width="30" height="26" rx="6" fill="#EA580C"/>
+  </g>
+  <g transform="translate(140, 175) rotate(-30) translate(-140, -175)">
+    <path d="M 136 175 L 138 40 Q 140 30 142 40 L 144 175 Z" fill="#38BDF8" stroke="#0284C7" stroke-width="1.5"/>
+    <path d="M 136 175 L 133 245 Q 130 262 115 270 Q 95 275 90 255 Q 85 235 110 230 Q 125 230 133 210 Z" fill="url(#blade)" stroke="#38BDF8" stroke-width="2"/>
+    <circle cx="106" cy="252" r="14" fill="#090D16" stroke="#38BDF8" stroke-width="2"/>
+  </g>
+  <g transform="translate(140, 175) rotate(30) translate(-140, -175)">
+    <path d="M 136 175 L 138 40 Q 140 30 142 40 L 144 175 Z" fill="#38BDF8" stroke="#0284C7" stroke-width="1.5"/>
+    <path d="M 144 175 L 147 245 Q 150 262 165 270 Q 185 275 190 255 Q 195 235 170 230 Q 155 230 147 210 Z" fill="url(#blade)" stroke="#38BDF8" stroke-width="2"/>
+    <path d="M 185 268 Q 200 274 208 288 Q 196 284 188 273 Z" fill="#2563EB"/>
+    <circle cx="174" cy="252" r="14" fill="#090D16" stroke="#38BDF8" stroke-width="2"/>
+  </g>
+  <circle cx="140" cy="175" r="9" fill="#FEF08A" stroke="#B45309" stroke-width="2"/>
+  <circle cx="140" cy="175" r="4" fill="#78350F"/>
+  <path d="M 65 95 Q 65 105 75 105 Q 65 105 65 115 Q 65 105 55 105 Q 65 105 65 95 Z" fill="#FEF08A"/>
+  <path d="M 215 95 Q 215 105 225 105 Q 215 105 215 115 Q 215 105 205 105 Q 215 105 215 95 Z" fill="#FBBF24"/>
+</svg>

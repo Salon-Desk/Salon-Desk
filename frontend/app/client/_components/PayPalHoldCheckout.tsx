@@ -125,7 +125,7 @@ export function PayPalHoldCheckout({
                   )}
                   <span className="min-w-0">
                     <span className="block truncate text-xs font-medium text-stone-950">
-                      {staff.name}
+                      {staff.id === ANY_AVAILABLE_STYLIST.id ? 'Any stylist' : staff.name}
                     </span>
                     {staff.rating > 0 ? (
                       <span className="inline-flex items-center gap-0.5 text-[10px] text-stone-500">
