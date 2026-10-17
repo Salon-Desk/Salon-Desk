@@ -11,8 +11,6 @@ import type { AdminTabId } from '../_types/admin-types'
 interface AdminHeaderProps {
   activeTab?: AdminTabId
   onOpenMobileSidebar: () => void
-  onResetDemo?: () => void
-  isResetting?: boolean
 }
 
 export function AdminHeader({ activeTab: explicitTab, onOpenMobileSidebar }: AdminHeaderProps) {

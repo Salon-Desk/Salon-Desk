@@ -5,7 +5,6 @@ import {
   Calendar,
   FileText,
   Lock,
-  RotateCcw,
   Scissors,
   Settings,
   Sparkles,
@@ -30,11 +29,9 @@ interface MerchantSidebarProps {
   staffCount: number
   servicesCount: number
   pendingChangeRequests: number
-  isResetting: boolean
   onTabChange?: (tab: MerchantTab) => void
   onOpenCopilot: () => void
   onLockSession: () => void
-  onResetDemo: () => void
   onCloseMobile?: () => void
 }
 
@@ -46,11 +43,9 @@ export function MerchantSidebar({
   staffCount,
   servicesCount,
   pendingChangeRequests,
-  isResetting,
   onTabChange,
   onOpenCopilot,
   onLockSession,
-  onResetDemo,
   onCloseMobile,
 }: MerchantSidebarProps) {
   const tabs: SidebarTab<MerchantTab>[] = [
@@ -113,12 +108,11 @@ export function MerchantSidebar({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#0B0F17] text-slate-200">
-      {/* Brand Header */}
-      <div className="flex shrink-0 items-center justify-between border-slate-800/80 border-b px-4 py-3.5">
+    <div className="flex h-full flex-col overflow-hidden bg-[#080B12] text-slate-200">
+      <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-4 py-4">
         <div className="flex items-center gap-2.5">
           <Logo size="sm" showTagline={false} linkToHome theme="dark" />
-          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 font-bold font-mono text-[9px] text-amber-300 uppercase tracking-wider">
+          <span className="rounded-md bg-amber-500/15 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-amber-300 ring-1 ring-amber-500/20">
             Merchant
           </span>
         </div>
@@ -134,23 +128,18 @@ export function MerchantSidebar({
         ) : null}
       </div>
 
-      {/* Salon Identification Badge */}
-      <div className="mx-3 mt-3 flex shrink-0 items-center justify-between rounded-xl border border-slate-800/90 bg-slate-900/60 px-3 py-2 text-xs">
-        <div className="flex min-w-0 items-center gap-2 truncate">
-          <span className="relative flex h-2 w-2 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          </span>
-          <div className="min-w-0 truncate text-left">
-            <div className="truncate font-semibold text-slate-100 text-xs">{salon.name}</div>
+      <div className="mx-3 mt-3 rounded-2xl border border-white/5 bg-gradient-to-br from-amber-500/10 to-transparent px-3 py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold text-white">{salon.name}</p>
+            <p className="truncate text-[10px] text-slate-500">{activeHoldsCount} active holds</p>
           </div>
+          <span className="shrink-0 rounded-md border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[9px] font-bold text-amber-300">
+            {salon.commissionRate}%
+          </span>
         </div>
-        <span className="shrink-0 font-mono text-[9px] text-amber-300 font-bold bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded">
-          {salon.commissionRate}% VIP
-        </span>
       </div>
 
-      {/* Navigation */}
       <ConsoleSidebarNav
         tabs={tabs}
         activeTab={activeTab}
@@ -159,75 +148,57 @@ export function MerchantSidebar({
         theme="dark"
       />
 
-      {/* Copilot Action & Cross-Portal Links */}
-      <div className="space-y-3 px-3 pb-3">
+      <div className="space-y-2 px-3 pb-3">
         <button
           type="button"
           onClick={onOpenCopilot}
-          className="group flex w-full items-center justify-between rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-transparent px-3 py-2 text-xs font-semibold text-amber-200 transition-all hover:border-amber-400/60 hover:text-white hover:shadow-xs active:scale-[0.98]"
+          className="flex w-full items-center justify-between rounded-2xl border border-amber-500/25 bg-amber-500/10 px-3 py-2.5 text-xs font-semibold text-amber-100 transition-all hover:border-amber-400/50 hover:bg-amber-500/15"
         >
           <span className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5 text-amber-400 transition-transform group-hover:rotate-12" />
-            <span>AI Copilot</span>
-          </span>
-          <span className="font-mono text-[10px] text-amber-300/80 font-medium bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded">
-            Cmd+K
+            <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+            AI Copilot
           </span>
         </button>
 
-        {/* Portals Switcher */}
-        <div className="space-y-1 border-slate-800/80 border-t pt-2.5">
-          <span className="block px-2 pb-0.5 font-bold text-[10px] text-slate-500 uppercase tracking-wider">
-            Portals
-          </span>
+        <div className="space-y-1 border-t border-white/5 pt-2">
+          <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+            Switch portal
+          </p>
           <Link
             href={ROUTES.admin}
-            className="flex items-center justify-between rounded-lg px-2.5 py-1.5 font-medium text-slate-400 text-xs transition-colors hover:bg-white/[0.06] hover:text-white"
+            className="flex rounded-xl px-2.5 py-2 text-xs font-medium text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white"
           >
-            <span>Platform Admin</span>
-            <span className="font-mono text-[10px] text-slate-500">/admin</span>
+            Admin
           </Link>
           <Link
             href={ROUTES.client}
-            className="flex items-center justify-between rounded-lg px-2.5 py-1.5 font-medium text-slate-400 text-xs transition-colors hover:bg-white/[0.06] hover:text-white"
+            className="flex rounded-xl px-2.5 py-2 text-xs font-medium text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white"
           >
-            <span>Client Booking</span>
-            <span className="font-mono text-[10px] text-slate-500">/client</span>
+            Client
           </Link>
         </div>
       </div>
 
-      {/* User Footer */}
-      <div className="mt-auto shrink-0 space-y-2 border-slate-800/80 border-t bg-slate-900/40 p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-500/40 bg-amber-500/10 font-bold text-amber-300 text-xs">
+      <div className="mt-auto shrink-0 border-t border-white/5 bg-black/20 p-3">
+        <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.03] px-2.5 py-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/20 text-xs font-bold text-amber-200">
               {salon.ownerName.charAt(0)}
             </div>
-            <div className="overflow-hidden text-left">
-              <div className="truncate font-semibold text-slate-200 text-xs">{salon.ownerName}</div>
+            <div className="min-w-0">
+              <div className="truncate text-xs font-semibold text-slate-100">{salon.ownerName}</div>
               <div className="text-[10px] text-slate-500">Owner</div>
             </div>
           </div>
           <button
             type="button"
             onClick={onLockSession}
-            className="rounded-lg border border-slate-800 bg-slate-800/80 p-1 text-slate-400 shadow-xs transition-colors hover:bg-slate-700 hover:text-white"
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
             title="Lock Session"
           >
             <Lock className="h-3.5 w-3.5" />
           </button>
         </div>
-
-        <button
-          type="button"
-          onClick={onResetDemo}
-          disabled={isResetting}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-800/80 bg-slate-900/80 px-2.5 py-1.5 font-medium text-slate-400 text-xs transition-all hover:bg-slate-800 hover:text-slate-200 disabled:opacity-60"
-        >
-          <RotateCcw className={`h-3 w-3 ${isResetting ? 'animate-spin' : ''}`} />
-          Reset Demo Data
-        </button>
       </div>
     </div>
   )

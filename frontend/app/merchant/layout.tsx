@@ -63,7 +63,6 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
 
   const {
     state,
-    isResetting,
     toastMessage,
     dismissToast,
     idempotencyToast,
@@ -85,7 +84,6 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
 
     settlement,
     handleExecuteRefundProposal,
-    handleResetDemoData,
     handleToggleDrift,
   } = useMerchantContext()
 
@@ -136,10 +134,8 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
             staffCount={employees.length}
             servicesCount={services.length}
             pendingChangeRequests={pendingChangeRequests}
-            isResetting={isResetting}
             onOpenCopilot={() => setIsCopilotOpen(true)}
             onLockSession={handleLockSession}
-            onResetDemo={handleResetDemoData}
             onCloseMobile={() => setIsMobileSidebarOpen(false)}
           />
         }
@@ -148,11 +144,9 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
             activeTab={currentTab}
             lastReconciledAt={state.lastReconciledAt}
             simulatedDrift={state.simulatedDrift}
-            isResetting={isResetting}
             onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
             onToggleDrift={handleToggleDrift}
             onOpenCopilot={() => setIsCopilotOpen(true)}
-            onResetDemo={handleResetDemoData}
           />
         }
       >

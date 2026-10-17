@@ -1,5 +1,9 @@
 """Spoken-style prompts for the SalonDesk voice booking agent (PRD §2.3.3)."""
 
+from __future__ import annotations
+
+import re
+
 GREETING_EN = (
     "Hi, I'm the SalonDesk assistant. I can help you find salon services "
     "or book an appointment. What are you looking for today?"
@@ -25,12 +29,29 @@ Rules:
 
 FAREWELL_HINTS = (
     "bye",
+    "by",
     "goodbye",
     "good bye",
+    "goodbuy",
+    "good buy",
     "see you",
+    "see ya",
+    "cya",
     "that's all",
+    "that is all",
+    "that's it",
+    "that is it",
     "hang up",
     "end call",
+    "end the call",
+    "close call",
+    "stop call",
+    "quit",
+    "exit",
+    "farewell",
+    "ደህና ሁን",
+    "ደህና ሁኑ",
+    "ቻው",
 )
 
 BOOKING_HINTS = (
@@ -44,10 +65,17 @@ BOOKING_HINTS = (
     "slot",
 )
 
+_FAREWELL_TOKENS = frozenset({"bye", "by", "goodbye", "goodbuy", "cya", "farewell", "quit", "exit"})
+
 
 def is_farewell(text: str) -> bool:
-    lowered = (text or "").lower()
-    return any(h in lowered for h in FAREWELL_HINTS)
+    cleaned = (text or "").lower().strip()
+    if not cleaned:
+        return False
+    words = set(re.findall(r"\b\w+\b", cleaned))
+    if words.intersection(_FAREWELL_TOKENS):
+        return True
+    return any(h in cleaned for h in FAREWELL_HINTS)
 
 
 def is_booking_flow(text: str) -> bool:

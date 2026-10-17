@@ -127,11 +127,41 @@ async def entrypoint(ctx: Any) -> None:
                 return
 
             if is_farewell(text):
-                turn_ctx.add_message(
-                    role="system",
-                    content="The user is ending the call. Say a brief goodbye and stop.",
+                farewell_text = (
+                    "Goodbye! Thank you for choosing SalonDesk. Have a wonderful day!"
+                    if language != "am"
+                    else "ደህና ሁኑ! SalonDesk ስለተጠቀሙ እናመሰግናለን። መልካም ቀን ይሁንልዎ!"
                 )
-                return
+                logger.info("Farewell detected (%r). Speaking goodbye and closing room.", text)
+
+                async def _say_farewell_and_close() -> None:
+                    try:
+                        speech = await self.session.say(farewell_text, allow_interruptions=False)
+                        await speech.wait_for_playout()
+                    except Exception as exc:
+                        logger.warning("Farewell playout error: %s", exc)
+
+                    # Signal frontend voice-agent-view that the call has concluded
+                    try:
+                        data = json.dumps({"type": "call_ended"})
+                        if room.local_participant:
+                            await room.local_participant.publish_data(
+                                data, topic="lk.agent.control"
+                            )
+
+                    except Exception as exc:
+                        logger.warning("Failed to publish call_ended data: %s", exc)
+
+                    await asyncio.sleep(0.5)
+                    try:
+                        await room.disconnect()
+                    except Exception as exc:
+                        logger.warning("Failed to disconnect room: %s", exc)
+
+                asyncio.create_task(_say_farewell_and_close())
+                from livekit.agents.llm import StopResponse
+
+                raise StopResponse()
 
             intent = detect_intent(text)
             # Always ground with semantic search; booking intent changes instruction tone.

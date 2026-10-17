@@ -3,7 +3,7 @@
 import type { FormEvent, ReactNode } from 'react'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
-import { useDemoReset, useMerchantStore, useToast } from '@/hooks'
+import { useMerchantStore, useToast } from '@/hooks'
 import { createPaypalDebugId, createSequentialId } from '@/lib/ids'
 import type { MerchantConsoleState } from '@/lib/store/merchant-store'
 import type { AuditLedgerEntry, Booking, ChangeRequest, SalonService, StaffMember } from '@/types'
@@ -21,7 +21,6 @@ export interface MerchantContextValue {
   capturedRevenue: number
   noShowRecovered: number
   pendingChangeRequests: number
-  isResetting: boolean
   isSettlementProcessing: boolean
   idempotencyToast: string | null
   toastMessage: string | null
@@ -83,16 +82,14 @@ export interface MerchantContextValue {
   handleExecuteRefundProposal: (proposal: RefundProposal) => string
   handleSignIn: () => void
   handleLockSession: () => void
-  handleResetDemoData: () => Promise<void>
   handleToggleDrift: () => void
 }
 
 const MerchantContext = createContext<MerchantContextValue | null>(null)
 
 export function MerchantProvider({ children }: { children: ReactNode }) {
-  const { state, setState, resetState } = useMerchantStore()
+  const { state, setState } = useMerchantStore()
   const { message: toastMessage, show: showToast, dismiss: dismissToast } = useToast(3800)
-  const { isResetting, reset: resetDemo } = useDemoReset(resetState)
 
   const [idempotencyToast, setIdempotencyToast] = useState<string | null>(null)
 
@@ -164,11 +161,6 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
   const handleLockSession = () => {
     setState((prev) => ({ ...prev, authenticated: false }))
     showToast('Signed out of Merchant Console')
-  }
-
-  const handleResetDemoData = async () => {
-    await resetDemo()
-    showToast('Merchant Console Demo Data Re-seeded Successfully!')
   }
 
   const handleToggleDrift = () => {
@@ -474,7 +466,6 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     capturedRevenue,
     noShowRecovered,
     pendingChangeRequests,
-    isResetting,
     isSettlementProcessing,
     idempotencyToast,
     toastMessage,
@@ -531,7 +522,6 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     handleExecuteRefundProposal,
     handleSignIn,
     handleLockSession,
-    handleResetDemoData,
     handleToggleDrift,
   }
 

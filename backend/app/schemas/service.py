@@ -85,3 +85,12 @@ class CatalogServiceOut(ORMModel):
     simultaneous_capacity: int
     organization_name: str | None = None
     category_name: str | None = None
+    distance_km: float | None = None
+
+
+class CatalogServicesPage(BaseModel):
+    items: list[CatalogServiceOut]
+    page: int
+    page_size: int
+    total: int
+    has_more: bool

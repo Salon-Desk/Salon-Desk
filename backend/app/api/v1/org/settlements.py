@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, status
 from app.api.deps import DbSession, OrgMember
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.models.enums import PaymentCaptureType, UserRole
-from app.schemas.booking import BookingOut
+from app.schemas.booking import BookingOut, booking_to_out
 from app.schemas.payment import PaymentCaptureOut
 from app.services import booking_service
 from app.services.payment_service import capture_hold
@@ -66,4 +66,4 @@ async def get_settlement_booking(booking_id: UUID, user: OrgMember, db: DbSessio
             else status.HTTP_404_NOT_FOUND
         )
         raise HTTPException(code, detail=exc.message) from exc
-    return BookingOut.model_validate(booking)
+    return booking_to_out(booking)

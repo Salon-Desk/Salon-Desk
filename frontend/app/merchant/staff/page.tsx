@@ -7,34 +7,16 @@ import { toast } from 'sonner'
 import PrimaryButton from '@/components/button/PrimaryButton'
 import { Badge, Card, ConfirmDialog, EmptyState, IconButton } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
+import {
+  staffAvatarGradient,
+  staffDisplayName,
+  staffInitials,
+  staffPicture,
+} from '@/lib/util/staff-display'
 import { useDeleteMyEmployeeMutation, useGetMyEmployeesQuery } from '@/store/slice/organizationApi'
 import type { User } from '@/types/user'
 
 import { EmployeeFormModal } from '../_components/employee-form-modal'
-
-function displayName(user: User): string {
-  const first = user.profile?.first_name || user.first_name
-  const last = user.profile?.last_name || user.last_name
-  if (first || last) return [first, last].filter(Boolean).join(' ')
-  return user.email
-}
-
-const AVATAR_GRADIENTS = [
-  'from-amber-500 to-amber-700',
-  'from-stone-900 to-slate-800',
-  'from-teal-600 to-emerald-700',
-  'from-sky-600 to-indigo-700',
-  'from-rose-600 to-purple-700',
-]
-
-function getAvatarGradient(seed: string): string {
-  let hash = 0
-  for (let i = 0; i < seed.length; i++) {
-    hash = seed.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  const index = Math.abs(hash) % AVATAR_GRADIENTS.length
-  return AVATAR_GRADIENTS[index]
-}
 
 export default function MerchantStaffPage() {
   const { data: employees = [], isLoading, isError, refetch } = useGetMyEmployeesQuery()
@@ -129,15 +111,10 @@ export default function MerchantStaffPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {employees.map((member) => {
-          const name = displayName(member)
-          const initials = name
-            .split(' ')
-            .map((w) => w[0])
-            .filter(Boolean)
-            .slice(0, 2)
-            .join('')
-            .toUpperCase()
-          const gradient = getAvatarGradient(member.id || name)
+          const name = staffDisplayName(member)
+          const initials = staffInitials(name)
+          const gradient = staffAvatarGradient(member.id || name)
+          const picture = staffPicture(member)
           const roleTone =
             member.role === 'org_owner' ? 'amber' : member.role === 'reception' ? 'sky' : 'emerald'
 
@@ -148,12 +125,20 @@ export default function MerchantStaffPage() {
             >
               <div className="space-y-3.5">
                 <div className="flex items-center justify-between">
-                  {/* Monogram Gradient Avatar */}
-                  <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white font-bold text-sm shadow-xs`}
-                  >
-                    {initials || <UserRound className="h-5 w-5" />}
-                  </div>
+                  {picture ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={picture}
+                      alt={name}
+                      className="h-11 w-11 rounded-xl border border-slate-200 object-cover shadow-xs"
+                    />
+                  ) : (
+                    <div
+                      className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-sm font-bold text-white shadow-xs`}
+                    >
+                      {initials || <UserRound className="h-5 w-5" />}
+                    </div>
+                  )}
                   <Badge tone="emerald" size="sm">
                     {member.status || 'Active'}
                   </Badge>
@@ -204,7 +189,7 @@ export default function MerchantStaffPage() {
       {deleting ? (
         <ConfirmDialog
           title="Remove team member?"
-          description={`Are you sure you want to remove ${displayName(deleting)} (${deleting.email}) from your salon roster?`}
+          description={`Are you sure you want to remove ${staffDisplayName(deleting)} (${deleting.email}) from your salon roster?`}
           confirmLabel={isDeleting ? 'Removing…' : 'Remove Team Member'}
           onConfirm={() => void handleConfirmDelete()}
           onClose={() => setDeleting(null)}

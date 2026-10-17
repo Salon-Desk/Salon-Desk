@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AuthGate } from '@/components/layout/auth-gate'
 import { ConsoleShell } from '@/components/layout/console-shell'
 import { Toast } from '@/components/ui'
-import { useDemoReset, useMerchantStore, useToast } from '@/hooks'
+import { useMerchantStore, useToast } from '@/hooks'
 import { SANDBOX_CREDENTIALS } from '@/lib/constants'
 import { createPaypalDebugId, createSequentialId } from '@/lib/ids'
 import type { AuditLedgerEntry, Booking, ChangeRequest, SalonService, StaffMember } from '@/types'
@@ -50,9 +50,8 @@ const DEFAULT_SERVICE_FORM: ServiceFormState = {
 }
 
 export function MerchantConsole() {
-  const { state, setState, resetState } = useMerchantStore()
+  const { state, setState } = useMerchantStore()
   const { message: toastMessage, show: showToast, dismiss: dismissToast } = useToast(3800)
-  const { isResetting, reset: resetDemo } = useDemoReset(resetState)
 
   const [activeTab, setActiveTab] = useState<MerchantTab>('dashboard')
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
@@ -125,11 +124,6 @@ export function MerchantConsole() {
   const handleLockSession = () => {
     setState((prev) => ({ ...prev, authenticated: false }))
     showToast('Signed out of Merchant Console')
-  }
-
-  const handleResetDemoData = async () => {
-    await resetDemo()
-    showToast('Merchant Console Demo Data Re-seeded Successfully!')
   }
 
   const handleToggleDrift = () => {
@@ -407,14 +401,12 @@ export function MerchantConsole() {
             staffCount={state.staff.length}
             servicesCount={state.services.length}
             pendingChangeRequests={pendingChangeRequests}
-            isResetting={isResetting}
             onTabChange={(tab) => {
               setActiveTab(tab)
               setIsMobileSidebarOpen(false)
             }}
             onOpenCopilot={() => setIsCopilotOpen(true)}
             onLockSession={handleLockSession}
-            onResetDemo={handleResetDemoData}
             onCloseMobile={() => setIsMobileSidebarOpen(false)}
           />
         }
@@ -423,11 +415,9 @@ export function MerchantConsole() {
             activeTab={activeTab}
             lastReconciledAt={state.lastReconciledAt}
             simulatedDrift={state.simulatedDrift}
-            isResetting={isResetting}
             onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
             onToggleDrift={handleToggleDrift}
             onOpenCopilot={() => setIsCopilotOpen(true)}
-            onResetDemo={handleResetDemoData}
           />
         }
       >

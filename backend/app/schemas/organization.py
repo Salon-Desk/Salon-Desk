@@ -127,3 +127,19 @@ class CatalogOrganizationOut(ORMModel):
     lat: Decimal | None = None
     lng: Decimal | None = None
     timezone: str | None = None
+
+
+class CatalogHeroOut(BaseModel):
+    """Marketplace landing hero — assembled from live org/service data."""
+
+    eyebrow: str
+    headline: str
+    highlight: str
+    subtitle: str
+    image_url: str | None = None
+    image_alt: str
+    organization_id: UUID | None = None
+    organization_name: str | None = None
+    physical_address: str | None = None
+    salon_count: int = 0
+    service_count: int = 0

@@ -20,6 +20,18 @@ export interface ApiBooking {
   customer_notes?: string | null
   created_at: string
   booking_services?: ApiBookingService[]
+  client_name?: string | null
+  client_picture?: string | null
+  client_email?: string | null
+  client_phone?: string | null
+  stylist_name?: string | null
+  stylist_picture?: string | null
+  service_name?: string | null
+}
+
+export interface OrgBookingsQuery {
+  starts_at?: string
+  ends_at?: string
 }
 
 export interface CreateBookingRequest {

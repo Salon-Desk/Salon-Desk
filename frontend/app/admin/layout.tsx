@@ -28,7 +28,7 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
   const { skipAdminApi } = useAdminSession()
   const { data: dashboard } = useGetAdminDashboardQuery(undefined, { skip: skipAdminApi })
   const { data: categories = [] } = useGetAdminCategoriesQuery(undefined, { skip: skipAdminApi })
-  const { isResetting, message, handleResetData } = useAdminContext()
+  const { message } = useAdminContext()
 
   const handleLockSession = () => {
     dispatch(logout())
@@ -75,16 +75,12 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
                 } satisfies PlatformUser
               }
               onLockSession={handleLockSession}
-              onResetDemo={handleResetData}
-              isResetting={isResetting}
             />
           }
           header={
             <AdminHeader
               activeTab={currentTab}
               onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
-              onResetDemo={handleResetData}
-              isResetting={isResetting}
             />
           }
         >

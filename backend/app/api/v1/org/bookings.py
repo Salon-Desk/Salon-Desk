@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter
 
 from app.api.deps import DbSession, OrgMember
-from app.schemas.booking import BookingOut
+from app.schemas.booking import BookingOut, booking_to_out
 from app.services import booking_service
 
 router = APIRouter(prefix="/organizations", tags=["org-bookings"])
@@ -20,4 +20,4 @@ async def org_bookings(
     rows = await booking_service.list_org_bookings(
         db, user.org_id, starts_at=starts_at, ends_at=ends_at
     )
-    return [BookingOut.model_validate(b) for b in rows]
+    return [booking_to_out(b) for b in rows]

@@ -16,11 +16,9 @@ interface MerchantHeaderProps {
   activeTab?: MerchantTab
   lastReconciledAt?: string
   simulatedDrift?: boolean
-  isResetting?: boolean
   onOpenMobileSidebar: () => void
   onToggleDrift?: () => void
   onOpenCopilot: () => void
-  onResetDemo?: () => void
 }
 
 export function MerchantHeader({

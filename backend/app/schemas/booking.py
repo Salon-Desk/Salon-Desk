@@ -66,3 +66,66 @@ class BookingOut(ORMModel):
     customer_notes: str | None = None
     created_at: datetime
     booking_services: list[BookingServiceOut] = []
+    client_name: str | None = None
+    client_picture: str | None = None
+    client_email: str | None = None
+    client_phone: str | None = None
+    stylist_name: str | None = None
+    stylist_picture: str | None = None
+    service_name: str | None = None
+
+
+def _user_display_name(user) -> str | None:
+    if user is None:
+        return None
+    profile = getattr(user, "profile", None)
+    if profile is not None:
+        parts = [profile.first_name, profile.last_name]
+        name = " ".join(p for p in parts if p).strip()
+        if name:
+            return name
+    email = getattr(user, "email", None)
+    return email or None
+
+
+def _user_picture(user) -> str | None:
+    if user is None:
+        return None
+    profile = getattr(user, "profile", None)
+    if profile is None:
+        return None
+    return getattr(profile, "picture", None)
+
+
+def booking_to_out(booking) -> BookingOut:
+    """Serialize a Booking ORM row with eager-loaded relations into BookingOut."""
+    client = getattr(booking, "client", None)
+    stylist = getattr(booking, "stylist", None)
+    services = getattr(booking, "booking_services", None) or []
+    first_service = services[0] if services else None
+    service_rel = getattr(first_service, "service", None) if first_service else None
+    client_profile = getattr(client, "profile", None) if client else None
+
+    return BookingOut(
+        id=booking.id,
+        org_id=booking.org_id,
+        client_id=booking.client_id,
+        stylist_id=booking.stylist_id,
+        starts_at=booking.starts_at,
+        ends_at=booking.ends_at,
+        status=booking.status.value if hasattr(booking.status, "value") else str(booking.status),
+        cancellation_fee_json=booking.cancellation_fee_json,
+        cancellation_reason=booking.cancellation_reason,
+        total_price=booking.total_price,
+        commission_snapshot=booking.commission_snapshot or {},
+        customer_notes=booking.customer_notes,
+        created_at=booking.created_at,
+        booking_services=[BookingServiceOut.model_validate(bs) for bs in services],
+        client_name=_user_display_name(client),
+        client_picture=_user_picture(client),
+        client_email=getattr(client, "email", None) if client else None,
+        client_phone=getattr(client_profile, "phone", None) if client_profile else None,
+        stylist_name=_user_display_name(stylist),
+        stylist_picture=_user_picture(stylist),
+        service_name=getattr(service_rel, "name", None) if service_rel else None,
+    )

@@ -2,7 +2,7 @@
 
 import { Calendar, Clock, FileText, Lock, Plus, Shield, User, XCircle } from 'lucide-react'
 
-import { HoldStateBadge } from '@/components/ui'
+import { EmptyState, HoldStateBadge } from '@/components/ui'
 import type { Booking } from '@/types'
 
 interface BookingsPanelProps {
@@ -66,25 +66,13 @@ export function BookingsPanel({
         </div>
 
         {activeHolds.length === 0 ? (
-          <div className="rounded-3xl bg-stone-100/50 p-10 sm:p-14 text-center border border-stone-200/40">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-stone-400">
-              <Calendar className="h-6 w-6" />
-            </div>
-            <h3 className="font-serif text-lg font-medium text-stone-950">
-              No Active Reservation Holds
-            </h3>
-            <p className="mx-auto mt-1 max-w-sm text-xs text-stone-500 leading-relaxed">
-              You currently have no pending appointment holds. Explore our catalog of master
-              stylists and reserve chairs with $0 charged upfront.
-            </p>
-            <button
-              type="button"
-              onClick={onBrowseCatalog}
-              className="mt-5 rounded-full bg-stone-950 hover:bg-stone-800 text-white font-medium text-xs px-5 py-2.5 transition-colors cursor-pointer"
-            >
-              Explore Service Catalog
-            </button>
-          </div>
+          <EmptyState
+            icon={Calendar}
+            title="No Active Reservation Holds"
+            description="You currently have no pending appointment holds. Explore the catalog and reserve with $0 charged upfront."
+            actionLabel="Explore Service Catalog"
+            onAction={onBrowseCatalog}
+          />
         ) : (
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             {activeHolds.map((booking) => (
@@ -111,9 +99,12 @@ export function BookingsPanel({
         </div>
 
         {pastBookings.length === 0 ? (
-          <div className="rounded-3xl bg-stone-100/50 p-8 text-center text-xs text-stone-500 border border-stone-200/40">
-            No past appointment history yet. Completed or cancelled appointments will appear here.
-          </div>
+          <EmptyState
+            icon={Clock}
+            title="No past appointments yet"
+            description="Completed or cancelled appointments will appear here after your first visit."
+            className="p-8 sm:p-10"
+          />
         ) : (
           <>
             {/* Mobile View: Clean responsive cards */}

@@ -20,7 +20,7 @@ type LineTrendChartProps = {
   heightClassName?: string
   strokeColor?: string
   dotColor?: string
-  yDomain?: [number, number]
+  yDomain?: [number, number] | ['auto', 'auto']
   yTicks?: number[]
   yAxisLabel?: string
   valueSuffix?: string
@@ -36,7 +36,7 @@ export function LineTrendChart({
   strokeColor = '#F3A423',
   dotColor = '#F3A423',
   yDomain = [0, 40000],
-  yTicks = [0, 10000, 20000, 30000, 40000],
+  yTicks,
   yAxisLabel = 'ETB',
   valueSuffix = ' ETB',
   seriesLabel = 'Commission',
@@ -71,13 +71,17 @@ export function LineTrendChart({
           ticks={yTicks}
           tick={{ fill: '#64748B', fontSize: 11 }}
           tickFormatter={(value: number) => value.toLocaleString()}
-          label={{
-            value: yAxisLabel,
-            angle: -90,
-            position: 'insideLeft',
-            offset: 0,
-            style: { fill: '#64748B', fontSize: 11 },
-          }}
+          label={
+            yAxisLabel
+              ? {
+                  value: yAxisLabel,
+                  angle: -90,
+                  position: 'insideLeft',
+                  offset: 0,
+                  style: { fill: '#64748B', fontSize: 11 },
+                }
+              : undefined
+          }
         />
         <ChartTooltip
           content={

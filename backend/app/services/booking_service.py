@@ -18,6 +18,7 @@ from app.models.ledger import PlatformCommission
 from app.models.organization import Organization
 from app.models.policy import OrgCancellationPolicy
 from app.models.service import Service
+from app.models.user import User
 from app.services.availability_service import check_slot_available, get_availability
 from app.services.payment_service import void_hold
 from app.services.policy_engine import can_self_cancel
@@ -31,6 +32,12 @@ __all__ = [
     "get_availability",
     "cancel_booking",
 ]
+
+_BOOKING_LOAD_OPTIONS = (
+    selectinload(Booking.client).selectinload(User.profile),
+    selectinload(Booking.stylist).selectinload(User.profile),
+    selectinload(Booking.booking_services).selectinload(BookingService.service),
+)
 
 
 async def _commission_snapshot(db: AsyncSession, service: Service, price: Decimal) -> dict:
@@ -127,9 +134,7 @@ async def create_booking(
 
 async def get_booking(db: AsyncSession, booking_id: UUID) -> Booking:
     result = await db.execute(
-        select(Booking)
-        .options(selectinload(Booking.booking_services))
-        .where(Booking.id == booking_id)
+        select(Booking).options(*_BOOKING_LOAD_OPTIONS).where(Booking.id == booking_id)
     )
     booking = result.scalar_one_or_none()
     if booking is None:
@@ -140,7 +145,7 @@ async def get_booking(db: AsyncSession, booking_id: UUID) -> Booking:
 async def list_client_bookings(db: AsyncSession, client_id: UUID) -> list[Booking]:
     result = await db.execute(
         select(Booking)
-        .options(selectinload(Booking.booking_services))
+        .options(*_BOOKING_LOAD_OPTIONS)
         .where(Booking.client_id == client_id)
         .order_by(Booking.starts_at.desc())
     )
@@ -154,11 +159,7 @@ async def list_org_bookings(
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
 ) -> list[Booking]:
-    stmt = (
-        select(Booking)
-        .options(selectinload(Booking.booking_services))
-        .where(Booking.org_id == org_id)
-    )
+    stmt = select(Booking).options(*_BOOKING_LOAD_OPTIONS).where(Booking.org_id == org_id)
     if starts_at is not None:
         stmt = stmt.where(Booking.starts_at >= starts_at)
     if ends_at is not None:

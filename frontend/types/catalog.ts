@@ -11,6 +11,10 @@ export interface SalonService {
   noShowFee: number
   description: string
   popular?: boolean
+  imageUrl?: string
+  organizationId?: string
+  organizationName?: string
+  distanceKm?: number
 }
 
 export type StaffStatus = 'ACTIVE' | 'ON_LEAVE'

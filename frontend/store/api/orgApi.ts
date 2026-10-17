@@ -179,8 +179,17 @@ export const orgApi = baseApi.injectEndpoints({
       providesTags: ['organizations'],
     }),
 
-    getMyOrgBookings: builder.query<ApiBooking[], void>({
-      query: () => ({ url: '/api/v1/organizations/me/bookings', method: 'GET' }),
+    getMyOrgBookings: builder.query<ApiBooking[], { starts_at?: string; ends_at?: string } | void>({
+      query: (params) => ({
+        url: '/api/v1/organizations/me/bookings',
+        method: 'GET',
+        params: params
+          ? {
+              ...(params.starts_at ? { starts_at: params.starts_at } : {}),
+              ...(params.ends_at ? { ends_at: params.ends_at } : {}),
+            }
+          : undefined,
+      }),
       providesTags: ['bookings', 'organizations'],
     }),
 

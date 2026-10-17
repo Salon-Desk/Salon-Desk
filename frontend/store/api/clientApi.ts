@@ -8,7 +8,14 @@ import type {
   PaymentHold,
   TimeSlot,
 } from '@/types/api-booking'
-import type { ApiServiceCategory, CatalogOrganization, CatalogService } from '@/types/api-org'
+import type {
+  ApiServiceCategory,
+  CatalogHero,
+  CatalogOrganization,
+  CatalogService,
+  CatalogServicesPage,
+  CatalogServicesQueryParams,
+} from '@/types/api-org'
 
 import { baseApi } from '../baseApi'
 
@@ -57,6 +64,11 @@ export interface LiveKitTokenResponse {
 export const clientApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
+    getCatalogHero: builder.query<CatalogHero, void>({
+      query: () => ({ url: '/api/v1/catalog/hero', method: 'GET' }),
+      providesTags: ['catalog'],
+    }),
+
     getCatalogOrganizations: builder.query<CatalogOrganization[], void>({
       query: () => ({ url: '/api/v1/catalog/organizations', method: 'GET' }),
       providesTags: ['catalog'],
@@ -67,14 +79,61 @@ export const clientApi = baseApi.injectEndpoints({
       providesTags: ['catalog'],
     }),
 
-    getCatalogServices: builder.query<
-      CatalogService[],
-      { category_id?: string; org_id?: string; q?: string } | void
-    >({
-      query: (params) => ({
-        url: '/api/v1/catalog/services',
+    getCatalogServices: builder.query<CatalogServicesPage, CatalogServicesQueryParams | void>({
+      query: (params) => {
+        const {
+          page = 1,
+          page_size = 6,
+          category_id,
+          org_id,
+          q,
+          sort = 'name',
+          lat,
+          lng,
+          max_distance_km,
+        } = params || {}
+        return {
+          url: '/api/v1/catalog/services',
+          method: 'GET',
+          params: {
+            page,
+            page_size,
+            sort,
+            ...(category_id ? { category_id } : {}),
+            ...(org_id ? { org_id } : {}),
+            ...(q ? { q } : {}),
+            ...(lat !== undefined ? { lat } : {}),
+            ...(lng !== undefined ? { lng } : {}),
+            ...(max_distance_km !== undefined ? { max_distance_km } : {}),
+          },
+        }
+      },
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        const { page: _page, ...filters } = queryArgs || {}
+        return `${endpointName}(${JSON.stringify(filters)})`
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        const page = arg?.page ?? 1
+        if (!currentCache || page <= 1) {
+          return newItems
+        }
+        const seen = new Set(currentCache.items.map((item) => item.id))
+        const appended = newItems.items.filter((item) => !seen.has(item.id))
+        return {
+          ...newItems,
+          items: [...currentCache.items, ...appended],
+        }
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg?.page !== previousArg?.page
+      },
+      providesTags: ['catalog'],
+    }),
+
+    getCatalogService: builder.query<CatalogService, string>({
+      query: (serviceId) => ({
+        url: `/api/v1/catalog/services/${serviceId}`,
         method: 'GET',
-        params: params || undefined,
       }),
       providesTags: ['catalog'],
     }),
@@ -162,9 +221,12 @@ export const clientApi = baseApi.injectEndpoints({
 })
 
 export const {
+  useGetCatalogHeroQuery,
   useGetCatalogOrganizationsQuery,
   useGetCatalogCategoriesQuery,
   useGetCatalogServicesQuery,
+  useGetCatalogServiceQuery,
+  useLazyGetCatalogServiceQuery,
   useCreateBookingMutation,
   useGetMyBookingsQuery,
   useGetBookingAvailabilityQuery,

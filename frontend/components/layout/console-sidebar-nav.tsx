@@ -21,7 +21,7 @@ interface ConsoleSidebarNavProps<T extends string> {
   theme?: 'dark' | 'light'
 }
 
-/** Grouped sidebar tab list with modern 2026 high-density styling. */
+/** Grouped sidebar tab list for admin/merchant consoles. */
 export function ConsoleSidebarNav<T extends string>({
   tabs,
   activeTab,
@@ -32,7 +32,7 @@ export function ConsoleSidebarNav<T extends string>({
   const isDark = theme === 'dark'
 
   return (
-    <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-3">
+    <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
       {groups.map((group) => {
         const items = tabs.filter((tab) => tab.group === group)
         if (items.length === 0) return null
@@ -40,22 +40,22 @@ export function ConsoleSidebarNav<T extends string>({
           <div key={group}>
             <p
               className={cn(
-                'mb-1.5 px-2.5 font-bold text-[10px] uppercase tracking-wider',
+                'mb-2 px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
                 isDark ? 'text-slate-500' : 'text-slate-400',
               )}
             >
               {group}
             </p>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {items.map((tab) => {
                 const Icon = tab.icon
                 const isActive = tab.id === activeTab
                 const itemClasses = cn(
-                  'group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 font-medium text-xs transition-all duration-150',
+                  'group relative flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 font-medium text-xs transition-all duration-150',
                   isDark
                     ? isActive
-                      ? 'bg-white/[0.12] text-white font-semibold shadow-xs border border-white/[0.08]'
-                      : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100'
+                      ? 'bg-gradient-to-r from-amber-500/15 to-white/[0.06] text-white font-semibold border border-amber-500/20'
+                      : 'text-slate-400 hover:bg-white/[0.05] hover:text-slate-100 border border-transparent'
                     : isActive
                       ? 'bg-slate-900 text-white font-semibold shadow-xs'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',

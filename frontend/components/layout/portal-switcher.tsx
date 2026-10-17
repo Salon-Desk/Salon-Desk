@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDown, RotateCcw } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { useSelector } from 'react-redux'
 
@@ -10,8 +10,6 @@ import { PORTAL_NAV, type PortalId } from './portal-nav'
 
 interface PortalSwitcherProps {
   current: PortalId
-  onReset?: () => void
-  isResetting?: boolean
 }
 
 function canAccessPortal(portal: PortalId, user: ReturnType<typeof userSelector>): boolean {
@@ -22,7 +20,7 @@ function canAccessPortal(portal: PortalId, user: ReturnType<typeof userSelector>
 }
 
 /** Hover dropdown used in portal headers to jump between the three apps. */
-export function PortalSwitcher({ current, onReset, isResetting }: PortalSwitcherProps) {
+export function PortalSwitcher({ current }: PortalSwitcherProps) {
   const user = useSelector(userSelector)
   const others = PORTAL_NAV.filter((item) => item.id !== current && canAccessPortal(item.id, user))
 
@@ -55,20 +53,6 @@ export function PortalSwitcher({ current, onReset, isResetting }: PortalSwitcher
               </Link>
             )
           })
-        )}
-        {onReset && (
-          <>
-            <div className="my-1 h-px bg-slate-100" />
-            <button
-              type="button"
-              onClick={onReset}
-              disabled={isResetting}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left font-medium text-rose-600 text-xs hover:bg-rose-50"
-            >
-              <RotateCcw className={`h-3.5 w-3.5 ${isResetting ? 'animate-spin' : ''}`} />
-              <span>Reset Demo State</span>
-            </button>
-          </>
         )}
       </div>
     </div>

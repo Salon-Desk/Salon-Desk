@@ -3,28 +3,20 @@
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
 
-import { type DemoResetStats, useDemoReset, useToast } from '@/hooks'
-import { resetAllDemoStores } from '@/lib/sandbox/demo-reset'
+import { useToast } from '@/hooks'
 
 export interface AdminContextValue {
-  isResetting: boolean
   message: string | null
   showToast: (msg: string) => void
-  handleResetData: () => Promise<DemoResetStats | null>
 }
 
 const AdminContext = createContext<AdminContextValue | null>(null)
 
-/** Sandbox demo reset + toasts. Live admin data comes from `platformApi` RTK hooks. */
+/** Shared toast for admin portal chrome. Live data comes from `platformApi` RTK hooks. */
 export function AdminProvider({ children }: { children: ReactNode }) {
   const { message, show: showToast } = useToast(3800)
-  const { isResetting, reset: handleResetData } = useDemoReset(resetAllDemoStores)
 
-  return (
-    <AdminContext.Provider value={{ isResetting, message, showToast, handleResetData }}>
-      {children}
-    </AdminContext.Provider>
-  )
+  return <AdminContext.Provider value={{ message, showToast }}>{children}</AdminContext.Provider>
 }
 
 export function useAdminContext() {

@@ -1,8 +1,14 @@
+import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import type { Booking, HoldState, SalonService, ServiceCategory } from '@/types'
 import type { ApiBooking } from '@/types/api-booking'
 import type { CatalogService } from '@/types/api-org'
 
 const CATEGORY_FALLBACK: ServiceCategory = 'Haircuts'
+
+function catalogCoverUrl(images: Record<string, unknown> | undefined): string {
+  const cover = images?.cover
+  return typeof cover === 'string' && cover.length > 0 ? cover : SERVICE_IMAGE_FALLBACK
+}
 
 /** Map backend booking status → demo HoldState used by UI badges/drawers. */
 export function mapBookingStatusToHoldState(status: string): HoldState {
@@ -37,15 +43,15 @@ export function mapApiBookingToUi(
 
   return {
     id: booking.id,
-    clientName: extras?.clientName || 'Client',
-    clientEmail: '',
-    clientPhone: '',
+    clientName: extras?.clientName || booking.client_name || 'Client',
+    clientEmail: booking.client_email || '',
+    clientPhone: booking.client_phone || '',
     salonId: booking.org_id,
     salonName: extras?.salonName || 'Salon',
     serviceId: firstService?.service_id || '',
-    serviceName: extras?.serviceName || 'Service',
+    serviceName: extras?.serviceName || booking.service_name || 'Service',
     stylistId: booking.stylist_id || '',
-    stylistName: extras?.stylistName || 'Any stylist',
+    stylistName: extras?.stylistName || booking.stylist_name || 'Any stylist',
     appointmentTime: starts.toLocaleString(undefined, {
       weekday: 'short',
       month: 'short',
@@ -72,6 +78,11 @@ export function mapCatalogServiceToSalonService(service: CatalogService): SalonS
   const holdDeposit = Math.max(10, Math.round(price * 0.2))
   const rawCategory = (service.category_name || CATEGORY_FALLBACK) as ServiceCategory
 
+  const distanceKm =
+    service.distance_km === null || service.distance_km === undefined
+      ? undefined
+      : Number(service.distance_km)
+
   return {
     id: service.id,
     name: service.name,
@@ -82,6 +93,10 @@ export function mapCatalogServiceToSalonService(service: CatalogService): SalonS
     noShowFee: Math.min(price, Math.max(15, Math.round(price * 0.15))),
     description: service.description || 'Salon service',
     popular: price >= 80,
+    imageUrl: catalogCoverUrl(service.images),
+    organizationId: service.organization_id,
+    organizationName: service.organization_name || undefined,
+    distanceKm: Number.isFinite(distanceKm) ? distanceKm : undefined,
   }
 }
 

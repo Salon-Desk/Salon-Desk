@@ -92,6 +92,20 @@ export interface CatalogOrganization {
   timezone?: string | null
 }
 
+export interface CatalogHero {
+  eyebrow: string
+  headline: string
+  highlight: string
+  subtitle: string
+  image_url?: string | null
+  image_alt: string
+  organization_id?: string | null
+  organization_name?: string | null
+  physical_address?: string | null
+  salon_count: number
+  service_count: number
+}
+
 export interface CatalogService {
   id: string
   organization_id: string
@@ -104,6 +118,30 @@ export interface CatalogService {
   simultaneous_capacity: number
   organization_name?: string | null
   category_name?: string | null
+  distance_km?: number | null
+}
+
+export type CatalogServiceSort =
+  'name' | 'popular' | 'price_asc' | 'price_desc' | 'duration' | 'distance'
+
+export interface CatalogServicesQueryParams {
+  page?: number
+  page_size?: number
+  category_id?: string
+  org_id?: string
+  q?: string
+  sort?: CatalogServiceSort
+  lat?: number
+  lng?: number
+  max_distance_km?: number
+}
+
+export interface CatalogServicesPage {
+  items: CatalogService[]
+  page: number
+  page_size: number
+  total: number
+  has_more: boolean
 }
 
 export interface ApiServiceCategory {

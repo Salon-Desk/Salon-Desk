@@ -1,53 +1,30 @@
 'use client'
 
-import { ChevronUp, Info, Key, Layers, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react'
+import { ChevronUp, Info, Key, Layers, ShieldCheck, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 
-import { Button, CopyableValue, Toast } from '@/components/ui'
-import { useClipboard, useDemoReset } from '@/hooks'
+import { CopyableValue } from '@/components/ui'
+import { useClipboard } from '@/hooks'
 import { SANDBOX_CREDENTIALS } from '@/lib/constants'
-import { resetAllDemoStores } from '@/lib/sandbox/demo-reset'
 
 import { SandboxModal } from './sandbox-modal'
 
-interface DemoToolbarProps {
-  onResetSuccess?: () => void
-}
-
-export function DemoToolbar({ onResetSuccess }: DemoToolbarProps) {
+export function DemoToolbar() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
   const { copiedKey, copy } = useClipboard()
-  const { isResetting, reset } = useDemoReset(resetAllDemoStores)
-
-  const handleReset = async () => {
-    const stats = await reset()
-    onResetSuccess?.()
-    const holds = stats?.activeHoldsCount ?? 2
-    setToastMessage(`Sandbox Re-seeded: ${holds} Active Holds & Demo Data Restored!`)
-  }
 
   return (
     <>
-      {toastMessage && (
-        <Toast
-          message={toastMessage}
-          position="bottom-center"
-          theme="dark"
-          onDismiss={() => setToastMessage(null)}
-        />
-      )}
-
       <aside
-        aria-label="Demo environment controls"
+        aria-label="Sandbox credentials"
         className="fixed inset-x-0 bottom-0 z-40 border-slate-200 border-t bg-white/95 px-4 py-2.5 shadow-md backdrop-blur-md sm:px-6"
       >
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2.5 text-xs md:flex-row">
           <div className="flex w-full items-center justify-between gap-3 md:w-auto md:justify-start">
             <div className="flex items-center gap-2 text-slate-700">
               <span className="h-2 w-2 rounded-full bg-amber-500" />
-              <span className="font-bold text-slate-900">Judge Sandbox</span>
+              <span className="font-bold text-slate-900">Sandbox</span>
               <span className="hidden text-slate-300 sm:inline">·</span>
               <span className="hidden font-medium text-slate-500 sm:inline">
                 PayPal Authorization Holds
@@ -138,18 +115,6 @@ export function DemoToolbar({ onResetSuccess }: DemoToolbarProps) {
             <span className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-100 px-2 py-0.5">
               Gemini AI
             </span>
-          </div>
-
-          <div className="flex w-full items-center justify-end gap-2.5 md:w-auto">
-            <Button
-              variant="primary"
-              onClick={handleReset}
-              disabled={isResetting}
-              className="w-full sm:w-auto"
-            >
-              <RotateCcw className={`h-3.5 w-3.5 ${isResetting ? 'animate-spin' : ''}`} />
-              <span>{isResetting ? 'Resetting Sandbox...' : 'Reset Demo Environment'}</span>
-            </Button>
           </div>
         </div>
       </aside>

@@ -6,9 +6,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { AuthGate } from '@/components/layout/auth-gate'
 import { ConsoleShell } from '@/components/layout/console-shell'
 import { Button, Toast } from '@/components/ui'
-import { useAdminStore, useDemoReset, useToast } from '@/hooks'
+import { useAdminStore, useToast } from '@/hooks'
 import { createSequentialId } from '@/lib/ids'
-import { resetAdminDemoState } from '@/lib/sandbox/demo-reset'
 import type {
   ChangeRequest,
   CommissionOverride,
@@ -47,12 +46,8 @@ import { type CategoryFormState, CategoryModal, DeleteCategoryModal } from './ta
 import { TaxonomyTab } from './taxonomy-tab'
 
 export function AdminDashboard() {
-  const { state, setState, resetState } = useAdminStore()
+  const { state, setState } = useAdminStore()
   const { message, show: showToast } = useToast(3800)
-  const { isResetting, reset: resetDemo } = useDemoReset(() => {
-    resetAdminDemoState()
-    resetState()
-  })
 
   const [activeTab, setActiveTab] = useState<AdminTabId>('overview')
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
@@ -113,11 +108,6 @@ export function AdminDashboard() {
       }),
     [state.organizations, salonSearch, salonStatusFilter],
   )
-
-  const handleResetData = async () => {
-    await resetDemo()
-    showToast('Demo data reset')
-  }
 
   const handleJudgeSignIn = () => {
     setState({ ...state, authenticated: true })
@@ -502,16 +492,12 @@ export function AdminDashboard() {
             pendingSalonCount={metrics.pendingCount}
             currentUser={state.currentUser}
             onLockSession={handleLockSession}
-            onResetDemo={handleResetData}
-            isResetting={isResetting}
           />
         }
         header={
           <AdminHeader
             activeTab={activeTab}
             onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
-            onResetDemo={handleResetData}
-            isResetting={isResetting}
           />
         }
       >

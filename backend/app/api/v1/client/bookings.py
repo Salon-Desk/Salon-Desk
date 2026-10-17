@@ -13,6 +13,7 @@ from app.schemas.booking import (
     ConsentCreate,
     ConsentOut,
     TimeSlot,
+    booking_to_out,
 )
 from app.services import booking_service
 from app.services.payment_service import create_consent
@@ -39,13 +40,13 @@ async def create_booking(body: BookingCreate, user: ClientUser, db: DbSession) -
             else status.HTTP_404_NOT_FOUND
         )
         raise HTTPException(code, detail=exc.message) from exc
-    return BookingOut.model_validate(booking)
+    return booking_to_out(booking)
 
 
 @router.get("/me", response_model=list[BookingOut])
 async def my_bookings(user: ClientUser, db: DbSession) -> list[BookingOut]:
     rows = await booking_service.list_client_bookings(db, user.id)
-    return [BookingOut.model_validate(b) for b in rows]
+    return [booking_to_out(b) for b in rows]
 
 
 @router.get("/availability", response_model=list[TimeSlot])
@@ -82,7 +83,7 @@ async def get_booking(booking_id: UUID, user: CurrentUser, db: DbSession) -> Boo
     }
     if not (is_client or is_org or is_platform):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    return BookingOut.model_validate(booking)
+    return booking_to_out(booking)
 
 
 @router.post("/{booking_id}/consent", response_model=ConsentOut)
@@ -139,4 +140,4 @@ async def cancel_booking(
             else status.HTTP_404_NOT_FOUND
         )
         raise HTTPException(code, detail=exc.message) from exc
-    return BookingOut.model_validate(booking)
+    return booking_to_out(booking)
