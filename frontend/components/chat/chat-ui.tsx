@@ -105,7 +105,7 @@ export function ChatPanelShell({
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-stone-950/35 backdrop-blur-[2px] sm:flex-row sm:justify-end motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-stone-950/35 backdrop-blur-[2px] sm:block motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
       <button
         type="button"
         aria-label="Close concierge"
@@ -118,7 +118,7 @@ export function ChatPanelShell({
         role="dialog"
         aria-modal="true"
         aria-label="SalonDesk Concierge"
-        className="relative z-10 flex h-[92dvh] w-full max-w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-stone-200/80 bg-[#F7F5F2] text-stone-900 shadow-[0_24px_64px_-16px_rgba(28,25,23,0.28)] sm:m-4 sm:h-[min(44rem,calc(100dvh-2rem))] sm:max-w-[26.5rem] sm:rounded-[1.75rem] motion-safe:animate-in motion-safe:slide-in-from-bottom-6 sm:motion-safe:slide-in-from-right-6 motion-safe:duration-250"
+        className="relative z-10 flex h-[92dvh] min-h-0 w-full max-w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-stone-200/80 bg-[#F7F5F2] text-stone-900 shadow-[0_24px_64px_-16px_rgba(28,25,23,0.28)] sm:absolute sm:inset-y-3 sm:right-3 sm:left-auto sm:h-auto sm:w-[min(26.5rem,calc(100vw-1.5rem))] sm:rounded-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-6 sm:motion-safe:slide-in-from-right-6 motion-safe:duration-250"
       >
         <div className="flex justify-center bg-transparent pb-0.5 pt-2.5 sm:hidden">
           <div className="h-1 w-10 rounded-full bg-stone-300/90" aria-hidden="true" />
@@ -537,7 +537,12 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
   const canSend = Boolean(prompt.trim()) && !isThinking
 
   return (
-    <div className={cn('relative flex flex-1 flex-col overflow-hidden bg-[#F7F5F2]', className)}>
+    <div
+      className={cn(
+        'relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#F7F5F2]',
+        className,
+      )}
+    >
       <div
         ref={scrollContainerRef}
         role="log"
