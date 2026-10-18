@@ -5,6 +5,7 @@ import Image from 'next/image'
 
 import { HoldStateBadge, Modal } from '@/components/ui'
 import { formatBookingRef, formatDuration, formatUsd, isPlaceholderValue } from '@/lib/format'
+import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import type { Booking } from '@/types'
 
 interface ReceiptModalProps {
@@ -60,6 +61,7 @@ export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
               alt=""
               width={44}
               height={44}
+              unoptimized={shouldUnoptimizeImage(booking.stylistPicture)}
               className="h-11 w-11 rounded-full object-cover"
             />
           ) : (

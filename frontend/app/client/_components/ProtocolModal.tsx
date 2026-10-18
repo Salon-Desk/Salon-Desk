@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Modal } from '@/components/ui'
 import { protocolForService, serviceImage } from '@/lib/data/service-content'
 import { formatDuration, formatUsd } from '@/lib/format'
+import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import type { SalonService } from '@/types'
 
 interface ProtocolModalProps {
@@ -43,6 +44,7 @@ export function ProtocolModal({ service, onClose, onBook }: ProtocolModalProps) 
           src={coverSrc}
           alt=""
           fill
+          unoptimized={shouldUnoptimizeImage(coverSrc)}
           className="object-cover"
           sizes="(max-width: 640px) 100vw, 32rem"
         />

@@ -37,6 +37,7 @@ import { VOICE_AGENT_STATUS, VOICE_AGENT_SUGGESTIONS } from '@/constant/voice-ag
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import type { AgentLanguage } from '@/lib/features'
 import type { GeoCoords } from '@/lib/util/geo'
+import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import {
   isAgentGoodbyeTranscript,
   isAgentParticipant,
@@ -462,6 +463,7 @@ export function InnerVoiceAssistantUI({
                           src={org.picture}
                           alt={org.name}
                           fill
+                          unoptimized={shouldUnoptimizeImage(org.picture)}
                           sizes="44px"
                           className="object-cover"
                         />
@@ -533,6 +535,9 @@ export function InnerVoiceAssistantUI({
                         src={rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK}
                         alt={rec.name}
                         fill
+                        unoptimized={shouldUnoptimizeImage(
+                          rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK,
+                        )}
                         sizes="56px"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />

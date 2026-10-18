@@ -3,6 +3,7 @@
 import Image from 'next/image'
 
 import { Skeleton } from '@/components/ui/skeleton'
+import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import type { CatalogHero as CatalogHeroData } from '@/types/api-org'
 
 interface CatalogHeroProps {
@@ -80,6 +81,7 @@ export function CatalogHero({ hero, isLoading }: CatalogHeroProps) {
               alt={hero.image_alt || hero.organization_name || 'Salon'}
               fill
               priority
+              unoptimized={shouldUnoptimizeImage(hero.image_url)}
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 45vw"
             />

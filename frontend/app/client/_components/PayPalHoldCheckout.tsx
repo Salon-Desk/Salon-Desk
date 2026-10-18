@@ -7,6 +7,7 @@ import { Button, Modal } from '@/components/ui'
 import { ANY_AVAILABLE_STYLIST, INITIAL_STAFF } from '@/lib/data/catalog'
 import { formatSlot, serviceImage, TIME_SLOTS } from '@/lib/data/service-content'
 import { formatBookingRef, formatDuration, formatUsd, isPlaceholderValue } from '@/lib/format'
+import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import type { Booking, SalonService, StaffMember } from '@/types'
 
 export type AuthStep = 'review' | 'authorizing' | 'success'
@@ -73,7 +74,14 @@ export function PayPalHoldCheckout({
         <div>
           <div className="mb-5 flex gap-3 rounded-2xl bg-stone-50/90 p-3">
             <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-stone-200">
-              <Image src={coverSrc} alt="" fill className="object-cover" sizes="96px" />
+              <Image
+                src={coverSrc}
+                alt=""
+                fill
+                unoptimized={shouldUnoptimizeImage(coverSrc)}
+                className="object-cover"
+                sizes="96px"
+              />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
@@ -116,6 +124,7 @@ export function PayPalHoldCheckout({
                       alt=""
                       width={32}
                       height={32}
+                      unoptimized={shouldUnoptimizeImage(staff.avatar)}
                       className="h-8 w-8 rounded-full object-cover"
                     />
                   ) : (

@@ -11,7 +11,10 @@ export function shouldUnoptimizeImage(src?: string | null): boolean {
   if (!src) {
     return false
   }
-  return src.startsWith('blob:') || src.startsWith('data:')
+  // Absolute upload URLs are loaded by the browser. The Next image optimizer
+  // fetches them from inside the web container, which cannot reach localhost
+  // or the public site the same way the browser can.
+  return src.startsWith('blob:') || src.startsWith('data:') || isRemoteImageSrc(src)
 }
 
 export function resolveImageSrc(src?: string | null, fallback = ''): string {

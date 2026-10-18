@@ -5,6 +5,7 @@ import Image from 'next/image'
 
 import { EmptyState, HoldStateBadge } from '@/components/ui'
 import { formatBookingRef, formatUsd } from '@/lib/format'
+import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import type { Booking } from '@/types'
 
 interface BookingsPanelProps {
@@ -252,6 +253,7 @@ function ActiveHoldCard({
                   alt=""
                   width={20}
                   height={20}
+                  unoptimized={shouldUnoptimizeImage(booking.stylistPicture)}
                   className="h-5 w-5 rounded-full object-cover"
                 />
               ) : (

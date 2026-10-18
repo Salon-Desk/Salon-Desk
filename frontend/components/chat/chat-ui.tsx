@@ -23,6 +23,7 @@ import type {
   AgentServiceRecommendation,
 } from '@/components/chat/useAgentChat'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
+import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import { cn } from '@/lib/utils'
 
 export const CONCIERGE_RECOMMENDATION_LIMIT = 3
@@ -280,6 +281,9 @@ export function ServiceCard({
           src={service.imageUrl || service.organizationPicture || SERVICE_IMAGE_FALLBACK}
           alt=""
           fill
+          unoptimized={shouldUnoptimizeImage(
+            service.imageUrl || service.organizationPicture || SERVICE_IMAGE_FALLBACK,
+          )}
           sizes="48px"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
@@ -329,7 +333,14 @@ export function OrganizationCard({
     >
       <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-stone-100 bg-amber-50">
         {org.picture ? (
-          <Image src={org.picture} alt="" fill sizes="44px" className="object-cover" />
+          <Image
+            src={org.picture}
+            alt=""
+            fill
+            unoptimized={shouldUnoptimizeImage(org.picture)}
+            sizes="44px"
+            className="object-cover"
+          />
         ) : (
           <Building2 className="h-5 w-5 text-amber-700" />
         )}

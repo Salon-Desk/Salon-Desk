@@ -9,6 +9,39 @@ const apiOrigin = (
   'http://127.0.0.1:8000'
 ).replace(/\/$/, '')
 
+type RemotePattern = NonNullable<NonNullable<NextConfig['images']>['remotePatterns']>[number]
+
+/** Allow /_next/image to fetch uploaded files from this origin (any port). */
+function storagePattern(origin: string | undefined): RemotePattern | null {
+  if (!origin) {
+    return null
+  }
+  try {
+    const url = new URL(origin)
+    const protocol = url.protocol === 'http:' ? 'http' : 'https'
+    return {
+      protocol,
+      hostname: url.hostname,
+      pathname: '/api/v1/storage/**',
+    }
+  } catch {
+    return null
+  }
+}
+
+const storageRemotePatterns = [
+  storagePattern(process.env.NEXT_PUBLIC_SITE_URL),
+  storagePattern(process.env.NEXT_PUBLIC_API_URL),
+  storagePattern('https://paypalai.hackathon.huludelala.com'),
+  storagePattern('http://paypalai.hackathon.huludelala.com'),
+  { protocol: 'https', hostname: '**.huludelala.com', pathname: '/api/v1/storage/**' },
+  { protocol: 'http', hostname: '**.huludelala.com', pathname: '/api/v1/storage/**' },
+  { protocol: 'http', hostname: 'localhost', pathname: '/api/v1/storage/**' },
+  { protocol: 'https', hostname: 'localhost', pathname: '/api/v1/storage/**' },
+  { protocol: 'http', hostname: '127.0.0.1', pathname: '/api/v1/storage/**' },
+  { protocol: 'https', hostname: '127.0.0.1', pathname: '/api/v1/storage/**' },
+].filter((pattern): pattern is RemotePattern => pattern !== null)
+
 const nextConfig: NextConfig = {
   output: 'standalone',
   devIndicators: false,
@@ -47,15 +80,13 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    // Stylist avatars and service photography are served from these hosts.
-    // `search` is intentionally omitted so the sizing/format query strings pass through.
+    // Uploaded logos live on this same app (local disk or RustFS via /api/v1/storage).
+    // Next 16 rejects those fetches unless the host is listed and local IPs are allowed.
+    dangerouslyAllowLocalIP: true,
     remotePatterns: [
       { protocol: 'https', hostname: 'picsum.photos', pathname: '/**' },
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
-      { protocol: 'http', hostname: 'localhost', port: '8000', pathname: '/**' },
-      { protocol: 'http', hostname: '127.0.0.1', port: '8000', pathname: '/**' },
-      { protocol: 'http', hostname: 'localhost', port: '9000', pathname: '/**' },
-      { protocol: 'http', hostname: '127.0.0.1', port: '9000', pathname: '/**' },
+      ...storageRemotePatterns,
     ],
   },
 }
