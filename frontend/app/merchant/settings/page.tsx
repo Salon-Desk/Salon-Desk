@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, CreditCard, Shield } from 'lucide-react'
+import { ArrowRight, CreditCard, Receipt, Shield } from 'lucide-react'
 import Link from 'next/link'
 
 import { MerchantOrgSettingsPanel } from '@/app/merchant/_components/merchant-org-settings-panel'
@@ -76,6 +76,32 @@ export default function MerchantSettingsPage() {
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 hover:text-amber-900 pt-1"
             >
               <span>Amend Policy Rules</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </Card>
+
+          <Card
+            padding="lg"
+            className="rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] space-y-3"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                <Receipt className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">Platform commission billing</h3>
+                <p className="text-[11px] text-slate-500">SaaS invoices &amp; accrual ledger</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600">
+              Review accrued platform fees from booking-time commission snapshots and pay issued
+              SalonDesk invoices.
+            </p>
+            <Link
+              href="/merchant/billing"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 hover:text-amber-900 pt-1"
+            >
+              <span>Open Billing section</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </Card>

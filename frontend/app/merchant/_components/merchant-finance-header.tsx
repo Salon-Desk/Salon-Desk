@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronRight, Clock, CreditCard, Shield, Sliders } from 'lucide-react'
+import { ChevronRight, Clock, CreditCard, Receipt, Shield, Sliders } from 'lucide-react'
 import Link from 'next/link'
 
 import type { MerchantFinanceSettingsMode } from './merchant-finance-settings'
@@ -26,7 +26,20 @@ export function MerchantFinanceHeader({
 }: MerchantFinanceHeaderProps) {
   const isPaypal = mode === 'paypal' || pathname === '/merchant/settings/paypal'
   const isPolicies = mode === 'policies' || pathname === '/merchant/settings/policies'
-  const isOverview = !isPaypal && !isPolicies
+  const isBilling =
+    mode === 'billing' ||
+    pathname === '/merchant/settings/billing' ||
+    pathname === '/merchant/billing'
+  const isOverview = !isPaypal && !isPolicies && !isBilling
+
+  const modeTitle =
+    mode === 'paypal'
+      ? 'PayPal Payouts'
+      : mode === 'policies'
+        ? 'Cancellation Policies'
+        : mode === 'billing'
+          ? 'Commission Billing'
+          : 'Finance'
 
   return (
     <div className="border-b border-slate-200/80 pb-5">
@@ -43,9 +56,7 @@ export function MerchantFinanceHeader({
             <span>Settings</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-          <span className="font-semibold text-slate-800">
-            {mode === 'paypal' ? 'PayPal Payouts' : 'Cancellation Policies'}
-          </span>
+          <span className="font-semibold text-slate-800">{modeTitle}</span>
         </nav>
       )}
 
@@ -56,17 +67,20 @@ export function MerchantFinanceHeader({
               ? 'PayPal Payout Configuration'
               : mode === 'policies'
                 ? 'Cancellation & No-Show Terms'
-                : 'Finance & Compliance Governance'}
+                : mode === 'billing'
+                  ? 'Platform Commission Billing'
+                  : 'Finance & Compliance Governance'}
           </h1>
           <p className="max-w-2xl text-xs leading-relaxed text-slate-500">
             {mode === 'paypal'
               ? 'Configure your merchant credentials and PayPal account ID for direct payment capture and authorization disbursements.'
               : mode === 'policies'
                 ? 'Manage cancellation notice windows, client no-show penalty rates, and guarantee hold percentages.'
-                : 'Review operating timezone, payment processing rails, cancellation rules, and audit-logged governance changes.'}
+                : mode === 'billing'
+                  ? 'Review accrued platform fees from booking-time commission snapshots and pay issued SalonDesk SaaS invoices.'
+                  : 'Review operating timezone, payment processing rails, cancellation rules, and audit-logged governance changes.'}
           </p>
 
-          {/* Salon Meta Chips */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             {isLoading ? (
               <div className="flex items-center gap-2 py-0.5 animate-pulse">
@@ -93,7 +107,6 @@ export function MerchantFinanceHeader({
           </div>
         </div>
 
-        {/* Segmented Tab Navigation */}
         <div className="overflow-x-auto no-scrollbar py-0.5">
           <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200/70 bg-slate-100/90 p-1 text-xs shadow-2xs shrink-0">
             <Link
@@ -116,7 +129,7 @@ export function MerchantFinanceHeader({
               }`}
             >
               <CreditCard className="h-3.5 w-3.5 text-sky-600" />
-              <span>PayPal Payouts</span>
+              <span>PayPal</span>
             </Link>
             <Link
               href="/merchant/settings/policies"
@@ -128,6 +141,17 @@ export function MerchantFinanceHeader({
             >
               <Shield className="h-3.5 w-3.5 text-emerald-600" />
               <span>Policies</span>
+            </Link>
+            <Link
+              href="/merchant/billing"
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all ${
+                isBilling
+                  ? 'border border-slate-200/60 bg-white font-semibold text-slate-900 shadow-2xs'
+                  : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
+              }`}
+            >
+              <Receipt className="h-3.5 w-3.5 text-amber-700" />
+              <span>Billing</span>
             </Link>
           </div>
         </div>

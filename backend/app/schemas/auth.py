@@ -63,6 +63,14 @@ class ResetPasswordRequest(BaseModel):
     new_password: str = Field(min_length=8)
 
 
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
 class MeResponse(BaseModel):
     user: UserOut
     profile: ProfileOut | None = None

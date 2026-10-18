@@ -3,6 +3,8 @@ export interface ApiBookingService {
   booking_id: string
   service_id: string
   base_price: string | number
+  service_policy_snapshot_json?: Record<string, unknown>
+  commission_rule_snapshot_json?: Record<string, unknown>
 }
 
 export interface ApiBooking {
@@ -13,10 +15,14 @@ export interface ApiBooking {
   starts_at: string
   ends_at: string
   status: string
+  total_price: string | number
+  agreed_hold_amount: string | number
+  agreed_no_show_fee: string | number
+  free_cancel_deadline_at: string
+  policy_snapshot_json: Record<string, unknown>
+  commission_snapshot: Record<string, unknown>
   cancellation_fee_json?: Record<string, unknown> | null
   cancellation_reason?: string | null
-  total_price: string | number
-  commission_snapshot: Record<string, unknown>
   customer_notes?: string | null
   created_at: string
   booking_services?: ApiBookingService[]
@@ -79,11 +85,14 @@ export interface PaymentHold {
   booking_id: string
   org_id: string
   paypal_order_id?: string | null
-  paypal_authorization_id?: string | null
+  parent_authorization_id?: string | null
+  latest_authorization_id?: string | null
   amount: string | number
+  captured_amount: string | number
   currency: string
   status: string
   honor_expires_at?: string | null
+  reauthorization_count: number
   idempotency_key: string
   created_at: string
 }
@@ -96,6 +105,7 @@ export interface PaymentCapture {
   amount: string | number
   currency: string
   capture_type: string
+  final_capture: boolean
   status: string
   paypal_debug_id?: string | null
   created_at: string

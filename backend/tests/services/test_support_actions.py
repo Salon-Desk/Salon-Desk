@@ -34,6 +34,11 @@ def test_merchant_paypal_change_resolution():
     assert ui_act.action == "open_change_paypal"
 
 
+def test_merchant_billing_nav_map():
+    assert MERCHANT_NAV_MAP["billing"]["target"] == "/merchant/billing"
+    assert MERCHANT_NAV_MAP["invoices"]["target"] == "/merchant/billing"
+
+
 def test_admin_navigation_and_actions():
     nav, ui_act = resolve_portal_navigation("admin", "show me change requests")
     assert nav is not None

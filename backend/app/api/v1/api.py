@@ -17,7 +17,7 @@ from app.api.v1.org import (
 from app.api.v1.org import (
     settings as org_settings,
 )
-from app.api.v1.platform import analytics, categories, commissions, orgs, requests, users
+from app.api.v1.platform import analytics, categories, commissions, invoices, orgs, requests, users
 from app.api.v1.shared import auth, profile, storage
 from app.api.v1.webhooks import paypal
 
@@ -35,6 +35,7 @@ for platform_router in (
     users.router,
     categories.router,
     commissions.router,
+    invoices.router,
     requests.router,
 ):
     api_router.include_router(platform_router)

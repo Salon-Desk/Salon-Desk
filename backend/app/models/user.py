@@ -15,6 +15,9 @@ class User(TimestampedModel):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     google_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    email_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     status: Mapped[UserStatus] = mapped_column(
         Enum(UserStatus, name="user_status", values_callable=lambda x: [e.value for e in x]),
         default=UserStatus.ACTIVE,
@@ -69,6 +72,22 @@ class Profile(TimestampedModel):
 
 class PasswordResetToken(BaseModel):
     __tablename__ = "password_reset_token"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("user.id"),
+        nullable=False,
+        index=True,
+    )
+    token_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("User")
+
+
+class EmailVerificationToken(BaseModel):
+    __tablename__ = "email_verification_token"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

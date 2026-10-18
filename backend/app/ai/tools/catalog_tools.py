@@ -156,7 +156,7 @@ def build_support_tools(
     async def navigate_portal_page(page: str, reason: str = "") -> str:
         """Navigate the user's screen to a specific console page or tab.
 
-        For merchant: 'calendar', 'appointments', 'staff', 'services', 'settings', 'paypal', 'policies', 'dashboard'.
+        For merchant: 'calendar', 'appointments', 'staff', 'services', 'settings', 'paypal', 'policies', 'billing', 'invoices', 'dashboard'.
         For admin: 'overview', 'salons', 'requests', 'commission', 'taxonomy', 'staff'.
         """
         key = (page or "").lower().strip()

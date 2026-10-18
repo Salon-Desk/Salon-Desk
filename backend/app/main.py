@@ -1,4 +1,6 @@
+import asyncio
 import json
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
 from fastapi import FastAPI, Request, Response
@@ -19,6 +21,20 @@ from app.core.exceptions import (
     UnauthorizedError,
 )
 from app.core.response import error
+from app.tasks.booking_reminders import run_booking_reminder_loop
+from app.tasks.hold_expiration import run_hold_expiration_loop
+
+
+@asynccontextmanager
+async def lifespan(_application: FastAPI):
+    hold_task = asyncio.create_task(run_hold_expiration_loop())
+    reminder_task = asyncio.create_task(run_booking_reminder_loop())
+    try:
+        yield
+    finally:
+        hold_task.cancel()
+        reminder_task.cancel()
+        await asyncio.gather(hold_task, reminder_task, return_exceptions=True)
 
 
 def create_app() -> FastAPI:
@@ -26,6 +42,7 @@ def create_app() -> FastAPI:
     application = FastAPI(
         title=settings.app_name,
         debug=settings.debug,
+        lifespan=lifespan,
     )
 
     @application.middleware("http")

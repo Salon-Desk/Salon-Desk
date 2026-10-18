@@ -53,8 +53,13 @@ export default function MerchantAppointmentsPage() {
     appointmentFilter,
   )
 
-  const { handleMarkShow, handleMarkNoShow, handleCancelAndVoid, isSettlementProcessing } =
-    useSettlementActions()
+  const {
+    handleMarkShow,
+    handleMarkNoShow,
+    handleCancelAndVoid,
+    handleReauthorizeHold,
+    isSettlementProcessing,
+  } = useSettlementActions()
 
   const handleCopy = useCallback((id: string, text: string) => {
     void navigator.clipboard.writeText(text)
@@ -75,6 +80,14 @@ export default function MerchantAppointmentsPage() {
     setSelectedBooking(null)
     void refetch()
   }, [refetch])
+
+  const handleReauthorizeSuccess = useCallback(
+    (updated?: Booking) => {
+      if (updated) setSelectedBooking(updated)
+      void refetch()
+    },
+    [refetch],
+  )
 
   const totalPages = Math.max(1, Math.ceil(filteredAppointments.length / pageSize))
   const paginatedAppointments = useMemo(() => {
@@ -156,9 +169,7 @@ export default function MerchantAppointmentsPage() {
           onMarkShow={(b) => void handleMarkShow(b, handleSettlementSuccess)}
           onMarkNoShow={(b) => void handleMarkNoShow(b, handleSettlementSuccess)}
           onCancelAndVoid={(b) => void handleCancelAndVoid(b, handleSettlementSuccess)}
-          onReauthorizeHold={() =>
-            toast.info('Reauthorization is handled automatically by the payment honor window.')
-          }
+          onReauthorizeHold={(b) => void handleReauthorizeHold(b, handleReauthorizeSuccess)}
         />
       ) : null}
 

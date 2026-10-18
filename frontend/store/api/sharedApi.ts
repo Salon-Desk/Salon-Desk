@@ -121,6 +121,23 @@ export const sharedApi = baseApi.injectEndpoints({
       }),
     }),
 
+    verifyEmail: builder.mutation<MessageOut, { token: string }>({
+      query: (body) => ({
+        url: `${prefix}verify-email`,
+        method: 'POST',
+        data: body,
+      }),
+      invalidatesTags: ['auth'],
+    }),
+
+    resendVerification: builder.mutation<MessageOut, { email: string }>({
+      query: (body) => ({
+        url: `${prefix}resend-verification`,
+        method: 'POST',
+        data: body,
+      }),
+    }),
+
     // 9. Judge Demo Auth (instant 1-click test token)
     judgeDemoAuth: builder.mutation<TokenResponse, void>({
       query: () => ({
@@ -162,6 +179,8 @@ export const {
   useUploadAvatarMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useVerifyEmailMutation,
+  useResendVerificationMutation,
   useJudgeDemoAuthMutation,
   useLogoutMutation,
 } = sharedApi

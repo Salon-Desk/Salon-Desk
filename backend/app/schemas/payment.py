@@ -18,11 +18,14 @@ class PaymentHoldOut(ORMModel):
     booking_id: UUID
     org_id: UUID
     paypal_order_id: str | None = None
-    paypal_authorization_id: str | None = None
+    parent_authorization_id: str | None = None
+    latest_authorization_id: str | None = None
     amount: Decimal
+    captured_amount: Decimal
     currency: str
     status: str
     honor_expires_at: datetime | None = None
+    reauthorization_count: int
     idempotency_key: str
     created_at: datetime
 
@@ -35,6 +38,7 @@ class PaymentCaptureOut(ORMModel):
     amount: Decimal
     currency: str
     capture_type: str
+    final_capture: bool
     status: str
     paypal_debug_id: str | None = None
     created_at: datetime

@@ -176,16 +176,23 @@ export function SettlementDrawer({
                   <ArrowRight className="h-3.5 w-3.5 opacity-70" />
                 </Button>
 
-                {booking.status === 'HELD' ? (
+                {booking.status === 'HELD' || booking.status === 'REAUTHORIZED' ? (
                   <Button
                     variant="secondary"
                     fullWidth
+                    disabled={
+                      isSettlementProcessing ||
+                      booking.status === 'REAUTHORIZED' ||
+                      (booking.reauthorizationCount ?? 0) >= 1
+                    }
                     onClick={() => onReauthorizeHold(booking)}
                     className="rounded-lg border-sky-200/90 bg-sky-50 text-sky-800 hover:bg-sky-100 text-xs justify-between h-9 px-3.5"
                   >
                     <span className="flex items-center gap-2">
                       <RefreshCw className="h-3.5 w-3.5 text-sky-600" />
-                      Reauthorize Hold (Extend 72h Window)
+                      {booking.status === 'REAUTHORIZED' || (booking.reauthorizationCount ?? 0) >= 1
+                        ? 'Already Reauthorized (Max 1)'
+                        : 'Reauthorize Hold (Extend 72h Window)'}
                     </span>
                     <ArrowRight className="h-3.5 w-3.5 opacity-70" />
                   </Button>
@@ -365,6 +372,21 @@ export function SettlementDrawer({
               tone="rose"
             />
             <DetailRow
+              label="Free Cancel Deadline (Locked)"
+              value={booking.freeCancelDeadlineLabel || booking.authExpiresAt}
+              tone="emerald"
+            />
+            {booking.honorExpiresLabel ? (
+              <DetailRow
+                label="PayPal Honor Window Ends"
+                value={booking.honorExpiresLabel}
+                tone="sky"
+              />
+            ) : null}
+            {booking.reauthorizedAt ? (
+              <DetailRow label="Last Reauthorization" value={booking.reauthorizedAt} tone="sky" />
+            ) : null}
+            <DetailRow
               label="Customer Upfront Debit (Today)"
               value="$0.00 (Zero Upfront Charge)"
               tone="emerald"
@@ -372,10 +394,10 @@ export function SettlementDrawer({
             />
 
             <div className="pt-2 text-[11px] font-sans text-slate-500 leading-relaxed border-t border-slate-100">
-              When the client attends, marking &ldquo;Show &amp; Capture&rdquo; triggers the final
-              ticket settlement. If the client misses their appointment past the cancellation cutoff
-              window, &ldquo;Mark No-Show&rdquo; captures only the {formatUsd(booking.noShowFee)}{' '}
-              fee and releases the remaining funds back to their payment method.
+              Settlements use booking-time snapshots only. Marking &ldquo;Show &amp; Capture&rdquo;
+              captures {formatUsd(booking.servicePrice)}. Past the free-cancel deadline (
+              {booking.freeCancelDeadlineLabel}), &ldquo;Mark No-Show&rdquo; captures only the{' '}
+              {formatUsd(booking.noShowFee)} fee and releases the remainder.
             </div>
           </Panel>
         )}

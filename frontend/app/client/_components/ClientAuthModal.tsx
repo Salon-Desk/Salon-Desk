@@ -72,7 +72,7 @@ const ClientSignUpForm: FC = () => {
         .unwrap()
         .then((data) => ({ data })),
     onCompleteSuccess,
-    'Account created successfully. Welcome to SalonDesk.',
+    'Account created. Check your email to verify, then you can book.',
   )
 
   const onSubmit = async (data: ClientSignUpFormData) => {

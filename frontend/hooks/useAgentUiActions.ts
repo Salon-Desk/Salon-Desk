@@ -40,6 +40,16 @@ export interface AgentActionHandlers {
   onAction?: (payload: AgentUiActionPayload) => void
 }
 
+export const AGENT_UI_ACTION_EVENT = 'salondesk:ui_action'
+export const AGENT_OPEN_CHAT_EVENT = 'salondesk:open_chat'
+
+export function openAgentChat(mode: 'chat' | 'voice' = 'chat') {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(
+    new CustomEvent<{ mode: 'chat' | 'voice' }>(AGENT_OPEN_CHAT_EVENT, { detail: { mode } }),
+  )
+}
+
 export function highlightElement(selector: string, durationMs = 3500) {
   if (typeof document === 'undefined') return
   try {
@@ -60,7 +70,7 @@ export function highlightElement(selector: string, durationMs = 3500) {
 export function dispatchAgentUiAction(payload: AgentUiActionPayload) {
   if (typeof window === 'undefined') return
   window.dispatchEvent(
-    new CustomEvent<AgentUiActionPayload>('salondesk:ui_action', { detail: payload }),
+    new CustomEvent<AgentUiActionPayload>(AGENT_UI_ACTION_EVENT, { detail: payload }),
   )
 }
 
@@ -93,7 +103,11 @@ export function useAgentUiActions(handlers: AgentActionHandlers = {}) {
             handlers.onOpenChangePolicy?.()
             break
           case 'open_copilot':
-            handlers.onOpenCopilot?.()
+            if (handlers.onOpenCopilot) {
+              handlers.onOpenCopilot()
+            } else {
+              openAgentChat('chat')
+            }
             break
           case 'filter_holds':
             handlers.onFilterHolds?.()

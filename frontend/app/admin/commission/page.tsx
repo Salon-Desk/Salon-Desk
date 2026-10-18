@@ -76,10 +76,11 @@ export default function AdminCommissionPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
-            Take-Rate &amp; Commission Engine
+            Take-Rate Rules
           </h1>
           <p className="text-slate-500 text-xs">
-            Manage platform take-rate splits, percentage rules, and flat fees by service taxonomy.
+            Configure platform commission rates by service category. SaaS invoices live under
+            Billing.
           </p>
         </div>
 

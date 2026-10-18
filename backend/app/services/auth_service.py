@@ -19,8 +19,9 @@ from app.models.enums import (
 )
 from app.models.organization import Organization, OrgSettings
 from app.models.policy import OrgCancellationPolicy
-from app.models.user import PasswordResetToken, Profile, User
+from app.models.user import EmailVerificationToken, PasswordResetToken, Profile, User
 from app.schemas.auth import OrgOwnerSignUpRequest, SignUpRequest
+from app.services import email_service
 
 DEFAULT_CANCELLATION_POLICY = {
     "free_cancel_hours": 24,
@@ -76,7 +77,9 @@ async def signup_client(db: AsyncSession, data: SignUpRequest) -> User:
         )
     )
     await db.flush()
-    return await get_user_by_id(db, user.id)  # type: ignore[return-value]
+    created = await get_user_by_id(db, user.id)  # type: ignore[return-value]
+    await issue_and_send_verification(db, created)
+    return created
 
 
 async def signup_org_owner(
@@ -135,6 +138,7 @@ async def signup_org_owner(
     await db.flush()
     loaded = await get_user_by_id(db, user.id)
     assert loaded is not None
+    await issue_and_send_verification(db, loaded)
     return loaded, org
 
 
@@ -162,7 +166,66 @@ async def create_password_reset_token(db: AsyncSession, email: str) -> str | Non
         )
     )
     await db.flush()
+    first_name = user.profile.first_name if user.profile else "there"
+    await email_service.send_password_reset_email(
+        to_address=user.email,
+        first_name=first_name,
+        token=raw,
+    )
     return raw
+
+
+async def issue_and_send_verification(db: AsyncSession, user: User) -> str | None:
+    if user.email_verified_at is not None:
+        return None
+    raw = secrets.token_urlsafe(32)
+    db.add(
+        EmailVerificationToken(
+            user_id=user.id,
+            token_hash=sha256_hex(raw),
+            expires_at=datetime.now(UTC) + timedelta(hours=24),
+        )
+    )
+    await db.flush()
+    first_name = user.profile.first_name if user.profile else "there"
+    await email_service.send_verification_email(
+        to_address=user.email,
+        first_name=first_name,
+        token=raw,
+    )
+    return raw
+
+
+async def verify_email_token(db: AsyncSession, token: str) -> User:
+    token_hash = sha256_hex(token)
+    result = await db.execute(
+        select(EmailVerificationToken).where(
+            EmailVerificationToken.token_hash == token_hash,
+            EmailVerificationToken.used_at.is_(None),
+        )
+    )
+    row = result.scalar_one_or_none()
+    if row is None or row.expires_at < datetime.now(UTC):
+        raise ForbiddenError("Invalid or expired verification token")
+
+    user = await get_user_by_id(db, row.user_id)
+    if user is None:
+        raise NotFoundError("User not found")
+
+    user.email_verified_at = datetime.now(UTC)
+    row.used_at = datetime.now(UTC)
+    await db.flush()
+    return user
+
+
+async def resend_verification_email(db: AsyncSession, email: str) -> bool:
+    user = await get_user_by_email(db, email)
+    if user is None:
+        return False
+    if user.email_verified_at is not None:
+        return True
+    await issue_and_send_verification(db, user)
+    return True
 
 
 async def reset_password(db: AsyncSession, token: str, new_password: str) -> None:

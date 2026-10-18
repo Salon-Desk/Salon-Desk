@@ -17,17 +17,27 @@ export interface Booking {
   customerNotes?: string | null
   durationMin: number
   servicePrice: number
+  /** Locked authorization ceiling from booking.agreed_hold_amount */
   holdAmount: number
+  /** Locked no-show / late-cancel fee from booking.agreed_no_show_fee */
   noShowFee: number
   status: HoldState
   paypalAuthId: string
+  /** @deprecated Prefer freeCancelDeadlineLabel / honorExpiresLabel */
   authExpiresAt: string
+  /** Human-readable free-cancel deadline (from free_cancel_deadline_at) */
+  freeCancelDeadlineLabel: string
+  /** Human-readable PayPal honor window end (from hold.honor_expires_at when known) */
+  honorExpiresLabel?: string
+  policySnapshot?: Record<string, unknown>
+  commissionSnapshot?: Record<string, unknown>
   idempotencyKey: string
   consentHash: string
   createdAt: string
   settledAt?: string
   settlementNote?: string
   honorPeriodEndsInHours?: number
+  reauthorizationCount?: number
   reauthorizedAt?: string
 }
 

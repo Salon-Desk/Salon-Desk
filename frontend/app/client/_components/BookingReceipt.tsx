@@ -99,12 +99,20 @@ export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
           <span className="font-semibold text-amber-900">{formatUsd(booking.holdAmount)}</span>
         </div>
         <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">
+          <span className="text-amber-900">Agreed no-show fee</span>
+          <span className="font-semibold text-amber-900">{formatUsd(booking.noShowFee)}</span>
+        </div>
+        <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">
+          <span className="text-amber-900">Free cancel until</span>
+          <span className="font-semibold text-amber-900">{booking.freeCancelDeadlineLabel}</span>
+        </div>
+        <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">
           <span className="text-emerald-800">Charged today</span>
           <span className="font-semibold text-emerald-800">{formatUsd(0)}</span>
         </div>
         <p className="mt-2 text-[11px] leading-relaxed text-amber-800/80">
-          PayPal authorization only. Settlement happens at the salon, and cancellation at least 24
-          hours ahead releases the hold at {formatUsd(0)}.
+          PayPal authorization only. Settlement uses the locked booking-time price and policy.
+          Cancel before {booking.freeCancelDeadlineLabel} to release the hold at {formatUsd(0)}.
         </p>
       </div>
 

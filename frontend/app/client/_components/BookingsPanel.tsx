@@ -284,7 +284,9 @@ function ActiveHoldCard({
             <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
               Cancellation
             </span>
-            <div className="font-medium text-emerald-700">Free until 24h before</div>
+            <div className="font-medium text-emerald-700">
+              Free until {booking.freeCancelDeadlineLabel || booking.authExpiresAt}
+            </div>
           </div>
         </div>
 

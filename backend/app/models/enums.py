@@ -62,6 +62,7 @@ class ChangeRequestStatus(str, enum.Enum):
 
 class PaymentHoldStatus(str, enum.Enum):
     AUTHORIZED = "AUTHORIZED"
+    REAUTHORIZED = "REAUTHORIZED"
     CAPTURED = "CAPTURED"
     PARTIALLY_CAPTURED = "PARTIALLY_CAPTURED"
     VOIDED = "VOIDED"
@@ -78,6 +79,21 @@ class PlatformCommissionType(str, enum.Enum):
     PERCENTAGE = "percentage"
     FLAT = "flat"
     HYBRID = "hybrid"
+
+
+class CommissionRecordStatus(str, enum.Enum):
+    ACCRUED = "ACCRUED"
+    INVOICED = "INVOICED"
+    PAID = "PAID"
+    WAIVED = "WAIVED"
+
+
+class OrgCommissionInvoiceStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    ISSUED = "ISSUED"
+    PAID = "PAID"
+    OVERDUE = "OVERDUE"
+    VOID = "VOID"
 
 
 class KnowledgeEntityType(str, enum.Enum):

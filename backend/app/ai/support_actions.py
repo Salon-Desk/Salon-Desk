@@ -81,6 +81,21 @@ MERCHANT_NAV_MAP: dict[str, dict[str, str]] = {
         "tab": "settings",
         "label": "Cancellation & No-Show Policies",
     },
+    "billing": {
+        "target": "/merchant/billing",
+        "tab": "billing",
+        "label": "Platform Commission Billing",
+    },
+    "invoices": {
+        "target": "/merchant/billing",
+        "tab": "billing",
+        "label": "Platform Commission Billing",
+    },
+    "commissions": {
+        "target": "/merchant/billing",
+        "tab": "billing",
+        "label": "Platform Commission Billing",
+    },
     "profile": {"target": "/merchant/profile", "tab": "settings", "label": "Salon Profile"},
 }
 
@@ -154,6 +169,16 @@ ADMIN_NAV_MAP: dict[str, dict[str, str]] = {
         "target": "/admin/commission",
         "tab": "commission",
         "label": "Commission Rules & Overrides",
+    },
+    "billing": {
+        "target": "/admin/billing",
+        "tab": "billing",
+        "label": "SaaS Commission Billing",
+    },
+    "invoices": {
+        "target": "/admin/billing",
+        "tab": "billing",
+        "label": "SaaS Commission Billing",
     },
     "overrides": {
         "target": "/admin/commission",
@@ -575,6 +600,14 @@ def resolve_portal_navigation(
                 tab=nav["tab"],
                 label=nav["label"],
                 reason="Opening change requests",
+            ), None
+        if any(w in q for w in ["invoice", "billing", "saas fee", "saas invoice"]):
+            nav = ADMIN_NAV_MAP["billing"]
+            return AgentNavigation(
+                target=nav["target"],
+                tab=nav["tab"],
+                label=nav["label"],
+                reason="Opening SaaS commission billing",
             ), None
         if any(w in q for w in ["commission", "rate", "platform fee", "percentage", "flat fee"]):
             nav = ADMIN_NAV_MAP["commission"]

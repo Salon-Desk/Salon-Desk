@@ -5,7 +5,9 @@ import {
   type ApiPage,
   type ApiServiceCategory,
   type CreateServiceCategoryRequest,
+  type GenerateCommissionInvoiceRequest,
   normalizePaginated,
+  type OrgCommissionInvoice,
   type PlatformCommission,
   type UpdateServiceCategoryRequest,
 } from '@/types/api-org'
@@ -209,6 +211,48 @@ export const platformApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['admin', 'user'],
     }),
+
+    getAdminCommissionInvoices: builder.query<
+      ApiPage<OrgCommissionInvoice>,
+      { page?: number; page_size?: number; status?: string; org_id?: string } | void
+    >({
+      query: (params) => ({
+        url: '/api/v1/admin/commission-invoices',
+        method: 'GET',
+        params: params || undefined,
+      }),
+      transformResponse: (res: ApiPage<OrgCommissionInvoice> | OrgCommissionInvoice[]) =>
+        normalizePaginated(res),
+      providesTags: ['admin', 'payments'],
+    }),
+
+    createAdminCommissionInvoice: builder.mutation<
+      OrgCommissionInvoice,
+      GenerateCommissionInvoiceRequest
+    >({
+      query: (data) => ({
+        url: '/api/v1/admin/commission-invoices',
+        method: 'POST',
+        data,
+      }),
+      invalidatesTags: ['admin', 'payments', 'organizations'],
+    }),
+
+    issueAdminCommissionInvoice: builder.mutation<OrgCommissionInvoice, string>({
+      query: (invoiceId) => ({
+        url: `/api/v1/admin/commission-invoices/${invoiceId}/issue`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['admin', 'payments', 'organizations'],
+    }),
+
+    voidAdminCommissionInvoice: builder.mutation<OrgCommissionInvoice, string>({
+      query: (invoiceId) => ({
+        url: `/api/v1/admin/commission-invoices/${invoiceId}/void`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['admin', 'payments', 'organizations'],
+    }),
   }),
 })
 
@@ -229,6 +273,10 @@ export const {
   useUpdateAdminCommissionMutation,
   useCreateAdminStaffMutation,
   useDeleteAdminStaffMutation,
+  useGetAdminCommissionInvoicesQuery,
+  useCreateAdminCommissionInvoiceMutation,
+  useIssueAdminCommissionInvoiceMutation,
+  useVoidAdminCommissionInvoiceMutation,
 } = platformApi
 
 /** @deprecated Use `platformApi` — kept for existing imports. */

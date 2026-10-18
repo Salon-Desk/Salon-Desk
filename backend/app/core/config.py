@@ -120,6 +120,16 @@ class Settings(BaseSettings):
     # Ed25519 signing key (PEM or base64); empty = generate ephemeral in dev
     ed25519_private_key: str = ""
 
+    # SMTP email (verification, booking confirmations, reminders)
+    smtp_host: str = ""
+    smtp_port: int = 465
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    notify_email: str = ""
+    yisihak_notify_email: str = ""
+    frontend_base_url: str = "http://localhost:3000"
+
     # Redis
     redis_host: str = "localhost"
     redis_port: int = 6379

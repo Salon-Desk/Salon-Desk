@@ -3,10 +3,10 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.exceptions import ForbiddenError, NotFoundError, PolicyViolationException
 from app.models.booking import Booking
 from app.models.enums import (
     BookingStatus,
@@ -20,6 +20,7 @@ from app.services.ledger_service import append_ledger_hash, build_consent_signat
 from app.services.paypal_rest import PayPalRestClient
 
 GENESIS_HASH = "0" * 64
+MAX_REAUTHORIZATION_COUNT = 1
 
 
 async def _latest_ledger_hash(db: AsyncSession) -> str:
@@ -102,18 +103,23 @@ async def create_hold(
     if consent.scalar_one_or_none() is None:
         raise ForbiddenError("Consent required before authorization hold")
 
+    hold_amount = booking.agreed_hold_amount
     paypal = PayPalRestClient()
-    paypal_result = await paypal.authorize_order(amount=booking.total_price, currency=currency)
+    paypal_result = await paypal.authorize_order(amount=hold_amount, currency=currency)
 
+    auth_id = paypal_result.get("authorization_id") or f"stub-auth-{booking.id}"
     hold = PaymentHold(
         booking_id=booking.id,
         org_id=booking.org_id,
         paypal_order_id=paypal_result.get("order_id") or f"stub-order-{booking.id}",
-        paypal_authorization_id=paypal_result.get("authorization_id") or f"stub-auth-{booking.id}",
-        amount=booking.total_price,
+        parent_authorization_id=auth_id,
+        latest_authorization_id=auth_id,
+        amount=hold_amount,
+        captured_amount=Decimal("0.00"),
         currency=currency,
         status=PaymentHoldStatus.AUTHORIZED,
         honor_expires_at=datetime.now(UTC) + timedelta(days=3),
+        reauthorization_count=0,
         idempotency_key=idempotency_key,
     )
     db.add(hold)
@@ -130,7 +136,74 @@ async def create_hold(
         amount=hold.amount,
         currency=hold.currency,
     )
+    await _notify_booking_confirmed(db, booking=booking)
     return hold
+
+
+async def _notify_booking_confirmed(db: AsyncSession, *, booking: Booking) -> None:
+    """Email client confirmation + ops notification after hold authorization."""
+    from sqlalchemy.orm import selectinload
+
+    from app.models.booking import BookingService
+    from app.models.organization import Organization
+    from app.models.service import Service
+    from app.models.user import User
+    from app.services import email_service
+
+    client_result = await db.execute(
+        select(User).options(selectinload(User.profile)).where(User.id == booking.client_id)
+    )
+    client = client_result.scalar_one_or_none()
+    org = await db.get(Organization, booking.org_id)
+
+    service_name = "Appointment"
+    bs_result = await db.execute(
+        select(BookingService)
+        .options(selectinload(BookingService.service))
+        .where(BookingService.booking_id == booking.id)
+        .limit(1)
+    )
+    first_line = bs_result.scalar_one_or_none()
+    if first_line is not None and isinstance(first_line.service, Service):
+        service_name = first_line.service.name
+
+    client_name = "there"
+    client_email = None
+    if client is not None:
+        client_email = client.email
+        if client.profile is not None:
+            client_name = client.profile.first_name or client_name
+
+    starts_label = booking.starts_at.strftime("%Y-%m-%d %H:%M %Z") or booking.starts_at.isoformat()
+    free_label = (
+        booking.free_cancel_deadline_at.strftime("%Y-%m-%d %H:%M %Z")
+        or booking.free_cancel_deadline_at.isoformat()
+    )
+    salon_name = org.name if org else "Salon"
+
+    if client_email:
+        await email_service.send_booking_confirmation_email(
+            to_address=client_email,
+            client_name=client_name,
+            service_name=service_name,
+            salon_name=salon_name,
+            starts_at_label=starts_label,
+            hold_amount=str(booking.agreed_hold_amount),
+            no_show_fee=str(booking.agreed_no_show_fee),
+            free_cancel_deadline=free_label,
+            booking_id=str(booking.id),
+        )
+
+    await email_service.notify_platform(
+        subject=f"New booking confirmed — {salon_name}",
+        body=(
+            f"Booking {booking.id} confirmed at {salon_name}.\n"
+            f"Client: {client_name} <{client_email or 'n/a'}>\n"
+            f"Service: {service_name}\n"
+            f"When: {starts_label}\n"
+            f"Hold: ${booking.agreed_hold_amount}\n"
+        ),
+    )
 
 
 async def get_active_hold(db: AsyncSession, booking_id: UUID) -> PaymentHold | None:
@@ -141,6 +214,7 @@ async def get_active_hold(db: AsyncSession, booking_id: UUID) -> PaymentHold | N
             PaymentHold.status.in_(
                 [
                     PaymentHoldStatus.AUTHORIZED,
+                    PaymentHoldStatus.REAUTHORIZED,
                     PaymentHoldStatus.PARTIALLY_CAPTURED,
                 ]
             ),
@@ -157,18 +231,40 @@ async def capture_hold(
     booking: Booking,
     capture_type: PaymentCaptureType,
     amount: Decimal | None = None,
+    final_capture: bool = False,
 ) -> PaymentCapture:
     hold = await get_active_hold(db, booking.id)
     if hold is None:
         raise NotFoundError("No active payment hold for booking")
 
-    capture_amount = amount if amount is not None else hold.amount
-    if capture_type == PaymentCaptureType.NO_SHOW_FEE and amount is None:
-        capture_amount = (hold.amount * Decimal("0.50")).quantize(Decimal("0.01"))
+    if capture_type == PaymentCaptureType.FULL:
+        capture_amount = amount if amount is not None else booking.total_price
+        final_capture = True
+    elif capture_type == PaymentCaptureType.NO_SHOW_FEE:
+        capture_amount = amount if amount is not None else booking.agreed_no_show_fee
+        final_capture = True
+        if capture_amount > booking.agreed_no_show_fee:
+            raise PolicyViolationException(
+                f"No-show fee {capture_amount} exceeds agreed_no_show_fee "
+                f"{booking.agreed_no_show_fee}"
+            )
+    else:
+        capture_amount = amount if amount is not None else hold.amount
+
+    remaining = hold.amount - hold.captured_amount
+    if capture_amount > remaining:
+        raise PolicyViolationException(
+            f"Capture {capture_amount} would exceed authorized ceiling "
+            f"(remaining {remaining} of {hold.amount})"
+        )
+    if capture_type == PaymentCaptureType.FULL and capture_amount > booking.total_price:
+        raise PolicyViolationException(
+            f"Full capture {capture_amount} exceeds booking total_price {booking.total_price}"
+        )
 
     paypal = PayPalRestClient()
     paypal_result = await paypal.partial_capture(
-        authorization_id=hold.paypal_authorization_id or "",
+        authorization_id=hold.latest_authorization_id or hold.parent_authorization_id or "",
         amount=capture_amount,
     )
 
@@ -179,21 +275,27 @@ async def capture_hold(
         amount=capture_amount,
         currency=hold.currency,
         capture_type=capture_type,
+        final_capture=final_capture,
         status="COMPLETED",
         paypal_debug_id=paypal_result.get("debug_id"),
     )
     db.add(capture)
 
-    if capture_type == PaymentCaptureType.FULL or capture_amount >= hold.amount:
+    hold.captured_amount = (hold.captured_amount + capture_amount).quantize(Decimal("0.01"))
+
+    if final_capture or hold.captured_amount >= hold.amount:
         hold.status = PaymentHoldStatus.CAPTURED
+    else:
+        hold.status = PaymentHoldStatus.PARTIALLY_CAPTURED
+
+    if capture_type == PaymentCaptureType.FULL:
         booking.status = BookingStatus.COMPLETED
         event_type = "FULL_PAYMENT_CAPTURED"
     elif capture_type == PaymentCaptureType.NO_SHOW_FEE:
-        hold.status = PaymentHoldStatus.PARTIALLY_CAPTURED
-        booking.status = BookingStatus.NO_SHOW
+        if booking.status != BookingStatus.CANCELLED:
+            booking.status = BookingStatus.NO_SHOW
         event_type = "NO_SHOW_FEE_CAPTURED"
     else:
-        hold.status = PaymentHoldStatus.PARTIALLY_CAPTURED
         event_type = "PARTIAL_PAYMENT_CAPTURED"
 
     await db.flush()
@@ -203,6 +305,7 @@ async def capture_hold(
         payload={
             "capture_id": str(capture.id),
             "capture_type": capture_type.value,
+            "final_capture": final_capture,
             "paypal": paypal_result,
         },
         org_id=booking.org_id,
@@ -212,6 +315,11 @@ async def capture_hold(
         currency=hold.currency,
         paypal_debug_id=capture.paypal_debug_id,
     )
+
+    # Lazy import avoids circular dependency with commission_billing_service
+    from app.services.commission_billing_service import accrue_commission_for_capture
+
+    await accrue_commission_for_capture(db, booking=booking, capture=capture)
     return capture
 
 
@@ -222,7 +330,7 @@ async def void_hold(db: AsyncSession, *, booking: Booking) -> PaymentHold | None
 
     paypal = PayPalRestClient()
     paypal_result = await paypal.void_authorization(
-        authorization_id=hold.paypal_authorization_id or ""
+        authorization_id=hold.parent_authorization_id or hold.latest_authorization_id or ""
     )
     hold.status = PaymentHoldStatus.VOIDED
     await db.flush()
@@ -230,6 +338,53 @@ async def void_hold(db: AsyncSession, *, booking: Booking) -> PaymentHold | None
         db,
         event_type="AUTHORIZATION_VOIDED",
         payload={"hold_id": str(hold.id), "paypal": paypal_result},
+        org_id=booking.org_id,
+        booking_id=booking.id,
+        hold_id=hold.id,
+        amount=hold.amount,
+        currency=hold.currency,
+    )
+    return hold
+
+
+async def reauthorize_hold(db: AsyncSession, *, booking: Booking) -> PaymentHold:
+    hold = await get_active_hold(db, booking.id)
+    if hold is None:
+        raise NotFoundError("No active payment hold for booking")
+    if hold.reauthorization_count >= MAX_REAUTHORIZATION_COUNT:
+        raise ForbiddenError("Hold has already been reauthorized (max 1)")
+    if hold.status not in {
+        PaymentHoldStatus.AUTHORIZED,
+        PaymentHoldStatus.REAUTHORIZED,
+    }:
+        raise ForbiddenError("Only AUTHORIZED or REAUTHORIZED holds can be reauthorized")
+
+    parent_id = hold.parent_authorization_id or hold.latest_authorization_id or ""
+    paypal = PayPalRestClient()
+    paypal_result = await paypal.reauthorize_authorization(authorization_id=parent_id)
+    new_auth_id = (
+        paypal_result.get("authorization_id")
+        or f"stub-reauth-{booking.id}-{hold.reauthorization_count + 1}"
+    )
+
+    if hold.parent_authorization_id is None:
+        hold.parent_authorization_id = parent_id or new_auth_id
+    hold.latest_authorization_id = new_auth_id
+    hold.reauthorization_count += 1
+    hold.status = PaymentHoldStatus.REAUTHORIZED
+    hold.honor_expires_at = datetime.now(UTC) + timedelta(days=3)
+    await db.flush()
+
+    await append_ledger(
+        db,
+        event_type="HONOR_PERIOD_REAUTHORIZED",
+        payload={
+            "hold_id": str(hold.id),
+            "parent_authorization_id": hold.parent_authorization_id,
+            "latest_authorization_id": hold.latest_authorization_id,
+            "reauthorization_count": hold.reauthorization_count,
+            "paypal": paypal_result,
+        },
         org_id=booking.org_id,
         booking_id=booking.id,
         hold_id=hold.id,
@@ -270,7 +425,12 @@ async def ingest_webhook(
         "PAYMENT.AUTHORIZATION.CREATED",
     }:
         hold_result = await db.execute(
-            select(PaymentHold).where(PaymentHold.paypal_authorization_id == str(auth_id))
+            select(PaymentHold).where(
+                or_(
+                    PaymentHold.parent_authorization_id == str(auth_id),
+                    PaymentHold.latest_authorization_id == str(auth_id),
+                )
+            )
         )
         hold = hold_result.scalar_one_or_none()
         if hold:

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Numeric, String, text
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, Numeric, String, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -73,8 +73,12 @@ class PaymentHold(TimestampedModel):
         index=True,
     )
     paypal_order_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    paypal_authorization_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    parent_authorization_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    latest_authorization_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    captured_amount: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2), nullable=False, default=Decimal("0.00")
+    )
     currency: Mapped[str] = mapped_column(String(3), default="USD", nullable=False)
     status: Mapped[PaymentHoldStatus] = mapped_column(
         Enum(
@@ -88,6 +92,7 @@ class PaymentHold(TimestampedModel):
     honor_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    reauthorization_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     idempotency_key: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
 
     booking = relationship("Booking")
@@ -121,6 +126,7 @@ class PaymentCapture(BaseModel):
         ),
         nullable=False,
     )
+    final_capture: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
     paypal_debug_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 

@@ -8,6 +8,7 @@ import {
   Clock,
   DollarSign,
   Eye,
+  Receipt,
   RefreshCw,
   Scissors,
   ShieldAlert,
@@ -21,6 +22,7 @@ import { useMemo, useState } from 'react'
 import PrimaryButton from '@/components/button/PrimaryButton'
 import { LineTrendChart } from '@/components/chart/LineTrendChart'
 import { Badge, Card, EmptyState, HoldStateBadge, SearchInput, StatCard } from '@/components/ui'
+import { openAgentChat } from '@/hooks/useAgentUiActions'
 import { ROUTES } from '@/lib/constants'
 import { formatUsd } from '@/lib/format'
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
@@ -39,7 +41,7 @@ import { useMerchantContext } from './_context/merchant-context'
 type BookingFilterTab = 'all' | 'holds' | 'captured' | 'voided'
 
 export default function MerchantDashboardPage() {
-  const { setSelectedBooking, setInspectConsentBooking, setIsCopilotOpen } = useMerchantContext()
+  const { setSelectedBooking, setInspectConsentBooking } = useMerchantContext()
   const [filterTab, setFilterTab] = useState<BookingFilterTab>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -234,7 +236,7 @@ export default function MerchantDashboardPage() {
               fullWidth={false}
               icon={<Sparkles className="h-3.5 w-3.5 text-white" />}
               className="h-8 sm:h-9 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold px-3 sm:px-4 text-xs shadow-md shadow-amber-500/20 transition-transform active:scale-95"
-              onClick={() => setIsCopilotOpen(true)}
+              onClick={() => openAgentChat('chat')}
             />
           </div>
         </div>
@@ -407,6 +409,14 @@ export default function MerchantDashboardPage() {
                   icon: Users,
                   badgeText: 'Team',
                   toneClass: 'text-purple-600 bg-purple-50 border-purple-200/60',
+                },
+                {
+                  href: ROUTES.merchantBilling,
+                  title: 'Platform Billing',
+                  subtitle: 'Commission accruals & SaaS invoices',
+                  icon: Receipt,
+                  badgeText: 'Billing',
+                  toneClass: 'text-emerald-600 bg-emerald-50 border-emerald-200/60',
                 },
               ].map((tile) => {
                 const IconComponent = tile.icon

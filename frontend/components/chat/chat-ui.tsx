@@ -131,7 +131,7 @@ export function ChatPanelShell({
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-stone-950/35 backdrop-blur-[2px] sm:block motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end  sm:block motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
       <button
         type="button"
         aria-label={`Close ${title}`}

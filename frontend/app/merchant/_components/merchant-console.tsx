@@ -8,17 +8,16 @@ import { AuthGate } from '@/components/layout/auth-gate'
 import { ConsoleShell } from '@/components/layout/console-shell'
 import { Toast } from '@/components/ui'
 import { useMerchantStore, useToast } from '@/hooks'
-import { useAgentUiActions } from '@/hooks/useAgentUiActions'
+import { openAgentChat, useAgentUiActions } from '@/hooks/useAgentUiActions'
 import { SANDBOX_CREDENTIALS } from '@/lib/constants'
-import { createPaypalDebugId, createSequentialId } from '@/lib/ids'
-import type { AuditLedgerEntry, Booking, ChangeRequest, SalonService, StaffMember } from '@/types'
+import { createSequentialId } from '@/lib/ids'
+import type { Booking, ChangeRequest, SalonService, StaffMember } from '@/types'
 
 import { useMerchantSettlement } from '../_hooks/use-merchant-settlement'
 import type { MerchantTab } from '../_types/merchant-types'
 import { AppointmentsTab } from './appointments-tab'
 import { CalendarTab } from './calendar-tab'
 import { ConsentModal } from './consent-modal'
-import { CopilotDrawer, type RefundProposal } from './copilot-drawer'
 import { DashboardTab } from './dashboard-tab'
 import { MerchantHeader } from './merchant-header'
 import { MerchantSidebar } from './merchant-sidebar'
@@ -79,8 +78,6 @@ export function MerchantConsole() {
     noShowFee: 30,
   })
 
-  const [isCopilotOpen, setIsCopilotOpen] = useState(false)
-
   useAgentUiActions({
     onOpenAddStaff: () => {
       setActiveTab('staff')
@@ -99,7 +96,7 @@ export function MerchantConsole() {
       setIsChangePolicyOpen(true)
     },
     onOpenCopilot: () => {
-      setIsCopilotOpen(true)
+      openAgentChat('chat')
     },
     onAction: (payload) => {
       if (
@@ -350,33 +347,6 @@ export function MerchantConsole() {
     showToast('Cancellation policy amendment submitted for compliance review.')
   }
 
-  const handleExecuteRefundProposal = useCallback(
-    (proposal: RefundProposal) => {
-      const newLedgerEntry: AuditLedgerEntry = {
-        id: createSequentialId('LEDGER-REFUND'),
-        bookingId: proposal.bookingId,
-        clientName: proposal.clientName,
-        serviceName: 'No-Show Fee Goodwill Adjustment',
-        action: 'GOODWILL_PARTIAL_REFUND',
-        amount: proposal.refundAmount,
-        currency: 'USD',
-        paypalDebugId: createPaypalDebugId('REFUND'),
-        webhookVerified: true,
-        timestamp: 'Just now',
-        details: `Owner confirmed $${proposal.refundAmount.toFixed(2)} goodwill partial refund via PayPal Agent Copilot. Reason: ${proposal.reason}.`,
-      }
-
-      setState((prev) => ({
-        ...prev,
-        auditLedger: [newLedgerEntry, ...prev.auditLedger],
-      }))
-
-      showToast(`$${proposal.refundAmount.toFixed(2)} refund issued to ${proposal.clientName}.`)
-      return newLedgerEntry.id
-    },
-    [setState, showToast],
-  )
-
   useEffect(() => {
     if (!selectedBooking) return
     const fresh = state.bookings.find((b) => b.id === selectedBooking.id)
@@ -438,7 +408,7 @@ export function MerchantConsole() {
               setActiveTab(tab)
               setIsMobileSidebarOpen(false)
             }}
-            onOpenCopilot={() => setIsCopilotOpen(true)}
+            onOpenCopilot={() => openAgentChat('chat')}
             onLockSession={handleLockSession}
             onCloseMobile={() => setIsMobileSidebarOpen(false)}
           />
@@ -564,14 +534,6 @@ export function MerchantConsole() {
           onMarkNoShow={settlement.handleMarkNoShow}
           onCancelAndVoid={settlement.handleCancelAndVoid}
           onReauthorizeHold={settlement.handleReauthorizeHold}
-        />
-      ) : null}
-
-      {isCopilotOpen ? (
-        <CopilotDrawer
-          bookings={state.bookings}
-          onClose={() => setIsCopilotOpen(false)}
-          onExecuteRefund={handleExecuteRefundProposal}
         />
       ) : null}
 

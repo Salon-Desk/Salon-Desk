@@ -2,16 +2,18 @@ from fastapi import APIRouter, HTTPException, status
 
 from app.api.deps import DbSession
 from app.core.config import get_settings
-from app.core.exceptions import ForbiddenError, UnauthorizedError
+from app.core.exceptions import ForbiddenError, NotFoundError, UnauthorizedError
 from app.schemas.auth import (
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     OrgOwnerSignUpRequest,
     OrgOwnerSignUpResponse,
+    ResendVerificationRequest,
     ResetPasswordRequest,
     SignInRequest,
     SignUpRequest,
     TokenResponse,
+    VerifyEmailRequest,
 )
 from app.schemas.common import MessageOut
 from app.schemas.user import UserOut
@@ -77,6 +79,21 @@ async def reset_password(body: ResetPasswordRequest, db: DbSession) -> MessageOu
     except ForbiddenError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=exc.message) from exc
     return MessageOut(detail="Password updated")
+
+
+@router.post("/verify-email", response_model=MessageOut)
+async def verify_email(body: VerifyEmailRequest, db: DbSession) -> MessageOut:
+    try:
+        await auth_service.verify_email_token(db, body.token)
+    except (ForbiddenError, NotFoundError) as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=exc.message) from exc
+    return MessageOut(detail="Email verified")
+
+
+@router.post("/resend-verification", response_model=MessageOut)
+async def resend_verification(body: ResendVerificationRequest, db: DbSession) -> MessageOut:
+    await auth_service.resend_verification_email(db, body.email)
+    return MessageOut(detail="If the email exists and is unverified, a new link was sent")
 
 
 @router.post("/demo", response_model=TokenResponse)

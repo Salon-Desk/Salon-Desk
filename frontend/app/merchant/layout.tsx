@@ -11,7 +11,8 @@ import { PortalGuard } from '@/components/layout/portal-guard'
 import { Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useMerchantSession } from '@/hooks/use-merchant-session'
-import { mapApiBookingToUi, mapBookingStatusToHoldState } from '@/lib/mappers/booking'
+import { openAgentChat } from '@/hooks/useAgentUiActions'
+import { mapBookingStatusToHoldState } from '@/lib/mappers/booking'
 import type { AppDispatch } from '@/store'
 import {
   useCreateMyChangeRequestMutation,
@@ -25,7 +26,6 @@ import {
 import { logout, userSelector } from '@/store/authSlice'
 
 import { ConsentModal } from './_components/consent-modal'
-import { CopilotDrawer } from './_components/copilot-drawer'
 import { MerchantHeader } from './_components/merchant-header'
 import { MerchantSidebar } from './_components/merchant-sidebar'
 import { PaypalChangeModal, PolicyChangeModal } from './_components/settings-modals'
@@ -67,11 +67,6 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
     [changeRequests],
   )
 
-  const dynamicBookings = useMemo(
-    () => apiBookings.map((b) => mapApiBookingToUi(b, { salonName: org?.name })),
-    [apiBookings, org?.name],
-  )
-
   const {
     state,
     toastMessage,
@@ -83,8 +78,6 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
     isSettlementProcessing,
     inspectConsentBooking,
     setInspectConsentBooking,
-    isCopilotOpen,
-    setIsCopilotOpen,
 
     isChangePaypalOpen,
     setIsChangePaypalOpen,
@@ -94,7 +87,6 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
     policyForm,
 
     settlement,
-    handleExecuteRefundProposal,
     handleToggleDrift,
   } = useMerchantContext()
 
@@ -154,7 +146,7 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
             staffCount={employees.length}
             servicesCount={services.length}
             pendingChangeRequests={pendingChangeRequests}
-            onOpenCopilot={() => setIsCopilotOpen(true)}
+            onOpenCopilot={() => openAgentChat('chat')}
             onLockSession={handleLockSession}
             onCloseMobile={() => setIsMobileSidebarOpen(false)}
           />
@@ -181,14 +173,6 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
           onMarkNoShow={settlement.handleMarkNoShow}
           onCancelAndVoid={settlement.handleCancelAndVoid}
           onReauthorizeHold={settlement.handleReauthorizeHold}
-        />
-      ) : null}
-
-      {isCopilotOpen ? (
-        <CopilotDrawer
-          bookings={dynamicBookings.length > 0 ? dynamicBookings : state.bookings}
-          onClose={() => setIsCopilotOpen(false)}
-          onExecuteRefund={handleExecuteRefundProposal}
         />
       ) : null}
 

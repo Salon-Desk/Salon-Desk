@@ -1,6 +1,16 @@
 'use client'
 
-import { ArrowRight, Building2, Clock, CreditCard, Loader2, RefreshCw, Sliders } from 'lucide-react'
+import {
+  ArrowRight,
+  Building2,
+  Clock,
+  CreditCard,
+  Loader2,
+  Percent,
+  Receipt,
+  RefreshCw,
+  Sliders,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
@@ -69,7 +79,7 @@ export default function AdminOverviewPage() {
                 {totalOrgs} salons · {data.ledger_entry_count} ledger entries
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => void refetch()}
@@ -78,6 +88,20 @@ export default function AdminOverviewPage() {
                 <RefreshCw className="h-3.5 w-3.5" />
                 Refresh
               </button>
+              <Link
+                href={ROUTES.adminCommission}
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                <Percent className="h-3.5 w-3.5 text-amber-700" />
+                Commission
+              </Link>
+              <Link
+                href={ROUTES.adminBilling}
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                <Receipt className="h-3.5 w-3.5 text-amber-700" />
+                Billing
+              </Link>
               <Link
                 href={ROUTES.adminSalons ?? '/admin/salons'}
                 className="inline-flex items-center gap-1.5 rounded-full bg-stone-950 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold text-white hover:bg-stone-800"

@@ -1,5 +1,5 @@
 export type MerchantTab =
-  'dashboard' | 'calendar' | 'appointments' | 'staff' | 'services' | 'settings'
+  'dashboard' | 'calendar' | 'appointments' | 'staff' | 'services' | 'billing' | 'settings'
 
 export const MERCHANT_TAB_GROUPS = ['Salon Operations', 'Salon Configuration'] as const
 
@@ -9,6 +9,7 @@ export const MERCHANT_TAB_TITLES: Record<MerchantTab, string> = {
   appointments: 'Appointments',
   staff: 'Staff',
   services: 'Services',
+  billing: 'Billing',
   settings: 'Settings',
 }
 
@@ -18,6 +19,7 @@ export const MERCHANT_TAB_SUBTITLES: Record<MerchantTab, string> = {
   appointments: 'Bookings and cryptographic audit ledger.',
   staff: 'Stylist roster and chair availability.',
   services: 'Service menu, pricing, and deposit rules.',
+  billing: 'Platform commission accruals and SaaS invoices.',
   settings: 'PayPal merchant wallet and policy rules.',
 }
 
@@ -27,6 +29,7 @@ export const MERCHANT_TAB_ROUTES: Record<MerchantTab, string> = {
   appointments: '/merchant/appointments',
   staff: '/merchant/staff',
   services: '/merchant/services',
+  billing: '/merchant/billing',
   settings: '/merchant/settings',
 }
 
@@ -35,6 +38,7 @@ export function getMerchantTabFromPathname(pathname: string): MerchantTab {
   if (pathname.startsWith('/merchant/appointments')) return 'appointments'
   if (pathname.startsWith('/merchant/staff')) return 'staff'
   if (pathname.startsWith('/merchant/services')) return 'services'
+  if (pathname.startsWith('/merchant/billing')) return 'billing'
   if (pathname.startsWith('/merchant/settings')) return 'settings'
   return 'dashboard'
 }

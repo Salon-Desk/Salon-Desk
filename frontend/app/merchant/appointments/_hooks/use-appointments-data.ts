@@ -14,7 +14,9 @@ export function useAppointmentsData() {
   const kpiData = useMemo(() => {
     const totalBookings = bookings.length
     const totalHoldValue = bookings.reduce((sum, b) => sum + b.holdAmount, 0)
-    const pendingHolds = bookings.filter((b) => b.status === 'HELD').length
+    const pendingHolds = bookings.filter(
+      (b) => b.status === 'HELD' || b.status === 'REAUTHORIZED',
+    ).length
     const capturedBookings = bookings.filter((b) => b.status === 'CAPTURED').length
     const noShowCaptured = bookings.filter((b) => b.status === 'NO_SHOW_CAPTURED').length
     const voidedBookings = bookings.filter((b) => b.status === 'VOIDED').length

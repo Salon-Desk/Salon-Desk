@@ -34,6 +34,7 @@ class UserOut(ORMModel):
     status: str
     role: str
     org_id: UUID | None = None
+    email_verified_at: datetime | None = None
     created_at: datetime
     profile: ProfileOut | None = None
 

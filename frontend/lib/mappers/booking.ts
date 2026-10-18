@@ -10,6 +10,18 @@ function catalogCoverUrl(images: Record<string, unknown> | undefined): string {
   return typeof cover === 'string' && cover.length > 0 ? cover : SERVICE_IMAGE_FALLBACK
 }
 
+function formatDeadlineLabel(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
 /** Map backend booking status → demo HoldState used by UI badges/drawers. */
 export function mapBookingStatusToHoldState(status: string): HoldState {
   switch (status.toUpperCase()) {
@@ -19,6 +31,8 @@ export function mapBookingStatusToHoldState(status: string): HoldState {
       return 'VOIDED'
     case 'NO_SHOW':
       return 'NO_SHOW_CAPTURED'
+    case 'REAUTHORIZED':
+      return 'REAUTHORIZED'
     case 'CONFIRMED':
     case 'PENDING':
     default:
@@ -33,13 +47,28 @@ export function mapApiBookingToUi(
     salonName?: string
     serviceName?: string
     stylistName?: string
+    paypalAuthId?: string | null
+    honorExpiresAt?: string | null
+    reauthorizationCount?: number
+    holdStatus?: string | null
   },
 ): Booking {
   const price = Number(booking.total_price) || 0
+  const holdAmount = Number(booking.agreed_hold_amount ?? booking.total_price) || price
+  const noShowFee = Number(booking.agreed_no_show_fee ?? 0)
   const firstService = booking.booking_services?.[0]
   const starts = new Date(booking.starts_at)
   const ends = new Date(booking.ends_at)
   const durationMin = Math.max(15, Math.round((ends.getTime() - starts.getTime()) / 60000))
+  const freeCancelDeadlineLabel = formatDeadlineLabel(booking.free_cancel_deadline_at)
+  const honorExpiresLabel = extras?.honorExpiresAt
+    ? formatDeadlineLabel(extras.honorExpiresAt)
+    : undefined
+
+  let status = mapBookingStatusToHoldState(booking.status)
+  if (extras?.holdStatus?.toUpperCase() === 'REAUTHORIZED' && status === 'HELD') {
+    status = 'REAUTHORIZED'
+  }
 
   return {
     id: booking.id,
@@ -63,21 +92,27 @@ export function mapApiBookingToUi(
     }),
     durationMin,
     servicePrice: price,
-    holdAmount: price,
-    noShowFee: Math.min(price, Math.round(price * 0.25) || 30),
-    status: mapBookingStatusToHoldState(booking.status),
-    paypalAuthId: '—',
-    authExpiresAt: '—',
+    holdAmount,
+    noShowFee,
+    status,
+    paypalAuthId: extras?.paypalAuthId || '—',
+    authExpiresAt: freeCancelDeadlineLabel,
+    freeCancelDeadlineLabel,
+    honorExpiresLabel,
+    policySnapshot: booking.policy_snapshot_json || undefined,
+    commissionSnapshot: booking.commission_snapshot || undefined,
     idempotencyKey: booking.id,
     consentHash: '—',
     createdAt: new Date(booking.created_at).toLocaleString(),
     settlementNote: booking.cancellation_reason || undefined,
+    reauthorizationCount: extras?.reauthorizationCount,
   }
 }
 
 export function mapCatalogServiceToSalonService(service: CatalogService): SalonService {
   const price = Number(service.base_price) || 0
-  const holdDeposit = Math.max(10, Math.round(price * 0.2))
+  // Catalog card estimates only — locked amounts come from booking snapshots after create.
+  const holdDeposit = price
   const rawCategory = (service.category_name || CATEGORY_FALLBACK) as ServiceCategory
 
   const distanceKm =
@@ -92,7 +127,7 @@ export function mapCatalogServiceToSalonService(service: CatalogService): SalonS
     durationMin: service.duration_minutes,
     price,
     holdDeposit,
-    noShowFee: Math.min(price, Math.max(15, Math.round(price * 0.15))),
+    noShowFee: Math.round(price * 0.5),
     description: service.description || 'Salon service',
     popular: price >= 80,
     imageUrl: catalogCoverUrl(service.images),

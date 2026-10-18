@@ -49,6 +49,8 @@ class BookingServiceOut(ORMModel):
     booking_id: UUID
     service_id: UUID
     base_price: Decimal
+    service_policy_snapshot_json: dict
+    commission_rule_snapshot_json: dict
 
 
 class BookingOut(ORMModel):
@@ -59,10 +61,14 @@ class BookingOut(ORMModel):
     starts_at: datetime
     ends_at: datetime
     status: str
+    total_price: Decimal
+    agreed_hold_amount: Decimal
+    agreed_no_show_fee: Decimal
+    free_cancel_deadline_at: datetime
+    policy_snapshot_json: dict
+    commission_snapshot: dict
     cancellation_fee_json: dict | None = None
     cancellation_reason: str | None = None
-    total_price: Decimal
-    commission_snapshot: dict
     customer_notes: str | None = None
     created_at: datetime
     booking_services: list[BookingServiceOut] = []
@@ -116,10 +122,14 @@ def booking_to_out(booking) -> BookingOut:
         starts_at=booking.starts_at,
         ends_at=booking.ends_at,
         status=booking.status.value if hasattr(booking.status, "value") else str(booking.status),
+        total_price=booking.total_price,
+        agreed_hold_amount=booking.agreed_hold_amount,
+        agreed_no_show_fee=booking.agreed_no_show_fee,
+        free_cancel_deadline_at=booking.free_cancel_deadline_at,
+        policy_snapshot_json=booking.policy_snapshot_json or {},
+        commission_snapshot=booking.commission_snapshot or {},
         cancellation_fee_json=booking.cancellation_fee_json,
         cancellation_reason=booking.cancellation_reason,
-        total_price=booking.total_price,
-        commission_snapshot=booking.commission_snapshot or {},
         customer_notes=booking.customer_notes,
         created_at=booking.created_at,
         booking_services=[BookingServiceOut.model_validate(bs) for bs in services],

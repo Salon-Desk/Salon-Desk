@@ -195,6 +195,53 @@ export interface PlatformCommission {
   created_at: string
 }
 
+export type CommissionRecordStatus = 'ACCRUED' | 'INVOICED' | 'PAID' | 'WAIVED' | string
+export type OrgCommissionInvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'OVERDUE' | 'VOID' | string
+
+export interface CommissionRecord {
+  id: string
+  org_id: string
+  booking_id: string
+  capture_id: string
+  invoice_id?: string | null
+  gross_captured_amount: string | number
+  applied_rate_json: Record<string, unknown>
+  platform_commission_amount: string | number
+  net_org_amount: string | number
+  currency: string
+  status: CommissionRecordStatus
+  created_at: string
+  updated_at: string
+}
+
+export interface OrgCommissionInvoice {
+  id: string
+  org_id: string
+  period_start: string
+  period_end: string
+  total_gross_volume: string | number
+  total_commission_due: string | number
+  currency: string
+  paypal_invoice_or_order_id?: string | null
+  status: OrgCommissionInvoiceStatus
+  due_date: string
+  paid_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface GenerateCommissionInvoiceRequest {
+  org_id: string
+  period_start: string
+  period_end: string
+  due_date?: string | null
+  currency?: string
+}
+
+export interface PayCommissionInvoiceRequest {
+  paypal_invoice_or_order_id?: string | null
+}
+
 export interface AdminDashboard {
   total_organizations: number
   pending_organizations: number

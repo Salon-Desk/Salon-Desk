@@ -48,8 +48,8 @@ export function PayPalHoldCheckout({
       size="md"
       hideHeader={step !== 'review'}
       icon={<Lock className="h-4 w-4" />}
-      title="Reserve this visit"
-      description="PayPal places a hold only. Nothing is charged until you sit in the chair."
+      title="Confirm booking with PayPal"
+      description="Authorize a hold to confirm your appointment. Nothing is charged until settlement at the salon."
       footer={
         step === 'review' ? (
           <div className="w-full space-y-2">
@@ -61,10 +61,11 @@ export function PayPalHoldCheckout({
               className="rounded-full"
             >
               <Lock className="h-4 w-4" />
-              Authorize {formatUsd(service.holdDeposit)} hold
+              Confirm &amp; authorize hold
             </Button>
             <p className="text-center text-[11px] text-stone-400">
-              PayPal sandbox. No money leaves the account today.
+              PayPal authorization confirms the booking. $0 leaves your account today. A
+              confirmation email is sent after the hold succeeds.
             </p>
           </div>
         ) : undefined
@@ -181,16 +182,21 @@ export function PayPalHoldCheckout({
               <span className="font-semibold text-stone-950">{formatUsd(service.price)}</span>
             </div>
             <div className="flex justify-between gap-3 text-stone-700">
-              <span>Authorization hold</span>
+              <span>Authorization hold (est.)</span>
               <span className="font-semibold text-amber-800">{formatUsd(service.holdDeposit)}</span>
+            </div>
+            <div className="flex justify-between gap-3 text-stone-700">
+              <span>No-show fee (est.)</span>
+              <span className="font-semibold text-stone-800">{formatUsd(service.noShowFee)}</span>
             </div>
             <div className="flex justify-between gap-3 border-t border-amber-200/70 pt-2">
               <span className="text-emerald-800">Due today</span>
               <span className="font-semibold text-emerald-800">{formatUsd(0)}</span>
             </div>
             <p className="pt-1 text-[11px] leading-relaxed text-amber-900/80">
-              No-show protection is {formatUsd(service.noShowFee)}, only if the visit is missed
-              without notice. Cancel 24 hours ahead and the hold is released.
+              Exact hold amount, no-show fee, and free-cancel deadline are locked on the booking at
+              confirmation from the salon&apos;s active policy — estimates above match typical
+              full-ticket holds.
             </p>
           </div>
         </div>
@@ -204,8 +210,8 @@ export function PayPalHoldCheckout({
           <h4 className="mb-2 font-serif text-xl font-normal text-stone-950">Placing your hold…</h4>
           <p className="mx-auto max-w-xs text-xs leading-relaxed text-stone-500">
             Confirming {service.name}
-            {salonName ? ` at ${salonName}` : ''} and asking PayPal to authorize{' '}
-            {formatUsd(service.holdDeposit)} without charging you.
+            {salonName ? ` at ${salonName}` : ''} and asking PayPal to authorize the booking hold
+            without charging you.
           </p>
         </div>
       )}
@@ -232,8 +238,30 @@ export function PayPalHoldCheckout({
             <h3 className="font-serif text-2xl font-normal text-stone-950">You are booked</h3>
             <p className="mt-1 max-w-sm text-xs leading-relaxed text-stone-500">
               {confirmedBooking.serviceName} with {confirmedBooking.stylistName}
-              {confirmedBooking.salonName ? ` at ${confirmedBooking.salonName}` : ''}.
+              {confirmedBooking.salonName ? ` at ${confirmedBooking.salonName}` : ''}. A
+              confirmation email is on its way, and we&apos;ll remind you before the visit.
             </p>
+          </div>
+
+          <div className="mb-4 space-y-2 rounded-2xl border border-amber-200/70 bg-amber-50/70 px-4 py-3 text-xs">
+            <div className="flex justify-between gap-3">
+              <span className="text-amber-900">Locked hold</span>
+              <span className="font-semibold text-amber-900">
+                {formatUsd(confirmedBooking.holdAmount)}
+              </span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-amber-900">Agreed no-show fee</span>
+              <span className="font-semibold text-amber-900">
+                {formatUsd(confirmedBooking.noShowFee)}
+              </span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-amber-900">Free cancel until</span>
+              <span className="font-semibold text-amber-900">
+                {confirmedBooking.freeCancelDeadlineLabel}
+              </span>
+            </div>
           </div>
 
           <div className="mb-6 space-y-3 rounded-2xl bg-stone-50/90 p-4 text-sm">

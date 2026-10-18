@@ -1,4 +1,4 @@
-"""Direct PayPal REST Orders/Payments v2 client (authorize, capture, void)."""
+"""Direct PayPal REST Orders/Payments v2 client (authorize, capture, void, reauthorize)."""
 
 from decimal import Decimal
 
@@ -26,5 +26,9 @@ class PayPalRestClient:
         return {"status": "not_implemented"}
 
     async def void_authorization(self, *, authorization_id: str) -> dict:
+        _ = authorization_id
+        return {"status": "not_implemented"}
+
+    async def reauthorize_authorization(self, *, authorization_id: str) -> dict:
         _ = authorization_id
         return {"status": "not_implemented"}

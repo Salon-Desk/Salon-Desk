@@ -2,10 +2,8 @@
 
 import { Loader2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
 
 import { EmptyState } from '@/components/ui'
-import { toastColor } from '@/constant/toast-color'
 import {
   type CalendarEvent,
   type CalendarViewMode,
@@ -15,16 +13,15 @@ import {
   weekDays,
 } from '@/lib/util/calendar'
 import { staffDisplayName } from '@/lib/util/staff-display'
-import { useCancelBookingMutation } from '@/store/api/clientApi'
 import {
   useGetMyEmployeesQuery,
   useGetMyOrganizationQuery,
   useGetMyOrgBookingsQuery,
 } from '@/store/api/orgApi'
-import { useMarkBookingNoShowMutation, useMarkBookingShowMutation } from '@/store/api/orgApi'
 import type { Booking } from '@/types'
 
 import { SettlementDrawer } from '../_components/settlement-drawer'
+import { useSettlementActions } from '../appointments/_hooks/use-settlement-actions'
 import { AgendaView } from './_components/AgendaView'
 import { CalendarToolbar } from './_components/CalendarToolbar'
 import { DayBoardView } from './_components/DayBoardView'
@@ -51,9 +48,13 @@ export default function MerchantCalendarPage() {
   } = useGetMyOrgBookingsQuery(queryRange)
   const apiBookings = apiBookingsData?.items ?? []
 
-  const [markShow, { isLoading: markingShow }] = useMarkBookingShowMutation()
-  const [markNoShow, { isLoading: markingNoShow }] = useMarkBookingNoShowMutation()
-  const [cancelBooking, { isLoading: cancelling }] = useCancelBookingMutation()
+  const {
+    handleMarkShow,
+    handleMarkNoShow,
+    handleCancelAndVoid,
+    handleReauthorizeHold,
+    isSettlementProcessing,
+  } = useSettlementActions()
 
   useEffect(() => {
     if (view !== 'agenda' && staffId === ALL_STAFF_VALUE && employees[0]) {
@@ -78,10 +79,14 @@ export default function MerchantCalendarPage() {
   const stylistName = selectedStaff ? staffDisplayName(selectedStaff) : undefined
 
   const isLoading = staffLoading || bookingsLoading
-  const isSettlementProcessing = markingShow || markingNoShow || cancelling
 
   const handleSelectEvent = (event: CalendarEvent) => {
     setSelectedBooking(event.booking)
+  }
+
+  const handleSettlementSuccess = () => {
+    setSelectedBooking(null)
+    void refetchBookings()
   }
 
   return (
@@ -148,63 +153,14 @@ export default function MerchantCalendarPage() {
           booking={selectedBooking}
           isSettlementProcessing={isSettlementProcessing}
           onClose={() => setSelectedBooking(null)}
-          onMarkShow={(b) =>
-            void markShow(b.id)
-              .unwrap()
-              .then(() => {
-                toast.success('Marked show — funds captured', toastColor.success)
-                setSelectedBooking(null)
-                void refetchBookings()
-              })
-              .catch((err) =>
-                toast.error(
-                  String(
-                    (err as { data?: { detail?: string } })?.data?.detail || 'Failed to capture',
-                  ),
-                  toastColor.error,
-                ),
-              )
-          }
-          onMarkNoShow={(b) =>
-            void markNoShow(b.id)
-              .unwrap()
-              .then(() => {
-                toast.success('No-show fee captured and remainder released', toastColor.success)
-                setSelectedBooking(null)
-                void refetchBookings()
-              })
-              .catch((err) =>
-                toast.error(
-                  String(
-                    (err as { data?: { detail?: string } })?.data?.detail ||
-                      'Failed to process no-show',
-                  ),
-                  toastColor.error,
-                ),
-              )
-          }
-          onCancelAndVoid={(b) =>
-            void cancelBooking({ bookingId: b.id, body: { reason: 'Merchant void' } })
-              .unwrap()
-              .then(() => {
-                toast.success('Booking cancelled and hold authorization voided', toastColor.success)
-                setSelectedBooking(null)
-                void refetchBookings()
-              })
-              .catch((err) =>
-                toast.error(
-                  String(
-                    (err as { data?: { detail?: string } })?.data?.detail ||
-                      'Failed to void booking',
-                  ),
-                  toastColor.error,
-                ),
-              )
-          }
-          onReauthorizeHold={() =>
-            toast.info(
-              'Reauthorization is handled automatically by the PayPal payment honor window.',
-            )
+          onMarkShow={(b) => void handleMarkShow(b, handleSettlementSuccess)}
+          onMarkNoShow={(b) => void handleMarkNoShow(b, handleSettlementSuccess)}
+          onCancelAndVoid={(b) => void handleCancelAndVoid(b, handleSettlementSuccess)}
+          onReauthorizeHold={(b) =>
+            void handleReauthorizeHold(b, (updated) => {
+              if (updated) setSelectedBooking(updated)
+              void refetchBookings()
+            })
           }
         />
       ) : null}

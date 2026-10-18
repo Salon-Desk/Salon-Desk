@@ -111,7 +111,9 @@ export function AdminDashboard() {
     onAction: (payload) => {
       if (
         payload.tab &&
-        ['overview', 'salons', 'requests', 'commission', 'taxonomy', 'staff'].includes(payload.tab)
+        ['overview', 'salons', 'requests', 'commission', 'billing', 'taxonomy', 'staff'].includes(
+          payload.tab,
+        )
       ) {
         setActiveTab(payload.tab as AdminTabId)
       }

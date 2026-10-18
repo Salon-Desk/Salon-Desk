@@ -7,6 +7,7 @@ import asyncio
 import logging
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -264,6 +265,18 @@ async def _add_authorized_booking(
     customer_notes: str | None,
     currency: str,
 ) -> None:
+    policy_snapshot = {
+        "name": "Default",
+        **DEFAULT_CANCELLATION_POLICY,
+    }
+    no_show_pct = Decimal(str(DEFAULT_CANCELLATION_POLICY.get("no_show_fee_percent", 50)))
+    agreed_no_show = (service.base_price * no_show_pct / Decimal("100")).quantize(Decimal("0.01"))
+    commission_rule = {
+        "type": "percentage",
+        "percentage": str(DEFAULT_COMMISSION_RATE),
+        "flat": None,
+        "amount": str(round(service.base_price * COMMISSION_FRACTION, 2)),
+    }
     booking = Booking(
         org_id=org.id,
         client_id=client.id,
@@ -272,11 +285,12 @@ async def _add_authorized_booking(
         ends_at=starts_at + timedelta(minutes=service.duration_minutes),
         status=BookingStatus.CONFIRMED,
         total_price=service.base_price,
-        commission_snapshot={
-            "type": "percentage",
-            "percentage": str(DEFAULT_COMMISSION_RATE),
-            "amount": str(round(service.base_price * COMMISSION_FRACTION, 2)),
-        },
+        agreed_hold_amount=service.base_price,
+        agreed_no_show_fee=agreed_no_show,
+        free_cancel_deadline_at=starts_at
+        - timedelta(hours=int(DEFAULT_CANCELLATION_POLICY.get("free_cancel_hours", 24))),
+        policy_snapshot_json=policy_snapshot,
+        commission_snapshot=commission_rule,
         customer_notes=customer_notes,
     )
     session.add(booking)
@@ -286,6 +300,12 @@ async def _add_authorized_booking(
             booking_id=booking.id,
             service_id=service.id,
             base_price=service.base_price,
+            service_policy_snapshot_json=policy_snapshot,
+            commission_rule_snapshot_json={
+                "type": "percentage",
+                "percentage": str(DEFAULT_COMMISSION_RATE),
+                "flat": None,
+            },
         )
     )
 
@@ -300,16 +320,20 @@ async def _add_authorized_booking(
             signed_payload=f"booking={booking.id};accepted=true",
         )
     )
+    auth_id = f"SEED-AUTH-{booking.id}"
     session.add(
         PaymentHold(
             booking_id=booking.id,
             org_id=org.id,
             paypal_order_id=f"SEED-ORDER-{booking.id}",
-            paypal_authorization_id=f"SEED-AUTH-{booking.id}",
-            amount=booking.total_price,
+            parent_authorization_id=auth_id,
+            latest_authorization_id=auth_id,
+            amount=booking.agreed_hold_amount,
+            captured_amount=Decimal("0.00"),
             currency=currency,
             status=PaymentHoldStatus.AUTHORIZED,
             honor_expires_at=datetime.now(UTC) + timedelta(days=3),
+            reauthorization_count=0,
             idempotency_key=f"seed-hold-{booking.id}",
         )
     )

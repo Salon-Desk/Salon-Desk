@@ -1,4 +1,4 @@
-import type { ApiBooking, PaymentCapture } from '@/types/api-booking'
+import type { ApiBooking, PaymentCapture, PaymentHold } from '@/types/api-booking'
 import {
   type ApiCancellationPolicy,
   type ApiChangeRequest,
@@ -8,8 +8,11 @@ import {
   type ApiOrgSettings,
   type ApiOrgShift,
   type ApiPage,
+  type CommissionRecord,
   type CreateChangeRequestBody,
   normalizePaginated,
+  type OrgCommissionInvoice,
+  type PayCommissionInvoiceRequest,
   type UpdateOrgServiceRequest,
 } from '@/types/api-org'
 import type { MessageOut, OrgOwnerSignUpRequest, OrgOwnerSignUpResponse } from '@/types/auth'
@@ -316,6 +319,54 @@ export const orgApi = baseApi.injectEndpoints({
       }),
       providesTags: ['bookings'],
     }),
+
+    reauthorizeBookingHold: builder.mutation<PaymentHold, string>({
+      query: (bookingId) => ({
+        url: `/api/v1/settlements/${bookingId}/reauthorize`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['payments', 'bookings', 'organizations'],
+    }),
+
+    getMyCommissionRecords: builder.query<
+      ApiPage<CommissionRecord>,
+      { page?: number; page_size?: number; status?: string } | void
+    >({
+      query: (params) => ({
+        url: '/api/v1/organizations/me/commission-records',
+        method: 'GET',
+        params: params || undefined,
+      }),
+      transformResponse: (res: ApiPage<CommissionRecord> | CommissionRecord[]) =>
+        normalizePaginated(res),
+      providesTags: ['organizations', 'payments'],
+    }),
+
+    getMyCommissionInvoices: builder.query<
+      ApiPage<OrgCommissionInvoice>,
+      { page?: number; page_size?: number; status?: string } | void
+    >({
+      query: (params) => ({
+        url: '/api/v1/organizations/me/commission-invoices',
+        method: 'GET',
+        params: params || undefined,
+      }),
+      transformResponse: (res: ApiPage<OrgCommissionInvoice> | OrgCommissionInvoice[]) =>
+        normalizePaginated(res),
+      providesTags: ['organizations', 'payments'],
+    }),
+
+    payMyCommissionInvoice: builder.mutation<
+      OrgCommissionInvoice,
+      { invoiceId: string; body?: PayCommissionInvoiceRequest }
+    >({
+      query: ({ invoiceId, body }) => ({
+        url: `/api/v1/organizations/me/commission-invoices/${invoiceId}/pay`,
+        method: 'POST',
+        data: body || {},
+      }),
+      invalidatesTags: ['organizations', 'payments'],
+    }),
   }),
 })
 
@@ -348,6 +399,10 @@ export const {
   useMarkBookingShowMutation,
   useMarkBookingNoShowMutation,
   useGetSettlementBookingQuery,
+  useReauthorizeBookingHoldMutation,
+  useGetMyCommissionRecordsQuery,
+  useGetMyCommissionInvoicesQuery,
+  usePayMyCommissionInvoiceMutation,
 } = orgApi
 
 /** @deprecated Use `orgApi` — kept for existing imports. */

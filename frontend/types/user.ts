@@ -19,6 +19,7 @@ export interface User {
   status: UserStatus | string
   role: UserRole
   org_id?: string | null
+  email_verified_at?: string | null
   created_at?: string
   profile?: Profile | null
   // Convenient direct properties

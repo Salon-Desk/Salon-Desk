@@ -373,8 +373,12 @@ export function ClientExperience({
         customer_notes: `Booked via client portal · ${selectedStylist.name}`,
       }).unwrap()
 
-      const termsText =
-        'I authorize SalonDesk / PayPal to place an authorization hold for this appointment. $0 is charged today; settlement occurs at the salon.'
+      const holdAmount = Number(booking.agreed_hold_amount ?? booking.total_price) || 0
+      const noShowFee = Number(booking.agreed_no_show_fee ?? 0)
+      const freeCancel = booking.free_cancel_deadline_at
+        ? new Date(booking.free_cancel_deadline_at).toLocaleString()
+        : 'the free-cancel deadline'
+      const termsText = `I authorize SalonDesk / PayPal to place an authorization hold of $${holdAmount.toFixed(2)} for this appointment. $0 is charged today. Free cancellation until ${freeCancel}. Agreed no-show fee: $${noShowFee.toFixed(2)}. Settlement uses the locked booking-time price and policy snapshot.`
       await createConsent({
         bookingId: booking.id,
         body: {
@@ -384,7 +388,7 @@ export function ClientExperience({
         },
       }).unwrap()
 
-      await createHold({
+      const hold = await createHold({
         booking_id: booking.id,
         idempotency_key: createIdempotencyKey(booking.id, 'AUTH_INTENT'),
         currency: 'USD',
@@ -401,13 +405,17 @@ export function ClientExperience({
           'Salon',
         serviceName: selectedService.name,
         stylistName: selectedStylist.name,
+        paypalAuthId: hold.latest_authorization_id || hold.parent_authorization_id,
+        honorExpiresAt: hold.honor_expires_at,
+        reauthorizationCount: hold.reauthorization_count,
+        holdStatus: hold.status,
       })
 
       setConfirmedBooking(uiBooking)
       setAuthStep('success')
       void refetchBookings()
       showToast(
-        `Appointment confirmed! PayPal authorization hold of $${selectedService.holdDeposit} placed. $0 debited today.`,
+        `Booking confirmed with PayPal hold of $${holdAmount.toFixed(2)}. $0 charged today — check your email for the receipt.`,
       )
     } catch (err) {
       setAuthStep('review')

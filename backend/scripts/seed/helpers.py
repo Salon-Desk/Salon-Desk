@@ -35,6 +35,37 @@ async def ensure_schema(engine: AsyncEngine) -> None:
                 exc,
             )
         await conn.run_sync(Base.metadata.create_all)
+        # Additive columns create_all will not alter onto existing tables.
+        for stmt in (
+            'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ',
+            "ALTER TABLE booking ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ",
+        ):
+            await conn.execute(text(stmt))
+        # Postgres enums are not altered by create_all — add new values if missing.
+        for enum_name, value in (
+            ("payment_hold_status", "REAUTHORIZED"),
+            ("commission_record_status", "ACCRUED"),
+            ("commission_record_status", "INVOICED"),
+            ("commission_record_status", "PAID"),
+            ("commission_record_status", "WAIVED"),
+            ("org_commission_invoice_status", "DRAFT"),
+            ("org_commission_invoice_status", "ISSUED"),
+            ("org_commission_invoice_status", "PAID"),
+            ("org_commission_invoice_status", "OVERDUE"),
+            ("org_commission_invoice_status", "VOID"),
+        ):
+            await conn.execute(
+                text(
+                    f"""
+                    DO $$ BEGIN
+                        ALTER TYPE {enum_name} ADD VALUE IF NOT EXISTS '{value}';
+                    EXCEPTION
+                        WHEN duplicate_object THEN null;
+                        WHEN undefined_object THEN null;
+                    END $$;
+                    """
+                )
+            )
     logger.info("Schema ensured (create_all)")
 
 

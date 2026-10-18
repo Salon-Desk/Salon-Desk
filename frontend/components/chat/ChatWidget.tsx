@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { ChatConversation, ChatPanelShell } from '@/components/chat/chat-ui'
 import { useAgentChat } from '@/components/chat/useAgentChat'
@@ -52,6 +52,21 @@ export function ChatWidget({
   const support = isSupportPortal(portal)
   const chrome = portalChrome(portal)
   const FabIcon = chrome.Icon
+
+  useEffect(() => {
+    const handleOpen = (e: Event) => {
+      const customEvent = e as CustomEvent<{ mode?: Mode }>
+      if (customEvent.detail?.mode) {
+        setMode(customEvent.detail.mode)
+      }
+      if (!isControlled) {
+        setUncontrolledOpen(true)
+      }
+      onOpenChange?.(true)
+    }
+    window.addEventListener('salondesk:open_chat', handleOpen)
+    return () => window.removeEventListener('salondesk:open_chat', handleOpen)
+  }, [isControlled, onOpenChange])
 
   if (!anyChatFeatureEnabled) return null
 

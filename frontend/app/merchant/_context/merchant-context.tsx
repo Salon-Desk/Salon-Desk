@@ -4,11 +4,10 @@ import type { FormEvent, ReactNode } from 'react'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 import { useMerchantStore, useToast } from '@/hooks'
-import { createPaypalDebugId, createSequentialId } from '@/lib/ids'
+import { createSequentialId } from '@/lib/ids'
 import type { MerchantConsoleState } from '@/lib/store/merchant-store'
-import type { AuditLedgerEntry, Booking, ChangeRequest, SalonService, StaffMember } from '@/types'
+import type { Booking, ChangeRequest, SalonService, StaffMember } from '@/types'
 
-import type { RefundProposal } from '../_components/copilot-drawer'
 import { DEFAULT_SERVICE_FORM, type ServiceFormState } from '../_components/service-modals'
 import { DEFAULT_STAFF_FORM, type StaffFormState } from '../_components/staff-modals'
 import { useMerchantSettlement } from '../_hooks/use-merchant-settlement'
@@ -31,8 +30,6 @@ export interface MerchantContextValue {
   setSelectedBooking: (b: Booking | null) => void
   inspectConsentBooking: Booking | null
   setInspectConsentBooking: (b: Booking | null) => void
-  isCopilotOpen: boolean
-  setIsCopilotOpen: (open: boolean) => void
 
   // Staff modals
   isAddStaffOpen: boolean
@@ -79,7 +76,6 @@ export interface MerchantContextValue {
 
   // Actions
   settlement: ReturnType<typeof useMerchantSettlement>
-  handleExecuteRefundProposal: (proposal: RefundProposal) => string
   handleSignIn: () => void
   handleLockSession: () => void
   handleToggleDrift: () => void
@@ -114,8 +110,6 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     policyHours: 24,
     noShowFee: 30,
   })
-
-  const [isCopilotOpen, setIsCopilotOpen] = useState(false)
 
   const showIdempotencyNotice = useCallback((msg: string) => {
     setIdempotencyToast(msg)
@@ -421,33 +415,6 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     showToast('Cancellation policy amendment submitted for compliance review.')
   }
 
-  const handleExecuteRefundProposal = useCallback(
-    (proposal: RefundProposal) => {
-      const newLedgerEntry: AuditLedgerEntry = {
-        id: createSequentialId('LEDGER-REFUND'),
-        bookingId: proposal.bookingId,
-        clientName: proposal.clientName,
-        serviceName: 'No-Show Fee Goodwill Adjustment',
-        action: 'GOODWILL_PARTIAL_REFUND',
-        amount: proposal.refundAmount,
-        currency: 'USD',
-        paypalDebugId: createPaypalDebugId('REFUND'),
-        webhookVerified: true,
-        timestamp: 'Just now',
-        details: `Owner confirmed $${proposal.refundAmount.toFixed(2)} goodwill partial refund via PayPal Agent Copilot. Reason: ${proposal.reason}.`,
-      }
-
-      setState((prev) => ({
-        ...prev,
-        auditLedger: [newLedgerEntry, ...prev.auditLedger],
-      }))
-
-      showToast(`$${proposal.refundAmount.toFixed(2)} refund issued to ${proposal.clientName}.`)
-      return newLedgerEntry.id
-    },
-    [setState, showToast],
-  )
-
   useEffect(() => {
     if (!selectedBooking) return
     const fresh = state.bookings.find((b) => b.id === selectedBooking.id)
@@ -473,8 +440,6 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     setSelectedBooking,
     inspectConsentBooking,
     setInspectConsentBooking,
-    isCopilotOpen,
-    setIsCopilotOpen,
 
     isAddStaffOpen,
     setIsAddStaffOpen,
@@ -517,7 +482,6 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     handleSubmitPolicyChange,
 
     settlement,
-    handleExecuteRefundProposal,
     handleSignIn,
     handleLockSession,
     handleToggleDrift,

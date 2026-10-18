@@ -1,6 +1,16 @@
 'use client'
 
-import { Building2, Layers, Lock, Percent, PieChart, Sliders, Users, X } from 'lucide-react'
+import {
+  Building2,
+  Layers,
+  Lock,
+  Percent,
+  PieChart,
+  Receipt,
+  Sliders,
+  Users,
+  X,
+} from 'lucide-react'
 
 import { Logo } from '@/components/brand/logo'
 import { ConsoleSidebarNav, type SidebarTab } from '@/components/layout/console-sidebar-nav'
@@ -66,6 +76,13 @@ export function AdminSidebar({
       icon: Percent,
       group: ADMIN_NAV_GROUPS[2],
       href: ADMIN_TAB_ROUTES.commission,
+    },
+    {
+      id: 'billing',
+      label: ADMIN_TAB_LABELS.billing,
+      icon: Receipt,
+      group: ADMIN_NAV_GROUPS[2],
+      href: ADMIN_TAB_ROUTES.billing,
     },
     {
       id: 'taxonomy',

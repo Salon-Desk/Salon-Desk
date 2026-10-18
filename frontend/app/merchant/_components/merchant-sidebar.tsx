@@ -5,6 +5,7 @@ import {
   Calendar,
   FileText,
   Lock,
+  Receipt,
   Scissors,
   Settings,
   Sparkles,
@@ -88,6 +89,13 @@ export function MerchantSidebar({
       group: 'Salon Configuration',
       badge: servicesCount,
       href: MERCHANT_TAB_ROUTES.services,
+    },
+    {
+      id: 'billing',
+      label: 'Billing',
+      icon: Receipt,
+      group: 'Salon Operations',
+      href: MERCHANT_TAB_ROUTES.billing,
     },
     {
       id: 'settings',

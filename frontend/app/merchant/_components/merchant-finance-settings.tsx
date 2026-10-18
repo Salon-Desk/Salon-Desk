@@ -23,7 +23,7 @@ import { MerchantPaypalCard } from './merchant-paypal-card'
 import { MerchantPolicyCard } from './merchant-policy-card'
 import { PaypalChangeModal, PolicyChangeModal } from './settings-modals'
 
-export type MerchantFinanceSettingsMode = 'all' | 'paypal' | 'policies'
+export type MerchantFinanceSettingsMode = 'all' | 'paypal' | 'policies' | 'billing'
 
 interface MerchantFinanceSettingsProps {
   mode?: MerchantFinanceSettingsMode
