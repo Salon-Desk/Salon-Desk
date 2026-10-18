@@ -42,7 +42,7 @@ import {
   staffPhone,
   staffPicture,
 } from '@/lib/util/staff-display'
-import { useDeleteMyEmployeeMutation, useGetMyEmployeesQuery } from '@/store/slice/organizationApi'
+import { useDeleteMyEmployeeMutation, useGetMyEmployeesQuery } from '@/store/api/orgApi'
 import type { User } from '@/types/user'
 
 import { EditEmployeeModal } from '../_components/edit-employee-modal'

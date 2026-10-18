@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import React, { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 
-import type { AppDispatch } from '@/store/app'
+import type { AppDispatch } from '@/store'
 import { type AppPortal, fetchAuthData, logout, setActiveApp } from '@/store/authSlice'
 
 interface InnerWrapperProps {

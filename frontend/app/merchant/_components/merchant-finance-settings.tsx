@@ -15,7 +15,7 @@ import {
   useGetMyOrgAccountQuery,
   useGetMyOrganizationQuery,
   useGetMyOrgSettingsQuery,
-} from '@/store/slice/organizationApi'
+} from '@/store/api/orgApi'
 
 import { PaypalChangeModal, PolicyChangeModal } from '../_components/settings-modals'
 

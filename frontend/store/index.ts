@@ -2,7 +2,7 @@ import './api/sharedApi'
 import './api/platformApi'
 import './api/orgApi'
 import './api/clientApi'
-import './slice/userApi'
+import './api/userApi'
 
 import { configureStore } from '@reduxjs/toolkit'
 

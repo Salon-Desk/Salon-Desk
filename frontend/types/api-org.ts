@@ -202,3 +202,31 @@ export interface AdminDashboard {
   ledger_entry_count: number
   ledger_amount_sum: string | number
 }
+
+/* ── Org account / policy / shift shapes ── */
+
+export interface ApiOrgAccount {
+  id: string
+  org_id: string
+  merchant_id: string
+  merchant_email?: string | null
+  display_name: string
+  currency: string
+  status: string
+  approved_at?: string | null
+}
+
+export interface ApiCancellationPolicy {
+  id: string
+  org_id: string
+  name: string
+  status: string
+  data: Record<string, unknown>
+}
+
+export interface ApiOrgShift {
+  id: string
+  org_id: string
+  name: string
+  data: Record<string, unknown>
+}

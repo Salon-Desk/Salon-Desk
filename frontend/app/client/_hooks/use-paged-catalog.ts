@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 
 import { mapCatalogServiceToSalonService } from '@/lib/mappers/booking'
-import { useGetCatalogServicesQuery } from '@/store/slice/catalogApi'
+import { useGetCatalogServicesQuery } from '@/store/api/clientApi'
 import type { SalonService } from '@/types'
 import type { CatalogService, CatalogServicesQueryParams } from '@/types/api-org'
 

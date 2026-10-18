@@ -100,3 +100,74 @@ export interface PaymentCapture {
   paypal_debug_id?: string | null
   created_at: string
 }
+
+/* ── Chat / LiveKit shapes ── */
+
+export interface ClientChatMessage {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+}
+
+export interface ClientChatRequest {
+  message: string
+  language?: string
+  org_id?: string
+  history?: ClientChatMessage[]
+  user_lat?: number | null
+  user_lng?: number | null
+}
+
+export interface ClientChatResponse {
+  reply: string
+  provider?: string
+  model?: string
+  detected_language?: string
+  intent?: string
+  auth_token?: string | null
+  user?: import('./user').User | null
+  recommendations?: Array<{
+    service_id: string
+    organization_id: string
+    name: string
+    organization_name: string
+    organization_picture?: string | null
+    image_url?: string | null
+    base_price: string | number
+    duration_minutes: number
+    category_name?: string | null
+    description?: string | null
+    physical_address?: string | null
+    distance_km?: number | null
+  }>
+  organizations?: Array<{
+    id: string
+    name: string
+    description?: string | null
+    picture?: string | null
+    physical_address?: string | null
+    rating?: number
+    service_count?: number
+    distance_km?: number | null
+  }>
+  confirmed_booking?: {
+    id: string
+    service_name: string
+    organization_name?: string | null
+    starts_at: string
+    formatted_time?: string | null
+    total_price: string | number
+    status: string
+  } | null
+}
+
+export interface LiveKitTokenRequest {
+  language?: string
+  participant_name?: string
+  metadata?: string
+}
+
+export interface LiveKitTokenResponse {
+  token: string
+  server_url: string
+  room_name: string
+}

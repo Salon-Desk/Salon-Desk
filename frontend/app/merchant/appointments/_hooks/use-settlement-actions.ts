@@ -2,8 +2,8 @@ import { useCallback } from 'react'
 import { toast } from 'sonner'
 
 import { toastColor } from '@/constant/toast-color'
-import { useCancelBookingMutation } from '@/store/slice/bookingsApi'
-import { useMarkBookingNoShowMutation, useMarkBookingShowMutation } from '@/store/slice/paymentsApi'
+import { useCancelBookingMutation } from '@/store/api/clientApi'
+import { useMarkBookingNoShowMutation, useMarkBookingShowMutation } from '@/store/api/orgApi'
 import type { Booking } from '@/types'
 
 export function useSettlementActions() {

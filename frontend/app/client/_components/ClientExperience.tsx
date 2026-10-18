@@ -20,21 +20,21 @@ import {
   mapCatalogServiceToSalonService,
   slotLabelToIso,
 } from '@/lib/mappers/booking'
-import { isAuthenticatedSelector, isClientUser, userSelector } from '@/store/authSlice'
-import { bookingDraftSelector } from '@/store/bookingDraftSlice'
 import {
   useCancelBookingMutation,
   useCreateBookingConsentMutation,
   useCreateBookingMutation,
   useGetMyBookingsQuery,
-} from '@/store/slice/bookingsApi'
+} from '@/store/api/clientApi'
 import {
   useGetCatalogCategoriesQuery,
   useGetCatalogHeroQuery,
   useGetCatalogOrganizationsQuery,
   useLazyGetCatalogServiceQuery,
-} from '@/store/slice/catalogApi'
-import { useCreatePaymentHoldMutation } from '@/store/slice/paymentsApi'
+} from '@/store/api/clientApi'
+import { useCreatePaymentHoldMutation } from '@/store/api/clientApi'
+import { isAuthenticatedSelector, isClientUser, userSelector } from '@/store/authSlice'
+import { bookingDraftSelector } from '@/store/bookingDraftSlice'
 import type { Booking, SalonService, StaffMember } from '@/types'
 import type { CatalogService, CatalogServiceSort } from '@/types/api-org'
 

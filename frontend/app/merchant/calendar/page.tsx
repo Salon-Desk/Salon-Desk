@@ -15,13 +15,13 @@ import {
   weekDays,
 } from '@/lib/util/calendar'
 import { staffDisplayName } from '@/lib/util/staff-display'
-import { useCancelBookingMutation } from '@/store/slice/bookingsApi'
+import { useCancelBookingMutation } from '@/store/api/clientApi'
 import {
   useGetMyEmployeesQuery,
   useGetMyOrganizationQuery,
   useGetMyOrgBookingsQuery,
-} from '@/store/slice/organizationApi'
-import { useMarkBookingNoShowMutation, useMarkBookingShowMutation } from '@/store/slice/paymentsApi'
+} from '@/store/api/orgApi'
+import { useMarkBookingNoShowMutation, useMarkBookingShowMutation } from '@/store/api/orgApi'
 import type { Booking } from '@/types'
 
 import { SettlementDrawer } from '../_components/settlement-drawer'

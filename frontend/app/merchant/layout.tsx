@@ -12,8 +12,7 @@ import { Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useMerchantSession } from '@/hooks/use-merchant-session'
 import { mapBookingStatusToHoldState } from '@/lib/mappers/booking'
-import type { AppDispatch } from '@/store/app'
-import { logout } from '@/store/authSlice'
+import type { AppDispatch } from '@/store'
 import {
   useCreateMyChangeRequestMutation,
   useGetMyChangeRequestsQuery,
@@ -22,7 +21,8 @@ import {
   useGetMyOrganizationQuery,
   useGetMyOrgBookingsQuery,
   useGetMyServicesQuery,
-} from '@/store/slice/organizationApi'
+} from '@/store/api/orgApi'
+import { logout } from '@/store/authSlice'
 
 import { ConsentModal } from './_components/consent-modal'
 import { CopilotDrawer } from './_components/copilot-drawer'

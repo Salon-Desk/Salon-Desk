@@ -11,9 +11,9 @@ import {
 } from '@/types/api-org'
 import type { MessageOut } from '@/types/auth'
 import type { User } from '@/types/user'
+import type { CreateStaffRequest } from '@/types/user'
 
 import { baseApi } from '../baseApi'
-import type { CreateStaffRequest } from '../slice/userApi'
 
 export const platformApi = baseApi.injectEndpoints({
   overrideExisting: true,

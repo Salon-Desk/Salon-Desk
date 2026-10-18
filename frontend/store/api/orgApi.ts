@@ -1,45 +1,22 @@
 import type { ApiBooking, PaymentCapture } from '@/types/api-booking'
 import {
+  type ApiCancellationPolicy,
   type ApiChangeRequest,
+  type ApiOrgAccount,
   type ApiOrganization,
   type ApiOrgService,
   type ApiOrgSettings,
+  type ApiOrgShift,
   type ApiPage,
   type CreateChangeRequestBody,
   normalizePaginated,
   type UpdateOrgServiceRequest,
 } from '@/types/api-org'
 import type { MessageOut, OrgOwnerSignUpRequest, OrgOwnerSignUpResponse } from '@/types/auth'
+import type { UpdateEmployeeRequest } from '@/types/user'
 import type { User } from '@/types/user'
 
-export interface ApiOrgAccount {
-  id: string
-  org_id: string
-  merchant_id: string
-  merchant_email?: string | null
-  display_name: string
-  currency: string
-  status: string
-  approved_at?: string | null
-}
-
-export interface ApiCancellationPolicy {
-  id: string
-  org_id: string
-  name: string
-  status: string
-  data: Record<string, unknown>
-}
-
-export interface ApiOrgShift {
-  id: string
-  org_id: string
-  name: string
-  data: Record<string, unknown>
-}
-
 import { baseApi } from '../baseApi'
-import type { UpdateEmployeeRequest } from '../slice/userApi'
 
 /**
  * Merchant org-scoped API (Postman: /api/v1/organizations/me/*).

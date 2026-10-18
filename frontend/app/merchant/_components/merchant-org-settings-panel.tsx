@@ -16,7 +16,7 @@ import {
   useUpdateMyOrganizationMutation,
   useUpdateMyOrgSettingsMutation,
   useUploadOrgLogoMutation,
-} from '@/store/slice/organizationApi'
+} from '@/store/api/orgApi'
 
 interface OrgSettingsForm {
   name: string

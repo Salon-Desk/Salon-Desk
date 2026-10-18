@@ -8,9 +8,9 @@ import { toast } from 'sonner'
 
 import { useAuthModal } from '@/components/auth/auth-context'
 import { toastColor } from '@/constant/toast-color'
-import type { AppDispatch } from '@/store/app'
+import type { AppDispatch } from '@/store'
+import { useJudgeDemoAuthMutation, useSignInMutation } from '@/store/api/sharedApi'
 import { type AppPortal, setActiveApp, setAuthData } from '@/store/authSlice'
-import { useJudgeDemoAuthMutation, useSignInMutation } from '@/store/slice/authApi'
 
 export type DemoPersona = {
   email: string

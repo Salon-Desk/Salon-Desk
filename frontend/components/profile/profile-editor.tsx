@@ -12,12 +12,12 @@ import RHFAvatarImage from '@/components/forms/RHFAvatarImage'
 import RHFTextField from '@/components/forms/RHFTextField'
 import { toastColor } from '@/constant/toast-color'
 import { zodResolver } from '@/lib/schema/resolver'
-import { userSelector } from '@/store/authSlice'
 import {
   useGetProfileQuery,
   useUpdateProfileMutation,
   useUploadAvatarMutation,
-} from '@/store/slice/authApi'
+} from '@/store/api/sharedApi'
+import { userSelector } from '@/store/authSlice'
 
 const profileSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),

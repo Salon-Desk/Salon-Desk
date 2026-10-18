@@ -17,6 +17,7 @@ import { pathForUserRole } from '@/lib/authSession'
 import { signInDefaultValues, type SignInFormData, signInSchema } from '@/lib/schema/auth'
 import { zodResolver } from '@/lib/schema/resolver'
 import type { AppDispatch } from '@/store'
+import { useSignInMutation } from '@/store/api/sharedApi'
 import {
   type AppPortal,
   isAdminUser,
@@ -24,7 +25,6 @@ import {
   setActiveApp,
   setAuthData,
 } from '@/store/authSlice'
-import { useSignInMutation } from '@/store/slice/authApi'
 import type { ApiResponse } from '@/types/api'
 import type { TokenResponse } from '@/types/auth'
 import type { User } from '@/types/user'

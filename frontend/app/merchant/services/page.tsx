@@ -11,8 +11,8 @@ import { Badge, Card, EmptyState, IconButton, SearchInput } from '@/components/u
 import { toastColor } from '@/constant/toast-color'
 import { formatUsd } from '@/lib/format'
 import { resolveImageSrc, shouldUnoptimizeImage } from '@/lib/util/remoteImage'
-import { useGetCatalogCategoriesQuery } from '@/store/slice/catalogApi'
-import { useGetMyServicesQuery, useUpdateMyServiceMutation } from '@/store/slice/organizationApi'
+import { useGetCatalogCategoriesQuery } from '@/store/api/clientApi'
+import { useGetMyServicesQuery, useUpdateMyServiceMutation } from '@/store/api/orgApi'
 import type { ApiOrgService } from '@/types/api-org'
 
 import { OrgServiceFormModal } from '../_components/org-service-form-modal'

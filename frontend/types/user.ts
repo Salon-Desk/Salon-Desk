@@ -35,3 +35,38 @@ export interface ProfileUpdatePayload {
   picture?: string | null
   phone?: string | null
 }
+
+/* ── Employee / staff request shapes ── */
+
+export interface CreateEmployeeRequest {
+  email: string
+  password: string
+  first_name: string
+  last_name: string
+  role: 'reception' | 'stylist'
+  middle_name?: string | null
+  phone?: string | null
+}
+
+export interface UpdateEmployeeRequest {
+  first_name?: string
+  last_name?: string
+  middle_name?: string | null
+  phone?: string | null
+  role?: 'reception' | 'stylist'
+  picture?: string | null
+}
+
+export interface CreateStaffRequest {
+  email: string
+  password: string
+  first_name: string
+  last_name: string
+  middle_name?: string | null
+  phone?: string | null
+}
+
+export interface AssignShiftRequest {
+  user_id: string
+  org_shift_id: string
+}

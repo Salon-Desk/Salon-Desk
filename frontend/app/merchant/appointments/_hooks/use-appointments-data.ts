@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
 import { HOLD_STATES } from '@/lib/status'
-import { useGetMyOrgBookingsQuery } from '@/store/slice/organizationApi'
+import { useGetMyOrgBookingsQuery } from '@/store/api/orgApi'
 import type { Booking, HoldState } from '@/types'
 
 export function useAppointmentsData() {

@@ -14,12 +14,12 @@ import RHFUploadImage from '@/components/forms/RHFUploadImage'
 import { Modal } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { zodResolver } from '@/lib/schema/resolver'
-import { useGetCatalogCategoriesQuery } from '@/store/slice/catalogApi'
+import { useGetCatalogCategoriesQuery } from '@/store/api/clientApi'
 import {
   useCreateMyServiceMutation,
   useUpdateMyServiceMutation,
   useUploadServiceImageMutation,
-} from '@/store/slice/organizationApi'
+} from '@/store/api/orgApi'
 import type { ApiOrgService } from '@/types/api-org'
 
 import {

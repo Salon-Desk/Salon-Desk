@@ -19,7 +19,7 @@ import {
   resetPasswordSchema,
 } from '@/lib/schema/auth'
 import { zodResolver } from '@/lib/schema/resolver'
-import { useForgotPasswordMutation, useResetPasswordMutation } from '@/store/slice/authApi'
+import { useForgotPasswordMutation, useResetPasswordMutation } from '@/store/api/sharedApi'
 import type { ApiResponse } from '@/types/api'
 import type { ForgotPasswordResponse, MessageOut } from '@/types/auth'
 
