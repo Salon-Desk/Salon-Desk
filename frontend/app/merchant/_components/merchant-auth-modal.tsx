@@ -185,7 +185,7 @@ export function MerchantAuthModal() {
         ? 'Create your organization owner account and salon'
         : view === 'forgot-password'
           ? 'Enter your email to receive a password reset token'
-          : 'Select a seeded merchant persona for console testing'
+          : 'Seeded salon logins: Abi Beauty Salon staff, plus owners from the catalog'
 
   return (
     <AuthModalShell

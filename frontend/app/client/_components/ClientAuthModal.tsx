@@ -139,11 +139,11 @@ export function ClientAuthModal() {
 
   if (!isOpen) return null
 
-  // Hub (no portal) exposes every seeded persona for quick cross-app demos.
-  const demoPersonas =
-    targetPortal == null
-      ? [...CLIENT_DEMO_PERSONAS, ...MERCHANT_DEMO_PERSONAS, ...ADMIN_DEMO_PERSONAS]
-      : CLIENT_DEMO_PERSONAS
+  // Hub exposes the three primary seeded logins: client, salon owner, admin.
+  const isHub = targetPortal == null
+  const demoPersonas = isHub
+    ? [CLIENT_DEMO_PERSONAS[0], MERCHANT_DEMO_PERSONAS[0], ADMIN_DEMO_PERSONAS[0]]
+    : CLIENT_DEMO_PERSONAS
 
   const title =
     view === 'sign-in'
@@ -152,7 +152,9 @@ export function ClientAuthModal() {
         ? 'Create Client Account'
         : view === 'forgot-password'
           ? 'Password Recovery'
-          : 'Client Demo Accounts'
+          : isHub
+            ? 'Demo Accounts'
+            : 'Client Demo Accounts'
 
   const description =
     view === 'sign-in'
@@ -161,7 +163,9 @@ export function ClientAuthModal() {
         ? 'Create your client account to start booking'
         : view === 'forgot-password'
           ? 'Enter your email to receive a password reset token'
-          : 'Select a seeded client persona for the booking workflow'
+          : isHub
+            ? 'Sign in as the seeded client, salon owner, or platform admin'
+            : 'Select a seeded client persona for the booking workflow'
 
   return (
     <AuthModalShell

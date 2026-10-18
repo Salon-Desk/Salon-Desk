@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useDispatch } from 'react-redux'
 
 import { useAuthModal } from '@/components/auth/auth-context'
+import { DemoAccountShortcuts } from '@/components/auth/demo-account-shortcuts'
 import PrimaryButton from '@/components/button/PrimaryButton'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFEmailField from '@/components/forms/RHFEmailField'
@@ -142,25 +143,7 @@ export const SignInForm: FC<SignInFormProps> = ({
           className="h-11 rounded-xl font-semibold shadow-none"
         />
 
-        {onOpenDemo ? (
-          <>
-            <div className="relative my-1 text-center">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
-              </div>
-              <span className="relative bg-white px-2 text-xs text-slate-400">
-                or test with seeded accounts
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={onOpenDemo}
-              className="w-full rounded-xl border border-amber-300 bg-amber-50/70 py-2 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
-            >
-              Explore 1-Click Demo Personas
-            </button>
-          </>
-        ) : null}
+        {onOpenDemo ? <DemoAccountShortcuts onOpenAll={onOpenDemo} /> : null}
       </div>
     </FormProvider>
   )

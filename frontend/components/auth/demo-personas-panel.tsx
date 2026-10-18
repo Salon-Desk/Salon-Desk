@@ -29,18 +29,17 @@ interface DemoPersonasPanelProps {
   password?: string
 }
 
-export const DemoPersonasPanel: FC<DemoPersonasPanelProps> = ({
-  personas,
-  showJudgeDemo = false,
-  password = 'Password123!',
-}) => {
+export const DEMO_ACCOUNT_PASSWORD = 'Password123!'
+
+type DemoSignInTarget = Pick<DemoPersona, 'email' | 'label' | 'portal' | 'destination'>
+
+export function useQuickDemoSignIn(password = DEMO_ACCOUNT_PASSWORD) {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { closeAuthModal } = useAuthModal()
   const [signIn, { isLoading }] = useSignInMutation()
-  const [judgeDemoAuth, { isLoading: isJudgeLoading }] = useJudgeDemoAuthMutation()
 
-  const handleQuickSignIn = async (persona: DemoPersona) => {
+  const signInAs = async (persona: DemoSignInTarget) => {
     try {
       const res = await signIn({ email: persona.email, password }).unwrap()
       dispatch(
@@ -62,6 +61,21 @@ export const DemoPersonasPanel: FC<DemoPersonasPanelProps> = ({
       toast.error(typeof message === 'string' ? message : 'Demo sign in failed.', toastColor.error)
     }
   }
+
+  return { signInAs, isLoading }
+}
+
+export const DemoPersonasPanel: FC<DemoPersonasPanelProps> = ({
+  personas,
+  showJudgeDemo = false,
+  password = DEMO_ACCOUNT_PASSWORD,
+}) => {
+  const dispatch = useDispatch<AppDispatch>()
+  const { closeAuthModal } = useAuthModal()
+  const { signInAs, isLoading } = useQuickDemoSignIn(password)
+  const [judgeDemoAuth, { isLoading: isJudgeLoading }] = useJudgeDemoAuthMutation()
+
+  const handleQuickSignIn = (persona: DemoPersona) => signInAs(persona)
 
   const handleJudgeDemo = async () => {
     try {
