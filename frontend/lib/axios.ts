@@ -1,9 +1,6 @@
 import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 
-import { ACCESS_TOKEN } from '@/constant/variables'
-
-import { clearClientAuthSession } from './authSession'
-import { getItemFromLocalDb } from './localDb'
+import { type AppPortal, clearPortalAuthSession, getPortalAuthToken } from './authSession'
 import { NEXT_PUBLIC_BASE_URL } from './secreate'
 
 const isServer = typeof window === 'undefined'
@@ -47,13 +44,49 @@ const axiosInstance = axios.create({
   withCredentials: true,
 })
 
-// Determine portal (client, merchant, or admin)
-function detectPortal(): 'client' | 'merchant' | 'admin' {
+// Determine portal from browser URL (client, merchant, or admin)
+export function detectPortal(): AppPortal {
   if (typeof window === 'undefined') return 'client'
   const path = window.location.pathname
   if (path.startsWith('/admin')) return 'admin'
   if (path.startsWith('/merchant') || path.startsWith('/org')) return 'merchant'
   return 'client'
+}
+
+/**
+ * Accurately resolve which portal a request belongs to:
+ * 1. Explicit X-App-Portal header
+ * 2. Target API endpoint prefix (/admin, /organizations, /catalog, etc.)
+ * 3. Fallback to browser route (detectPortal)
+ */
+export function resolveRequestPortal(url?: string, explicitHeader?: string): AppPortal {
+  if (explicitHeader === 'admin' || explicitHeader === 'merchant' || explicitHeader === 'client') {
+    return explicitHeader
+  }
+  if (url) {
+    if (url.includes('/admin') || url.startsWith('/api/v1/admin')) {
+      return 'admin'
+    }
+    if (
+      url.includes('/organizations') ||
+      url.includes('/settlements') ||
+      url.startsWith('/api/v1/organizations') ||
+      url.startsWith('/api/v1/settlements')
+    ) {
+      return 'merchant'
+    }
+    if (
+      url.includes('/catalog') ||
+      url.includes('/bookings') ||
+      url.includes('/payments') ||
+      url.includes('/chat') ||
+      url.includes('/livekit') ||
+      url.includes('/ai')
+    ) {
+      return 'client'
+    }
+  }
+  return detectPortal()
 }
 
 // ------------------ REQUEST INTERCEPTOR ------------------
@@ -65,17 +98,19 @@ axiosInstance.interceptors.request.use(
       config.url?.includes('/auth/forgot-password') ||
       config.url?.includes('/auth/reset-password')
 
-    const token = getItemFromLocalDb(ACCESS_TOKEN)
+    const currentPortal = resolveRequestPortal(
+      config.url,
+      config.headers?.get?.('X-App-Portal') as string | undefined,
+    )
+    config.headers.set('X-App-Portal', currentPortal)
+
+    const token = getPortalAuthToken(currentPortal)
     const hasAuthHeader = config.headers?.get?.('Authorization') !== undefined
 
     // Send bearer token if available and not already set
     if (!isPublicAuthRoute && !hasAuthHeader && token && token.length > 5) {
       config.headers.set('Authorization', `Bearer ${token}`)
     }
-
-    // Set portal header based on current route or config
-    const currentPortal = (config.headers?.get?.('X-App-Portal') as string) || detectPortal()
-    config.headers.set('X-App-Portal', currentPortal)
 
     // FormData: omit Content-Type so browser sets boundary
     if (config.data instanceof FormData) {
@@ -108,8 +143,14 @@ axiosInstance.interceptors.response.use(
 
         // Only clear and notify if this was an active session call, not an invalid login attempt
         if (!isAuthAttempt) {
-          clearClientAuthSession()
-          window.dispatchEvent(new CustomEvent('salondesk:unauthorized'))
+          const rawHeader =
+            (error?.config?.headers?.get?.('X-App-Portal') as string | undefined) ||
+            (error?.config?.headers?.['X-App-Portal'] as string | undefined)
+          const targetPortal = resolveRequestPortal(error?.config?.url, rawHeader)
+          clearPortalAuthSession(targetPortal)
+          window.dispatchEvent(
+            new CustomEvent('salondesk:unauthorized', { detail: { portal: targetPortal } }),
+          )
         }
       }
     }

@@ -58,6 +58,7 @@ export const MerchantSignUpForm: FC = () => {
         user: data.user,
         access_token: data.access_token,
         organization_id: data.organization_id,
+        portal: 'merchant',
       }),
     )
     dispatch(setActiveApp('merchant'))

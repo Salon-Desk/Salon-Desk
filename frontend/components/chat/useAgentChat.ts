@@ -115,6 +115,7 @@ export function useAgentChat() {
             setAuthData({
               user: data.user,
               access_token: data.auth_token,
+              portal: 'client',
             }),
           )
           toast.success(`Signed in as ${data.user.email}`, toastColor.success)

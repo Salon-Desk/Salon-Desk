@@ -13,12 +13,11 @@ import { ROUTES } from '@/lib/constants'
 import {
   type AppPortal,
   isAdminUser,
-  isAuthenticatedSelector,
   isClientUser,
-  isLoadingSelector,
   isMerchantUser,
-  userSelector,
+  portalSessionSelector,
 } from '@/store/authSlice'
+import type { User } from '@/types/user'
 
 interface PortalGuardProps {
   portal: AppPortal
@@ -27,7 +26,7 @@ interface PortalGuardProps {
   allowAnonymous?: boolean
 }
 
-function roleAllowed(portal: AppPortal, user: ReturnType<typeof userSelector>): boolean {
+function roleAllowed(portal: AppPortal, user: User | null): boolean {
   if (!user) return false
   if (portal === 'admin') return isAdminUser(user)
   if (portal === 'merchant') return isMerchantUser(user)
@@ -49,9 +48,10 @@ function PortalGuardLoading() {
 export function PortalGuard({ portal, children, allowAnonymous = false }: PortalGuardProps) {
   const hydrated = useClientHydrated()
   const { openAuthModal } = useAuthModal()
-  const user = useSelector(userSelector)
-  const isAuthenticated = useSelector(isAuthenticatedSelector)
-  const isLoading = useSelector(isLoadingSelector)
+  const session = useSelector(portalSessionSelector(portal))
+  const user = session?.user ?? null
+  const isAuthenticated = session?.isAuthenticated ?? false
+  const isLoading = session?.isLoading ?? false
 
   if (!hydrated || isLoading) {
     return <PortalGuardLoading />

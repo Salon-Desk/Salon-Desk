@@ -168,6 +168,7 @@ export function InnerVoiceAssistantUI({
             setAuthData({
               user: parsed.user,
               access_token: parsed.access_token,
+              portal: 'client',
             }),
           )
           const name = parsed.user.first_name || parsed.user.email

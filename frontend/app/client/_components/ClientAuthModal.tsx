@@ -58,6 +58,7 @@ const ClientSignUpForm: FC = () => {
       setAuthData({
         user: data.user,
         access_token: data.access_token,
+        portal: 'client',
       }),
     )
     dispatch(setActiveApp('client'))

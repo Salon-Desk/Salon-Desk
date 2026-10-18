@@ -47,6 +47,7 @@ export function useQuickDemoSignIn(password = DEMO_ACCOUNT_PASSWORD) {
           user: res.user,
           access_token: res.access_token,
           organization_id: res.user.org_id || undefined,
+          portal: persona.portal,
         }),
       )
       dispatch(setActiveApp(persona.portal))
@@ -80,13 +81,23 @@ export const DemoPersonasPanel: FC<DemoPersonasPanelProps> = ({
   const handleJudgeDemo = async () => {
     try {
       const res = await judgeDemoAuth().unwrap()
+      const judgePortal: AppPortal =
+        res.user.role === 'platform_admin' || res.user.role === 'platform_staff'
+          ? 'admin'
+          : res.user.role === 'org_owner' ||
+              res.user.role === 'reception' ||
+              res.user.role === 'stylist'
+            ? 'merchant'
+            : 'client'
       dispatch(
         setAuthData({
           user: res.user,
           access_token: res.access_token,
           organization_id: res.user.org_id || undefined,
+          portal: judgePortal,
         }),
       )
+      dispatch(setActiveApp(judgePortal))
       toast.success(`Judge demo token issued for ${res.user.email}`, toastColor.success)
       closeAuthModal()
     } catch (err: unknown) {

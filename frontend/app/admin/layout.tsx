@@ -32,7 +32,7 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
   const { message } = useAdminContext()
 
   const handleLockSession = () => {
-    dispatch(logout())
+    dispatch(logout('admin'))
   }
 
   return (

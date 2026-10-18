@@ -1,3 +1,4 @@
+import type { AppPortal } from '@/lib/authSession'
 import type {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
@@ -73,19 +74,21 @@ export const sharedApi = baseApi.injectEndpoints({
     }),
 
     // 4. Me (Current session user + profile)
-    me: builder.query<MeResponse, void>({
-      query: () => ({
+    me: builder.query<MeResponse, AppPortal | void>({
+      query: (portal) => ({
         url: `${prefix}me`,
         method: 'GET',
+        headers: portal ? { 'X-App-Portal': portal } : undefined,
       }),
       providesTags: ['auth'],
     }),
 
     // 5. Get Profile
-    getProfile: builder.query<Profile, void>({
-      query: () => ({
+    getProfile: builder.query<Profile, AppPortal | void>({
+      query: (portal) => ({
         url: `${prefix}me/profile`,
         method: 'GET',
+        headers: portal ? { 'X-App-Portal': portal } : undefined,
       }),
       providesTags: ['auth'],
     }),

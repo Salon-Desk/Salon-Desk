@@ -28,11 +28,16 @@ const InnerWrapper = ({ children }: InnerWrapperProps) => {
 
   // Hydrate auth session on mount
   useEffect(() => {
-    void dispatch(fetchAuthData())
+    const portals: AppPortal[] = ['client', 'merchant', 'admin']
+    for (const portal of portals) {
+      void dispatch(fetchAuthData(portal))
+    }
 
     // Listen for unauthorized events dispatched by axios interceptor
-    const handleUnauthorized = () => {
-      dispatch(logout())
+    const handleUnauthorized = (event: Event) => {
+      const customEvent = event as CustomEvent<{ portal?: AppPortal }>
+      const portal = customEvent.detail?.portal
+      dispatch(logout(portal))
     }
     window.addEventListener('salondesk:unauthorized', handleUnauthorized)
     return () => {

@@ -1,77 +1,143 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 import {
-  clearClientAuthSession,
-  getClientAuthToken,
-  getClientAuthUser,
-  saveClientAuthSession,
+  type AppPortal,
+  clearAllAuthSessions,
+  clearPortalAuthSession,
+  getPortalAuthToken,
+  getPortalAuthUser,
+  savePortalAuthSession,
 } from '@/lib/authSession'
 import { sharedApi } from '@/store/api/sharedApi'
 import type { User, UserRole } from '@/types/user'
 
-export type AppPortal = 'client' | 'merchant' | 'admin'
+export type { AppPortal }
 
-export interface UserState {
+export interface PortalAuthSession {
   user: User | null
   token: string | null
   organizationId: string | null
   isAuthenticated: boolean
   isLoading: boolean
-  activeApp: AppPortal
-  didLogout: boolean
 }
 
-const initialToken = typeof window !== 'undefined' ? getClientAuthToken() : null
-const initialUser = typeof window !== 'undefined' ? getClientAuthUser() : null
+export interface UserState {
+  activeApp: AppPortal
+  didLogout: boolean
+  portals: Record<AppPortal, PortalAuthSession>
+
+  // Mirrored fields for currently active app portal (backwards compatibility)
+  user: User | null
+  token: string | null
+  organizationId: string | null
+  isAuthenticated: boolean
+  isLoading: boolean
+}
+
+function createInitialPortalSession(portal: AppPortal): PortalAuthSession {
+  if (typeof window === 'undefined') {
+    return {
+      user: null,
+      token: null,
+      organizationId: null,
+      isAuthenticated: false,
+      isLoading: false,
+    }
+  }
+  const token = getPortalAuthToken(portal)
+  const user = getPortalAuthUser(portal)
+  const isAuthenticated = Boolean(token)
+  return {
+    user,
+    token,
+    organizationId: user?.org_id ?? null,
+    isAuthenticated,
+    isLoading: isAuthenticated,
+  }
+}
+
+function resolveInitialActiveApp(): AppPortal {
+  if (typeof window === 'undefined') return 'client'
+  const path = window.location.pathname
+  if (path.startsWith('/admin')) return 'admin'
+  if (path.startsWith('/merchant') || path.startsWith('/org')) return 'merchant'
+  return 'client'
+}
+
+const initialActiveApp = resolveInitialActiveApp()
+const initialPortals: Record<AppPortal, PortalAuthSession> = {
+  client: createInitialPortalSession('client'),
+  merchant: createInitialPortalSession('merchant'),
+  admin: createInitialPortalSession('admin'),
+}
+const initialActiveSession = initialPortals[initialActiveApp]
 
 const initialState: UserState = {
-  user: initialUser,
-  token: initialToken,
-  organizationId: initialUser?.org_id ?? null,
-  isAuthenticated: Boolean(initialToken),
-  // Wait for /me when a stored token exists so PortalGuard does not flash wrong content.
-  isLoading: Boolean(initialToken),
-  activeApp: 'client',
+  activeApp: initialActiveApp,
   didLogout: false,
+  portals: initialPortals,
+  user: initialActiveSession.user,
+  token: initialActiveSession.token,
+  organizationId: initialActiveSession.organizationId,
+  isAuthenticated: initialActiveSession.isAuthenticated,
+  isLoading: initialActiveSession.isLoading,
 }
 
 /**
- * Restore auth session from stored token and refresh current user details
+ * Restore auth session from stored token and refresh current user details for a given portal
  */
-export const fetchAuthData = createAsyncThunk<User | null, void, { rejectValue: string }>(
-  'auth/fetchAuthData',
-  async (_, { rejectWithValue, dispatch }) => {
-    try {
-      const token = getClientAuthToken()
-      if (!token) {
-        return null
-      }
-
-      const result = await dispatch(
-        sharedApi.endpoints.me.initiate(undefined, { forceRefetch: true }),
-      ).unwrap()
-
-      const fullUser: User = {
-        ...result.user,
-        profile: result.profile ?? result.user.profile ?? null,
-        first_name:
-          result.profile?.first_name || (result.user as { first_name?: string }).first_name || '',
-        last_name:
-          result.profile?.last_name || (result.user as { last_name?: string }).last_name || '',
-      }
-
-      saveClientAuthSession(token, fullUser)
-      return fullUser
-    } catch (err: unknown) {
-      clearClientAuthSession()
-      const errorMsg =
-        (err as { data?: { detail?: string }; message?: string })?.data?.detail ||
-        (err as { message?: string })?.message ||
-        'Session expired'
-      return rejectWithValue(errorMsg)
+export const fetchAuthData = createAsyncThunk<
+  { portal: AppPortal; user: User | null },
+  AppPortal | void,
+  { rejectValue: { portal: AppPortal; message: string } }
+>('auth/fetchAuthData', async (requestedPortal, { rejectWithValue, dispatch, getState }) => {
+  const state = getState() as { auth: UserState }
+  const portal: AppPortal = requestedPortal || state.auth.activeApp
+  try {
+    const token = getPortalAuthToken(portal)
+    if (!token) {
+      return { portal, user: null }
     }
-  },
-)
+
+    const result = await dispatch(
+      sharedApi.endpoints.me.initiate(portal, { forceRefetch: true }),
+    ).unwrap()
+
+    const fullUser: User = {
+      ...result.user,
+      profile: result.profile ?? result.user.profile ?? null,
+      first_name:
+        result.profile?.first_name || (result.user as { first_name?: string }).first_name || '',
+      last_name:
+        result.profile?.last_name || (result.user as { last_name?: string }).last_name || '',
+    }
+
+    savePortalAuthSession(portal, token, fullUser)
+    return { portal, user: fullUser }
+  } catch (err: unknown) {
+    clearPortalAuthSession(portal)
+    const errorMsg =
+      (err as { data?: { detail?: string }; message?: string })?.data?.detail ||
+      (err as { message?: string })?.message ||
+      'Session expired'
+    return rejectWithValue({ portal, message: errorMsg })
+  }
+})
+
+type SetUserPayload = User | { user: User; portal?: AppPortal }
+type SetLoadingPayload = boolean | { isLoading: boolean; portal?: AppPortal }
+
+function isUserPayloadObject(
+  payload: SetUserPayload,
+): payload is { user: User; portal?: AppPortal } {
+  return typeof payload === 'object' && payload !== null && 'user' in payload
+}
+
+function isLoadingPayloadObject(
+  payload: SetLoadingPayload,
+): payload is { isLoading: boolean; portal?: AppPortal } {
+  return typeof payload === 'object' && payload !== null && 'isLoading' in payload
+}
 
 const authSlice = createSlice({
   name: 'auth',
@@ -79,92 +145,236 @@ const authSlice = createSlice({
   reducers: {
     setAuthData: (
       state,
-      action: PayloadAction<{ user: User; access_token: string; organization_id?: string }>,
+      action: PayloadAction<{
+        user: User
+        access_token: string
+        organization_id?: string
+        portal?: AppPortal
+      }>,
     ) => {
-      const { user, access_token, organization_id } = action.payload
-      state.user = user
-      state.token = access_token
-      state.organizationId = organization_id || user.org_id || null
-      state.isAuthenticated = true
-      state.isLoading = false
-      state.didLogout = false
+      const { user, access_token, organization_id, portal: targetPortal } = action.payload
+      const portal = targetPortal || state.activeApp
+      const orgId = organization_id || user.org_id || null
 
-      saveClientAuthSession(access_token, user, state.activeApp)
+      state.portals[portal] = {
+        user,
+        token: access_token,
+        organizationId: orgId,
+        isAuthenticated: true,
+        isLoading: false,
+      }
+
+      savePortalAuthSession(portal, access_token, user)
+
+      if (portal === state.activeApp) {
+        state.user = user
+        state.token = access_token
+        state.organizationId = orgId
+        state.isAuthenticated = true
+        state.isLoading = false
+        state.didLogout = false
+      }
     },
 
-    setUser: (state, action: PayloadAction<User>) => {
-      state.user = action.payload
-      state.organizationId = action.payload.org_id ?? state.organizationId
-      state.isAuthenticated = true
-      state.isLoading = false
-      state.didLogout = false
+    setUser: (state, action: PayloadAction<SetUserPayload>) => {
+      const user: User = isUserPayloadObject(action.payload) ? action.payload.user : action.payload
+      const portal: AppPortal =
+        isUserPayloadObject(action.payload) && action.payload.portal
+          ? action.payload.portal
+          : state.activeApp
 
-      if (state.token) {
-        saveClientAuthSession(state.token, action.payload, state.activeApp)
+      if (state.portals[portal]) {
+        state.portals[portal].user = user
+        state.portals[portal].organizationId = user.org_id ?? state.portals[portal].organizationId
+        state.portals[portal].isAuthenticated = true
+        state.portals[portal].isLoading = false
+
+        if (state.portals[portal].token) {
+          savePortalAuthSession(portal, state.portals[portal].token!, user)
+        }
+      }
+
+      if (portal === state.activeApp) {
+        state.user = user
+        state.organizationId = user.org_id ?? state.organizationId
+        state.isAuthenticated = true
+        state.isLoading = false
+        state.didLogout = false
       }
     },
 
     setActiveApp: (state, action: PayloadAction<AppPortal>) => {
       state.activeApp = action.payload
+      const active = state.portals[action.payload]
+      if (active) {
+        state.user = active.user
+        state.token = active.token
+        state.organizationId = active.organizationId
+        state.isAuthenticated = active.isAuthenticated
+        state.isLoading = active.isLoading
+      }
     },
 
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.isLoading = action.payload
+    setLoading: (state, action: PayloadAction<SetLoadingPayload>) => {
+      const isLoading: boolean = isLoadingPayloadObject(action.payload)
+        ? action.payload.isLoading
+        : action.payload
+      const portal: AppPortal =
+        isLoadingPayloadObject(action.payload) && action.payload.portal
+          ? action.payload.portal
+          : state.activeApp
+
+      if (state.portals[portal]) {
+        state.portals[portal].isLoading = isLoading
+      }
+      if (portal === state.activeApp) {
+        state.isLoading = isLoading
+      }
     },
 
-    logout: (state) => {
+    logout: (state, action: PayloadAction<AppPortal | undefined>) => {
+      const portal = action.payload || state.activeApp
+      clearPortalAuthSession(portal)
+
+      state.portals[portal] = {
+        user: null,
+        token: null,
+        organizationId: null,
+        isAuthenticated: false,
+        isLoading: false,
+      }
+
+      if (portal === state.activeApp) {
+        state.user = null
+        state.token = null
+        state.organizationId = null
+        state.isAuthenticated = false
+        state.isLoading = false
+        state.didLogout = true
+      }
+    },
+
+    logoutAll: (state) => {
+      clearAllAuthSessions()
+      const portals: AppPortal[] = ['client', 'merchant', 'admin']
+      for (const p of portals) {
+        state.portals[p] = {
+          user: null,
+          token: null,
+          organizationId: null,
+          isAuthenticated: false,
+          isLoading: false,
+        }
+      }
       state.user = null
       state.token = null
       state.organizationId = null
       state.isAuthenticated = false
       state.isLoading = false
       state.didLogout = true
-
-      clearClientAuthSession()
     },
   },
 
   extraReducers: (builder) => {
     builder
-      .addCase(fetchAuthData.pending, (state) => {
-        if (!state.didLogout && state.token) {
-          state.isLoading = true
+      .addCase(fetchAuthData.pending, (state, action) => {
+        const portal = action.meta.arg || state.activeApp
+        if (!state.didLogout && state.portals[portal]?.token) {
+          state.portals[portal].isLoading = true
+          if (portal === state.activeApp) {
+            state.isLoading = true
+          }
         }
       })
       .addCase(fetchAuthData.fulfilled, (state, action) => {
-        state.isLoading = false
-        if (action.payload) {
-          state.user = action.payload
-          state.organizationId = action.payload.org_id || null
-          state.isAuthenticated = true
-          state.didLogout = false
-        } else {
-          state.user = null
-          state.token = null
-          state.isAuthenticated = false
+        const { portal, user } = action.payload
+        if (state.portals[portal]) {
+          state.portals[portal].isLoading = false
+          if (user) {
+            state.portals[portal].user = user
+            state.portals[portal].organizationId = user.org_id || null
+            state.portals[portal].isAuthenticated = true
+          } else {
+            state.portals[portal].user = null
+            state.portals[portal].token = null
+            state.portals[portal].organizationId = null
+            state.portals[portal].isAuthenticated = false
+          }
+        }
+        if (portal === state.activeApp) {
+          const active = state.portals[portal]
+          state.user = active.user
+          state.token = active.token
+          state.organizationId = active.organizationId
+          state.isAuthenticated = active.isAuthenticated
+          state.isLoading = false
+          if (user) {
+            state.didLogout = false
+          }
         }
       })
-      .addCase(fetchAuthData.rejected, (state) => {
-        state.isLoading = false
-        state.user = null
-        state.token = null
-        state.organizationId = null
-        state.isAuthenticated = false
+      .addCase(fetchAuthData.rejected, (state, action) => {
+        const portal = action.meta.arg || state.activeApp
+        if (state.portals[portal]) {
+          state.portals[portal].isLoading = false
+          state.portals[portal].user = null
+          state.portals[portal].token = null
+          state.portals[portal].organizationId = null
+          state.portals[portal].isAuthenticated = false
+        }
+        if (portal === state.activeApp) {
+          state.user = null
+          state.token = null
+          state.organizationId = null
+          state.isAuthenticated = false
+          state.isLoading = false
+        }
       })
   },
 })
 
-export const { setAuthData, setUser, setActiveApp, setLoading, logout } = authSlice.actions
+export const { setAuthData, setUser, setActiveApp, setLoading, logout, logoutAll } =
+  authSlice.actions
 
 export default authSlice.reducer
 
 /* ================= SELECTORS ================= */
-export const userSelector = (state: { auth: UserState }) => state.auth.user
-export const tokenSelector = (state: { auth: UserState }) => state.auth.token
-export const isAuthenticatedSelector = (state: { auth: UserState }) => state.auth.isAuthenticated
-export const isLoadingSelector = (state: { auth: UserState }) => state.auth.isLoading
 export const activeAppSelector = (state: { auth: UserState }) => state.auth.activeApp
-export const orgIdSelector = (state: { auth: UserState }) => state.auth.organizationId
+
+export const portalSessionSelector =
+  (portal: AppPortal) =>
+  (state: { auth: UserState }): PortalAuthSession =>
+    state.auth.portals[portal] ?? {
+      user: null,
+      token: null,
+      organizationId: null,
+      isAuthenticated: false,
+      isLoading: false,
+    }
+
+export const portalUserSelector = (portal: AppPortal) => (state: { auth: UserState }) =>
+  state.auth.portals[portal]?.user ?? null
+
+export const portalTokenSelector = (portal: AppPortal) => (state: { auth: UserState }) =>
+  state.auth.portals[portal]?.token ?? null
+
+export const portalAuthSelector = (portal: AppPortal) => (state: { auth: UserState }) =>
+  state.auth.portals[portal]?.isAuthenticated ?? false
+
+export const portalLoadingSelector = (portal: AppPortal) => (state: { auth: UserState }) =>
+  state.auth.portals[portal]?.isLoading ?? false
+
+// Active portal selectors (mirroring activeApp)
+export const userSelector = (state: { auth: UserState }) =>
+  state.auth.portals[state.auth.activeApp]?.user ?? state.auth.user
+export const tokenSelector = (state: { auth: UserState }) =>
+  state.auth.portals[state.auth.activeApp]?.token ?? state.auth.token
+export const isAuthenticatedSelector = (state: { auth: UserState }) =>
+  state.auth.portals[state.auth.activeApp]?.isAuthenticated ?? state.auth.isAuthenticated
+export const isLoadingSelector = (state: { auth: UserState }) =>
+  state.auth.portals[state.auth.activeApp]?.isLoading ?? state.auth.isLoading
+export const orgIdSelector = (state: { auth: UserState }) =>
+  state.auth.portals[state.auth.activeApp]?.organizationId ?? state.auth.organizationId
 
 // App-specific role checks for the 3 apps
 export const isClientUser = (user: User | null): boolean => {
@@ -183,6 +393,9 @@ export const isAdminUser = (user: User | null): boolean => {
   return adminRoles.includes(user.role)
 }
 
-export const isClientSelector = (state: { auth: UserState }) => isClientUser(state.auth.user)
-export const isMerchantSelector = (state: { auth: UserState }) => isMerchantUser(state.auth.user)
-export const isAdminSelector = (state: { auth: UserState }) => isAdminUser(state.auth.user)
+export const isClientSelector = (state: { auth: UserState }) =>
+  isClientUser(state.auth.portals.client?.user ?? userSelector(state))
+export const isMerchantSelector = (state: { auth: UserState }) =>
+  isMerchantUser(state.auth.portals.merchant?.user ?? userSelector(state))
+export const isAdminSelector = (state: { auth: UserState }) =>
+  isAdminUser(state.auth.portals.admin?.user ?? userSelector(state))

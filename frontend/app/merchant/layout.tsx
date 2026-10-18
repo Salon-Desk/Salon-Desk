@@ -99,7 +99,7 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
   }
 
   const handleLockSession = () => {
-    dispatch(logout())
+    dispatch(logout('merchant'))
   }
 
   return (

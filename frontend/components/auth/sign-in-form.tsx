@@ -72,6 +72,7 @@ export const SignInForm: FC<SignInFormProps> = ({
         user: data.user,
         access_token: data.access_token,
         organization_id: data.user.org_id || undefined,
+        portal,
       }),
     )
     dispatch(setActiveApp(portal))

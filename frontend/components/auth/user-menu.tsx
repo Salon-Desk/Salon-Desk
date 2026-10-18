@@ -13,19 +13,21 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
-import { logout, userSelector } from '@/store/authSlice'
+import { type AppPortal, logout, portalUserSelector, userSelector } from '@/store/authSlice'
 
 import { useAuthModal } from './auth-context'
 
 interface UserMenuProps {
-  portal?: 'client' | 'merchant' | 'admin'
+  portal?: AppPortal
   compact?: boolean
 }
 
 export const UserMenu: React.FC<UserMenuProps> = ({ portal, compact = false }) => {
   const router = useRouter()
   const dispatch = useDispatch()
-  const user = useSelector(userSelector)
+  const activeUser = useSelector(userSelector)
+  const portalUser = useSelector(portal ? portalUserSelector(portal) : userSelector)
+  const user = portal ? portalUser : activeUser
   const { openAuthModal } = useAuthModal()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -42,7 +44,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ portal, compact = false }) =
   }, [])
 
   const handleSignOut = () => {
-    dispatch(logout())
+    dispatch(logout(portal))
     setIsOpen(false)
     toast.success('Signed out successfully')
     router.push('/')
