@@ -105,13 +105,23 @@ def build_support_tools(
     session_factory: async_sessionmaker[AsyncSession],
     *,
     portal: str,
+    on_ui_action: Callable[[dict[str, Any]], Any] | None = None,
 ):
-    """Help-desk tools for merchant / admin voice agents (no booking)."""
+    """Help-desk tools for merchant / admin voice agents with live console navigation & actions."""
 
     try:
         from livekit.agents import function_tool
     except ImportError as exc:  # pragma: no cover
         raise RuntimeError("livekit-agents is required for voice tools") from exc
+
+    import inspect
+
+    from app.ai.support_actions import (
+        ADMIN_ACTION_MAP,
+        ADMIN_NAV_MAP,
+        MERCHANT_ACTION_MAP,
+        MERCHANT_NAV_MAP,
+    )
 
     mode = normalize_portal(portal)
 
@@ -142,7 +152,104 @@ def build_support_tools(
         }
         return json.dumps(payload)
 
-    return [search_help_docs]
+    @function_tool()
+    async def navigate_portal_page(page: str, reason: str = "") -> str:
+        """Navigate the user's screen to a specific console page or tab.
+
+        For merchant: 'calendar', 'appointments', 'staff', 'services', 'settings', 'paypal', 'policies', 'dashboard'.
+        For admin: 'overview', 'salons', 'requests', 'commission', 'taxonomy', 'staff'.
+        """
+        key = (page or "").lower().strip()
+        nav_map = MERCHANT_NAV_MAP if mode == "merchant" else ADMIN_NAV_MAP
+        nav_info = nav_map.get(key)
+        if not nav_info:
+            for k, info in nav_map.items():
+                if k in key or key in k:
+                    nav_info = info
+                    break
+        if not nav_info:
+            nav_info = nav_map.get("dashboard" if mode == "merchant" else "overview")
+
+        target = nav_info["target"]
+        label = nav_info["label"]
+        tab = nav_info.get("tab")
+
+        payload = {
+            "type": "navigate",
+            "portal": mode,
+            "target": target,
+            "tab": tab,
+            "label": label,
+            "reason": reason or f"Navigating to {label}",
+        }
+        if on_ui_action:
+            try:
+                res = on_ui_action(payload)
+                if inspect.isawaitable(res):
+                    await res
+            except Exception:
+                pass
+
+        return f"Successfully navigated user to {label} ({target}). State to the user that you've opened this page for them."
+
+    @function_tool()
+    async def perform_portal_action(action: str, details: str = "") -> str:
+        """Trigger a direct interactive UI action or open a modal on the user's console.
+
+        For merchant:
+        - 'open_add_staff': Open the Add Stylist / Staff modal.
+        - 'open_add_service': Open the Add Service Offering modal.
+        - 'open_change_paypal': Open the PayPal Payout account amendment form.
+        - 'open_change_policy': Open the Cancellation Policy amendment form.
+        - 'open_copilot': Open the AI dispute & refund Copilot drawer.
+        - 'filter_holds': Filter reservations to active PayPal holds.
+        - 'filter_captured': Filter reservations to settled captured bookings.
+
+        For admin:
+        - 'open_add_salon': Open the Onboard / Add Salon modal.
+        - 'open_add_override': Open the Add Commission Override modal.
+        - 'open_add_category': Open the Create Taxonomy Category modal.
+        - 'open_invite_staff': Open the Invite Platform Staff modal.
+        - 'filter_policy_requests': Filter to Policy change requests.
+        - 'filter_paypal_requests': Filter to PayPal change requests.
+        """
+        act_key = (action or "").lower().strip()
+        action_map = MERCHANT_ACTION_MAP if mode == "merchant" else ADMIN_ACTION_MAP
+        act_info = action_map.get(act_key)
+        if not act_info:
+            for k, info in action_map.items():
+                if k in act_key or act_key in k:
+                    act_info = info
+                    act_key = k
+                    break
+
+        if not act_info:
+            return f"Action '{action}' is not recognized for portal {mode}."
+
+        target = act_info.get("target")
+        label = act_info.get("label", act_key)
+        selector = act_info.get("selector")
+
+        payload = {
+            "type": "ui_action",
+            "portal": mode,
+            "action": act_key,
+            "target": target,
+            "label": label,
+            "selector": selector,
+            "details": details or act_info.get("details", ""),
+        }
+        if on_ui_action:
+            try:
+                res = on_ui_action(payload)
+                if inspect.isawaitable(res):
+                    await res
+            except Exception:
+                pass
+
+        return f"Action '{act_key}' ({label}) executed on the user's screen. Confirm to the user that it is now open for them."
+
+    return [search_help_docs, navigate_portal_page, perform_portal_action]
 
 
 def build_voice_tools(
@@ -151,11 +258,12 @@ def build_voice_tools(
     on_auth_success: Callable[[dict[str, Any]], Any] | None = None,
     on_booking_success: Callable[[dict[str, Any]], Any] | None = None,
     on_discovery_results: Callable[[dict[str, Any]], Any] | None = None,
+    on_ui_action: Callable[[dict[str, Any]], Any] | None = None,
     portal: str = "client",
 ):
     """Aggregate tools for the voice worker (booking or support by portal)."""
     if is_support_portal(portal):
-        return build_support_tools(session_factory, portal=portal)
+        return build_support_tools(session_factory, portal=portal, on_ui_action=on_ui_action)
 
     from app.ai.tools.auth_tools import build_auth_tools
     from app.ai.tools.booking_tools import build_booking_tools

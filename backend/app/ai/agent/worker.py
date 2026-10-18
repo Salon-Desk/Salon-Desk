@@ -29,6 +29,7 @@ from .messaging import (
     publish_call_ended,
     publish_discovery_results,
     publish_nearby_orgs,
+    publish_ui_action,
 )
 
 logger = logging.getLogger("salondesk.voice")
@@ -193,19 +194,20 @@ class SalonVoiceAgent:
         is_loc_query = is_location_query(text) and not is_support_portal(self.portal)
 
         try:
-            retrieved = await asyncio.wait_for(
-                retrieve_context(
-                    self._get_session(),
-                    text,
-                    room_language=self.language,
-                    chunk_limit=self.settings.voice_rag_chunk_limit,
-                    settings=self.settings,
-                    user_lat=curr_lat if not is_support_portal(self.portal) else None,
-                    user_lng=curr_lng if not is_support_portal(self.portal) else None,
-                    portal=self.portal,
-                ),
-                timeout=self.settings.voice_rag_timeout_s,
-            )
+            async with self.session_factory() as session:
+                retrieved = await asyncio.wait_for(
+                    retrieve_context(
+                        session,
+                        text,
+                        room_language=self.language,
+                        chunk_limit=self.settings.voice_rag_chunk_limit,
+                        settings=self.settings,
+                        user_lat=curr_lat if not is_support_portal(self.portal) else None,
+                        user_lng=curr_lng if not is_support_portal(self.portal) else None,
+                        portal=self.portal,
+                    ),
+                    timeout=self.settings.voice_rag_timeout_s,
+                )
 
             if intent == "booking" and not is_support_portal(self.portal):
                 retrieved.intent = "booking"
@@ -341,6 +343,7 @@ async def entrypoint(ctx: Any) -> None:
         on_auth_success=lambda p: publish_auth_success(room, p),
         on_booking_success=lambda p: publish_booking_success(room, p),
         on_discovery_results=lambda p: publish_discovery_results(room, p),
+        on_ui_action=lambda p: publish_ui_action(room, p),
     )
 
     # Initialize agent

@@ -8,6 +8,7 @@ import { Pagination } from '@/components/table/Pagination'
 import { Badge, Card, EmptyState, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
+import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import { useGetAdminChangeRequestsQuery } from '@/store/api/platformApi'
 import type { ApiChangeRequest } from '@/types/api-org'
 
@@ -184,6 +185,17 @@ export default function AdminRequestsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
+
+  useAgentUiActions({
+    onFilterPolicyRequests: () => {
+      setSearchQuery('CANCELLATION_POLICY')
+      setCurrentPage(1)
+    },
+    onFilterPaypalRequests: () => {
+      setSearchQuery('PAYPAL_ACCOUNT')
+      setCurrentPage(1)
+    },
+  })
 
   const {
     data: allRequestsData,

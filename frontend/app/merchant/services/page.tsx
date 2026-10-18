@@ -9,6 +9,7 @@ import PrimaryButton from '@/components/button/PrimaryButton'
 import { Pagination } from '@/components/table/Pagination'
 import { Badge, Card, EmptyState, IconButton, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
+import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import { formatUsd } from '@/lib/format'
 import { resolveImageSrc, shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import { useGetCatalogCategoriesQuery } from '@/store/api/clientApi'
@@ -30,6 +31,13 @@ export default function MerchantServicesPage() {
   const [editing, setEditing] = useState<ApiOrgService | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(9)
+
+  useAgentUiActions({
+    onOpenAddService: () => {
+      setEditing(null)
+      setIsFormOpen(true)
+    },
+  })
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>()
@@ -98,17 +106,19 @@ export default function MerchantServicesPage() {
               : `${services.length} services configured for client online booking`}
           </p>
         </div>
-        <PrimaryButton
-          title="Add new service"
-          size="sm"
-          fullWidth={false}
-          icon={<Plus className="h-4 w-4" />}
-          className="h-9 rounded-lg px-3.5 text-xs font-semibold shadow-xs"
-          onClick={() => {
-            setEditing(null)
-            setIsFormOpen(true)
-          }}
-        />
+        <div data-agent-action="add-service">
+          <PrimaryButton
+            title="Add new service"
+            size="sm"
+            fullWidth={false}
+            icon={<Plus className="h-4 w-4" />}
+            className="h-9 rounded-lg px-3.5 text-xs font-semibold shadow-xs"
+            onClick={() => {
+              setEditing(null)
+              setIsFormOpen(true)
+            }}
+          />
+        </div>
       </div>
 
       {/* Search and Category Filter Tabs */}

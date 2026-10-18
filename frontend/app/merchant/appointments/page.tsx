@@ -8,6 +8,7 @@ import PrimaryButton from '@/components/button/PrimaryButton'
 import { Pagination } from '@/components/table/Pagination'
 import { type Column, DataTable, EmptyState } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
+import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import type { Booking, HoldState } from '@/types'
 
 import { ConsentModal } from '../_components/consent-modal'
@@ -30,6 +31,21 @@ export default function MerchantAppointmentsPage() {
   const [inspectConsentBooking, setInspectConsentBooking] = useState<Booking | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+
+  useAgentUiActions({
+    onFilterHolds: () => {
+      setAppointmentFilter('HELD')
+      setCurrentPage(1)
+    },
+    onFilterCaptured: () => {
+      setAppointmentFilter('CAPTURED')
+      setCurrentPage(1)
+    },
+    onFilterVoided: () => {
+      setAppointmentFilter('VOIDED')
+      setCurrentPage(1)
+    },
+  })
 
   const { filteredAppointments, filterCounts } = useAppointmentsFilter(
     bookings,

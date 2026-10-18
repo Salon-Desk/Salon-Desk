@@ -35,6 +35,7 @@ import {
   StatCard,
 } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
+import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import {
   staffAvatarGradient,
   staffDisplayName,
@@ -60,6 +61,10 @@ export default function MerchantStaffPage() {
   const [editingEmployee, setEditingEmployee] = useState<User | null>(null)
   const [deleting, setDeleting] = useState<User | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  useAgentUiActions({
+    onOpenAddStaff: () => setIsAddOpen(true),
+  })
 
   // Filtering & view states
   const [searchQuery, setSearchQuery] = useState('')
@@ -162,14 +167,16 @@ export default function MerchantStaffPage() {
               <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin text-amber-600' : ''}`} />
             </IconButton>
 
-            <PrimaryButton
-              title="Add team member"
-              size="sm"
-              fullWidth={false}
-              icon={<Plus className="h-4 w-4" />}
-              className="h-10 rounded-xl px-5 text-xs font-semibold shadow-sm transition-transform active:scale-[0.98]"
-              onClick={() => setIsAddOpen(true)}
-            />
+            <div data-agent-action="add-staff">
+              <PrimaryButton
+                title="Add team member"
+                size="sm"
+                fullWidth={false}
+                icon={<Plus className="h-4 w-4" />}
+                className="h-10 rounded-xl px-5 text-xs font-semibold shadow-sm transition-transform active:scale-[0.98]"
+                onClick={() => setIsAddOpen(true)}
+              />
+            </div>
           </div>
         </div>
       </div>

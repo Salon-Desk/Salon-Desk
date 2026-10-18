@@ -11,6 +11,7 @@ from app.ai.rag_service import (
     greeting_reply_for_portal,
     retrieve_context,
 )
+from app.ai.support_actions import resolve_portal_navigation
 from app.api.deps import DbSession, OptionalUser
 from app.schemas.chat import (
     ChatCitation,
@@ -81,7 +82,18 @@ async def chat(
             intent=retrieved.intent,
         )
 
+    nav, ui_act = resolve_portal_navigation(portal, body.message)
     system = build_chat_system_prompt(retrieved, portal=portal)
+    if nav or ui_act:
+        act_label = ui_act.label if ui_act else (nav.label if nav else "")
+        target_path = ui_act.target if ui_act and ui_act.target else (nav.target if nav else "")
+        action_note = (
+            f"\n\n[Active Screen Action: The console interface is autonomously opening/navigating "
+            f"to {act_label} ({target_path}). Naturally acknowledge and confirm this action to the "
+            f"user in 1–2 friendly, spoken sentences.]"
+        )
+        system = f"{system}{action_note}"
+
     messages = [{"role": "system", "content": system}]
     messages.extend({"role": m.role, "content": m.content} for m in body.history)
     messages.append({"role": "user", "content": body.message})
@@ -139,4 +151,6 @@ async def chat(
             )
             for o in retrieved.organizations
         ],
+        navigation=nav,
+        ui_action=ui_act,
     )

@@ -23,6 +23,7 @@ import {
   Star,
 } from 'lucide-react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
@@ -34,6 +35,7 @@ import type {
 import { VoiceVisualizerOrb } from '@/components/chat/VoiceVisualizerOrb'
 import { toastColor } from '@/constant/toast-color'
 import { VOICE_AGENT_STATUS } from '@/constant/voice-agent'
+import { dispatchAgentUiAction, highlightElement } from '@/hooks/useAgentUiActions'
 import { type AssistantPortal, isSupportPortal, portalChrome } from '@/lib/assistant-portal'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import type { AgentLanguage } from '@/lib/features'
@@ -71,6 +73,7 @@ export function InnerVoiceAssistantUI({
   onSetLocation,
 }: InnerVoiceAssistantUIProps) {
   const dispatch = useDispatch()
+  const router = useRouter()
   const chrome = portalChrome(portal)
   const support = isSupportPortal(portal)
   const { state, agentTranscriptions } = useVoiceAssistant()
@@ -240,6 +243,30 @@ export function InnerVoiceAssistantUI({
           }
           return
         }
+
+        if (parsed?.type === 'navigate' && parsed?.target) {
+          router.push(parsed.target)
+          dispatchAgentUiAction(parsed)
+          if (parsed.selector) {
+            highlightElement(parsed.selector)
+          }
+          return
+        }
+
+        if (parsed?.type === 'ui_action') {
+          if (
+            parsed.target &&
+            typeof window !== 'undefined' &&
+            window.location.pathname !== parsed.target
+          ) {
+            router.push(parsed.target)
+          }
+          dispatchAgentUiAction(parsed)
+          if (parsed.selector) {
+            highlightElement(parsed.selector)
+          }
+          return
+        }
       } catch {
         /* non-json payload */
       }
@@ -267,7 +294,7 @@ export function InnerVoiceAssistantUI({
       room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected)
       room.off(RoomEvent.Disconnected, onDisconnected)
     }
-  }, [room, onAgentEnded, dispatch])
+  }, [room, onAgentEnded, dispatch, router])
 
   useEffect(() => {
     const lastTranscript = agentTranscriptions.at(-1)?.text

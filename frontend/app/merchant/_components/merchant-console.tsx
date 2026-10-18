@@ -8,6 +8,7 @@ import { AuthGate } from '@/components/layout/auth-gate'
 import { ConsoleShell } from '@/components/layout/console-shell'
 import { Toast } from '@/components/ui'
 import { useMerchantStore, useToast } from '@/hooks'
+import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import { SANDBOX_CREDENTIALS } from '@/lib/constants'
 import { createPaypalDebugId, createSequentialId } from '@/lib/ids'
 import type { AuditLedgerEntry, Booking, ChangeRequest, SalonService, StaffMember } from '@/types'
@@ -79,6 +80,38 @@ export function MerchantConsole() {
   })
 
   const [isCopilotOpen, setIsCopilotOpen] = useState(false)
+
+  useAgentUiActions({
+    onOpenAddStaff: () => {
+      setActiveTab('staff')
+      setIsAddStaffOpen(true)
+    },
+    onOpenAddService: () => {
+      setActiveTab('services')
+      setIsAddServiceOpen(true)
+    },
+    onOpenChangePaypal: () => {
+      setActiveTab('settings')
+      setIsChangePaypalOpen(true)
+    },
+    onOpenChangePolicy: () => {
+      setActiveTab('settings')
+      setIsChangePolicyOpen(true)
+    },
+    onOpenCopilot: () => {
+      setIsCopilotOpen(true)
+    },
+    onAction: (payload) => {
+      if (
+        payload.tab &&
+        ['dashboard', 'calendar', 'appointments', 'staff', 'services', 'settings'].includes(
+          payload.tab,
+        )
+      ) {
+        setActiveTab(payload.tab as MerchantTab)
+      }
+    },
+  })
 
   const showIdempotencyNotice = useCallback((msg: string) => {
     setIdempotencyToast(msg)

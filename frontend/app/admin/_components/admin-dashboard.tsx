@@ -7,6 +7,7 @@ import { AuthGate } from '@/components/layout/auth-gate'
 import { ConsoleShell } from '@/components/layout/console-shell'
 import { Button, Toast } from '@/components/ui'
 import { useAdminStore, useToast } from '@/hooks'
+import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import { createSequentialId } from '@/lib/ids'
 import type {
   ChangeRequest,
@@ -81,6 +82,41 @@ export function AdminDashboard() {
   const [isInviteUserOpen, setIsInviteUserOpen] = useState(false)
   const [userForm, setUserForm] = useState<StaffInviteFormState>(EMPTY_STAFF_FORM)
   const [deletingUser, setDeletingUser] = useState<PlatformUser | null>(null)
+
+  useAgentUiActions({
+    onOpenAddSalon: () => {
+      setActiveTab('salons')
+      setIsAddSalonOpen(true)
+    },
+    onOpenAddOverride: () => {
+      setActiveTab('commission')
+      setIsAddOverrideOpen(true)
+    },
+    onOpenAddCategory: () => {
+      setActiveTab('taxonomy')
+      setIsAddCategoryOpen(true)
+    },
+    onOpenInviteStaff: () => {
+      setActiveTab('staff')
+      setIsInviteUserOpen(true)
+    },
+    onFilterPolicyRequests: () => {
+      setActiveTab('requests')
+      setCrSubTab('POLICY')
+    },
+    onFilterPaypalRequests: () => {
+      setActiveTab('requests')
+      setCrSubTab('PAYPAL')
+    },
+    onAction: (payload) => {
+      if (
+        payload.tab &&
+        ['overview', 'salons', 'requests', 'commission', 'taxonomy', 'staff'].includes(payload.tab)
+      ) {
+        setActiveTab(payload.tab as AdminTabId)
+      }
+    },
+  })
 
   const [salonSearch, setSalonSearch] = useState('')
   const [salonStatusFilter, setSalonStatusFilter] = useState<SalonStatusFilter>('ALL')

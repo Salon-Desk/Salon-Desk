@@ -104,3 +104,19 @@ async def publish_call_ended(room: Any) -> None:
             await room.local_participant.publish_data(data, topic="lk.agent.control")
     except Exception as exc:
         logger.warning("Failed to publish call_ended data: %s", exc)
+
+
+async def publish_ui_action(room: Any, payload: dict[str, Any]) -> None:
+    """Publish UI navigation or interactive action message to room."""
+    try:
+        if room.local_participant:
+            data = json.dumps(payload)
+            await room.local_participant.publish_data(data, topic="lk.agent.ui_action")
+            logger.info(
+                "Published ui_action message: type=%s action=%s target=%s",
+                payload.get("type"),
+                payload.get("action"),
+                payload.get("target"),
+            )
+    except Exception as exc:
+        logger.warning("Failed to publish ui_action data: %s", exc)

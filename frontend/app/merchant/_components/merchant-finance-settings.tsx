@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
 import { toastColor } from '@/constant/toast-color'
+import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import {
   useCreateMyChangeRequestMutation,
   useGetMyCancellationPoliciesQuery,
@@ -51,6 +52,11 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
   const [isPolicyOpen, setIsPolicyOpen] = useState(false)
   const [requestFilter, setRequestFilter] = useState<ChangeRequestFilter>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+
+  useAgentUiActions({
+    onOpenChangePaypal: () => setIsPaypalOpen(true),
+    onOpenChangePolicy: () => setIsPolicyOpen(true),
+  })
 
   const activePolicy = useMemo(
     () => policies.find((p) => p.status?.toLowerCase() === 'active') || policies[0],

@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.ai.support_actions import AgentNavigation, AgentUiAction
 from app.schemas.ai import ChatMessage
 
 AssistantPortal = Literal["client", "merchant", "admin"]
@@ -72,6 +73,8 @@ class ChatResponse(BaseModel):
     confirmed_booking: dict[str, str | None] | None = None
     auth_token: str | None = None
     user: dict[str, str | None] | None = None
+    navigation: AgentNavigation | None = None
+    ui_action: AgentUiAction | None = None
 
 
 class LiveKitTokenRequest(BaseModel):

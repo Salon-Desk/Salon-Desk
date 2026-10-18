@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  ArrowUpRight,
   Bot,
   Building2,
   CheckCircle2,
@@ -8,6 +9,7 @@ import {
   Mic,
   Send,
   ShieldCheck,
+  Sparkles,
   Star,
   X,
 } from 'lucide-react'
@@ -19,6 +21,7 @@ import type {
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
 } from '@/components/chat/useAgentChat'
+import { highlightElement } from '@/hooks/useAgentUiActions'
 import { type AssistantPortal, isSupportPortal, portalChrome } from '@/lib/assistant-portal'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
@@ -35,6 +38,19 @@ export interface ChatMessageItem {
   recommendations?: AgentServiceRecommendation[]
   organizations?: AgentOrganizationRecommendation[]
   confirmedBooking?: AgentConfirmedBooking | null
+  navigation?: {
+    target: string
+    tab?: string | null
+    label: string
+    reason?: string | null
+  } | null
+  uiAction?: {
+    action: string
+    target?: string | null
+    label?: string | null
+    details?: string | null
+    selector?: string | null
+  } | null
 }
 
 export interface ChatPanelShellProps {
@@ -608,6 +624,47 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                 >
                   {msg.time}
                 </span>
+              )}
+
+              {!isUser && (msg.navigation || msg.uiAction) && (
+                <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
+                  <div className="flex flex-col gap-1.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-2.5 text-xs text-stone-800 shadow-xs backdrop-blur-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-bold text-amber-950">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                        <span>
+                          {msg.uiAction?.label || msg.navigation?.label || 'Action Executed'}
+                        </span>
+                      </span>
+                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                        Executed
+                      </span>
+                    </div>
+                    {msg.uiAction?.details && (
+                      <p className="text-[11px] text-stone-600 leading-relaxed">
+                        {msg.uiAction.details}
+                      </p>
+                    )}
+                    {(msg.navigation?.target || msg.uiAction?.target) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const target = msg.uiAction?.target || msg.navigation?.target
+                          if (target && typeof window !== 'undefined') {
+                            window.location.href = target
+                          }
+                          if (msg.uiAction?.selector) {
+                            highlightElement(msg.uiAction.selector)
+                          }
+                        }}
+                        className="mt-0.5 inline-flex w-fit items-center gap-1 rounded-lg border border-amber-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-900 shadow-2xs transition-colors hover:bg-amber-50 cursor-pointer"
+                      >
+                        <span>Open Screen</span>
+                        <ArrowUpRight className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
 
               {!support && !isUser && msg.confirmedBooking && (

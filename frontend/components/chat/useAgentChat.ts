@@ -1,10 +1,12 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 
 import { toastColor } from '@/constant/toast-color'
+import { dispatchAgentUiAction, highlightElement } from '@/hooks/useAgentUiActions'
 import {
   type AssistantPortal,
   isSupportPortal,
@@ -61,6 +63,19 @@ export interface AgentChatMessage {
   recommendations?: AgentServiceRecommendation[]
   organizations?: AgentOrganizationRecommendation[]
   confirmedBooking?: AgentConfirmedBooking | null
+  navigation?: {
+    target: string
+    tab?: string | null
+    label: string
+    reason?: string | null
+  } | null
+  uiAction?: {
+    action: string
+    target?: string | null
+    label?: string | null
+    details?: string | null
+    selector?: string | null
+  } | null
 }
 
 export interface UseAgentChatOptions {
@@ -80,6 +95,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const portal = options.portal ?? 'client'
   const support = isSupportPortal(portal)
   const dispatch = useDispatch()
+  const router = useRouter()
   const [messages, setMessages] = useState<AgentChatMessage[]>(() => [welcomeMessage(portal)])
   const [prompt, setPrompt] = useState('')
   const [isThinking, setIsThinking] = useState(false)
@@ -203,6 +219,40 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           )
         }
 
+        if (data.navigation?.target) {
+          router.push(data.navigation.target)
+          dispatchAgentUiAction({
+            type: 'navigate',
+            portal,
+            target: data.navigation.target,
+            tab: data.navigation.tab || undefined,
+            label: data.navigation.label,
+            reason: data.navigation.reason || undefined,
+          })
+        }
+
+        if (data.ui_action) {
+          if (
+            data.ui_action.target &&
+            typeof window !== 'undefined' &&
+            window.location.pathname !== data.ui_action.target
+          ) {
+            router.push(data.ui_action.target)
+          }
+          dispatchAgentUiAction({
+            type: 'ui_action',
+            portal,
+            action: data.ui_action.action,
+            target: data.ui_action.target || undefined,
+            label: data.ui_action.label || undefined,
+            details: data.ui_action.details || undefined,
+            selector: data.ui_action.selector || undefined,
+          })
+          if (data.ui_action.selector) {
+            highlightElement(data.ui_action.selector)
+          }
+        }
+
         setMessages((prev) => [
           ...prev,
           {
@@ -213,6 +263,8 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
             recommendations: recommendations.length > 0 ? recommendations : undefined,
             organizations: organizations.length > 0 ? organizations : undefined,
             confirmedBooking,
+            navigation: data.navigation,
+            uiAction: data.ui_action,
           },
         ])
       } catch (err) {
@@ -237,7 +289,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         setIsThinking(false)
       }
     },
-    [clientConciergeChat, prompt, location, dispatch, portal, support],
+    [clientConciergeChat, prompt, location, dispatch, router, portal, support],
   )
 
   return {

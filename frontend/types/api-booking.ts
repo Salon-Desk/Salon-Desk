@@ -162,6 +162,19 @@ export interface ClientChatResponse {
     total_price: string | number
     status: string
   } | null
+  navigation?: {
+    target: string
+    tab?: string | null
+    label: string
+    reason?: string | null
+  } | null
+  ui_action?: {
+    action: string
+    target?: string | null
+    label?: string | null
+    details?: string | null
+    selector?: string | null
+  } | null
 }
 
 export interface LiveKitTokenRequest {

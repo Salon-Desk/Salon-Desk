@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { useDebounce } from '@/hooks/use-debounce'
+import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import {
   useApproveOrganizationMutation,
   useGetAdminDashboardQuery,
@@ -34,6 +35,16 @@ export default function AdminSalonsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [actioningOrgId, setActioningOrgId] = useState<string | null>(null)
+
+  useAgentUiActions({
+    onAction: (payload) => {
+      if (payload.action === 'filter_pending') {
+        setFilter('pending')
+      } else if (payload.action === 'filter_approved') {
+        setFilter('approved')
+      }
+    },
+  })
 
   // Reset pagination on filter or search updates
   useEffect(() => {
