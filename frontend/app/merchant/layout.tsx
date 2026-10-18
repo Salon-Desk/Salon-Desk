@@ -42,10 +42,15 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
 
   const { data: org } = useGetMyOrganizationQuery(undefined, { skip: skipOrgApi })
   const { data: account } = useGetMyOrgAccountQuery(undefined, { skip: skipOrgApi })
-  const { data: apiBookings = [] } = useGetMyOrgBookingsQuery(undefined, { skip: skipOrgApi })
-  const { data: employees = [] } = useGetMyEmployeesQuery(undefined, { skip: skipOrgApi })
-  const { data: services = [] } = useGetMyServicesQuery(undefined, { skip: skipOrgApi })
-  const { data: changeRequests = [] } = useGetMyChangeRequestsQuery(undefined, { skip: skipOrgApi })
+  const { data: apiBookingsData } = useGetMyOrgBookingsQuery(undefined, { skip: skipOrgApi })
+  const { data: employeesData } = useGetMyEmployeesQuery(undefined, { skip: skipOrgApi })
+  const { data: servicesData } = useGetMyServicesQuery(undefined, { skip: skipOrgApi })
+  const { data: changeRequestsData } = useGetMyChangeRequestsQuery(undefined, { skip: skipOrgApi })
+
+  const apiBookings = apiBookingsData?.items ?? []
+  const employees = employeesData?.items ?? []
+  const services = servicesData?.items ?? []
+  const changeRequests = changeRequestsData?.items ?? []
   const [createChangeRequest, { isLoading: submittingCr }] = useCreateMyChangeRequestMutation()
 
   const activeHoldsCount = useMemo(

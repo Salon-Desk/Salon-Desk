@@ -1,12 +1,14 @@
 import type { ApiBooking, PaymentCapture } from '@/types/api-booking'
-import type {
-  ApiChangeRequest,
-  ApiOrganization,
-  ApiOrgService,
-  ApiOrgSettings,
-  CreateChangeRequestBody,
-  CreateOrgServiceRequest,
-  UpdateOrgServiceRequest,
+import {
+  type ApiChangeRequest,
+  type ApiOrganization,
+  type ApiOrgService,
+  type ApiOrgSettings,
+  type ApiPage,
+  type CreateChangeRequestBody,
+  type CreateOrgServiceRequest,
+  normalizePaginated,
+  type UpdateOrgServiceRequest,
 } from '@/types/api-org'
 import type { MessageOut, OrgOwnerSignUpRequest, OrgOwnerSignUpResponse } from '@/types/auth'
 import type { User } from '@/types/user'
@@ -38,7 +40,7 @@ export interface ApiOrgShift {
 }
 
 import { baseApi } from '../baseApi'
-import type { CreateEmployeeRequest } from '../slice/userApi'
+import type { CreateEmployeeRequest, UpdateEmployeeRequest } from '../slice/userApi'
 
 /**
  * Merchant org-scoped API (Postman: /api/v1/organizations/me/*).
@@ -104,11 +106,22 @@ export const orgApi = baseApi.injectEndpoints({
       invalidatesTags: ['organizations'],
     }),
 
-    getMyEmployees: builder.query<User[], void>({
-      query: () => ({
+    getMyEmployees: builder.query<
+      ApiPage<User>,
+      {
+        page?: number
+        page_size?: number
+        q?: string
+        status_filter?: string
+        role?: string
+      } | void
+    >({
+      query: (params) => ({
         url: '/api/v1/organizations/me/employees',
         method: 'GET',
+        params: params || undefined,
       }),
+      transformResponse: (res: ApiPage<User> | User[]) => normalizePaginated(res),
       providesTags: ['user', 'organizations'],
     }),
 
@@ -116,6 +129,15 @@ export const orgApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: '/api/v1/organizations/me/employees',
         method: 'POST',
+        data,
+      }),
+      invalidatesTags: ['user', 'organizations'],
+    }),
+
+    updateMyEmployee: builder.mutation<User, { employeeId: string; data: UpdateEmployeeRequest }>({
+      query: ({ employeeId, data }) => ({
+        url: `/api/v1/organizations/me/employees/${employeeId}`,
+        method: 'PATCH',
         data,
       }),
       invalidatesTags: ['user', 'organizations'],
@@ -129,11 +151,22 @@ export const orgApi = baseApi.injectEndpoints({
       invalidatesTags: ['user', 'organizations'],
     }),
 
-    getMyServices: builder.query<ApiOrgService[], void>({
-      query: () => ({
+    getMyServices: builder.query<
+      ApiPage<ApiOrgService>,
+      {
+        page?: number
+        page_size?: number
+        q?: string
+        category_id?: string
+        status?: string
+      } | void
+    >({
+      query: (params) => ({
         url: '/api/v1/organizations/me/services',
         method: 'GET',
+        params: params || undefined,
       }),
+      transformResponse: (res: ApiPage<ApiOrgService> | ApiOrgService[]) => normalizePaginated(res),
       providesTags: ['organizations', 'catalog'],
     }),
 
@@ -158,11 +191,17 @@ export const orgApi = baseApi.injectEndpoints({
       invalidatesTags: ['organizations', 'catalog'],
     }),
 
-    getMyChangeRequests: builder.query<ApiChangeRequest[], void>({
-      query: () => ({
+    getMyChangeRequests: builder.query<
+      ApiPage<ApiChangeRequest>,
+      { page?: number; page_size?: number; q?: string; status?: string } | void
+    >({
+      query: (params) => ({
         url: '/api/v1/organizations/me/change-requests',
         method: 'GET',
+        params: params || undefined,
       }),
+      transformResponse: (res: ApiPage<ApiChangeRequest> | ApiChangeRequest[]) =>
+        normalizePaginated(res),
       providesTags: ['organizations'],
     }),
 
@@ -188,17 +227,32 @@ export const orgApi = baseApi.injectEndpoints({
       providesTags: ['organizations'],
     }),
 
-    getMyOrgBookings: builder.query<ApiBooking[], { starts_at?: string; ends_at?: string } | void>({
+    getMyOrgBookings: builder.query<
+      ApiPage<ApiBooking>,
+      {
+        page?: number
+        page_size?: number
+        q?: string
+        status?: string
+        starts_at?: string
+        ends_at?: string
+      } | void
+    >({
       query: (params) => ({
         url: '/api/v1/organizations/me/bookings',
         method: 'GET',
         params: params
           ? {
+              ...(params.page ? { page: params.page } : {}),
+              ...(params.page_size ? { page_size: params.page_size } : {}),
+              ...(params.q ? { q: params.q } : {}),
+              ...(params.status ? { status: params.status } : {}),
               ...(params.starts_at ? { starts_at: params.starts_at } : {}),
               ...(params.ends_at ? { ends_at: params.ends_at } : {}),
             }
           : undefined,
       }),
+      transformResponse: (res: ApiPage<ApiBooking> | ApiBooking[]) => normalizePaginated(res),
       providesTags: ['bookings', 'organizations'],
     }),
 
@@ -280,6 +334,7 @@ export const {
   useUpdateMyOrgSettingsMutation,
   useGetMyEmployeesQuery,
   useCreateMyEmployeeMutation,
+  useUpdateMyEmployeeMutation,
   useDeleteMyEmployeeMutation,
   useGetMyServicesQuery,
   useCreateMyServiceMutation,

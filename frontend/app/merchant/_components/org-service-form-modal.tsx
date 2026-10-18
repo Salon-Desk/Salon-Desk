@@ -33,7 +33,8 @@ interface OrgServiceFormModalProps {
 }
 
 export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormModalProps) {
-  const { data: categories = [], isLoading: categoriesLoading } = useGetCatalogCategoriesQuery()
+  const { data: categoriesData, isLoading: categoriesLoading } = useGetCatalogCategoriesQuery()
+  const categories = categoriesData?.items ?? []
   const [createService, { isLoading: creating }] = useCreateMyServiceMutation()
   const [updateService, { isLoading: updating }] = useUpdateMyServiceMutation()
   const isLoading = creating || updating

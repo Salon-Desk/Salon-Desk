@@ -48,6 +48,15 @@ class EmployeeCreate(BaseModel):
     role: str = Field(description="reception or stylist")
 
 
+class EmployeeUpdate(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+    middle_name: str | None = None
+    phone: str | None = None
+    role: str | None = Field(default=None, description="reception or stylist")
+    picture: str | None = None
+
+
 class StaffCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)

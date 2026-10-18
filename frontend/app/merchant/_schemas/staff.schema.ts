@@ -26,3 +26,14 @@ export const createEmployeeDefaultValues: CreateEmployeeFormData = {
   phone: '',
   role: 'stylist',
 }
+
+export const editEmployeeSchema = z.object({
+  first_name: fieldValidators.string(true, 'First name is required'),
+  last_name: fieldValidators.string(true, 'Last name is required'),
+  middle_name: z.string().trim().optional().nullable(),
+  phone: optionalAuthPhoneSchema,
+  role: employeeRoleSchema,
+  picture: z.string().trim().optional().nullable(),
+})
+
+export type EditEmployeeFormData = z.infer<typeof editEmployeeSchema>

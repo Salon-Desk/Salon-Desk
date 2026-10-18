@@ -1,10 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.api.deps import DbSession, PlatformAdmin
+from app.core.pagination import paginate_query
 from app.models.service import ServiceCategory
+from app.schemas.common import PageOut
 from app.schemas.service import (
     ServiceCategoryCreate,
     ServiceCategoryOut,
@@ -16,11 +18,23 @@ router = APIRouter(prefix="/admin", tags=["platform"])
 # --- Service categories ---
 
 
-@router.get("/service-categories", response_model=list[ServiceCategoryOut])
-async def list_categories(user: PlatformAdmin, db: DbSession) -> list[ServiceCategoryOut]:
+@router.get("/service-categories", response_model=PageOut[ServiceCategoryOut])
+async def list_categories(
+    user: PlatformAdmin,
+    db: DbSession,
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
+    q: str | None = Query(default=None, description="Search query"),
+) -> PageOut[ServiceCategoryOut]:
     _ = user
-    result = await db.execute(select(ServiceCategory).order_by(ServiceCategory.name))
-    return [ServiceCategoryOut.model_validate(c) for c in result.scalars().all()]
+    stmt = select(ServiceCategory)
+    if q and q.strip():
+        term = f"%{q.strip()}%"
+        stmt = stmt.where(
+            ServiceCategory.name.ilike(term) | ServiceCategory.description.ilike(term)
+        )
+    stmt = stmt.order_by(ServiceCategory.name)
+    return await paginate_query(db, stmt, page=page, page_size=page_size, schema=ServiceCategoryOut)
 
 
 @router.post(

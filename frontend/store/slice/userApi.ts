@@ -13,6 +13,15 @@ export interface CreateEmployeeRequest {
   phone?: string | null
 }
 
+export interface UpdateEmployeeRequest {
+  first_name?: string
+  last_name?: string
+  middle_name?: string | null
+  phone?: string | null
+  role?: 'reception' | 'stylist'
+  picture?: string | null
+}
+
 export interface CreateStaffRequest {
   email: string
   password: string
@@ -58,6 +67,15 @@ export const userApi = baseApi.injectEndpoints({
       invalidatesTags: ['user'],
     }),
 
+    updateEmployee: builder.mutation<User, { employeeId: string; data: UpdateEmployeeRequest }>({
+      query: ({ employeeId, data }) => ({
+        url: `/api/v1/organizations/me/employees/${employeeId}`,
+        method: 'PATCH',
+        data,
+      }),
+      invalidatesTags: ['user'],
+    }),
+
     deleteEmployee: builder.mutation<MessageOut, string>({
       query: (employeeId) => ({
         url: `/api/v1/organizations/me/employees/${employeeId}`,
@@ -98,6 +116,7 @@ export const userApi = baseApi.injectEndpoints({
 export const {
   useGetEmployeesQuery,
   useAddEmployeeMutation,
+  useUpdateEmployeeMutation,
   useDeleteEmployeeMutation,
   useAssignShiftMutation,
   useAddAdminStaffMutation,

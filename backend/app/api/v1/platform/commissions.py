@@ -1,10 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.api.deps import DbSession, PlatformAdmin
+from app.core.pagination import paginate_query
 from app.models.ledger import PlatformCommission
+from app.schemas.common import PageOut
 from app.schemas.platform import (
     PlatformCommissionCreate,
     PlatformCommissionOut,
@@ -16,13 +18,23 @@ router = APIRouter(prefix="/admin", tags=["platform"])
 # --- Commissions ---
 
 
-@router.get("/commissions", response_model=list[PlatformCommissionOut])
-async def list_commissions(user: PlatformAdmin, db: DbSession) -> list[PlatformCommissionOut]:
+@router.get("/commissions", response_model=PageOut[PlatformCommissionOut])
+async def list_commissions(
+    user: PlatformAdmin,
+    db: DbSession,
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
+    q: str | None = Query(default=None, description="Search query"),
+) -> PageOut[PlatformCommissionOut]:
     _ = user
-    result = await db.execute(
-        select(PlatformCommission).order_by(PlatformCommission.created_at.desc())
+    stmt = select(PlatformCommission)
+    if q and q.strip():
+        term = f"%{q.strip()}%"
+        stmt = stmt.where(PlatformCommission.name.ilike(term))
+    stmt = stmt.order_by(PlatformCommission.created_at.desc())
+    return await paginate_query(
+        db, stmt, page=page, page_size=page_size, schema=PlatformCommissionOut
     )
-    return [PlatformCommissionOut.model_validate(c) for c in result.scalars().all()]
 
 
 @router.post(

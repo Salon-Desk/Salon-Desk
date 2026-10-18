@@ -4,7 +4,7 @@ import { CheckCircle2, Clock, Copy, CreditCard, ShieldCheck, Sliders } from 'luc
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
-import { Badge, Card, EmptyState } from '@/components/ui'
+import { Badge, Card, EmptyState, SearchInput, TablePagination } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { useGetAdminChangeRequestsQuery } from '@/store/api/platformApi'
@@ -161,14 +161,19 @@ function PayloadParameterCard({ cr }: { cr: ApiChangeRequest }) {
 export default function AdminRequestsPage() {
   const { skipAdminApi } = useAdminSession()
   const [status, setStatus] = useState<CrFilter>('PENDING')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(5)
+
   const {
-    data: allRequests = [],
+    data: allRequestsData,
     isLoading,
     isError,
     refetch,
   } = useGetAdminChangeRequestsQuery(undefined, {
     skip: skipAdminApi,
   })
+  const allRequests = allRequestsData?.items ?? []
 
   const counts = useMemo(
     () => ({
@@ -180,10 +185,27 @@ export default function AdminRequestsPage() {
     [allRequests],
   )
 
-  const requests = useMemo(() => {
-    if (status === 'all') return allRequests
-    return allRequests.filter((r) => r.status.toUpperCase() === status)
-  }, [allRequests, status])
+  const filteredRequests = useMemo(() => {
+    let list =
+      status === 'all' ? allRequests : allRequests.filter((r) => r.status.toUpperCase() === status)
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim()
+      list = list.filter(
+        (r) =>
+          r.org_id.toLowerCase().includes(q) ||
+          r.id.toLowerCase().includes(q) ||
+          r.request_type.toLowerCase().includes(q) ||
+          JSON.stringify(r.payload_json).toLowerCase().includes(q),
+      )
+    }
+    return list
+  }, [allRequests, status, searchQuery])
+
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / pageSize))
+  const paginatedRequests = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredRequests.slice(start, start + pageSize)
+  }, [filteredRequests, currentPage, pageSize])
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 animate-in fade-in duration-300">
@@ -197,34 +219,49 @@ export default function AdminRequestsPage() {
         </p>
       </div>
 
-      {/* Segmented Tabbed Status Filters with Reactive Counts */}
-      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-        {(['PENDING', 'APPROVED', 'REJECTED', 'all'] as const).map((key) => {
-          const isActive = status === key
-          const count = counts[key]
+      {/* Toolbar: Search & Tabbed Filters */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+        <SearchInput
+          value={searchQuery}
+          onChange={(val) => {
+            setSearchQuery(val)
+            setCurrentPage(1)
+          }}
+          placeholder="Search by org ID, request ID, or payload details…"
+          className="w-full sm:max-w-xs text-xs"
+        />
 
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setStatus(key)}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-            >
-              <span>{FILTER_LABELS[key]}</span>
-              <span
-                className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
-                  isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-500'
+        <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto">
+          {(['PENDING', 'APPROVED', 'REJECTED', 'all'] as const).map((key) => {
+            const isActive = status === key
+            const count = counts[key]
+
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  setStatus(key)
+                  setCurrentPage(1)
+                }}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                {count}
-              </span>
-            </button>
-          )
-        })}
+                <span>{FILTER_LABELS[key]}</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
+                    isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <AdminQueryState
@@ -235,7 +272,7 @@ export default function AdminRequestsPage() {
         errorLabel="Could not load change requests."
       >
         <div className="space-y-3.5">
-          {requests.map((cr) => {
+          {paginatedRequests.map((cr) => {
             const isPending = cr.status.toUpperCase() === 'PENDING'
             const isApproved = cr.status.toUpperCase() === 'APPROVED'
             const statusTone = isApproved ? 'emerald' : isPending ? 'amber' : 'rose'
@@ -278,7 +315,24 @@ export default function AdminRequestsPage() {
             )
           })}
 
-          {requests.length === 0 && (
+          {filteredRequests.length > 0 && (
+            <div className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredRequests.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+                pageSizeOptions={[5, 10, 20]}
+              />
+            </div>
+          )}
+
+          {filteredRequests.length === 0 && (
             <EmptyState
               icon={Sliders}
               title="No requests in this category"

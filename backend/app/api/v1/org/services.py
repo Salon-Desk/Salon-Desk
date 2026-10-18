@@ -1,14 +1,16 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.api.deps import DbSession, OrgMember, OrgOwner
+from app.core.pagination import paginate_query
 from app.models.enums import (
     ServiceStatus,
 )
 from app.models.service import Service, ServiceGiving
 from app.models.user import User
+from app.schemas.common import PageOut
 from app.schemas.service import (
     ServiceCreate,
     ServiceGivingCreate,
@@ -22,12 +24,26 @@ router = APIRouter(prefix="/organizations", tags=["org"])
 # --- Services ---
 
 
-@router.get("/me/services", response_model=list[ServiceOut])
-async def list_org_services(user: OrgMember, db: DbSession) -> list[ServiceOut]:
-    result = await db.execute(
-        select(Service).where(Service.organization_id == user.org_id).order_by(Service.name)
-    )
-    return [ServiceOut.model_validate(s) for s in result.scalars().all()]
+@router.get("/me/services", response_model=PageOut[ServiceOut])
+async def list_org_services(
+    user: OrgMember,
+    db: DbSession,
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
+    q: str | None = Query(default=None, description="Search query"),
+    category_id: UUID | None = Query(default=None, description="Filter by category"),
+    status: ServiceStatus | None = Query(default=None, description="Filter by status"),
+) -> PageOut[ServiceOut]:
+    stmt = select(Service).where(Service.organization_id == user.org_id)
+    if category_id:
+        stmt = stmt.where(Service.service_category_id == category_id)
+    if status:
+        stmt = stmt.where(Service.status == status)
+    if q and q.strip():
+        term = f"%{q.strip()}%"
+        stmt = stmt.where(Service.name.ilike(term) | Service.description.ilike(term))
+    stmt = stmt.order_by(Service.name)
+    return await paginate_query(db, stmt, page=page, page_size=page_size, schema=ServiceOut)
 
 
 @router.post(

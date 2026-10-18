@@ -87,14 +87,17 @@ export function ClientExperience({
   } = useGeolocation({ requestOnMount: !filterOrgId })
 
   const { data: hero, isLoading: heroLoading } = useGetCatalogHeroQuery()
-  const { data: categories = [] } = useGetCatalogCategoriesQuery()
-  const { data: organizations = [] } = useGetCatalogOrganizationsQuery()
+  const { data: categoriesData } = useGetCatalogCategoriesQuery()
+  const { data: organizationsData } = useGetCatalogOrganizationsQuery()
+  const categories = categoriesData?.items ?? []
+  const organizations = organizationsData?.items ?? []
   const [fetchCatalogService] = useLazyGetCatalogServiceQuery()
   const {
-    data: apiBookings = [],
+    data: apiBookingsData,
     isLoading: bookingsLoading,
     refetch: refetchBookings,
   } = useGetMyBookingsQuery(undefined, { skip: !isAuthenticated || !isClientUser(user) })
+  const apiBookings = apiBookingsData?.items ?? []
 
   const [createBooking] = useCreateBookingMutation()
   const [createConsent] = useCreateBookingConsentMutation()

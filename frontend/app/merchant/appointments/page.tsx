@@ -5,7 +5,14 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { type Column, DataTable, EmptyState, HoldStateBadge, SearchInput } from '@/components/ui'
+import {
+  type Column,
+  DataTable,
+  EmptyState,
+  HoldStateBadge,
+  SearchInput,
+  TablePagination,
+} from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { formatUsd } from '@/lib/format'
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
@@ -21,7 +28,8 @@ import { SettlementDrawer } from '../_components/settlement-drawer'
 type AppointmentFilter = 'ALL' | HoldState
 
 export default function MerchantAppointmentsPage() {
-  const { data: apiBookings = [], isLoading, isError, refetch } = useGetMyOrgBookingsQuery()
+  const { data: apiBookingsData, isLoading, isError, refetch } = useGetMyOrgBookingsQuery()
+  const apiBookings = apiBookingsData?.items ?? []
   const [markShow, { isLoading: markingShow }] = useMarkBookingShowMutation()
   const [markNoShow, { isLoading: markingNoShow }] = useMarkBookingNoShowMutation()
   const [cancelBooking, { isLoading: cancelling }] = useCancelBookingMutation()
@@ -31,6 +39,8 @@ export default function MerchantAppointmentsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [inspectConsentBooking, setInspectConsentBooking] = useState<Booking | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const bookings = useMemo(() => apiBookings.map((b) => mapApiBookingToUi(b)), [apiBookings])
 
@@ -66,6 +76,12 @@ export default function MerchantAppointmentsPage() {
       }),
     [appointmentFilter, appointmentSearch, bookings],
   )
+
+  const totalPages = Math.max(1, Math.ceil(filteredAppointments.length / pageSize))
+  const paginatedAppointments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredAppointments.slice(start, start + pageSize)
+  }, [filteredAppointments, currentPage, pageSize])
 
   const handleMarkShow = async (booking: Booking) => {
     try {
@@ -296,34 +312,49 @@ export default function MerchantAppointmentsPage() {
       </div>
 
       {!isLoading && !isError ? (
-        <DataTable
-          columns={bookingColumns}
-          rows={filteredAppointments}
-          rowKey={(b) => b.id}
-          className="rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
-          emptyState={
-            <EmptyState
-              icon={Calendar}
-              title="No appointments found"
-              description={
-                appointmentSearch
-                  ? `No reservations matching "${appointmentSearch}". Try clearing your search filters.`
-                  : 'No appointments found in this status category.'
-              }
-              action={
-                appointmentSearch ? (
-                  <PrimaryButton
-                    title="Clear search"
-                    size="sm"
-                    fullWidth={false}
-                    className="h-8 rounded-lg px-3 text-xs"
-                    onClick={() => setAppointmentSearch('')}
-                  />
-                ) : null
-              }
-            />
-          }
-        />
+        <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+          <DataTable
+            columns={bookingColumns}
+            rows={paginatedAppointments}
+            rowKey={(b) => b.id}
+            className="border-0 shadow-none rounded-none"
+            emptyState={
+              <EmptyState
+                icon={Calendar}
+                title="No appointments found"
+                description={
+                  appointmentSearch
+                    ? `No reservations matching "${appointmentSearch}". Try clearing your search filters.`
+                    : 'No appointments found in this status category.'
+                }
+                action={
+                  appointmentSearch ? (
+                    <PrimaryButton
+                      title="Clear search"
+                      size="sm"
+                      fullWidth={false}
+                      className="h-8 rounded-lg px-3 text-xs"
+                      onClick={() => setAppointmentSearch('')}
+                    />
+                  ) : null
+                }
+              />
+            }
+          />
+
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredAppointments.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setCurrentPage(1)
+            }}
+            pageSizeOptions={[5, 10, 20, 50]}
+          />
+        </div>
       ) : null}
 
       {selectedBooking ? (

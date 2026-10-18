@@ -1,3 +1,4 @@
+import contextlib
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -5,9 +6,11 @@ from sqlalchemy import Float, Select, cast, func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DbSession
+from app.core.pagination import paginate_items
 from app.models.enums import OrganizationStatus, ServiceStatus
 from app.models.organization import Organization, OrgSettings
 from app.models.service import Service, ServiceCategory
+from app.schemas.common import PageOut
 from app.schemas.organization import CatalogHeroOut, CatalogOrganizationOut, OrganizationOut
 from app.schemas.service import CatalogServiceOut, CatalogServicesPage, ServiceCategoryOut
 from app.services.cache_service import cache_service
@@ -118,14 +121,31 @@ async def get_catalog_hero(db: DbSession) -> CatalogHeroOut:
     return hero
 
 
-@router.get("/organizations", response_model=list[CatalogOrganizationOut])
-async def list_organizations(db: DbSession) -> list[CatalogOrganizationOut]:
-    result = await db.execute(
+@router.get("/organizations", response_model=PageOut[CatalogOrganizationOut])
+async def list_organizations(
+    db: DbSession,
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
+    q: str | None = Query(default=None, description="Search query"),
+) -> PageOut[CatalogOrganizationOut]:
+    stmt = (
         select(Organization, OrgSettings)
         .outerjoin(OrgSettings, OrgSettings.org_id == Organization.id)
         .where(Organization.status == OrganizationStatus.APPROVED)
-        .order_by(Organization.name)
     )
+    if q and q.strip():
+        term = f"%{q.strip()}%"
+        stmt = stmt.where(Organization.name.ilike(term) | Organization.description.ilike(term))
+    stmt = stmt.order_by(Organization.name)
+
+    count_subquery = stmt.order_by(None).subquery()
+    count_stmt = select(func.count()).select_from(count_subquery)
+    total_result = await db.execute(count_stmt)
+    total = total_result.scalar_one() or 0
+
+    offset = max(0, (page - 1) * page_size)
+    paged_stmt = stmt.offset(offset).limit(page_size)
+    result = await db.execute(paged_stmt)
     items: list[CatalogOrganizationOut] = []
     for org, settings in result.all():
         items.append(
@@ -140,7 +160,14 @@ async def list_organizations(db: DbSession) -> list[CatalogOrganizationOut]:
                 timezone=settings.timezone if settings else None,
             )
         )
-    return items
+    has_more = (offset + len(items)) < total
+    return PageOut(
+        items=items,
+        page=page,
+        page_size=page_size,
+        total=total,
+        has_more=has_more,
+    )
 
 
 @router.get("/organizations/{org_id}", response_model=OrganizationOut)
@@ -151,24 +178,39 @@ async def get_organization(org_id: UUID, db: DbSession) -> OrganizationOut:
     return OrganizationOut.model_validate(org)
 
 
-@router.get("/categories", response_model=list[ServiceCategoryOut])
-async def list_categories(db: DbSession) -> list[ServiceCategoryOut]:
+@router.get("/categories", response_model=PageOut[ServiceCategoryOut])
+async def list_categories(
+    db: DbSession,
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
+    q: str | None = Query(default=None, description="Search query"),
+) -> PageOut[ServiceCategoryOut]:
     cache_key = "catalog:categories"
     cached = await cache_service.get_json(cache_key)
+    all_categories: list[ServiceCategoryOut] = []
     if cached is not None:
-        try:
-            return [ServiceCategoryOut.model_validate(c) for c in cached]
-        except Exception:
-            pass
+        with contextlib.suppress(Exception):
+            all_categories = [ServiceCategoryOut.model_validate(c) for c in cached]
 
-    result = await db.execute(select(ServiceCategory).order_by(ServiceCategory.name))
-    categories = [ServiceCategoryOut.model_validate(c) for c in result.scalars().all()]
-    await cache_service.set_json(
-        cache_key,
-        [c.model_dump(mode="json") for c in categories],
-        ttl_seconds=300,
-    )
-    return categories
+    if not all_categories:
+        result = await db.execute(select(ServiceCategory).order_by(ServiceCategory.name))
+        all_categories = [ServiceCategoryOut.model_validate(c) for c in result.scalars().all()]
+        await cache_service.set_json(
+            cache_key,
+            [c.model_dump(mode="json") for c in all_categories],
+            ttl_seconds=300,
+        )
+
+    filtered = all_categories
+    if q and q.strip():
+        term = q.strip().lower()
+        filtered = [
+            c
+            for c in all_categories
+            if term in c.name.lower() or (c.description and term in c.description.lower())
+        ]
+
+    return paginate_items(filtered, page=page, page_size=page_size)
 
 
 @router.get("/services", response_model=CatalogServicesPage)

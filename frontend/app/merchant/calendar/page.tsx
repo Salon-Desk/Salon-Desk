@@ -38,16 +38,18 @@ export default function MerchantCalendarPage() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
 
   const { data: org } = useGetMyOrganizationQuery()
-  const { data: employees = [], isLoading: staffLoading } = useGetMyEmployeesQuery()
+  const { data: employeesData, isLoading: staffLoading } = useGetMyEmployeesQuery()
+  const employees = employeesData?.items ?? []
 
   const queryRange = useMemo(() => rangeForView(view, anchor), [view, anchor])
 
   const {
-    data: apiBookings = [],
+    data: apiBookingsData,
     isLoading: bookingsLoading,
     isFetching,
     refetch: refetchBookings,
   } = useGetMyOrgBookingsQuery(queryRange)
+  const apiBookings = apiBookingsData?.items ?? []
 
   const [markShow, { isLoading: markingShow }] = useMarkBookingShowMutation()
   const [markNoShow, { isLoading: markingNoShow }] = useMarkBookingNoShowMutation()

@@ -40,12 +40,16 @@ export default function MerchantDashboardPage() {
   const { data: org, isLoading: orgLoading } = useGetMyOrganizationQuery()
   const { data: account } = useGetMyOrgAccountQuery()
   const {
-    data: apiBookings = [],
+    data: apiBookingsData,
     isLoading: bookingsLoading,
     refetch: refetchBookings,
   } = useGetMyOrgBookingsQuery()
-  const { data: changeRequests = [] } = useGetMyChangeRequestsQuery()
-  const { data: services = [] } = useGetMyServicesQuery()
+  const { data: changeRequestsData } = useGetMyChangeRequestsQuery()
+  const { data: servicesData } = useGetMyServicesQuery()
+
+  const apiBookings = apiBookingsData?.items ?? []
+  const changeRequests = changeRequestsData?.items ?? []
+  const services = servicesData?.items ?? []
 
   const [markShow] = useMarkBookingShowMutation()
   const [markNoShow] = useMarkBookingNoShowMutation()

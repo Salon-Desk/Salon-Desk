@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import ClientUser, CurrentUser, DbSession
 from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.pagination import paginate_items
 from app.models.enums import UserRole
 from app.schemas.booking import (
     BookingCancelRequest,
@@ -15,6 +16,7 @@ from app.schemas.booking import (
     TimeSlot,
     booking_to_out,
 )
+from app.schemas.common import PageOut
 from app.services import booking_service
 from app.services.payment_service import create_consent
 
@@ -43,10 +45,20 @@ async def create_booking(body: BookingCreate, user: ClientUser, db: DbSession) -
     return booking_to_out(booking)
 
 
-@router.get("/me", response_model=list[BookingOut])
-async def my_bookings(user: ClientUser, db: DbSession) -> list[BookingOut]:
+@router.get("/me", response_model=PageOut[BookingOut])
+async def my_bookings(
+    user: ClientUser,
+    db: DbSession,
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
+    status: str | None = Query(default=None, description="Filter by status"),
+) -> PageOut[BookingOut]:
     rows = await booking_service.list_client_bookings(db, user.id)
-    return [booking_to_out(b) for b in rows]
+    items = [booking_to_out(b) for b in rows]
+    if status:
+        sf = status.upper()
+        items = [b for b in items if b.status.upper() == sf]
+    return paginate_items(items, page=page, page_size=page_size)
 
 
 @router.get("/availability", response_model=list[TimeSlot])

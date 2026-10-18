@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.api.deps import DbSession, OrgMember, OrgOwner
 from app.core.exceptions import ForbiddenError
+from app.core.pagination import paginate_items
 from app.models.payment import OrgAccount
 from app.models.policy import OrgCancellationPolicy
+from app.schemas.common import PageOut
 from app.schemas.organization import (
     CancellationPolicyOut,
     ChangeRequestCreate,
@@ -40,11 +42,31 @@ async def get_account(user: OrgMember, db: DbSession) -> OrgAccountOut | None:
     return OrgAccountOut.model_validate(account) if account else None
 
 
-@router.get("/me/change-requests", response_model=list[ChangeRequestOut])
-async def list_change_requests(user: OrgMember, db: DbSession) -> list[ChangeRequestOut]:
+@router.get("/me/change-requests", response_model=PageOut[ChangeRequestOut])
+async def list_change_requests(
+    user: OrgMember,
+    db: DbSession,
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
+    q: str | None = Query(default=None, description="Search query"),
+    status: str | None = Query(default=None, description="Filter by status"),
+) -> PageOut[ChangeRequestOut]:
     assert user.org_id is not None
     rows = await change_request_service.list_org_change_requests(db, user.org_id)
-    return [ChangeRequestOut.model_validate(r) for r in rows]
+    items = [ChangeRequestOut.model_validate(r) for r in rows]
+    if status:
+        sf = status.upper()
+        items = [r for r in items if r.status.upper() == sf]
+    if q and q.strip():
+        term = q.strip().lower()
+        items = [
+            r
+            for r in items
+            if term in str(r.id).lower()
+            or (r.type and term in r.type.lower())
+            or (r.review_notes and term in r.review_notes.lower())
+        ]
+    return paginate_items(items, page=page, page_size=page_size)
 
 
 @router.post(

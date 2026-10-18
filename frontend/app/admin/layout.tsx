@@ -27,7 +27,8 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
   const user = useSelector(userSelector)
   const { skipAdminApi } = useAdminSession()
   const { data: dashboard } = useGetAdminDashboardQuery(undefined, { skip: skipAdminApi })
-  const { data: categories = [] } = useGetAdminCategoriesQuery(undefined, { skip: skipAdminApi })
+  const { data: categoriesData } = useGetAdminCategoriesQuery(undefined, { skip: skipAdminApi })
+  const categories = categoriesData?.items ?? []
   const { message } = useAdminContext()
 
   const handleLockSession = () => {

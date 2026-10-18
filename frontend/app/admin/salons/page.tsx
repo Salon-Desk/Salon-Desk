@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { Badge, Card, EmptyState, SearchInput } from '@/components/ui'
+import { Badge, Card, EmptyState, SearchInput, TablePagination } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import {
@@ -24,13 +24,16 @@ export default function AdminSalonsPage() {
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(8)
 
   const {
-    data: allOrganizations = [],
+    data: allOrganizationsData,
     isLoading,
     isError,
     refetch,
   } = useGetAdminOrganizationsQuery(undefined, { skip: skipAdminApi })
+  const allOrganizations = allOrganizationsData?.items ?? []
   const [approveOrg, { isLoading: approving }] = useApproveOrganizationMutation()
   const [suspendOrg, { isLoading: suspending }] = useSuspendOrganizationMutation()
 
@@ -50,6 +53,12 @@ export default function AdminSalonsPage() {
     }
     return result
   }, [allOrganizations, filter, searchQuery])
+
+  const totalPages = Math.max(1, Math.ceil(organizations.length / pageSize))
+  const paginatedOrganizations = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return organizations.slice(start, start + pageSize)
+  }, [organizations, currentPage, pageSize])
 
   const counts = useMemo(
     () => ({
@@ -158,7 +167,7 @@ export default function AdminSalonsPage() {
         errorLabel="Could not load organizations."
       >
         <div className="space-y-3">
-          {organizations.map((org) => {
+          {paginatedOrganizations.map((org) => {
             const isApproved = org.status === 'approved'
             const isPending = org.status === 'pending'
             const isSuspended = org.status === 'suspended'
@@ -249,6 +258,23 @@ export default function AdminSalonsPage() {
               </Card>
             )
           })}
+
+          {organizations.length > 0 && (
+            <div className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={organizations.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+                pageSizeOptions={[5, 8, 16, 32]}
+              />
+            </div>
+          )}
 
           {organizations.length === 0 && (
             <EmptyState

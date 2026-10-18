@@ -8,13 +8,15 @@ import type {
   PaymentHold,
   TimeSlot,
 } from '@/types/api-booking'
-import type {
-  ApiServiceCategory,
-  CatalogHero,
-  CatalogOrganization,
-  CatalogService,
-  CatalogServicesPage,
-  CatalogServicesQueryParams,
+import {
+  type ApiPage,
+  type ApiServiceCategory,
+  type CatalogHero,
+  type CatalogOrganization,
+  type CatalogService,
+  type CatalogServicesPage,
+  type CatalogServicesQueryParams,
+  normalizePaginated,
 } from '@/types/api-org'
 import type { User } from '@/types/user'
 
@@ -97,13 +99,31 @@ export const clientApi = baseApi.injectEndpoints({
       providesTags: ['catalog'],
     }),
 
-    getCatalogOrganizations: builder.query<CatalogOrganization[], void>({
-      query: () => ({ url: '/api/v1/catalog/organizations', method: 'GET' }),
+    getCatalogOrganizations: builder.query<
+      ApiPage<CatalogOrganization>,
+      { page?: number; page_size?: number; q?: string } | void
+    >({
+      query: (params) => ({
+        url: '/api/v1/catalog/organizations',
+        method: 'GET',
+        params: params || undefined,
+      }),
+      transformResponse: (res: ApiPage<CatalogOrganization> | CatalogOrganization[]) =>
+        normalizePaginated(res),
       providesTags: ['catalog'],
     }),
 
-    getCatalogCategories: builder.query<ApiServiceCategory[], void>({
-      query: () => ({ url: '/api/v1/catalog/categories', method: 'GET' }),
+    getCatalogCategories: builder.query<
+      ApiPage<ApiServiceCategory>,
+      { page?: number; page_size?: number; q?: string } | void
+    >({
+      query: (params) => ({
+        url: '/api/v1/catalog/categories',
+        method: 'GET',
+        params: params || undefined,
+      }),
+      transformResponse: (res: ApiPage<ApiServiceCategory> | ApiServiceCategory[]) =>
+        normalizePaginated(res),
       providesTags: ['catalog'],
     }),
 
@@ -175,8 +195,16 @@ export const clientApi = baseApi.injectEndpoints({
       invalidatesTags: ['bookings'],
     }),
 
-    getMyBookings: builder.query<ApiBooking[], void>({
-      query: () => ({ url: '/api/v1/bookings/me', method: 'GET' }),
+    getMyBookings: builder.query<
+      ApiPage<ApiBooking>,
+      { page?: number; page_size?: number; status?: string } | void
+    >({
+      query: (params) => ({
+        url: '/api/v1/bookings/me',
+        method: 'GET',
+        params: params || undefined,
+      }),
+      transformResponse: (res: ApiPage<ApiBooking> | ApiBooking[]) => normalizePaginated(res),
       providesTags: ['bookings'],
     }),
 

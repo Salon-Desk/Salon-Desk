@@ -4,7 +4,7 @@ import { Clock, CreditCard, Edit2, Percent, Plus, RefreshCw } from 'lucide-react
 import { useMemo, useState } from 'react'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { Badge, Card, EmptyState, IconButton } from '@/components/ui'
+import { Badge, Card, EmptyState, IconButton, SearchInput, TablePagination } from '@/components/ui'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { formatUsd } from '@/lib/format'
 import {
@@ -28,22 +28,44 @@ function formatCommissionRate(c: PlatformCommission): string {
 export default function AdminCommissionPage() {
   const { skipAdminApi } = useAdminSession()
   const {
-    data: commissions = [],
+    data: commissionsData,
     isLoading,
     isError,
     refetch,
   } = useGetAdminCommissionsQuery(undefined, { skip: skipAdminApi })
-  const { data: categories = [] } = useGetAdminCategoriesQuery(undefined, { skip: skipAdminApi })
+  const { data: categoriesData } = useGetAdminCategoriesQuery(undefined, { skip: skipAdminApi })
+  const commissions = commissionsData?.items ?? []
+  const categories = categoriesData?.items ?? []
   const { data: dashboard } = useGetAdminDashboardQuery(undefined, { skip: skipAdminApi })
 
   const [isOpen, setIsOpen] = useState(false)
   const [editing, setEditing] = useState<PlatformCommission | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(8)
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>()
     categories.forEach((c) => map.set(c.id, c.name))
     return map
   }, [categories])
+
+  const filteredCommissions = useMemo(() => {
+    if (!searchQuery.trim()) return commissions
+    const q = searchQuery.toLowerCase().trim()
+    return commissions.filter((c) => {
+      const catName = (categoryNameById.get(c.service_category_id) || '').toLowerCase()
+      return (
+        c.name.toLowerCase().includes(q) || c.type.toLowerCase().includes(q) || catName.includes(q)
+      )
+    })
+  }, [commissions, searchQuery, categoryNameById])
+
+  const totalPages = Math.max(1, Math.ceil(filteredCommissions.length / pageSize))
+  const paginatedCommissions = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredCommissions.slice(start, start + pageSize)
+  }, [filteredCommissions, currentPage, pageSize])
 
   const ledgerSum = Number(dashboard?.ledger_amount_sum || 0)
 
@@ -123,7 +145,7 @@ export default function AdminCommissionPage() {
             padding="none"
             className="rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
           >
-            <div className="flex items-center justify-between border-slate-100 border-b p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-slate-100 border-b p-4 gap-3">
               <div>
                 <h2 className="font-bold text-slate-900 text-sm">
                   Categorization Take-Rate Matrix
@@ -132,9 +154,20 @@ export default function AdminCommissionPage() {
                   Automated settlement split applied when bookings are captured via PayPal Orders v2
                 </p>
               </div>
-              <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/70">
-                {commissions.length} active rules
-              </span>
+              <div className="flex items-center gap-2">
+                <SearchInput
+                  value={searchQuery}
+                  onChange={(val) => {
+                    setSearchQuery(val)
+                    setCurrentPage(1)
+                  }}
+                  placeholder="Search rules…"
+                  className="w-48 text-xs"
+                />
+                <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/70 shrink-0">
+                  {filteredCommissions.length} rules
+                </span>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -150,7 +183,7 @@ export default function AdminCommissionPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {commissions.map((c) => {
+                  {paginatedCommissions.map((c) => {
                     const typeTone =
                       c.type === 'percentage' ? 'emerald' : c.type === 'flat' ? 'sky' : 'purple'
 
@@ -198,6 +231,19 @@ export default function AdminCommissionPage() {
                 </tbody>
               </table>
             </div>
+
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredCommissions.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                setCurrentPage(1)
+              }}
+              pageSizeOptions={[5, 8, 15, 30]}
+            />
           </Card>
         ) : null}
       </AdminQueryState>

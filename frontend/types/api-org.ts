@@ -136,13 +136,35 @@ export interface CatalogServicesQueryParams {
   max_distance_km?: number
 }
 
-export interface CatalogServicesPage {
-  items: CatalogService[]
+export interface ApiPage<T> {
+  items: T[]
   page: number
   page_size: number
   total: number
   has_more: boolean
 }
+
+export function normalizePaginated<T>(
+  data: ApiPage<T> | T[] | undefined | null,
+  fallbackPage = 1,
+  fallbackPageSize = 20,
+): ApiPage<T> {
+  if (!data) {
+    return { items: [], page: fallbackPage, page_size: fallbackPageSize, total: 0, has_more: false }
+  }
+  if (Array.isArray(data)) {
+    return {
+      items: data,
+      page: fallbackPage,
+      page_size: data.length || fallbackPageSize,
+      total: data.length,
+      has_more: false,
+    }
+  }
+  return data
+}
+
+export type CatalogServicesPage = ApiPage<CatalogService>
 
 export interface ApiServiceCategory {
   id: string

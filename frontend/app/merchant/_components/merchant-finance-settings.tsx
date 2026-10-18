@@ -33,11 +33,12 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
   const { data: settings } = useGetMyOrgSettingsQuery()
   const { data: policies = [] } = useGetMyCancellationPoliciesQuery()
   const {
-    data: changeRequests = [],
+    data: changeRequestsData,
     isLoading: crLoading,
     isError,
     refetch,
   } = useGetMyChangeRequestsQuery()
+  const changeRequests = changeRequestsData?.items ?? []
   const [createChangeRequest, { isLoading: submitting }] = useCreateMyChangeRequestMutation()
 
   const [copied, setCopied] = useState(false)

@@ -38,6 +38,10 @@ export function staffPicture(user: User): string | null {
   return user.profile?.picture || null
 }
 
+export function staffPhone(user: User): string | null {
+  return user.profile?.phone || user.phone || null
+}
+
 export function staffRoleLabel(role: string): string {
   return role.replace(/_/g, ' ')
 }

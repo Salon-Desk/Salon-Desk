@@ -1,11 +1,13 @@
-import type {
-  AdminDashboard,
-  ApiChangeRequest,
-  ApiOrganization,
-  ApiServiceCategory,
-  CreateServiceCategoryRequest,
-  PlatformCommission,
-  UpdateServiceCategoryRequest,
+import {
+  type AdminDashboard,
+  type ApiChangeRequest,
+  type ApiOrganization,
+  type ApiPage,
+  type ApiServiceCategory,
+  type CreateServiceCategoryRequest,
+  normalizePaginated,
+  type PlatformCommission,
+  type UpdateServiceCategoryRequest,
 } from '@/types/api-org'
 import type { MessageOut } from '@/types/auth'
 import type { User } from '@/types/user'
@@ -21,17 +23,31 @@ export const platformApi = baseApi.injectEndpoints({
       providesTags: ['dashboard', 'admin'],
     }),
 
-    getAdminOrganizations: builder.query<ApiOrganization[], { status?: string } | void>({
+    getAdminOrganizations: builder.query<
+      ApiPage<ApiOrganization>,
+      { page?: number; page_size?: number; q?: string; status?: string } | void
+    >({
       query: (params) => ({
         url: '/api/v1/admin/organizations',
         method: 'GET',
-        params: params?.status ? { status: params.status } : undefined,
+        params: params || undefined,
       }),
+      transformResponse: (res: ApiPage<ApiOrganization> | ApiOrganization[]) =>
+        normalizePaginated(res),
       providesTags: ['admin', 'organizations'],
     }),
 
-    getPendingSalons: builder.query<ApiOrganization[], void>({
-      query: () => ({ url: '/api/v1/admin/salons/pending', method: 'GET' }),
+    getPendingSalons: builder.query<
+      ApiPage<ApiOrganization>,
+      { page?: number; page_size?: number; q?: string } | void
+    >({
+      query: (params) => ({
+        url: '/api/v1/admin/salons/pending',
+        method: 'GET',
+        params: params || undefined,
+      }),
+      transformResponse: (res: ApiPage<ApiOrganization> | ApiOrganization[]) =>
+        normalizePaginated(res),
       providesTags: ['admin', 'organizations'],
     }),
 
@@ -51,8 +67,17 @@ export const platformApi = baseApi.injectEndpoints({
       invalidatesTags: ['admin', 'organizations', 'dashboard'],
     }),
 
-    getAdminCategories: builder.query<ApiServiceCategory[], void>({
-      query: () => ({ url: '/api/v1/admin/service-categories', method: 'GET' }),
+    getAdminCategories: builder.query<
+      ApiPage<ApiServiceCategory>,
+      { page?: number; page_size?: number; q?: string } | void
+    >({
+      query: (params) => ({
+        url: '/api/v1/admin/service-categories',
+        method: 'GET',
+        params: params || undefined,
+      }),
+      transformResponse: (res: ApiPage<ApiServiceCategory> | ApiServiceCategory[]) =>
+        normalizePaginated(res),
       providesTags: ['admin', 'catalog'],
     }),
 
@@ -78,14 +103,21 @@ export const platformApi = baseApi.injectEndpoints({
     }),
 
     getAdminChangeRequests: builder.query<
-      ApiChangeRequest[],
-      { status?: 'PENDING' | 'APPROVED' | 'REJECTED' } | void
+      ApiPage<ApiChangeRequest>,
+      {
+        page?: number
+        page_size?: number
+        q?: string
+        status?: 'PENDING' | 'APPROVED' | 'REJECTED' | string
+      } | void
     >({
       query: (params) => ({
         url: '/api/v1/admin/change-requests',
         method: 'GET',
-        params: params?.status ? { status: params.status } : undefined,
+        params: params || undefined,
       }),
+      transformResponse: (res: ApiPage<ApiChangeRequest> | ApiChangeRequest[]) =>
+        normalizePaginated(res),
       providesTags: ['admin'],
     }),
 
@@ -109,8 +141,17 @@ export const platformApi = baseApi.injectEndpoints({
       invalidatesTags: ['admin', 'organizations', 'dashboard'],
     }),
 
-    getAdminCommissions: builder.query<PlatformCommission[], void>({
-      query: () => ({ url: '/api/v1/admin/commissions', method: 'GET' }),
+    getAdminCommissions: builder.query<
+      ApiPage<PlatformCommission>,
+      { page?: number; page_size?: number; q?: string } | void
+    >({
+      query: (params) => ({
+        url: '/api/v1/admin/commissions',
+        method: 'GET',
+        params: params || undefined,
+      }),
+      transformResponse: (res: ApiPage<PlatformCommission> | PlatformCommission[]) =>
+        normalizePaginated(res),
       providesTags: ['admin'],
     }),
 
