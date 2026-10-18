@@ -140,14 +140,12 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     [state.bookings],
   )
   const activeHoldsVolume = activeHolds.reduce((acc, b) => acc + b.holdAmount, 0)
-  const capturedRevenue =
-    state.bookings
-      .filter((b) => b.status === 'CAPTURED')
-      .reduce((acc, b) => acc + b.servicePrice, 0) + 6775
-  const noShowRecovered =
-    state.bookings
-      .filter((b) => b.status === 'NO_SHOW_CAPTURED')
-      .reduce((acc, b) => acc + b.noShowFee, 0) + 390
+  const capturedRevenue = state.bookings
+    .filter((b) => b.status === 'CAPTURED')
+    .reduce((acc, b) => acc + b.servicePrice, 0)
+  const noShowRecovered = state.bookings
+    .filter((b) => b.status === 'NO_SHOW_CAPTURED')
+    .reduce((acc, b) => acc + b.noShowFee, 0)
 
   const pendingChangeRequests = state.changeRequests.filter(
     (r) => r.status === 'PENDING_REVIEW',

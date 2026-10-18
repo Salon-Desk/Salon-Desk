@@ -46,7 +46,7 @@ export function ConsoleShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {header}
-        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6 lg:px-8">{children}</main>
       </div>
     </div>
   )

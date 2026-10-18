@@ -232,7 +232,7 @@ export default function AdminRequestsPage() {
           className="w-full sm:max-w-xs text-xs"
         />
 
-        <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
           {(['PENDING', 'APPROVED', 'REJECTED', 'all'] as const).map((key) => {
             const isActive = status === key
             const count = counts[key]
@@ -245,7 +245,7 @@ export default function AdminRequestsPage() {
                   setStatus(key)
                   setCurrentPage(1)
                 }}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'

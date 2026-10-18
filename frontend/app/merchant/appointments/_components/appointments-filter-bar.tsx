@@ -33,7 +33,7 @@ export function AppointmentsFilterBar({
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1">
         {filterOptions.map((st) => {
           const count = filterCounts[st] ?? 0
           const isActive = filter === st
@@ -43,7 +43,7 @@ export function AppointmentsFilterBar({
               key={st}
               type="button"
               onClick={() => onFilterChange(st)}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all cursor-pointer border ${
+              className={`inline-flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all cursor-pointer border ${
                 isActive
                   ? 'bg-slate-900 text-white border-slate-900 shadow-md'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
@@ -51,7 +51,7 @@ export function AppointmentsFilterBar({
             >
               <span>{st === 'ALL' ? 'All' : HOLD_STATE_FILTER_LABEL[st]}</span>
               <span
-                className={`rounded-full px-2 py-0.5 text-xs font-mono font-semibold ${
+                className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-mono font-semibold ${
                   isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'
                 }`}
               >

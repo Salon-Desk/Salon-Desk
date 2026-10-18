@@ -92,7 +92,7 @@ export function AdminSidebar({
     .slice(0, 2)
     .toUpperCase()
 
-  const displayName = currentUser.name.replace(' (Judge Demo)', '')
+  const displayName = currentUser.name
 
   const handleNavChange = (tab: AdminTabId) => {
     onTabChange?.(tab)

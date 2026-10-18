@@ -3,7 +3,7 @@
 import { ShieldCheck, Sparkles } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { type ReactNode, Suspense, useMemo, useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { ConsoleShell } from '@/components/layout/console-shell'
@@ -11,7 +11,7 @@ import { PortalGuard } from '@/components/layout/portal-guard'
 import { Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useMerchantSession } from '@/hooks/use-merchant-session'
-import { mapBookingStatusToHoldState } from '@/lib/mappers/booking'
+import { mapApiBookingToUi, mapBookingStatusToHoldState } from '@/lib/mappers/booking'
 import type { AppDispatch } from '@/store'
 import {
   useCreateMyChangeRequestMutation,
@@ -22,7 +22,7 @@ import {
   useGetMyOrgBookingsQuery,
   useGetMyServicesQuery,
 } from '@/store/api/orgApi'
-import { logout } from '@/store/authSlice'
+import { logout, userSelector } from '@/store/authSlice'
 
 import { ConsentModal } from './_components/consent-modal'
 import { CopilotDrawer } from './_components/copilot-drawer'
@@ -38,6 +38,7 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
   const currentTab = getMerchantTabFromPathname(pathname)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const dispatch = useDispatch<AppDispatch>()
+  const user = useSelector(userSelector)
   const { skipOrgApi } = useMerchantSession()
 
   const { data: org } = useGetMyOrganizationQuery(undefined, { skip: skipOrgApi })
@@ -66,6 +67,11 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
     [changeRequests],
   )
 
+  const dynamicBookings = useMemo(
+    () => apiBookings.map((b) => mapApiBookingToUi(b, { salonName: org?.name })),
+    [apiBookings, org?.name],
+  )
+
   const {
     state,
     toastMessage,
@@ -92,10 +98,19 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
     handleToggleDrift,
   } = useMerchantContext()
 
+  const ownerDisplayName =
+    [user?.profile?.first_name, user?.profile?.last_name].filter(Boolean).join(' ') ||
+    user?.email?.split('@')[0] ||
+    org?.name ||
+    'Salon Owner'
+
   const salon = {
     ...state.salon,
     id: org?.id || state.salon.id,
     name: org?.name || state.salon.name,
+    ownerName: ownerDisplayName,
+    email: user?.email || state.salon.email,
+    paypalMerchantId: account?.merchant_id || state.salon.paypalMerchantId,
   }
 
   const handleLockSession = () => {
@@ -171,7 +186,7 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
 
       {isCopilotOpen ? (
         <CopilotDrawer
-          bookings={state.bookings}
+          bookings={dynamicBookings.length > 0 ? dynamicBookings : state.bookings}
           onClose={() => setIsCopilotOpen(false)}
           onExecuteRefund={handleExecuteRefundProposal}
         />

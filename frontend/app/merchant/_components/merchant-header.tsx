@@ -27,29 +27,29 @@ export function MerchantHeader({
   const currentTab = explicitTab || getMerchantTabFromPathname(pathname)
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur-md sm:px-6">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/85 px-3 sm:px-6 backdrop-blur-md">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button
           type="button"
           onClick={onOpenMobileSidebar}
-          className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 lg:hidden cursor-pointer"
+          className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 lg:hidden cursor-pointer shrink-0"
           aria-label="Open navigation menu"
         >
           <Menu className="h-4 w-4" />
         </button>
 
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center rounded-md border border-amber-200/80 bg-amber-50/70 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <span className="hidden sm:inline-flex items-center rounded-md border border-amber-200/80 bg-amber-50/70 px-2 py-0.5 text-[11px] font-semibold text-amber-900 shrink-0">
             Salon Portal
           </span>
-          <span className="text-slate-300">/</span>
-          <h1 className="font-bold text-slate-900 text-sm tracking-tight">
+          <span className="hidden sm:inline text-slate-300">/</span>
+          <h1 className="font-bold text-slate-900 text-sm tracking-tight truncate">
             {MERCHANT_TAB_TITLES[currentTab]}
           </h1>
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2.5 shrink-0">
         <UserMenu portal="merchant" />
       </div>
     </header>

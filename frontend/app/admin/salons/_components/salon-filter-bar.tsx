@@ -35,7 +35,7 @@ export function SalonFilterBar({
     <div className="space-y-3">
       {/* Filter Tabs & Search Box */}
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 sm:py-0">
           {FILTER_KEYS.map((key) => {
             const isActive = filter === key
             return (
@@ -43,7 +43,7 @@ export function SalonFilterBar({
                 key={key}
                 type="button"
                 onClick={() => onFilterChange(key)}
-                className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold capitalize transition-all cursor-pointer ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold capitalize transition-all cursor-pointer ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'

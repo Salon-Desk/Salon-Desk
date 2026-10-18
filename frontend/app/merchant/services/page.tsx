@@ -124,7 +124,7 @@ export default function MerchantServicesPage() {
           className="w-full sm:max-w-xs text-xs"
         />
 
-        <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
           {categoryFilters.map((id) => {
             const label = id === 'ALL' ? 'All Services' : categoryNameById.get(id) || 'Category'
             const count = categoryCounts[id] ?? 0
@@ -138,7 +138,7 @@ export default function MerchantServicesPage() {
                   setSelectedCategory(id)
                   setCurrentPage(1)
                 }}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
