@@ -93,7 +93,14 @@ function PayloadParameterCard({ cr }: { cr: ApiChangeRequest }) {
   if (cr.request_type === 'CANCELLATION_POLICY') {
     const data = (payload.data as Record<string, unknown>) || {}
     const freeCancelHours = String(data.free_cancel_hours || '24')
-    const noShowFee = String(data.no_show_fee || '0')
+    const noShowDisplay =
+      data.no_show_fee_percent != null
+        ? `${data.no_show_fee_percent}%`
+        : data.no_show_fee != null
+          ? `$${data.no_show_fee}`
+          : '50%'
+    const lateCancelDisplay =
+      data.late_cancel_fee_percent != null ? `${data.late_cancel_fee_percent}%` : '25%'
     const holdPercent = String(data.hold_percent || '100')
 
     return (
@@ -110,7 +117,7 @@ function PayloadParameterCard({ cr }: { cr: ApiChangeRequest }) {
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5 font-mono text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 font-mono text-xs">
           <div className="rounded-lg border border-slate-200/70 bg-white p-2.5 shadow-xs">
             <span className="text-[10px] uppercase text-slate-400 block font-sans">
               Notice Window
@@ -129,7 +136,7 @@ function PayloadParameterCard({ cr }: { cr: ApiChangeRequest }) {
               No-Show Penalty
             </span>
             <div className="mt-1 font-bold text-rose-800 text-sm tabular-nums tracking-tight">
-              ${noShowFee}
+              {noShowDisplay}
             </div>
             <span className="text-[10px] text-slate-400 font-sans block mt-0.5">
               Captured on missed slot
@@ -138,9 +145,21 @@ function PayloadParameterCard({ cr }: { cr: ApiChangeRequest }) {
 
           <div className="rounded-lg border border-slate-200/70 bg-white p-2.5 shadow-xs">
             <span className="text-[10px] uppercase text-slate-400 block font-sans">
-              Authorization Hold
+              Late Cancel
             </span>
             <div className="mt-1 font-bold text-amber-900 text-sm tabular-nums tracking-tight">
+              {lateCancelDisplay}
+            </div>
+            <span className="text-[10px] text-slate-400 font-sans block mt-0.5">
+              Fee past notice cutoff
+            </span>
+          </div>
+
+          <div className="rounded-lg border border-slate-200/70 bg-white p-2.5 shadow-xs">
+            <span className="text-[10px] uppercase text-slate-400 block font-sans">
+              Authorization Hold
+            </span>
+            <div className="mt-1 font-bold text-emerald-800 text-sm tabular-nums tracking-tight">
               {holdPercent}%
             </div>
             <span className="text-[10px] text-slate-400 font-sans block mt-0.5">
@@ -290,9 +309,15 @@ export default function AdminRequestsPage() {
                         {cr.request_type.replace(/_/g, ' ').toLowerCase()}
                       </span>
                       <span className="text-slate-300">·</span>
-                      <span className="font-mono text-xs text-slate-500">
-                        Salon: {cr.org_id.slice(0, 8)}…
+                      <span className="font-semibold text-xs text-slate-700">
+                        {cr.org_name || `Salon: ${cr.org_id.slice(0, 8)}…`}
                       </span>
+                      {cr.submitter_name ? (
+                        <>
+                          <span className="text-slate-300">·</span>
+                          <span className="text-xs text-slate-500">By {cr.submitter_name}</span>
+                        </>
+                      ) : null}
                     </div>
                     <div className="flex items-center gap-1 text-[11px] text-slate-400">
                       <Clock className="h-3 w-3" />

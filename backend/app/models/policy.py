@@ -36,6 +36,12 @@ class OrgCancellationPolicy(TimestampedModel):
 
     organization = relationship("Organization")
 
+    @property
+    def org_name(self) -> str | None:
+        if "organization" in self.__dict__ and self.organization:
+            return self.organization.name
+        return None
+
 
 class ChangeRequest(BaseModel):
     __tablename__ = "change_request"
@@ -81,6 +87,21 @@ class ChangeRequest(BaseModel):
     organization = relationship("Organization")
     submitter = relationship("User", foreign_keys=[submitted_by])
     reviewer = relationship("User", foreign_keys=[reviewed_by])
+
+    @property
+    def org_name(self) -> str | None:
+        if "organization" in self.__dict__ and self.organization:
+            return self.organization.name
+        return None
+
+    @property
+    def submitter_name(self) -> str | None:
+        if "submitter" in self.__dict__ and self.submitter:
+            sub = self.submitter
+            if "profile" in sub.__dict__ and sub.profile:
+                return sub.profile.full_name
+            return sub.email
+        return None
 
 
 class Consent(BaseModel):

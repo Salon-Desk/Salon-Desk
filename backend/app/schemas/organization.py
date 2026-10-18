@@ -81,6 +81,9 @@ class CancellationPolicyOut(ORMModel):
     name: str
     status: str
     data: dict
+    org_name: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class OrgAccountOut(ORMModel):
@@ -92,6 +95,9 @@ class OrgAccountOut(ORMModel):
     currency: str
     status: str
     approved_at: datetime | None = None
+    org_name: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class ChangeRequestCreate(BaseModel):
@@ -112,6 +118,8 @@ class ChangeRequestOut(ORMModel):
     review_notes: str | None = None
     created_at: datetime
     reviewed_at: datetime | None = None
+    org_name: str | None = None
+    submitter_name: str | None = None
 
 
 class ChangeRequestReview(BaseModel):

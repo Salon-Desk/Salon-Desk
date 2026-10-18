@@ -73,6 +73,8 @@ export interface ApiChangeRequest {
   review_notes?: string | null
   created_at: string
   reviewed_at?: string | null
+  org_name?: string | null
+  submitter_name?: string | null
 }
 
 export interface CreateChangeRequestBody {
@@ -214,6 +216,9 @@ export interface ApiOrgAccount {
   currency: string
   status: string
   approved_at?: string | null
+  org_name?: string | null
+  created_at?: string | null
+  updated_at?: string | null
 }
 
 export interface ApiCancellationPolicy {
@@ -221,7 +226,19 @@ export interface ApiCancellationPolicy {
   org_id: string
   name: string
   status: string
-  data: Record<string, unknown>
+  data: {
+    free_cancel_hours?: number
+    no_show_fee_percent?: number
+    late_cancel_fee_percent?: number
+    hold_percent?: number
+    no_show_fee?: number
+    policyHours?: number
+    noShowFee?: number
+    [key: string]: unknown
+  }
+  org_name?: string | null
+  created_at?: string | null
+  updated_at?: string | null
 }
 
 export interface ApiOrgShift {

@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.models.enums import (
@@ -13,6 +14,7 @@ from app.models.enums import (
 )
 from app.models.payment import OrgAccount
 from app.models.policy import ChangeRequest, OrgCancellationPolicy
+from app.models.user import User
 
 
 async def submit_change_request(
@@ -55,6 +57,10 @@ async def submit_change_request(
 async def list_org_change_requests(db: AsyncSession, org_id: UUID) -> list[ChangeRequest]:
     result = await db.execute(
         select(ChangeRequest)
+        .options(
+            selectinload(ChangeRequest.organization),
+            selectinload(ChangeRequest.submitter).selectinload(User.profile),
+        )
         .where(ChangeRequest.org_id == org_id)
         .order_by(ChangeRequest.created_at.desc())
     )
@@ -64,7 +70,14 @@ async def list_org_change_requests(db: AsyncSession, org_id: UUID) -> list[Chang
 async def list_admin_change_requests(
     db: AsyncSession, status: ChangeRequestStatus | None = None
 ) -> list[ChangeRequest]:
-    stmt = select(ChangeRequest).order_by(ChangeRequest.created_at.desc())
+    stmt = (
+        select(ChangeRequest)
+        .options(
+            selectinload(ChangeRequest.organization),
+            selectinload(ChangeRequest.submitter).selectinload(User.profile),
+        )
+        .order_by(ChangeRequest.created_at.desc())
+    )
     if status is not None:
         stmt = stmt.where(ChangeRequest.status == status)
     result = await db.execute(stmt)

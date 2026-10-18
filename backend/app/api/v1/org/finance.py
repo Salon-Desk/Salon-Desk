@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import DbSession, OrgMember, OrgOwner
 from app.core.exceptions import ForbiddenError
@@ -24,6 +25,7 @@ router = APIRouter(prefix="/organizations", tags=["org"])
 async def list_policies(user: OrgMember, db: DbSession) -> list[CancellationPolicyOut]:
     result = await db.execute(
         select(OrgCancellationPolicy)
+        .options(selectinload(OrgCancellationPolicy.organization))
         .where(OrgCancellationPolicy.org_id == user.org_id)
         .order_by(OrgCancellationPolicy.created_at.desc())
     )
@@ -34,6 +36,7 @@ async def list_policies(user: OrgMember, db: DbSession) -> list[CancellationPoli
 async def get_account(user: OrgMember, db: DbSession) -> OrgAccountOut | None:
     result = await db.execute(
         select(OrgAccount)
+        .options(selectinload(OrgAccount.organization))
         .where(OrgAccount.org_id == user.org_id)
         .order_by(OrgAccount.created_at.desc())
         .limit(1)

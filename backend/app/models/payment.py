@@ -50,6 +50,12 @@ class OrgAccount(TimestampedModel):
     organization = relationship("Organization")
     approver = relationship("User", foreign_keys=[approved_by])
 
+    @property
+    def org_name(self) -> str | None:
+        if "organization" in self.__dict__ and self.organization:
+            return self.organization.name
+        return None
+
 
 class PaymentHold(TimestampedModel):
     __tablename__ = "payment_hold"
