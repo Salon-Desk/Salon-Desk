@@ -161,7 +161,9 @@ async def test_chat_endpoint_with_auth():
                 json={"message": "log in carol@test.com pass123"},
             )
             assert resp.status_code == 200
-            data = resp.json()
+            body = resp.json()
+            assert body["success"] is True
+            data = body["data"]
             assert data["auth_token"] == "jwt-token-123"
             assert data["user"]["email"] == "chatuser@test.com"
             assert data["reply"] == "Welcome Carol!"
@@ -309,7 +311,9 @@ async def test_chat_endpoint_with_booking_and_org_cards():
                 json={"message": "book silk press tomorrow"},
             )
             assert resp.status_code == 200
-            data = resp.json()
+            body = resp.json()
+            assert body["success"] is True
+            data = body["data"]
             assert data["intent"] == "booking"
             assert data["confirmed_booking"]["status"] == "CONFIRMED"
             assert data["confirmed_booking"]["service_name"] == "Silk Press"

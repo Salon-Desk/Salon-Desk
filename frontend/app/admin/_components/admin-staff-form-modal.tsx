@@ -68,7 +68,7 @@ export function AdminStaffFormModal({ open, onClose, onCreated }: AdminStaffForm
         }}
       >
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <RHFTextField name="first_name" label="First name" isRequired />
             <RHFTextField name="last_name" label="Last name" isRequired />
           </div>

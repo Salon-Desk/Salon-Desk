@@ -35,16 +35,28 @@ export async function getLiveKitToken(
         ? JSON.stringify(options.metadata)
         : undefined
 
-  const { data } = await axiosInstance.post<LiveKitTokenApiResponse>('/api/v1/livekit/token', {
+  const { data } = await axiosInstance.post<
+    LiveKitTokenApiResponse | { success?: boolean; data?: LiveKitTokenApiResponse }
+  >('/api/v1/livekit/token', {
     language,
     participant_name: options.participantName,
     metadata,
     room_name: options.roomName,
   })
 
+  const payload =
+    data &&
+    typeof data === 'object' &&
+    'success' in data &&
+    data.success === true &&
+    'data' in data &&
+    data.data
+      ? data.data
+      : (data as LiveKitTokenApiResponse)
+
   return {
-    token: data.token,
-    serverUrl: data.server_url,
-    roomName: data.room_name,
+    token: payload.token,
+    serverUrl: payload.server_url,
+    roomName: payload.room_name,
   }
 }

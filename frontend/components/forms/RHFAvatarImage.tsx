@@ -101,7 +101,7 @@ const RHFAvatarImage = ({ name, label = 'Profile Picture' }: RHFAvatarImageProps
               ) : (
                 <div className="flex size-full items-center justify-center">
                   <UploadIcon
-                    className="size-8 text-muted-foreground sm:size-10 md:size-12"
+                    className="size-6 sm:size-8 md:size-10 text-muted-foreground"
                     aria-hidden
                   />
                 </div>
@@ -115,9 +115,9 @@ const RHFAvatarImage = ({ name, label = 'Profile Picture' }: RHFAvatarImageProps
                   e.preventDefault()
                   handleRemove()
                 }}
-                className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground sm:right-4 sm:top-3"
+                className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground sm:right-4 sm:top-3 sm:p-1.5"
               >
-                <X size={14} />
+                <X size={12} className="sm:size-14" />
               </button>
             )}
 
@@ -143,9 +143,9 @@ const RHFAvatarImage = ({ name, label = 'Profile Picture' }: RHFAvatarImageProps
               <button
                 onClick={handleRetry}
                 type="button"
-                className="flex items-center gap-1 text-orange-600 text-sm"
+                className="flex items-center gap-1 text-orange-600 text-xs sm:text-sm"
               >
-                Retry <RotateCcw size={14} />
+                Retry <RotateCcw size={12} className="sm:size-14" />
               </button>
             )}
           </FormFieldRoot>

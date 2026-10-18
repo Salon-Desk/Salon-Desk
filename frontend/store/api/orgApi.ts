@@ -6,7 +6,6 @@ import {
   type ApiOrgSettings,
   type ApiPage,
   type CreateChangeRequestBody,
-  type CreateOrgServiceRequest,
   normalizePaginated,
   type UpdateOrgServiceRequest,
 } from '@/types/api-org'
@@ -40,7 +39,7 @@ export interface ApiOrgShift {
 }
 
 import { baseApi } from '../baseApi'
-import type { CreateEmployeeRequest, UpdateEmployeeRequest } from '../slice/userApi'
+import type { UpdateEmployeeRequest } from '../slice/userApi'
 
 /**
  * Merchant org-scoped API (Postman: /api/v1/organizations/me/*).
@@ -125,11 +124,11 @@ export const orgApi = baseApi.injectEndpoints({
       providesTags: ['user', 'organizations'],
     }),
 
-    createMyEmployee: builder.mutation<User, CreateEmployeeRequest>({
-      query: (data) => ({
+    createMyEmployee: builder.mutation<User, FormData>({
+      query: (formData) => ({
         url: '/api/v1/organizations/me/employees',
         method: 'POST',
-        data,
+        data: formData,
       }),
       invalidatesTags: ['user', 'organizations'],
     }),
@@ -179,11 +178,11 @@ export const orgApi = baseApi.injectEndpoints({
       providesTags: ['organizations', 'catalog'],
     }),
 
-    createMyService: builder.mutation<ApiOrgService, CreateOrgServiceRequest>({
-      query: (data) => ({
+    createMyService: builder.mutation<ApiOrgService, FormData>({
+      query: (formData) => ({
         url: '/api/v1/organizations/me/services',
         method: 'POST',
-        data,
+        data: formData,
       }),
       invalidatesTags: ['organizations', 'catalog'],
     }),

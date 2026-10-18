@@ -403,7 +403,7 @@ export const formControlCheckboxOptionClassName =
 
 /** Responsive avatar upload dropzone. */
 export const formControlAvatarDropzoneClassName =
-  'relative size-24 cursor-pointer overflow-hidden rounded-full border-[3px] border-primary/30 bg-muted sm:size-32 md:size-[8.625rem]'
+  'relative size-20 cursor-pointer overflow-hidden rounded-full border-[3px] border-primary/30 bg-muted sm:size-24 md:size-32 lg:size-[8.625rem]'
 
 export const formControlCardTitleClassName =
   'text-base font-black text-foreground sm:text-lg lg:text-xl'

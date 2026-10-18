@@ -95,23 +95,17 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
 
         toast.success('Service updated', toastColor.success)
       } else {
-        const createdService = await createService({
-          service_category_id: data.service_category_id ?? '',
-          name: (data.name ?? '').trim(),
-          description: data.description?.trim() || null,
-          base_price: data.base_price,
-          duration_minutes: data.duration_minutes,
-          simultaneous_capacity: data.simultaneous_capacity,
-        }).unwrap()
-
-        // Handle image upload if a new file was selected
+        const formData = new FormData()
+        formData.append('service_category_id', data.service_category_id ?? '')
+        formData.append('name', (data.name ?? '').trim())
+        if (data.description) formData.append('description', data.description.trim())
+        formData.append('base_price', String(data.base_price))
+        formData.append('duration_minutes', String(data.duration_minutes))
+        formData.append('simultaneous_capacity', String(data.simultaneous_capacity))
         const coverImage = data.images?.cover
-        if (coverImage && typeof coverImage !== 'string') {
-          const formData = new FormData()
-          formData.append('file', coverImage)
-          await uploadServiceImage({ serviceId: createdService.id, file: formData }).unwrap()
-        }
+        if (coverImage instanceof File) formData.append('file', coverImage)
 
+        await createService(formData).unwrap()
         toast.success('Service created', toastColor.success)
       }
       onClose()
@@ -138,7 +132,7 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
         }}
       >
         <div className="space-y-3 text-xs">
-          <RHFUploadImage name="images.cover" label="Service cover image" size={128} />
+          <RHFUploadImage name="images.cover" label="Service cover image" size={160} />
           <RHFDropeDown
             name="service_category_id"
             label="Category"
@@ -148,7 +142,7 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
           />
           <RHFTextField name="name" label="Service name" isRequired />
           <RHFTextArea name="description" label="Description" isRequired={false} rows={2} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <RHFNumberField name="base_price" label="Base price (USD)" isRequired />
             <RHFNumberField name="duration_minutes" label="Duration (min)" isRequired />
           </div>

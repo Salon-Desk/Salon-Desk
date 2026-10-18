@@ -88,7 +88,7 @@ export function PaypalChangeModal({
             placeholder="e.g. SELAM-EXPANSION-8812"
           />
 
-          <div className="flex gap-2 pt-1">
+          <div className="flex flex-col gap-2 pt-1 sm:flex-row">
             <PrimaryButton
               title="Cancel"
               type="button"
@@ -176,7 +176,7 @@ export function PolicyChangeModal({
 
           <RHFNumberField name="noShowFee" label="Default No-Show Fee ($)" isRequired />
 
-          <div className="flex gap-2 pt-1">
+          <div className="flex flex-col gap-2 pt-1 sm:flex-row">
             <PrimaryButton
               title="Cancel"
               type="button"

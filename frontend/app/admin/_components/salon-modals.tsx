@@ -39,7 +39,7 @@ export function AddSalonModal({ form, onChange, onClose, onSubmit }: AddSalonMod
           placeholder="e.g. Saffron & Comb Studio"
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TextField
             label="Owner Full Name"
             value={form.ownerName}
@@ -56,7 +56,7 @@ export function AddSalonModal({ form, onChange, onClose, onSubmit }: AddSalonMod
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TextField
             label="Street Address"
             value={form.address}
@@ -107,7 +107,7 @@ export function EditSalonModal({ salon, onChange, onClose, onSubmit }: EditSalon
           onChange={(name) => onChange({ ...salon, name })}
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TextField
             label="Contact Email"
             type="email"

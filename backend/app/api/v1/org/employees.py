@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -13,7 +13,7 @@ from app.models.enums import (
 )
 from app.models.user import Profile, User
 from app.schemas.common import MessageOut, PageOut
-from app.schemas.user import EmployeeCreate, EmployeeUpdate, UserOut
+from app.schemas.user import EmployeeUpdate, UserOut
 from app.services.storage_service import StorageUnavailableError, storage_service
 
 router = APIRouter(prefix="/organizations", tags=["org"])
@@ -71,32 +71,63 @@ async def list_employees(
     response_model=UserOut,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_employee(body: EmployeeCreate, user: OrgOwner, db: DbSession) -> UserOut:
-    if body.role not in {UserRole.RECEPTION.value, UserRole.STYLIST.value}:
+async def create_employee(
+    email: str = Form(...),
+    password: str = Form(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    middle_name: str | None = Form(None),
+    phone: str | None = Form(None),
+    role: str = Form(...),
+    file: UploadFile = File(None),
+    user: OrgOwner = None,
+    db: DbSession = None,
+) -> UserOut:
+    if role not in {UserRole.RECEPTION.value, UserRole.STYLIST.value}:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             detail="role must be reception or stylist",
         )
-    existing = await db.execute(select(User).where(User.email == body.email.lower()))
+    existing = await db.execute(select(User).where(User.email == email.lower()))
     if existing.scalar_one_or_none():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="Email already registered")
 
     employee = User(
-        email=body.email.lower(),
-        password_hash=hash_password(body.password),
-        role=UserRole(body.role),
+        email=email.lower(),
+        password_hash=hash_password(password),
+        role=UserRole(role),
         status=UserStatus.ACTIVE,
         org_id=user.org_id,
     )
     db.add(employee)
     await db.flush()
+
+    # Handle profile picture upload if provided
+    picture_url = None
+    if file and file.content_type and file.content_type.startswith("image/"):
+        data = await file.read()
+        if len(data) > 10 * 1024 * 1024:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Image exceeds 10MB limit")
+        try:
+            _key, picture_url = await storage_service.async_upload_bytes(
+                data=data,
+                filename=file.filename or "avatar.jpg",
+                content_type=file.content_type,
+                folder="avatars",
+            )
+        except StorageUnavailableError as exc:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, detail="File storage is unavailable"
+            ) from exc
+
     db.add(
         Profile(
             user_id=employee.id,
-            first_name=body.first_name,
-            last_name=body.last_name,
-            middle_name=body.middle_name,
-            phone=body.phone,
+            first_name=first_name,
+            last_name=last_name,
+            middle_name=middle_name,
+            phone=phone,
+            picture=picture_url,
         )
     )
     await db.flush()

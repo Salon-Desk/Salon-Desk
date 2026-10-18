@@ -38,34 +38,23 @@ export function EmployeeFormModal({ open, onClose }: EmployeeFormModalProps) {
 
   const onSubmit = async (data: CreateEmployeeFormData) => {
     try {
-      const employeeData = {
-        email: (data.email ?? '').trim(),
-        password: data.password ?? '',
-        first_name: (data.first_name ?? '').trim(),
-        last_name: (data.last_name ?? '').trim(),
-        middle_name: data.middle_name?.trim() || null,
-        phone: data.phone?.trim() || null,
-        role: data.role,
-      }
+      const formData = new FormData()
+      formData.append('email', data.email ?? '')
+      formData.append('password', data.password ?? '')
+      formData.append('first_name', data.first_name ?? '')
+      formData.append('last_name', data.last_name ?? '')
+      if (data.middle_name) formData.append('middle_name', data.middle_name)
+      if (data.phone) formData.append('phone', data.phone)
+      formData.append('role', data.role)
+      if (data.picture instanceof File) formData.append('file', data.picture)
 
-      await createEmployee(employeeData).unwrap()
-
-      // If there's a picture file, upload it
-      if (data.picture instanceof File) {
-        const formData = new FormData()
-        formData.append('file', data.picture)
-        // Note: We'll need to add the upload logic after creation
-        // For now, we'll skip avatar upload in create flow
-      }
-
+      await createEmployee(formData).unwrap()
       toast.success('Team member added', toastColor.success)
       methods.reset(createEmployeeDefaultValues)
       onClose()
     } catch (err) {
       const message =
-        (err as { data?: { detail?: string }; message?: string })?.data?.detail ||
-        (err as { message?: string })?.message ||
-        'Could not add employee'
+        (err as { data?: { detail?: string } })?.data?.detail || 'Could not add employee'
       toast.error(String(message), toastColor.error)
     }
   }
@@ -83,9 +72,9 @@ export function EmployeeFormModal({ open, onClose }: EmployeeFormModalProps) {
       >
         <div className="space-y-3 text-xs">
           <div className="flex justify-center">
-            <RHFUploadImage name="picture" label="Profile photo" size={96} />
+            <RHFUploadImage name="picture" label="Profile photo" size={128} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <RHFTextField name="first_name" label="First name" isRequired />
             <RHFTextField name="last_name" label="Last name" isRequired />
           </div>

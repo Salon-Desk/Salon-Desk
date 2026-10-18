@@ -79,6 +79,7 @@ export function Modal({
         className={cn(
           'relative flex max-h-[92dvh] w-full animate-in flex-col overflow-hidden rounded-t-3xl border border-stone-200/70 border-b-0 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_28px_64px_-16px_rgba(28,25,23,0.28)] duration-300 slide-in-from-bottom-10 sm:max-h-[min(92vh,44rem)] sm:rounded-3xl sm:border-b sm:pb-0 sm:duration-200 sm:slide-in-from-bottom-0 sm:zoom-in-95',
           MODAL_SIZES[size],
+          'sm:w-auto',
           className,
         )}
       >
@@ -86,10 +87,10 @@ export function Modal({
           <span className="h-1 w-10 rounded-full bg-stone-200" />
         </div>
         {!hideHeader && (
-          <div className="flex shrink-0 items-start justify-between gap-4 border-stone-100 border-b px-5 pt-2 pb-4 sm:px-6 sm:py-4">
+          <div className="flex shrink-0 items-start justify-between gap-3 border-stone-100 border-b px-4 pt-2 pb-3 sm:gap-4 sm:px-6 sm:pt-2 sm:pb-4">
             <div className="flex min-w-0 items-start gap-3">
               {icon ? (
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700 sm:h-9 sm:w-9">
                   {icon}
                 </div>
               ) : null}
@@ -111,17 +112,17 @@ export function Modal({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="shrink-0 rounded-full p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"
+              className="shrink-0 rounded-full p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 sm:p-1.5"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">{children}</div>
 
         {footer && (
-          <div className="flex w-full shrink-0 flex-col items-stretch justify-end gap-2 border-stone-100 border-t bg-stone-50/80 px-5 py-3.5 sm:px-6 sm:flex-row sm:items-center">
+          <div className="flex w-full shrink-0 flex-col items-stretch justify-end gap-2 border-stone-100 border-t bg-stone-50/80 px-4 py-3 sm:px-6 sm:py-3.5 sm:flex-row sm:items-center">
             {footer}
           </div>
         )}

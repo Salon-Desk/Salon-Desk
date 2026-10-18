@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
 
 from app.api.deps import DbSession, OrgMember, OrgOwner
@@ -12,7 +12,6 @@ from app.models.service import Service, ServiceGiving
 from app.models.user import User
 from app.schemas.common import PageOut
 from app.schemas.service import (
-    ServiceCreate,
     ServiceGivingCreate,
     ServiceGivingOut,
     ServiceOut,
@@ -52,18 +51,49 @@ async def list_org_services(
     response_model=ServiceOut,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_org_service(body: ServiceCreate, user: OrgOwner, db: DbSession) -> ServiceOut:
+async def create_org_service(
+    service_category_id: str = Form(...),
+    name: str = Form(...),
+    description: str | None = Form(None),
+    base_price: float = Form(...),
+    duration_minutes: int = Form(...),
+    simultaneous_capacity: int = Form(...),
+    cancellation_policy_id: str | None = Form(None),
+    file: UploadFile = File(None),
+    user: OrgOwner = None,
+    db: DbSession = None,
+) -> ServiceOut:
+    # Handle cover image upload if provided
+    image_url = None
+    if file and file.content_type and file.content_type.startswith("image/"):
+        data = await file.read()
+        if len(data) > 10 * 1024 * 1024:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Image exceeds 10MB limit")
+        try:
+            _key, image_url = await storage_service.async_upload_bytes(
+                data=data,
+                filename=file.filename or "service-cover.jpg",
+                content_type=file.content_type,
+                folder="services",
+            )
+        except StorageUnavailableError as exc:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, detail="File storage is unavailable"
+            ) from exc
+
+    images = {"cover": image_url} if image_url else {}
+
     service = Service(
-        service_category_id=body.service_category_id,
+        service_category_id=service_category_id,
         organization_id=user.org_id,
-        name=body.name,
-        description=body.description,
-        images=body.images,
-        base_price=body.base_price,
-        duration_minutes=body.duration_minutes,
+        name=name,
+        description=description,
+        images=images,
+        base_price=base_price,
+        duration_minutes=duration_minutes,
         status=ServiceStatus.ACTIVE,
-        cancellation_policy_id=body.cancellation_policy_id,
-        simultaneous_capacity=body.simultaneous_capacity,
+        cancellation_policy_id=cancellation_policy_id,
+        simultaneous_capacity=simultaneous_capacity,
     )
     db.add(service)
     await db.flush()

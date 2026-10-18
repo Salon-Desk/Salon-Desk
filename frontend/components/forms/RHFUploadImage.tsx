@@ -149,7 +149,7 @@ const RHFUploadImage = ({
             ) : null}
 
             <div
-              className="relative mx-auto size-32 sm:size-36 md:size-40"
+              className="relative mx-auto aspect-square w-28 sm:w-32 md:w-36 lg:w-40"
               style={size !== 160 ? { width: size, height: size } : undefined}
             >
               <div
@@ -179,16 +179,18 @@ const RHFUploadImage = ({
                       style={{ objectFit: 'cover', borderRadius: '0.75rem' }}
                       unoptimized={shouldUnoptimizeImage(displayPreview)}
                     />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity duration-200 rounded-xl flex items-center justify-center text-white text-xs font-medium">
+                    <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity duration-200 rounded-xl flex items-center justify-center text-white text-[10px] sm:text-xs font-medium px-2 text-center">
                       Click or drag to replace
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center gap-2 p-4 text-foreground/60">
-                    <ImageIcon size={32} className="text-primary/40" />
-                    <UploadCloud size={24} className="text-primary/60" />
-                    <p className="text-xs font-medium">Drop or click to upload</p>
-                    <p className="text-[10px] text-foreground/40">
+                  <div className="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 text-foreground/60">
+                    <ImageIcon size={28} className="text-primary/40" />
+                    <UploadCloud size={20} className="text-primary/60" />
+                    <p className="text-[10px] sm:text-xs font-medium leading-tight">
+                      Drop or click to upload
+                    </p>
+                    <p className="text-[9px] sm:text-[10px] text-foreground/40 leading-tight">
                       PNG, JPG, WEBP (max {maxSizeMB}MB)
                     </p>
                   </div>
@@ -200,17 +202,17 @@ const RHFUploadImage = ({
                 <button
                   type="button"
                   onClick={handleRemove}
-                  className="absolute -top-2 -right-2 bg-destructive hover:bg-destructive/90 text-white rounded-full p-1.5 shadow-lg transition-colors duration-200 z-20"
+                  className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 bg-destructive hover:bg-destructive/90 text-white rounded-full p-1 sm:p-1.5 shadow-lg transition-colors duration-200 z-20"
                   title="Remove image"
                 >
-                  <X size={14} />
+                  <X size={12} />
                 </button>
               )}
             </div>
 
             {/* HELPER TEXT */}
             {!hasValue ? (
-              <p className="mt-1 text-center text-[10px] text-muted-foreground">
+              <p className="mt-1 text-center text-[9px] sm:text-[10px] text-muted-foreground">
                 Accepted formats: PNG, JPG, WEBP
               </p>
             ) : null}

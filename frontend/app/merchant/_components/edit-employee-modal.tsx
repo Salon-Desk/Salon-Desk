@@ -118,10 +118,10 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
           </div>
 
           <div className="flex justify-center">
-            <RHFUploadImage name="picture" label="Profile photo" size={96} />
+            <RHFUploadImage name="picture" label="Profile photo" size={128} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <RHFTextField name="first_name" label="First name" isRequired />
             <RHFTextField name="last_name" label="Last name" isRequired />
           </div>
@@ -151,13 +151,13 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex flex-col items-stretch gap-2 pt-2 sm:flex-row sm:items-center sm:justify-end">
             <PrimaryButton
               title="Cancel"
               variant="outline"
               size="sm"
-              fullWidth={false}
-              className="h-10 rounded-xl px-4"
+              fullWidth
+              className="h-10 rounded-xl"
               onClick={onClose}
             />
             <PrimaryButton
@@ -165,8 +165,8 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
               isLoading={isLoading}
               type="submit"
               size="sm"
-              fullWidth={false}
-              className="h-10 rounded-xl px-5"
+              fullWidth
+              className="h-10 rounded-xl"
             />
           </div>
         </div>
