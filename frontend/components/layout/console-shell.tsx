@@ -37,7 +37,7 @@ export function ConsoleShell({
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-800/80 bg-[#0B0F17] text-slate-100 transition-transform lg:static lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-white/[0.08] bg-gradient-to-b from-[#0D131F] via-[#080B13] to-[#04060A] text-slate-100 shadow-[4px_0_36px_-4px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-out lg:static lg:translate-x-0',
           isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >

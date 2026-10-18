@@ -1,6 +1,6 @@
 'use client'
 
-import { Loader2, MapPin, Search, Sparkles } from 'lucide-react'
+import { Calendar, Loader2, MapPin, Search, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
@@ -125,6 +125,29 @@ export function ClientExperience({
   const [authStep, setAuthStep] = useState<AuthStep>('review')
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null)
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null)
+  const [isInputFocused, setIsInputFocused] = useState(false)
+
+  // Detect mobile virtual keyboard / input focus so bottom navigation doesn't obstruct form controls
+  useEffect(() => {
+    const handleFocusIn = (e: FocusEvent) => {
+      const el = e.target as HTMLElement | null
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) {
+        setIsInputFocused(true)
+      }
+    }
+    const handleFocusOut = (e: FocusEvent) => {
+      const el = e.target as HTMLElement | null
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) {
+        setIsInputFocused(false)
+      }
+    }
+    window.addEventListener('focusin', handleFocusIn)
+    window.addEventListener('focusout', handleFocusOut)
+    return () => {
+      window.removeEventListener('focusin', handleFocusIn)
+      window.removeEventListener('focusout', handleFocusOut)
+    }
+  }, [])
 
   const categoryId = useMemo(() => {
     if (selectedCategory === 'All') return undefined
@@ -624,48 +647,82 @@ export function ClientExperience({
 
       <ClientFooter hero={hero} />
 
-      <nav
-        aria-label="Mobile quick actions"
-        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] inset-x-4 z-30 md:hidden flex items-center justify-between gap-1 rounded-full bg-stone-950/90 text-white p-1.5 shadow-[0_12px_32px_-12px_rgba(12,10,9,0.6)] backdrop-blur-xl"
-      >
-        <button
-          type="button"
-          onClick={() => setActiveTab('catalog')}
-          className={`flex-1 flex items-center justify-center py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-            activeTab === 'catalog' ? 'bg-white text-stone-950' : 'text-stone-400 hover:text-white'
-          }`}
-        >
-          <span>Catalog</span>
-        </button>
+      {(() => {
+        const isCatalogActive = activeTab === 'catalog' && !concierge.isOpen
+        const isAiActive = concierge.isOpen
+        const isBookingsActive = activeTab === 'my-bookings' && !concierge.isOpen
 
-        <button
-          type="button"
-          onClick={() => concierge.setIsOpen(true)}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full bg-amber-500 text-stone-950 font-bold text-xs cursor-pointer active:scale-95 transition-all"
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>Ask AI</span>
-        </button>
+        return (
+          <nav
+            aria-label="Mobile quick actions"
+            className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm sm:max-w-md z-30 md:hidden flex items-center justify-between gap-1.5 rounded-full bg-gradient-to-b from-stone-900/95 via-stone-950/98 to-black/98 text-white p-1.5 shadow-[0_20px_45px_-10px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.08),0_6px_24px_rgba(245,158,11,0.08)] backdrop-blur-2xl border border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-8 before:-top-px before:h-[1px] before:bg-gradient-to-r before:from-transparent before:via-amber-400/50 before:to-transparent transition-all duration-300 ease-out ${
+              isInputFocused
+                ? 'opacity-0 translate-y-8 scale-95 pointer-events-none'
+                : 'opacity-100 translate-y-0 scale-100'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('catalog')
+                concierge.setIsOpen(false)
+              }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
+                isCatalogActive
+                  ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
+                  : 'text-stone-400 hover:text-white hover:bg-white/[0.06]'
+              }`}
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span>Catalog</span>
+            </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('my-bookings')}
-          className={`flex-1 flex items-center justify-center py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-            activeTab === 'my-bookings'
-              ? 'bg-white text-stone-950'
-              : 'text-stone-400 hover:text-white'
-          }`}
-        >
-          <span className="flex items-center gap-1.5">
-            Bookings
-            {activeHolds.length > 0 && (
-              <span className="h-4 min-w-4 px-1 rounded-full bg-amber-500 text-stone-950 font-mono text-[9px] font-bold flex items-center justify-center">
-                {activeHolds.length}
+            <button
+              type="button"
+              onClick={() => concierge.setIsOpen((open) => !open)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
+                isAiActive
+                  ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
+                  : 'text-stone-400 hover:text-white hover:bg-white/[0.06]'
+              }`}
+            >
+              <Sparkles
+                className={`h-3.5 w-3.5 transition-transform ${isAiActive ? 'text-amber-500 scale-110' : 'text-amber-400'}`}
+              />
+              <span>Ask AI</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('my-bookings')
+                concierge.setIsOpen(false)
+              }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
+                isBookingsActive
+                  ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
+                  : 'text-stone-400 hover:text-white hover:bg-white/[0.06]'
+              }`}
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              <span className="flex items-center gap-1.5">
+                Bookings
+                {activeHolds.length > 0 && (
+                  <span
+                    className={`h-4 min-w-4 px-1 rounded-full text-[9px] font-mono font-bold flex items-center justify-center ${
+                      isBookingsActive
+                        ? 'bg-amber-400 text-stone-950 shadow-xs'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    }`}
+                  >
+                    {activeHolds.length}
+                  </span>
+                )}
               </span>
-            )}
-          </span>
-        </button>
-      </nav>
+            </button>
+          </nav>
+        )
+      })()}
 
       {concierge.isOpen && (
         <AiConcierge

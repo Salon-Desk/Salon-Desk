@@ -104,3 +104,12 @@
 @utility gold-glow {
   box-shadow: 0 0 15px -2px rgba(245, 158, 11, 0.45);
 }
+
+/* Prevent unwanted automatic viewport zoom on input focus in iOS Safari & mobile browsers */
+@media screen and (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

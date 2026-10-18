@@ -51,17 +51,23 @@ export function ConsoleSidebarNav<T extends string>({
                 const Icon = tab.icon
                 const isActive = tab.id === activeTab
                 const itemClasses = cn(
-                  'group relative flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 font-medium text-xs transition-all duration-150',
+                  'group relative flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 font-medium text-xs transition-all duration-150 cursor-pointer',
                   isDark
                     ? isActive
-                      ? 'bg-gradient-to-r from-amber-500/15 to-white/[0.06] text-white font-semibold border border-amber-500/20'
-                      : 'text-slate-400 hover:bg-white/[0.05] hover:text-slate-100 border border-transparent'
+                      ? 'bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-white/[0.03] text-white font-semibold border border-amber-500/30 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12),0_2px_12px_rgba(245,158,11,0.08)]'
+                      : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100 border border-transparent'
                     : isActive
                       ? 'bg-slate-900 text-white font-semibold shadow-xs'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
                 )
                 const itemContent = (
                   <>
+                    {isDark && isActive && (
+                      <span
+                        className="absolute left-1 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-amber-300 to-amber-500 shadow-[0_0_8px_rgba(251,191,36,0.7)]"
+                        aria-hidden="true"
+                      />
+                    )}
                     <Icon
                       className={cn(
                         'h-4 w-4 shrink-0 transition-colors',
