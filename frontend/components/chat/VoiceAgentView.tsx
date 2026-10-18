@@ -10,12 +10,14 @@ import { InnerVoiceAssistantUI } from '@/components/chat/InnerVoiceAssistantUI'
 import { VoiceAgentShell } from '@/components/chat/VoiceAgentShell'
 import { VOICE_AGENT_STATUS } from '@/constant/voice-agent'
 import { useVoiceAgentSession } from '@/hooks/use-voice-agent-session'
+import { type AssistantPortal, isSupportPortal, portalChrome } from '@/lib/assistant-portal'
 import type { AgentLanguage } from '@/lib/features'
 import type { GeoCoords } from '@/lib/util/geo'
 import { cn } from '@/lib/utils'
 
 export interface VoiceAgentViewProps {
   language?: AgentLanguage
+  portal?: AssistantPortal
   initialLocation?: GeoCoords | null
   onClose?: () => void
   onSwitchToText?: () => void
@@ -24,6 +26,7 @@ export interface VoiceAgentViewProps {
 
 export function VoiceAgentView({
   language = 'en',
+  portal = 'client',
   initialLocation,
   onClose,
   onSwitchToText,
@@ -43,7 +46,9 @@ export function VoiceAgentView({
     markSessionConnected,
     hasSessionConnected,
     isClosing,
-  } = useVoiceAgentSession({ language, initialLocation })
+  } = useVoiceAgentSession({ language, portal, initialLocation })
+
+  const chrome = portalChrome(portal)
 
   const handleEndCall = useCallback(() => {
     closeAndLeaveVoice()
@@ -69,13 +74,27 @@ export function VoiceAgentView({
 
   if (isLoading) {
     return (
-      <VoiceAgentShell className={className}>
+      <VoiceAgentShell portal={portal} className={className}>
         <div className="flex flex-col items-center text-center">
-          <div className="relative mb-5 flex h-16 w-16 items-center justify-center rounded-xl border border-slate-800 bg-gradient-to-br from-[#0B0F17] to-amber-950 shadow-[0_4px_16px_rgba(0,0,0,0.12),inset_0_1px_0_0_rgba(255,255,255,0.15)]">
-            <Volume2 className="h-7 w-7 animate-pulse text-amber-300" />
+          <div
+            className={cn(
+              'relative mb-5 flex h-16 w-16 items-center justify-center rounded-xl border border-slate-800 shadow-[0_4px_16px_rgba(0,0,0,0.12),inset_0_1px_0_0_rgba(255,255,255,0.15)]',
+              portal === 'merchant' && 'bg-gradient-to-br from-teal-950 to-stone-950',
+              portal === 'admin' && 'bg-gradient-to-br from-slate-950 to-sky-950',
+              portal === 'client' && 'bg-gradient-to-br from-[#0B0F17] to-amber-950',
+            )}
+          >
+            <Volume2
+              className={cn(
+                'h-7 w-7 animate-pulse',
+                portal === 'merchant' && 'text-teal-300',
+                portal === 'admin' && 'text-sky-300',
+                portal === 'client' && 'text-amber-300',
+              )}
+            />
           </div>
           <p className="text-base font-bold tracking-tight text-slate-900">
-            {VOICE_AGENT_STATUS.connecting}
+            {chrome.voiceConnecting}
           </p>
           <p className="mt-1.5 max-w-xs font-mono text-xs leading-relaxed text-slate-400">
             {VOICE_AGENT_STATUS.initializing}
@@ -87,7 +106,7 @@ export function VoiceAgentView({
 
   if (error) {
     return (
-      <VoiceAgentShell className={className}>
+      <VoiceAgentShell portal={portal} className={className}>
         <div className="rounded-xl border border-slate-200/80 bg-white p-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] sm:p-7">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-rose-200/60 bg-rose-50 text-rose-600 shadow-xs">
             <AlertCircle className="h-6 w-6" />
@@ -122,7 +141,7 @@ export function VoiceAgentView({
 
   if (ended || !tokenData) {
     return (
-      <VoiceAgentShell className={className}>
+      <VoiceAgentShell portal={portal} className={className}>
         <div className="rounded-xl border border-slate-200/80 bg-white p-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] sm:p-7">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200/70 bg-slate-100 text-slate-600 shadow-xs">
             <PhoneOff className="h-6 w-6" />
@@ -131,8 +150,9 @@ export function VoiceAgentView({
             {VOICE_AGENT_STATUS.disconnected}
           </h3>
           <p className="mt-2 text-xs leading-relaxed text-slate-500">
-            Thank you for consulting SalonDesk. Start a new live voice call anytime or continue in
-            text chat.
+            {isSupportPortal(portal)
+              ? 'Thanks for using SalonDesk help. Start another voice session anytime or continue in text chat.'
+              : 'Thank you for consulting SalonDesk. Start a new live voice call anytime or continue in text chat.'}
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
             <button
@@ -192,6 +212,7 @@ export function VoiceAgentView({
         <RoomAudioRenderer />
         <InnerVoiceAssistantUI
           language={language}
+          portal={portal}
           location={location}
           locationError={locationError}
           onEndCall={handleEndCall}

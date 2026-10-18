@@ -33,7 +33,8 @@ import type {
 } from '@/components/chat/useAgentChat'
 import { VoiceVisualizerOrb } from '@/components/chat/VoiceVisualizerOrb'
 import { toastColor } from '@/constant/toast-color'
-import { VOICE_AGENT_STATUS, VOICE_AGENT_SUGGESTIONS } from '@/constant/voice-agent'
+import { VOICE_AGENT_STATUS } from '@/constant/voice-agent'
+import { type AssistantPortal, isSupportPortal, portalChrome } from '@/lib/assistant-portal'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import type { AgentLanguage } from '@/lib/features'
 import type { GeoCoords } from '@/lib/util/geo'
@@ -48,6 +49,7 @@ import { setAuthData } from '@/store/authSlice'
 
 export interface InnerVoiceAssistantUIProps {
   language: AgentLanguage
+  portal?: AssistantPortal
   location?: GeoCoords | null
   locationError: string | null
   onEndCall: () => void
@@ -59,6 +61,7 @@ export interface InnerVoiceAssistantUIProps {
 
 export function InnerVoiceAssistantUI({
   language,
+  portal = 'client',
   location,
   locationError,
   onEndCall,
@@ -68,6 +71,8 @@ export function InnerVoiceAssistantUI({
   onSetLocation,
 }: InnerVoiceAssistantUIProps) {
   const dispatch = useDispatch()
+  const chrome = portalChrome(portal)
+  const support = isSupportPortal(portal)
   const { state, agentTranscriptions } = useVoiceAssistant()
   const connectionState = useConnectionState()
   const { localParticipant } = useLocalParticipant()
@@ -305,24 +310,30 @@ export function InnerVoiceAssistantUI({
   const isSpeaking = state === 'speaking'
   const isListening = state === 'listening'
   const isThinking = state === 'thinking'
-  const visibleOrgs = discoveredServices.length > 0 ? [] : discoveredOrgs
-  const canShowMoreServices = discoveredServices.length === 3
+  const visibleOrgs = support ? [] : discoveredServices.length > 0 ? [] : discoveredOrgs
+  const visibleServices = support ? [] : discoveredServices
+  const canShowMoreServices = !support && discoveredServices.length === 3
 
   const statusLabel =
     connectionState === ConnectionState.Connecting
-      ? VOICE_AGENT_STATUS.connecting
+      ? chrome.voiceConnecting
       : micBlocked
         ? VOICE_AGENT_STATUS.micBlocked
         : isListening
-          ? VOICE_AGENT_STATUS.listening
+          ? chrome.voiceListening
           : isThinking
             ? VOICE_AGENT_STATUS.thinking
             : isSpeaking
               ? VOICE_AGENT_STATUS.speaking
-              : VOICE_AGENT_STATUS.idle
+              : chrome.voiceIdle
 
   return (
-    <div className="flex flex-1 flex-col justify-between overflow-hidden bg-gradient-to-b from-[#FAFAFA] via-white to-amber-50/20 text-slate-900">
+    <div
+      className={cn(
+        'flex flex-1 flex-col justify-between overflow-hidden text-slate-900',
+        chrome.voiceShellBg,
+      )}
+    >
       {/* Scrollable Main Stream */}
       <div className="flex-1 space-y-3.5 overflow-y-auto px-4 py-3 sm:px-5">
         {/* Status Header */}
@@ -372,7 +383,7 @@ export function InnerVoiceAssistantUI({
         </div>
 
         {/* Location Error Notice */}
-        {locationError && !location && (
+        {!support && locationError && !location && (
           <div className="rounded-lg border border-amber-200/80 bg-amber-50/90 p-2.5 text-center shadow-2xs">
             <p className="text-[11px] leading-snug text-amber-800">{locationError}</p>
             <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
@@ -428,15 +439,25 @@ export function InnerVoiceAssistantUI({
         <div className="rounded-xl border border-slate-200/80 bg-white/95 p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] backdrop-blur-sm">
           <div className="mb-1.5 flex items-center justify-between border-b border-slate-100 pb-1.5">
             <span className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-slate-400">
-              <Sparkles className="h-3 w-3 text-amber-500" />
-              Agent Voice Stream
+              <Sparkles
+                className={cn(
+                  'h-3 w-3',
+                  portal === 'merchant' && 'text-teal-500',
+                  portal === 'admin' && 'text-sky-500',
+                  portal === 'client' && 'text-amber-500',
+                )}
+              />
+              {support ? `${chrome.title} Voice` : 'Agent Voice Stream'}
             </span>
             <span className="rounded-md border border-emerald-200/50 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-mono font-semibold text-emerald-600">
               16kHz Opus
             </span>
           </div>
           <p className="text-xs sm:text-sm font-normal leading-relaxed text-slate-800 whitespace-pre-wrap">
-            {latestTranscript || 'Say hi, or tell me what you are hoping to book.'}
+            {latestTranscript ||
+              (support
+                ? 'Say hi, or ask how to use a part of the console.'
+                : 'Say hi, or tell me what you are hoping to book.')}
           </p>
         </div>
 
@@ -513,7 +534,7 @@ export function InnerVoiceAssistantUI({
         )}
 
         {/* Real Discovered Services Cards (When present) */}
-        {discoveredServices.length > 0 && (
+        {visibleServices.length > 0 && (
           <div className="space-y-2 pt-1 animate-in fade-in duration-200">
             <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
               <span className="flex items-center gap-1.5">
@@ -524,7 +545,7 @@ export function InnerVoiceAssistantUI({
             </div>
 
             <div className="grid grid-cols-1 gap-2">
-              {discoveredServices.map((rec) => (
+              {visibleServices.map((rec) => (
                 <div
                   key={rec.serviceId}
                   onClick={() => void handleSend(`Book ${rec.name} at ${rec.organizationName}`)}
@@ -615,13 +636,16 @@ export function InnerVoiceAssistantUI({
       <div className="border-t border-slate-200/80 bg-white/95 p-3 sm:p-4 backdrop-blur-md">
         {/* Quick Suggestion Pills */}
         <div className="mb-2.5 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {VOICE_AGENT_SUGGESTIONS.map((suggestion) => (
+          {chrome.voiceSuggestions.map((suggestion) => (
             <button
               key={suggestion}
               type="button"
               disabled={isSending || connectionState !== ConnectionState.Connected}
               onClick={() => void handleSend(suggestion)}
-              className="shrink-0 cursor-pointer rounded-lg border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-2xs transition-all hover:border-amber-300 hover:bg-amber-50/60 hover:text-amber-950 disabled:opacity-50"
+              className={cn(
+                'shrink-0 cursor-pointer rounded-lg border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-2xs transition-all disabled:opacity-50',
+                chrome.chipHover,
+              )}
             >
               {suggestion}
             </button>
@@ -652,13 +676,16 @@ export function InnerVoiceAssistantUI({
               e.preventDefault()
               void handleSend()
             }}
-            className="flex flex-1 items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/80 p-1 pl-3 shadow-[inset_0_1px_1px_rgba(0,0,0,0.03)] transition-all focus-within:bg-white focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20"
+            className={cn(
+              'flex flex-1 items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/80 p-1 pl-3 shadow-[inset_0_1px_1px_rgba(0,0,0,0.03)] transition-all focus-within:bg-white focus-within:ring-2',
+              chrome.focusWithin,
+            )}
           >
             <input
               type="text"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Ask, search salons, or speak…"
+              placeholder={chrome.voicePlaceholder}
               disabled={connectionState !== ConnectionState.Connected || isSending}
               className="flex-1 bg-transparent py-1 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden disabled:opacity-50"
             />
@@ -666,7 +693,10 @@ export function InnerVoiceAssistantUI({
               type="submit"
               disabled={!draft.trim() || isSending || connectionState !== ConnectionState.Connected}
               aria-label="Send message"
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-stone-950 text-white shadow-xs transition-colors hover:bg-amber-600 disabled:opacity-30"
+              className={cn(
+                'flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-white shadow-xs transition-colors disabled:opacity-30',
+                support ? chrome.sendReady : 'bg-stone-950 hover:bg-amber-600',
+              )}
             >
               <Send className="h-3.5 w-3.5" />
             </button>

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import type { AssistantPortal } from '@/lib/assistant-portal'
+import { isSupportPortal } from '@/lib/assistant-portal'
 import type { AgentLanguage } from '@/lib/features'
 import { getLiveKitToken, type LiveKitTokenData } from '@/lib/livekit'
 import { type GeoCoords, requestGeolocation } from '@/lib/util/geo'
@@ -9,6 +11,7 @@ import { buildVoiceAgentRoomName, liveKitTokenErrorMessage } from '@/lib/util/vo
 
 export interface UseVoiceAgentSessionOptions {
   language: AgentLanguage
+  portal?: AssistantPortal
   /** Auto-start a session when the hook mounts. */
   startOnMount?: boolean
   /** Optional pre-acquired client coordinates. */
@@ -34,6 +37,7 @@ export interface UseVoiceAgentSessionResult {
 
 export function useVoiceAgentSession({
   language,
+  portal = 'client',
   startOnMount = true,
   initialLocation,
 }: UseVoiceAgentSessionOptions): UseVoiceAgentSessionResult {
@@ -45,6 +49,7 @@ export function useVoiceAgentSession({
   const [locationError, setLocationError] = useState<string | null>(null)
   const closingRef = useRef(false)
   const sessionConnectedRef = useRef(false)
+  const support = isSupportPortal(portal)
 
   // Keep location in sync if initialLocation prop changes
   useEffect(() => {
@@ -62,8 +67,8 @@ export function useVoiceAgentSession({
     sessionConnectedRef.current = false
     setLocationError(null)
 
-    let loc: GeoCoords | null = initialLocation ?? location
-    if (!loc) {
+    let loc: GeoCoords | null = support ? null : (initialLocation ?? location)
+    if (!support && !loc) {
       try {
         loc = await requestGeolocation({
           enableHighAccuracy: false,
@@ -79,13 +84,15 @@ export function useVoiceAgentSession({
 
     try {
       const data = await getLiveKitToken({
-        roomName: buildVoiceAgentRoomName(language),
+        roomName: buildVoiceAgentRoomName(language, portal),
         language,
+        portal,
         metadata: {
           language,
           app: 'salondesk',
           mode: 'voice',
-          ...(loc ? { lat: loc.lat, lng: loc.lng } : {}),
+          portal,
+          ...(!support && loc ? { lat: loc.lat, lng: loc.lng } : {}),
         },
       })
       setTokenData(data)
@@ -95,7 +102,7 @@ export function useVoiceAgentSession({
     } finally {
       setIsLoading(false)
     }
-  }, [language, initialLocation, location])
+  }, [language, portal, support, initialLocation, location])
 
   useEffect(() => {
     if (startOnMount) void startVoiceSession()

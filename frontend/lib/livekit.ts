@@ -1,3 +1,4 @@
+import type { AssistantPortal } from '@/lib/assistant-portal'
 import axiosInstance from '@/lib/axios'
 import type { AgentLanguage } from '@/lib/features'
 
@@ -6,6 +7,7 @@ export interface LiveKitTokenOptions {
   language?: AgentLanguage
   participantName?: string
   metadata?: string | Record<string, unknown>
+  portal?: AssistantPortal
 }
 
 export interface LiveKitTokenData {
@@ -42,6 +44,7 @@ export async function getLiveKitToken(
     participant_name: options.participantName,
     metadata,
     room_name: options.roomName,
+    portal: options.portal ?? 'client',
   })
 
   const payload =

@@ -71,6 +71,7 @@ async def _keyword_search(
     language: str,
     limit: int,
     org_id: str | None = None,
+    entity_types: list[KnowledgeEntityType] | None = None,
 ) -> list[RetrievedChunk]:
     """Perform keyword-based search as fallback."""
     tokens = [t for t in re.split(r"\W+", query.lower()) if len(t) >= 3][:8]
@@ -84,6 +85,9 @@ async def _keyword_search(
 
     if org_id is not None:
         stmt = stmt.where((KnowledgeChunk.org_id == org_id) | (KnowledgeChunk.org_id.is_(None)))
+
+    if entity_types:
+        stmt = stmt.where(KnowledgeChunk.entity_type.in_(entity_types))
 
     stmt = stmt.limit(limit * 5)
     result = await session.execute(stmt)
@@ -161,6 +165,7 @@ async def search_chunks(
             language=lang,
             limit=limit,
             org_id=org_id,
+            entity_types=prefer_types,
         )
         merged = _merge_chunks(vector_hits, keyword_hits, limit)
         if merged:

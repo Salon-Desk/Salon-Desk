@@ -29,6 +29,7 @@ async def create_livekit_token(
             participant_name=participant_name,
             metadata=body.metadata,
             room_name=body.room_name,
+            portal=body.portal,
         )
     except SalonDeskError as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=exc.message) from exc

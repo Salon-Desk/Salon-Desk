@@ -108,6 +108,8 @@ export interface ClientChatMessage {
   content: string
 }
 
+export type AssistantPortal = 'client' | 'merchant' | 'admin'
+
 export interface ClientChatRequest {
   message: string
   language?: string
@@ -115,6 +117,8 @@ export interface ClientChatRequest {
   history?: ClientChatMessage[]
   user_lat?: number | null
   user_lng?: number | null
+  /** client = booking concierge; merchant/admin = system help */
+  portal?: AssistantPortal
 }
 
 export interface ClientChatResponse {
@@ -164,6 +168,7 @@ export interface LiveKitTokenRequest {
   language?: string
   participant_name?: string
   metadata?: string
+  portal?: AssistantPortal
 }
 
 export interface LiveKitTokenResponse {

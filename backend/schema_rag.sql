@@ -3,10 +3,26 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 DO $$ BEGIN
     CREATE TYPE knowledge_entity_type AS ENUM (
-        'service', 'organization', 'category', 'policy', 'platform'
+        'service', 'organization', 'category', 'policy', 'platform',
+        'org_guide', 'admin_guide'
     );
 EXCEPTION
     WHEN duplicate_object THEN null;
+END $$;
+
+-- Existing DBs created before guide types: add values if missing.
+DO $$ BEGIN
+    ALTER TYPE knowledge_entity_type ADD VALUE IF NOT EXISTS 'org_guide';
+EXCEPTION
+    WHEN duplicate_object THEN null;
+    WHEN undefined_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    ALTER TYPE knowledge_entity_type ADD VALUE IF NOT EXISTS 'admin_guide';
+EXCEPTION
+    WHEN duplicate_object THEN null;
+    WHEN undefined_object THEN null;
 END $$;
 
 CREATE TABLE IF NOT EXISTS knowledge_chunk (

@@ -1,7 +1,7 @@
-"""Semantic search index for AI discovery (chat + voice).
+"""Semantic search index for AI discovery and support (chat + voice).
 
-Chunks ground recommendations in real platform entities (services, orgs, etc.)
-per PRD §2.3.3 / §4.8 — not a detached portfolio FAQ store.
+Client assistants ground recommendations in live catalog entities.
+Merchant/admin assistants retrieve ``org_guide`` / ``admin_guide`` how-to chunks.
 """
 
 from __future__ import annotations

@@ -1,13 +1,14 @@
-"""Client AI chat: semantic search + DB-grounded service recommendations."""
+"""AI chat: client booking concierge, or merchant/admin system help."""
 
 from fastapi import APIRouter, HTTPException, status
 
 from app.ai.chat_auth import try_handle_chat_auth
 from app.ai.chat_booking import try_handle_chat_booking
 from app.ai.llm import LLMError, get_llm_service
+from app.ai.portal import is_support_portal, normalize_portal
 from app.ai.rag_service import (
-    CHAT_GREETING_REPLY,
     build_chat_system_prompt,
+    greeting_reply_for_portal,
     retrieve_context,
 )
 from app.api.deps import DbSession, OptionalUser
@@ -29,37 +30,37 @@ async def chat(
     user: OptionalUser = None,
 ) -> ChatResponse:
     llm = get_llm_service()
+    portal = normalize_portal(body.portal)
 
-    # 1. Try conversational authentication (login / signup)
-    auth_handled, auth_reply, auth_token, user_info = await try_handle_chat_auth(
-        db, llm, body.message, body.history
-    )
-    if auth_handled:
-        return ChatResponse(
-            reply=auth_reply,
-            provider=llm.provider_name,
-            model=llm.model,
-            detected_language=body.language or "en",
-            intent="auth",
-            auth_token=auth_token,
-            user=user_info,
+    # Booking auth / hold confirmation only for the client concierge
+    if not is_support_portal(portal):
+        auth_handled, auth_reply, auth_token, user_info = await try_handle_chat_auth(
+            db, llm, body.message, body.history
         )
+        if auth_handled:
+            return ChatResponse(
+                reply=auth_reply,
+                provider=llm.provider_name,
+                model=llm.model,
+                detected_language=body.language or "en",
+                intent="auth",
+                auth_token=auth_token,
+                user=user_info,
+            )
 
-    # 2. Try conversational booking / hold confirmation
-    booking_handled, booking_reply, confirmed_info = await try_handle_chat_booking(
-        db, llm, body.message, body.history, user=user
-    )
-    if booking_handled:
-        return ChatResponse(
-            reply=booking_reply,
-            provider=llm.provider_name,
-            model=llm.model,
-            detected_language=body.language or "en",
-            intent="booking",
-            confirmed_booking=confirmed_info,
+        booking_handled, booking_reply, confirmed_info = await try_handle_chat_booking(
+            db, llm, body.message, body.history, user=user
         )
+        if booking_handled:
+            return ChatResponse(
+                reply=booking_reply,
+                provider=llm.provider_name,
+                model=llm.model,
+                detected_language=body.language or "en",
+                intent="booking",
+                confirmed_booking=confirmed_info,
+            )
 
-    # 3. Discovery & RAG Context
     prior = [m.content for m in body.history if m.role == "user"]
     retrieved = await retrieve_context(
         db,
@@ -69,23 +70,26 @@ async def chat(
         org_id=body.org_id,
         user_lat=body.user_lat,
         user_lng=body.user_lng,
+        portal=portal,
     )
     if retrieved.intent == "greeting" or retrieved.is_greeting:
         return ChatResponse(
-            reply=CHAT_GREETING_REPLY,
+            reply=greeting_reply_for_portal(portal),
             provider=llm.provider_name,
             model=llm.model,
             detected_language=retrieved.detected_language,
             intent=retrieved.intent,
         )
 
-    system = build_chat_system_prompt(retrieved)
+    system = build_chat_system_prompt(retrieved, portal=portal)
     messages = [{"role": "system", "content": system}]
     messages.extend({"role": m.role, "content": m.content} for m in body.history)
     messages.append({"role": "user", "content": body.message})
 
     try:
-        reply = await llm.chat(messages, temperature=0.55, max_tokens=220)
+        # Support how-tos need a bit more room for numbered steps.
+        max_tokens = 360 if is_support_portal(portal) else 220
+        reply = await llm.chat(messages, temperature=0.55, max_tokens=max_tokens)
     except LLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=exc.message) from exc
 

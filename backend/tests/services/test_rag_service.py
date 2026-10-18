@@ -167,6 +167,23 @@ def test_room_name_encodes_language() -> None:
     assert "-agent-am-" in name
 
 
+def test_room_name_encodes_portal() -> None:
+    from app.services.livekit_tokens import parse_portal_from_room_name
+
+    name = build_room_name(language="en", portal="merchant")
+    assert parse_portal_from_room_name(name) == "merchant"
+    assert "salondesk-merchant-agent-en-" in name
+
+
+def test_support_chat_prompt_rejects_booking() -> None:
+    prompt = build_chat_system_prompt(
+        RetrievedContext(context_text="Open Services to edit price."),
+        portal="merchant",
+    )
+    assert "merchant" in prompt.lower() or "org console" in prompt.lower()
+    assert "Do NOT book" in prompt or "do not book" in prompt.lower()
+
+
 def test_haversine_km_and_distance_format() -> None:
     from app.ai.rag_service import haversine_km
 

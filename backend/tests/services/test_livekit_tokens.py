@@ -2,7 +2,11 @@ import base64
 import json
 
 from app.core.config import Settings
-from app.services.livekit_tokens import build_room_name, create_participant_token
+from app.services.livekit_tokens import (
+    build_room_name,
+    create_participant_token,
+    parse_portal_from_room_name,
+)
 
 
 def _settings(**kwargs: object) -> Settings:
@@ -17,7 +21,14 @@ def _jwt_payload(token: str) -> dict:
 
 def test_build_room_name():
     name = build_room_name(language="en")
-    assert name.startswith("salondesk-agent-en-")
+    assert name.startswith("salondesk-client-agent-en-")
+    assert parse_portal_from_room_name(name) == "client"
+
+
+def test_build_room_name_encodes_portal():
+    name = build_room_name(language="am", portal="merchant")
+    assert name.startswith("salondesk-merchant-agent-am-")
+    assert parse_portal_from_room_name(name) == "merchant"
 
 
 def test_create_participant_token_mints_jwt():
@@ -30,10 +41,12 @@ def test_create_participant_token_mints_jwt():
     creds = create_participant_token(language="en", settings=settings)
     assert creds.server_url == settings.livekit_url
     assert creds.token
-    assert "salondesk-agent-en-" in creds.room_name
+    assert "salondesk-client-agent-en-" in creds.room_name
     payload = _jwt_payload(creds.token)
     agents = payload["roomConfig"]["agents"]
     assert agents[0]["agentName"] == "salondesk-voice"
+    meta = json.loads(payload["metadata"])
+    assert meta["portal"] == "client"
 
 
 def test_empty_livekit_agent_name_defaults_for_dispatch(monkeypatch):

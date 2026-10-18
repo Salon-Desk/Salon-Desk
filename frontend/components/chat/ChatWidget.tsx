@@ -1,11 +1,11 @@
 'use client'
 
-import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
 
 import { ChatConversation, ChatPanelShell } from '@/components/chat/chat-ui'
 import { useAgentChat } from '@/components/chat/useAgentChat'
 import { VoiceAgentView } from '@/components/chat/VoiceAgentView'
+import { type AssistantPortal, isSupportPortal, portalChrome } from '@/lib/assistant-portal'
 import { anyChatFeatureEnabled, features } from '@/lib/features'
 import { cn } from '@/lib/utils'
 
@@ -23,6 +23,8 @@ export interface ChatWidgetProps {
   onOpenChange?: (open: boolean) => void
   /** Hide floating FABs when the host already provides triggers. */
   showTriggers?: boolean
+  /** client booking concierge vs merchant/admin help desk */
+  portal?: AssistantPortal
   className?: string
 }
 
@@ -34,6 +36,7 @@ export function ChatWidget({
   open: openProp,
   onOpenChange,
   showTriggers = true,
+  portal = 'client',
   className,
 }: ChatWidgetProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
@@ -45,7 +48,10 @@ export function ChatWidget({
   }
 
   const [mode, setMode] = useState<Mode>(initialMode)
-  const chat = useAgentChat()
+  const chat = useAgentChat({ portal })
+  const support = isSupportPortal(portal)
+  const chrome = portalChrome(portal)
+  const FabIcon = chrome.Icon
 
   if (!anyChatFeatureEnabled) return null
 
@@ -61,18 +67,36 @@ export function ChatWidget({
           <button
             type="button"
             onClick={handleOpenChat}
-            aria-label="Open chat"
-            className="group relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border border-stone-700/80 bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 text-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.08)] backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-amber-400/50 hover:shadow-[0_15px_30px_-5px_rgba(245,158,11,0.25)] active:scale-95"
-            title="Chat with us"
+            aria-label={chrome.fabLabel}
+            title={chrome.fabTitle}
+            className={cn(
+              'group relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border text-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.08)] backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95',
+              chrome.fabButton,
+            )}
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-400/15 text-amber-400 transition-transform duration-300 group-hover:scale-110 group-hover:bg-amber-400/25">
-              <Sparkles className="h-5 w-5 text-amber-400" />
+            <span
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110',
+                chrome.fabIconWrap,
+              )}
+            >
+              <FabIcon className={cn('h-5 w-5', chrome.fabIcon)} />
             </span>
             <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
-              <span className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-stone-950 bg-amber-400" />
+              <span
+                className={cn(
+                  'absolute inline-flex h-full w-full animate-ping rounded-full opacity-60',
+                  chrome.fabPing,
+                )}
+              />
+              <span
+                className={cn(
+                  'relative inline-flex h-3.5 w-3.5 rounded-full border-2',
+                  chrome.fabDot,
+                )}
+              />
             </span>
-            <span className="sr-only">Chat with us</span>
+            <span className="sr-only">{chrome.fabLabel}</span>
           </button>
         </div>
       )}
@@ -80,6 +104,7 @@ export function ChatWidget({
       {isOpen && (
         <ChatPanelShell
           mode={mode}
+          portal={portal}
           onModeChange={setMode}
           onClose={() => setIsOpen(false)}
           showModeToggle={features.agentChat && features.voiceAgent}
@@ -87,17 +112,23 @@ export function ChatWidget({
           {mode === 'voice' && features.voiceAgent ? (
             <VoiceAgentView
               language={features.defaultLanguage}
+              portal={portal}
               onClose={() => setIsOpen(false)}
               onSwitchToText={features.agentChat ? () => setMode('chat') : () => setIsOpen(false)}
             />
           ) : (
             <ChatConversation
+              portal={portal}
               messages={chat.messages}
               isThinking={chat.isThinking}
               prompt={chat.prompt}
               onPromptChange={chat.setPrompt}
               onSend={chat.send}
-              onSelectService={(rec) => chat.send(`Book ${rec.name} at ${rec.organizationName}`)}
+              onSelectService={
+                support
+                  ? undefined
+                  : (rec) => chat.send(`Book ${rec.name} at ${rec.organizationName}`)
+              }
               onTryVoice={features.voiceAgent ? () => setMode('voice') : undefined}
             />
           )}

@@ -1,4 +1,5 @@
 import { VOICE_AGENT_GOODBYE_PHRASES } from '@/constant/voice-agent'
+import type { AssistantPortal } from '@/lib/assistant-portal'
 import type { AgentLanguage } from '@/lib/features'
 
 /** True when the latest agent transcript looks like a farewell. */
@@ -8,8 +9,11 @@ export function isAgentGoodbyeTranscript(text: string | undefined | null): boole
   return VOICE_AGENT_GOODBYE_PHRASES.some((phrase) => normalized.includes(phrase))
 }
 
-export function buildVoiceAgentRoomName(language: AgentLanguage): string {
-  return `salondesk-agent-${language}-${crypto.randomUUID().slice(0, 6)}`
+export function buildVoiceAgentRoomName(
+  language: AgentLanguage,
+  portal: AssistantPortal = 'client',
+): string {
+  return `salondesk-${portal}-agent-${language}-${crypto.randomUUID().slice(0, 6)}`
 }
 
 export function parseAgentControlPayload(payload: Uint8Array): { type?: string } | null {

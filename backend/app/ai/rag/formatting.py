@@ -1,11 +1,11 @@
 """Context formatting for LLM prompts."""
 
 from .constants import (
-    CHAT_PERSONA,
     DEFAULT_RECOMMENDATION_LIMIT,
     RetrievedChunk,
     RetrievedContext,
     ServiceRecommendation,
+    persona_for_portal,
 )
 
 
@@ -34,12 +34,38 @@ def format_context_text(
     return "\n".join(lines)
 
 
-def build_voice_rag_instruction(retrieved: RetrievedContext) -> str:
+def build_voice_rag_instruction(
+    retrieved: RetrievedContext,
+    *,
+    portal: str = "client",
+) -> str:
     """Build instruction for voice agent based on retrieved context."""
+    support = portal in {"merchant", "admin"}
+
     if retrieved.intent == "greeting" or retrieved.is_greeting:
+        if support:
+            return (
+                "They just said hello. Reply like a helpful teammate — one warm sentence "
+                "and ask what part of the console they need help with. No lists."
+            )
         return (
             "They just said hello. Reply like a person — one warm sentence "
             "and ask what they are hoping to get done. No lists."
+        )
+
+    if support:
+        if not retrieved.chunks and not retrieved.context_text:
+            return (
+                "No verified help docs matched this turn. "
+                "Do not invent UI steps or permissions. "
+                "Ask which screen or task they need help with."
+            )
+        return (
+            "Use ONLY the verified help context below. "
+            "Explain how to use the system in 1–2 short spoken sentences. "
+            "Do not book appointments or recommend salons to consumers. "
+            "No markdown or lists.\n\n"
+            f"{retrieved.context_text}"
         )
 
     if retrieved.intent == "booking":
@@ -72,19 +98,46 @@ def build_voice_rag_instruction(retrieved: RetrievedContext) -> str:
     )
 
 
-def build_chat_system_prompt(retrieved: RetrievedContext) -> str:
+def build_chat_system_prompt(
+    retrieved: RetrievedContext,
+    *,
+    portal: str = "client",
+) -> str:
     """Build system prompt for chat interface based on retrieved context."""
-    parts = [CHAT_PERSONA]
+    parts = [persona_for_portal(portal)]
+    support = portal in {"merchant", "admin"}
 
     if retrieved.intent == "greeting" or retrieved.is_greeting:
-        parts.append(
-            "They just said hello. Reply in one or two friendly sentences. "
-            "Do not list questions or explain how booking works."
-        )
+        if support:
+            parts.append(
+                "They just said hello. Reply in one or two friendly sentences. "
+                "Ask what part of the console they need help with — do not pitch booking."
+            )
+        else:
+            parts.append(
+                "They just said hello. Reply in one or two friendly sentences. "
+                "Do not list questions or explain how booking works."
+            )
         return "\n\n".join(parts)
 
     if retrieved.intent == "farewell":
         parts.append("They are saying goodbye. Wish them well in one short sentence.")
+        return "\n\n".join(parts)
+
+    if support:
+        parts.append(
+            "When they ask how to do something, answer with short numbered steps "
+            "using the verified help below (sidebar page + button names)."
+        )
+        if retrieved.context_text:
+            parts.append(
+                "Verified help you can use (do not invent other steps):\n" + retrieved.context_text
+            )
+        else:
+            parts.append(
+                "No matching help docs this turn. Ask which screen or task they mean — "
+                "do not invent UI labels or permissions."
+            )
         return "\n\n".join(parts)
 
     if retrieved.intent == "booking":

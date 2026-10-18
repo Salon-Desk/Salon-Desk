@@ -1,9 +1,12 @@
 from decimal import Decimal
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from app.schemas.ai import ChatMessage
+
+AssistantPortal = Literal["client", "merchant", "admin"]
 
 
 class ChatRequest(BaseModel):
@@ -13,6 +16,10 @@ class ChatRequest(BaseModel):
     org_id: UUID | None = Field(default=None, description="Optional org scope for semantic search")
     user_lat: float | None = Field(default=None, description="Client GPS latitude")
     user_lng: float | None = Field(default=None, description="Client GPS longitude")
+    portal: AssistantPortal = Field(
+        default="client",
+        description="client = booking concierge; merchant/admin = system help & support",
+    )
 
 
 class ChatCitation(BaseModel):
@@ -72,6 +79,10 @@ class LiveKitTokenRequest(BaseModel):
     participant_name: str | None = None
     metadata: str | None = None
     room_name: str | None = None
+    portal: AssistantPortal = Field(
+        default="client",
+        description="Voice agent persona: booking (client) vs help desk (merchant/admin)",
+    )
 
 
 class LiveKitTokenResponse(BaseModel):

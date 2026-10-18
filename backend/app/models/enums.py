@@ -88,3 +88,6 @@ class KnowledgeEntityType(str, enum.Enum):
     CATEGORY = "category"
     POLICY = "policy"
     PLATFORM = "platform"
+    # How-to / support docs for merchant console and platform admin (not booking catalog)
+    ORG_GUIDE = "org_guide"
+    ADMIN_GUIDE = "admin_guide"

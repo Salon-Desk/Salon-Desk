@@ -11,10 +11,11 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.ai.agent.prompts import build_voice_instructions, greeting_for, is_farewell
+from app.ai.portal import is_support_portal, normalize_portal
 from app.ai.rag_service import build_voice_rag_instruction, detect_intent, retrieve_context
 from app.ai.tools import build_voice_tools
 from app.core.config import get_settings
-from app.services.livekit_tokens import parse_language_from_room_name
+from app.services.livekit_tokens import parse_language_from_room_name, parse_portal_from_room_name
 
 from .constants import _NOISE_RE
 from .location import (
@@ -52,6 +53,19 @@ def resolve_language(room_name: str, metadata: str | None) -> str:
         except json.JSONDecodeError:
             pass
     return parse_language_from_room_name(room_name)
+
+
+def resolve_portal(room_name: str, metadata: str | None) -> str:
+    """Resolve assistant portal from room metadata or room name."""
+    if metadata:
+        try:
+            data = json.loads(metadata)
+            portal = data.get("portal")
+            if portal in {"client", "merchant", "admin"}:
+                return portal
+        except json.JSONDecodeError:
+            pass
+    return parse_portal_from_room_name(room_name)
 
 
 def openai_compatible_llm():
@@ -111,8 +125,10 @@ class SalonVoiceAgent:
         settings: Any,
         tools: list,
         room: Any,
+        portal: str = "client",
     ):
         self.language = language
+        self.portal = normalize_portal(portal)
         self.session_factory = session_factory
         self.location_tracker = location_tracker
         self.settings = settings
@@ -121,10 +137,14 @@ class SalonVoiceAgent:
 
     async def initialize(self) -> None:
         """Initialize agent with location context and instructions."""
-        lat, lng = self.location_tracker.get()
-        location_ctx = await build_location_context(self.session_factory, lat, lng)
+        location_ctx = None
+        if not is_support_portal(self.portal):
+            lat, lng = self.location_tracker.get()
+            location_ctx = await build_location_context(self.session_factory, lat, lng)
         self.initial_instructions = build_voice_instructions(
-            language=self.language, location_summary=location_ctx
+            language=self.language,
+            location_summary=location_ctx,
+            portal=self.portal,
         )
 
     async def handle_user_turn(
@@ -170,7 +190,7 @@ class SalonVoiceAgent:
         """Handle regular user turn with RAG and intent detection."""
         intent = detect_intent(text)
         curr_lat, curr_lng = self.location_tracker.get()
-        is_loc_query = is_location_query(text)
+        is_loc_query = is_location_query(text) and not is_support_portal(self.portal)
 
         try:
             retrieved = await asyncio.wait_for(
@@ -180,16 +200,17 @@ class SalonVoiceAgent:
                     room_language=self.language,
                     chunk_limit=self.settings.voice_rag_chunk_limit,
                     settings=self.settings,
-                    user_lat=curr_lat,
-                    user_lng=curr_lng,
+                    user_lat=curr_lat if not is_support_portal(self.portal) else None,
+                    user_lng=curr_lng if not is_support_portal(self.portal) else None,
+                    portal=self.portal,
                 ),
                 timeout=self.settings.voice_rag_timeout_s,
             )
 
-            if intent == "booking":
+            if intent == "booking" and not is_support_portal(self.portal):
                 retrieved.intent = "booking"
 
-            instruction = build_voice_rag_instruction(retrieved)
+            instruction = build_voice_rag_instruction(retrieved, portal=self.portal)
 
             if is_loc_query and curr_lat is not None and curr_lng is not None:
                 loc_summary = await build_location_context(self.session_factory, curr_lat, curr_lng)
@@ -199,13 +220,15 @@ class SalonVoiceAgent:
 
         except TimeoutError:
             logger.warning("Voice RAG timed out after %ss", self.settings.voice_rag_timeout_s)
-            turn_ctx.add_message(
-                role="system",
-                content=(
+            fallback = (
+                "Knowledge lookup timed out. Ask a clarifying question; do not invent help steps."
+                if is_support_portal(self.portal)
+                else (
                     "Knowledge lookup timed out. Ask a clarifying question; "
                     "do not invent salon facts."
-                ),
+                )
             )
+            turn_ctx.add_message(role="system", content=fallback)
         except Exception as exc:
             logger.exception("Voice RAG failed: %s", exc)
             turn_ctx.add_message(
@@ -296,8 +319,10 @@ async def entrypoint(ctx: Any) -> None:
 
     room = ctx.room
     room_name = room.name or ""
-    language = resolve_language(room_name, getattr(room, "metadata", None))
-    logger.info("Voice job room=%s language=%s", room_name, language)
+    job_meta = getattr(ctx.job, "metadata", None) if hasattr(ctx, "job") else None
+    language = resolve_language(room_name, getattr(room, "metadata", None) or job_meta)
+    portal = resolve_portal(room_name, getattr(room, "metadata", None) or job_meta)
+    logger.info("Voice job room=%s language=%s portal=%s", room_name, language, portal)
 
     # Initialize location tracking
     location_tracker = LocationTracker()
@@ -305,11 +330,13 @@ async def entrypoint(ctx: Any) -> None:
 
     # Build session factory
     session_factory = build_session_factory()
-    setup_location_handlers(room, location_tracker, session_factory)
+    if not is_support_portal(portal):
+        setup_location_handlers(room, location_tracker, session_factory)
 
-    # Build tools
+    # Build tools (booking tools only for client portal)
     tools = build_voice_tools(
         session_factory,
+        portal=portal,
         user_location_getter=location_tracker.get,
         on_auth_success=lambda p: publish_auth_success(room, p),
         on_booking_success=lambda p: publish_booking_success(room, p),
@@ -324,6 +351,7 @@ async def entrypoint(ctx: Any) -> None:
         settings=settings,
         tools=tools,
         room=room,
+        portal=portal,
     )
     await agent.initialize()
 
@@ -342,7 +370,7 @@ async def entrypoint(ctx: Any) -> None:
             super().__init__(instructions=agent.initial_instructions, tools=tools)
 
         async def on_enter(self):
-            await self.session.say(greeting_for(language))
+            await self.session.say(greeting_for(language, portal=portal))
 
         async def on_user_turn_completed(
             self, turn_ctx: llm.ChatContext, new_message: llm.ChatMessage

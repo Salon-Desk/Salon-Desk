@@ -22,6 +22,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.config import get_settings
 from app.core.database import Base
+from app.core.database_url import resolve_database_url
 from app.models.enums import (
     KnowledgeEntityType,
     OrganizationStatus,
@@ -31,13 +32,13 @@ from app.models.knowledge import KnowledgeChunk
 from app.models.organization import Organization, OrgSettings
 from app.models.policy import OrgCancellationPolicy
 from app.models.service import Service, ServiceCategory
-from app.scripts.seed import resolve_database_url
 from app.services.embeddings import get_embedding
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger("ingest_knowledge")
 
-BACKEND_ROOT = Path(__file__).resolve().parents[2]
+# scripts/ingest_knowledge.py → backend/
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_FAQ = BACKEND_ROOT / "data" / "knowledge_en.json"
 
 
@@ -57,6 +58,20 @@ async def ensure_rag_schema(engine) -> None:
         import app.models  # noqa: F401
 
         await conn.run_sync(Base.metadata.create_all)
+        # Postgres enums are not altered by create_all — add guide types if missing.
+        for value in ("org_guide", "admin_guide"):
+            await conn.execute(
+                text(
+                    f"""
+                    DO $$ BEGIN
+                        ALTER TYPE knowledge_entity_type ADD VALUE IF NOT EXISTS '{value}';
+                    EXCEPTION
+                        WHEN duplicate_object THEN null;
+                        WHEN undefined_object THEN null;
+                    END $$;
+                    """
+                )
+            )
     logger.info("RAG schema ready")
 
 
@@ -220,6 +235,17 @@ async def sync_from_platform(
     return count
 
 
+def _entity_type_for_faq_item(item: dict) -> KnowledgeEntityType:
+    """Map FAQ audience → knowledge entity type for portal-scoped RAG."""
+    audience = (item.get("audience") or "all").strip().lower()
+    if audience in {"merchant", "org", "organization"}:
+        return KnowledgeEntityType.ORG_GUIDE
+    if audience in {"admin", "platform_admin"}:
+        return KnowledgeEntityType.ADMIN_GUIDE
+    # client | all → platform FAQ (retrieved by client booking concierge + shared fallback)
+    return KnowledgeEntityType.PLATFORM
+
+
 async def sync_platform_faq(
     session: AsyncSession,
     *,
@@ -229,6 +255,19 @@ async def sync_platform_faq(
     if not path.is_file():
         logger.warning("FAQ file missing: %s", path)
         return 0
+    # Replace prior FAQ / guide chunks so re-ingest stays idempotent.
+    await session.execute(
+        delete(KnowledgeChunk).where(
+            KnowledgeChunk.entity_type.in_(
+                [
+                    KnowledgeEntityType.PLATFORM,
+                    KnowledgeEntityType.ORG_GUIDE,
+                    KnowledgeEntityType.ADMIN_GUIDE,
+                ]
+            ),
+            KnowledgeChunk.entity_id.is_(None),
+        )
+    )
     raw = json.loads(path.read_text(encoding="utf-8"))
     count = 0
     for item in raw:
@@ -236,18 +275,20 @@ async def sync_platform_faq(
         if not content:
             continue
         source = item.get("source") or "platform"
+        audience = (item.get("audience") or "all").strip().lower()
         title = str(source).replace("_", " ").title()
+        entity_type = _entity_type_for_faq_item(item)
         embedding = await get_embedding(content)
         session.add(
             KnowledgeChunk(
-                entity_type=KnowledgeEntityType.PLATFORM,
+                entity_type=entity_type,
                 entity_id=None,
                 org_id=None,
                 title=title,
                 content=content,
                 language=language,
                 embedding=embedding,
-                metadata_json={"source": source},
+                metadata_json={"source": source, "audience": audience},
                 is_active=True,
             )
         )

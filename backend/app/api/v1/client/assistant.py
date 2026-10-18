@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, status
 
 from app.ai.llm import LLMError, get_llm_service
 from app.ai.parser import AISlotParser
-from app.api.deps import CurrentUser
+from app.ai.rag_service import build_chat_system_prompt, retrieve_context
+from app.api.deps import CurrentUser, DbSession
 from app.core.config import get_settings
 from app.schemas.ai import (
     BookingAssistantRequest,
@@ -17,11 +18,6 @@ _BOOKING_SYSTEM = (
     "You are SalonDesk's booking assistant. Help clients discover salon services "
     "and book appointments. Be concise. Ground answers in the user's request; "
     "do not invent unavailable salons."
-)
-
-_OWNER_SYSTEM = (
-    "You are SalonDesk's organization copilot. Help salon owners with scheduling, "
-    "services, and operations. Be concise and practical."
 )
 
 
@@ -54,12 +50,22 @@ async def booking_assistant(
 @router.post("/owner-copilot", response_model=OwnerCopilotResponse)
 async def owner_copilot(
     body: OwnerCopilotRequest,
+    db: DbSession,
     user: CurrentUser,
 ) -> OwnerCopilotResponse:
     _ = user
     settings = get_settings()
     llm = get_llm_service(settings)
-    messages = [{"role": "system", "content": _OWNER_SYSTEM}]
+    prior = [m.content for m in body.history if m.role == "user"]
+    retrieved = await retrieve_context(
+        db,
+        body.message,
+        prior_turns=prior,
+        settings=settings,
+        portal="merchant",
+    )
+    system = build_chat_system_prompt(retrieved, portal="merchant")
+    messages = [{"role": "system", "content": system}]
     messages.extend({"role": m.role, "content": m.content} for m in body.history)
     messages.append({"role": "user", "content": body.message})
 

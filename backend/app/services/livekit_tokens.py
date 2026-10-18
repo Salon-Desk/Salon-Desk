@@ -25,11 +25,17 @@ class LiveKitCredentials:
     room_name: str
 
 
-def build_room_name(*, language: str, prefix: str = "salondesk") -> str:
-    # Encode language in room name so it survives even if metadata is dropped.
+def build_room_name(
+    *,
+    language: str,
+    portal: str = "client",
+    prefix: str = "salondesk",
+) -> str:
+    # Encode language + portal so they survive even if metadata is dropped.
     suffix = secrets.token_hex(3)
     lang = language if language in {"en", "am"} else "en"
-    return f"{prefix}-agent-{lang}-{suffix}"
+    mode = portal if portal in {"client", "merchant", "admin"} else "client"
+    return f"{prefix}-{mode}-agent-{lang}-{suffix}"
 
 
 def create_participant_token(
@@ -38,6 +44,7 @@ def create_participant_token(
     participant_name: str | None = None,
     metadata: str | None = None,
     room_name: str | None = None,
+    portal: str = "client",
     settings: Settings | None = None,
 ) -> LiveKitCredentials:
     cfg = settings or get_settings()
@@ -53,12 +60,16 @@ def create_participant_token(
             "livekit package is required. From backend/: uv sync --group dev"
         ) from exc
 
-    resolved_room_name = (room_name or "").strip() or build_room_name(language=language)
-    identity = participant_name or f"client-{secrets.token_hex(4)}"
+    mode = portal if portal in {"client", "merchant", "admin"} else "client"
+    resolved_room_name = (room_name or "").strip() or build_room_name(
+        language=language, portal=mode
+    )
+    identity = participant_name or f"{mode}-{secrets.token_hex(4)}"
     room_meta = {
         "app": "salondesk",
         "language": language,
         "mode": "voice",
+        "portal": mode,
     }
     if metadata:
         room_meta["client_metadata"] = metadata
@@ -120,7 +131,7 @@ def create_participant_token(
 
 
 def parse_language_from_room_name(room_name: str) -> str:
-    # Expected: {prefix}-agent-{en|am}-{suffix}
+    # Expected: {prefix}-{portal}-agent-{en|am}-{suffix} or legacy {prefix}-agent-{en|am}-{suffix}
     parts = (room_name or "").split("-")
     for i, part in enumerate(parts):
         if part == "agent" and i + 1 < len(parts):
@@ -128,3 +139,14 @@ def parse_language_from_room_name(room_name: str) -> str:
             if lang in {"en", "am"}:
                 return lang
     return "en"
+
+
+def parse_portal_from_room_name(room_name: str) -> str:
+    # Expected: {prefix}-{portal}-agent-{lang}-{suffix}
+    parts = (room_name or "").split("-")
+    for i, part in enumerate(parts):
+        if part == "agent" and i >= 1:
+            candidate = parts[i - 1]
+            if candidate in {"client", "merchant", "admin"}:
+                return candidate
+    return "client"

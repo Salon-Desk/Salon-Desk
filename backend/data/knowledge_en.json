@@ -1,38 +1,332 @@
 [
   {
     "source": "platform_overview",
-    "content": "SalonDesk is a multi-salon booking platform. Clients discover beauty services, organizations manage staff and schedules, and platform admins approve salons and commissions."
+    "audience": "all",
+    "content": "SalonDesk is a multi-salon SaaS platform with three apps: Client (book with PayPal authorization holds), Merchant / Organization portal (run a salon), and Platform Admin (approve salons, commissions, change requests). Client captures settle 100% into the salon's approved PayPal merchant account. SalonDesk collects its fee later via a metered SaaS commission ledger and periodic invoices."
   },
   {
-    "source": "booking_flow",
-    "content": "To book: choose a salon and service, pick an available time, sign in if needed, accept hold terms, then a PayPal authorization hold reserves the amount until the appointment completes or a no-show fee applies."
-  },
-  {
-    "source": "cancellation_policy",
-    "content": "Default cancellation policy allows free cancel at least 24 hours before start. Late cancel may charge about 25 percent. No-show fee is typically 50 percent of the service price. Exact fees follow the salon active policy."
-  },
-  {
-    "source": "paypal_hold",
-    "content": "SalonDesk uses PayPal authorization holds. Funds are reserved at booking, captured on completion or no-show fee, and voided on free cancellation within the policy window."
+    "source": "three_apps",
+    "audience": "all",
+    "content": "Client app: discover salons, book, AI concierge. Merchant portal (/merchant or /org): staff, services, calendar, appointments, settlements, PayPal, policies. Admin (/admin): salons, approvals, commission rules, taxonomy categories, platform staff."
   },
   {
     "source": "roles",
-    "content": "Roles include client, org owner, reception, stylist, platform admin, and platform staff. Clients book services. Org roles manage that salon only. Platform roles oversee all organizations."
+    "audience": "all",
+    "content": "Roles: client, org_owner, reception, stylist, platform_admin, platform_staff. Clients book. Org owner / reception / stylist work only in their salon. Platform roles oversee all organizations."
   },
   {
-    "source": "service_capacity",
-    "content": "Each service defines simultaneous capacity — how many clients can receive that service at the same time. Availability also respects organization working hours and existing bookings."
+    "source": "money_model_direct_settlement",
+    "audience": "all",
+    "content": "Money model: at booking the client places a PayPal AUTHORIZE hold (no upfront charge). When the salon marks show or no-show, capture goes 100% to the organization's approved PayPal merchant account. SalonDesk does not hold merchant funds. Platform fee is tracked separately as SaaS commission and billed to the organization on invoices."
   },
   {
-    "source": "change_requests",
-    "content": "Organizations must submit change requests for PayPal account updates and cancellation policy changes. Platform admins approve or reject before changes take effect."
+    "source": "paypal_hold_lifecycle",
+    "audience": "all",
+    "content": "Hold lifecycle: booking → client consent → payment_hold AUTHORIZED → later CAPTURED (full or no-show fee), VOIDED (free cancel), EXPIRED, or REAUTHORIZED (Day 4+ to extend the honor window). Captures never exceed 100% of the authorized amount."
   },
   {
-    "source": "voice_assistant",
-    "content": "The SalonDesk voice assistant helps find services and book appointments. It uses retrieved platform data and does not invent prices or open appointment slots without data."
+    "source": "booking_statuses",
+    "audience": "all",
+    "content": "Booking statuses: PENDING, CONFIRMED (hold authorized), COMPLETED (full capture), NO_SHOW (penalty fee capture), CANCELLED (void if on time, or fee if late). Commission accrues only when money is actually captured, not on voided or expired holds."
   },
   {
-    "source": "support",
-    "content": "If a question is outside verified knowledge, the assistant should say so briefly and suggest using the SalonDesk app catalog or contacting the salon reception."
+    "source": "cancellation_policy_default",
+    "audience": "all",
+    "content": "Default cancellation policy: free cancel typically at least 24 hours before start; late cancel may charge about 25%; no-show fee often about 50% of service price. Exact numbers follow the salon's active approved policy. Policy changes need admin approval via change request."
+  },
+  {
+    "source": "change_requests_overview",
+    "audience": "all",
+    "content": "Change requests: merchants submit PAYPAL_ACCOUNT or CANCELLATION_POLICY changes. Statuses PENDING, APPROVED, REJECTED. Until approved, previous PayPal account and active policy stay in effect."
+  },
+  {
+    "source": "commission_types",
+    "audience": "all",
+    "content": "Platform commission rules use type percentage, flat, or hybrid, usually per service category. Rate is snapshotted on the booking (commission_snapshot). When a capture succeeds, a commission_record is accrued (ACCRUED → INVOICED → PAID or WAIVED)."
+  },
+  {
+    "source": "commission_invoice_overview",
+    "audience": "all",
+    "content": "org_commission_invoice aggregates accrued commissions for a period. Statuses: DRAFT, ISSUED, PAID, OVERDUE, VOID. Organizations pay SalonDesk via that invoice (separate from client captures that go to the salon PayPal). Overdue invoices can lead to org suspension."
+  },
+  {
+    "source": "ai_assistants_portals",
+    "audience": "all",
+    "content": "AI assistants: Client concierge books and discovers salons. Merchant Help and Admin Help explain how to use their consoles and do not book consumer appointments. Text and voice both use portal-specific knowledge."
+  },
+  {
+    "source": "booking_flow",
+    "audience": "client",
+    "content": "To book as a client: choose a salon and service (catalog or AI concierge), pick an available time, sign in if needed, accept hold / cancellation terms (consent), then place a PayPal authorization hold. No money leaves your account upfront — it is a hold, not a charge. The salon later captures on completion or a no-show fee, or voids on free cancel."
+  },
+  {
+    "source": "client_app_nav",
+    "audience": "client",
+    "content": "Client app routes: /client catalog and concierge, /client/book checkout, /client/bookings my appointments, /client/profile, /client/org/[orgId] salon-filtered catalog. /book redirects to /client/book. Use filters for category, salon, search, and near-me when location is allowed."
+  },
+  {
+    "source": "client_signup_signin",
+    "audience": "client",
+    "content": "How to sign up or sign in as a client: open Sign in from the client app, create an account (email/password) or sign in. Forgot password uses the shared reset flow. If you start booking while logged out, the app keeps your selected service and time (split booking auth) and resumes after you sign in."
+  },
+  {
+    "source": "client_discover_catalog",
+    "audience": "client",
+    "content": "How to discover services: on /client browse organization cards and service cards. Filter by category, salon, or search. Open a service for price, duration, address, and policy notes. Near-me sorting uses your GPS when permitted."
+  },
+  {
+    "source": "client_ai_concierge",
+    "audience": "client",
+    "content": "How to use the client AI concierge: open the chat or voice assistant on /client. Ask for a cut, color, nearby salon, or a time. It recommends real catalog services (cards with price and address). Tap a card or say you want to book; it can guide auth, consent, and hold confirmation. It does not invent salons or open slots."
+  },
+  {
+    "source": "client_voice_agent",
+    "audience": "client",
+    "content": "Client voice agent: talk or type to find salons and book. It can search services, help log in or sign up, and call booking tools. Say goodbye to end the call. Location helps nearby recommendations."
+  },
+  {
+    "source": "client_zero_dollar_hold",
+    "audience": "client",
+    "content": "How the $0 hold works: PayPal AUTHORIZE reserves the service amount on your card without charging you at booking. Nothing leaves your account upfront. After the visit the salon captures the full amount; if you no-show they may capture only the policy fee; if you cancel free within the window the hold is voided and released."
+  },
+  {
+    "source": "client_book_checkout",
+    "audience": "client",
+    "content": "How to complete checkout: from a service go to /client/book, confirm salon, service, time, and stylist if offered, sign in if needed, accept consent terms, then authorize the PayPal hold. You get a booking confirmation / receipt with hold status."
+  },
+  {
+    "source": "client_my_bookings",
+    "audience": "client",
+    "content": "How to view or manage bookings: open /client/bookings. See upcoming and past appointments, hold status, and details. Cancel within the free-cancel window when the salon policy allows so the hold can be voided."
+  },
+  {
+    "source": "client_cancel_booking",
+    "audience": "client",
+    "content": "How to cancel: open My Bookings, select the appointment, cancel if still inside the free window (often 24h before). Late cancel may incur a fee; no-show may capture about half the price per salon policy. Exact rules are on the active salon cancellation policy."
+  },
+  {
+    "source": "client_profile",
+    "audience": "client",
+    "content": "How to update client profile: open /client/profile, edit name, phone, picture, save. Use the same account for future bookings so holds and history stay linked."
+  },
+  {
+    "source": "client_org_page",
+    "audience": "client",
+    "content": "How to browse one salon: open /client/org/[orgId] or pick an organization from the catalog. You see that salon's services only, then book as usual with a hold."
+  },
+  {
+    "source": "client_support_boundaries",
+    "audience": "client",
+    "content": "Client concierge helps discover salons, explain holds/policies, and book. It does not manage merchant staff, admin commissions, or org settings — those are merchant/admin help. If data is missing it says so and suggests the catalog."
+  },
+  {
+    "source": "merchant_console_nav",
+    "audience": "merchant",
+    "content": "Merchant sidebar: Dashboard (/merchant), Calendar (/merchant/calendar), Appointments (/merchant/appointments), Staff (/merchant/staff), Services (/merchant/services), Settings (/merchant/settings). Also profile (/merchant/profile), onboarding (/merchant/onboarding). /org URLs rewrite to /merchant."
+  },
+  {
+    "source": "merchant_register_signin",
+    "audience": "merchant",
+    "content": "How to register a salon: open merchant onboarding (/merchant/onboarding), complete owner signup (Register Salon & Launch Console). New orgs start as pending until platform admin approves. Sign in at /login?portal=merchant or the merchant sign-in modal. Forgot password uses the shared auth forgot-password flow."
+  },
+  {
+    "source": "merchant_pending_approval",
+    "audience": "merchant",
+    "content": "If your salon is pending approval, finish onboarding details and wait for platform admin to Approve under Admin → Salons. Until approved, the salon may not appear fully in the client catalog. If suspended, contact platform support; overdue commission invoices can cause suspension."
+  },
+  {
+    "source": "merchant_profile_lock",
+    "audience": "merchant",
+    "content": "How to update your profile: open Profile (/merchant/profile), edit name/phone/picture, save. Use Lock Session in the sidebar footer to secure the console on a shared device."
+  },
+  {
+    "source": "merchant_dashboard",
+    "audience": "merchant",
+    "content": "Dashboard (/merchant) shows Active Holds, captured revenue, catalog size, compliance/change-request alerts, and recent reservations. Use filters All / Active Holds / Settled / Voided / No-Show. Shortcuts open Calendar, Appointments, Services, Staff. Inspect opens consent receipt; Settle opens the settlement drawer."
+  },
+  {
+    "source": "merchant_calendar",
+    "audience": "merchant",
+    "content": "How to use Calendar: open Calendar (/merchant/calendar). Switch Agenda / Day / Week. Use Previous, Today, Next to move dates. Filter by staff when needed. Click a booking block to open settlement. Availability respects working hours, duration, and simultaneous capacity."
+  },
+  {
+    "source": "merchant_appointments_list",
+    "audience": "merchant",
+    "content": "How to manage appointments: open Appointments (/merchant/appointments). Search and filter Held / Reauth / Captured / No-Show / Voided. Copy booking ref if needed. Shield/inspect shows the cryptographic consent receipt. Settle opens settlement actions."
+  },
+  {
+    "source": "merchant_mark_show",
+    "audience": "merchant",
+    "content": "How to mark show (full capture): Appointments or Calendar → open booking → Settle → Mark Show & Capture Full → Confirm Capture. Captures the full authorized service amount into your approved PayPal merchant account (final capture). Booking becomes COMPLETED. Platform commission accrues on that capture."
+  },
+  {
+    "source": "merchant_mark_noshow",
+    "audience": "merchant",
+    "content": "How to mark no-show: Settle drawer → Mark No-Show (Fee Only) → Confirm No-Show. Captures only the policy no-show penalty with final_capture true and releases the rest to the client. Booking becomes NO_SHOW. Commission accrues on the fee captured, not on the released remainder."
+  },
+  {
+    "source": "merchant_void_cancel",
+    "audience": "merchant",
+    "content": "How to cancel and void a hold: Settle drawer → Cancel Appointment & Void Authorization → Confirm Void. Use when the client cancels within the free window (or you choose not to charge). Hold becomes VOIDED; no commission accrues on voided holds."
+  },
+  {
+    "source": "merchant_reauthorize_hold",
+    "audience": "merchant",
+    "content": "How to reauthorize an aging hold: for appointments more than ~3 days out, PayPal honor period may need Day-4+ REAUTHORIZE. In the settlement drawer when status is Held, use Reauthorize Hold (Extend 72h Window) if shown. Captures use the latest authorization ID; voids still use the parent ID."
+  },
+  {
+    "source": "merchant_create_staff",
+    "audience": "merchant",
+    "content": "How to create staff: Staff (/merchant/staff) → Add team member → first name, last name, work email, temporary password, optional phone/photo → role Stylist or Reception → Add team member. They sign in with that email and temporary password."
+  },
+  {
+    "source": "merchant_edit_remove_staff",
+    "audience": "merchant",
+    "content": "How to edit staff: Staff → find person (All / Stylists / Front Desk / Owners; Cards or Roster view) → Edit details → Save. How to remove: Remove member → confirm. Reassign open appointments before removal. Copy staff ID from the card if needed."
+  },
+  {
+    "source": "merchant_staff_roles",
+    "audience": "merchant",
+    "content": "Merchant roles: Stylist (delivers services), Reception (front desk), Org owner (full salon admin, usually from onboarding). RBAC limits what each role can do inside the org portal."
+  },
+  {
+    "source": "merchant_create_service",
+    "audience": "merchant",
+    "content": "How to create a service: Services (/merchant/services) → Add new service → category, name, description, base price, duration minutes, simultaneous capacity, optional cover image → status Active → Create service. Active services appear in the client catalog after the org is approved."
+  },
+  {
+    "source": "merchant_edit_service",
+    "audience": "merchant",
+    "content": "How to update a service: Services → Edit → change price, duration, capacity, category, images, or status → Save. Deactivate / set Inactive to hide from clients without deleting history. Capacity limits how many clients can take that service at once."
+  },
+  {
+    "source": "merchant_settings_org",
+    "audience": "merchant",
+    "content": "How to update salon settings: Settings (/merchant/settings) → Salon Branding & Details: logo, name, description, timezone, physical address → Save settings. Timezone keeps calendar and holds accurate."
+  },
+  {
+    "source": "merchant_paypal_view",
+    "audience": "merchant",
+    "content": "How to view PayPal merchant account: Settings → PayPal (/merchant/settings/paypal). See merchant ID, email, currency, status (pending/approved/rejected/suspended). Client captures settle 100% into this approved account. Copy merchant ID if needed."
+  },
+  {
+    "source": "merchant_paypal_change_request",
+    "audience": "merchant",
+    "content": "How to change PayPal account: Settings → PayPal → Request PayPal Account Change → enter new merchant details → Submit change request. Track status under Change Request History (pending/approved/rejected). Admin must approve before the new account receives captures."
+  },
+  {
+    "source": "merchant_policy_view",
+    "audience": "merchant",
+    "content": "How to view cancellation policy: Settings → Policies (/merchant/settings/policies). See free-cancel notice hours, no-show fee percent, late cancel percent, hold percent. Only the active approved policy applies to new bookings."
+  },
+  {
+    "source": "merchant_policy_change_request",
+    "audience": "merchant",
+    "content": "How to change cancellation policy: Settings → Policies → Request Policy Amendment → propose new free-cancel window and fees → Submit policy amendment. Draft until admin Approves under Admin → Approvals. Pending requests do not change live bookings yet."
+  },
+  {
+    "source": "merchant_change_request_history",
+    "audience": "merchant",
+    "content": "How to track change requests: on PayPal or Policies settings, open Change Request History. Filter All / pending / approved / rejected. Search by type. Contact admin if a request stays pending too long."
+  },
+  {
+    "source": "merchant_commission_explained",
+    "audience": "merchant",
+    "content": "Merchant commission explained: when you capture a show or no-show fee, money goes to your PayPal. SalonDesk also records a platform commission_record (percentage, flat, or hybrid from category rules snapshotted at booking). Those accruals are billed later on a SaaS commission invoice you pay to SalonDesk — separate from client holds. Voided holds create zero commission."
+  },
+  {
+    "source": "merchant_commission_invoice_help",
+    "audience": "merchant",
+    "content": "Commission invoices: SalonDesk issues periodic org_commission_invoice statements (DRAFT → ISSUED → PAID, or OVERDUE/VOID). Pay issued invoices by the due date. Overdue invoices can lead to organization suspension. If the console does not yet show an invoice pay screen, check dashboard compliance alerts or contact platform admin for the issued invoice / PayPal invoice reference."
+  },
+  {
+    "source": "merchant_commission_questions",
+    "audience": "merchant",
+    "content": "Common merchant commission questions: Why did I get charged a platform fee? — It accrues when you capture, not when the hold is placed. Does commission come out of the client capture? — No; client capture goes 100% to your merchant PayPal; you owe SalonDesk separately via invoice. When is commission zero? — Voided or expired holds with no capture. Who sets the rate? — Platform admin on Commission rules by category."
+  },
+  {
+    "source": "merchant_hold_statuses_help",
+    "audience": "merchant",
+    "content": "Hold statuses merchants see: AUTHORIZED (active hold), REAUTHORIZED (extended), CAPTURED / PARTIALLY_CAPTURED, VOIDED, EXPIRED. Dashboard and appointments filters use Held, Reauth, Captured, No-Show, Voided labels. Settlement actions depend on current status."
+  },
+  {
+    "source": "merchant_help_style",
+    "audience": "merchant",
+    "content": "When helping merchants, give numbered steps with sidebar page and button names (Add team member, Mark Show & Capture Full, Request PayPal Account Change). Explain money and commission clearly. Never book as a client concierge. Ask which screen they are on if unclear."
+  },
+  {
+    "source": "merchant_not_booking_concierge",
+    "audience": "merchant",
+    "content": "Merchant Help is a how-to assistant for the org console. It does not book consumer appointments. Clients use the client app or client AI concierge."
+  },
+  {
+    "source": "admin_console_nav",
+    "audience": "admin",
+    "content": "Admin sidebar: Overview (/admin), Salons (/admin/salons), Approvals (/admin/requests), Commission (/admin/commission), Taxonomy (/admin/taxonomy), Staff (/admin/staff). Also profile (/admin/profile)."
+  },
+  {
+    "source": "admin_overview",
+    "audience": "admin",
+    "content": "Overview (/admin): network KPIs — salon counts, needs review, settled volume, change requests, commission-related volume. Use Refresh and Review salons to jump into pending work."
+  },
+  {
+    "source": "admin_approve_suspend_salon",
+    "audience": "admin",
+    "content": "How to approve or suspend a salon: Salons (/admin/salons) → filter All / Pending / Active / Suspended → open card → Approve Salon or Suspend. Approval lets the org go live in the client catalog. Suspension blocks bookings; overdue commission invoices are a valid suspension reason."
+  },
+  {
+    "source": "admin_approvals_paypal",
+    "audience": "admin",
+    "content": "How to review PayPal change requests: Approvals (/admin/requests) → filter Pending → open PAYPAL_ACCOUNT request → inspect proposed merchant ID/email/currency → Approve or Reject (add notes on reject). Until approved, merchant keeps prior PayPal account."
+  },
+  {
+    "source": "admin_approvals_policy",
+    "audience": "admin",
+    "content": "How to review cancellation policy change requests: Approvals → open CANCELLATION_POLICY request → inspect free-cancel hours, no-show %, late cancel %, hold % → Approve or Reject. Approved policy becomes the org active policy."
+  },
+  {
+    "source": "admin_commission_rules",
+    "audience": "admin",
+    "content": "How to manage commission rules: Commission (/admin/commission) → view take-rate matrix by category → Add Commission Rule or Edit → set name, category, type (percentage / flat / hybrid), rates → Save commission. Rules apply to new bookings via commission_snapshot; accruals happen on capture."
+  },
+  {
+    "source": "admin_commission_billing",
+    "audience": "admin",
+    "content": "Admin SaaS billing duties: ensure commission rules exist; after captures, commission_records accrue; generate/issue periodic org_commission_invoice; track ISSUED / PAID / OVERDUE; suspend orgs with overdue platform invoices when policy requires. Ledger volume on Overview/Commission reflects captured GMV and fee activity."
+  },
+  {
+    "source": "admin_taxonomy",
+    "audience": "admin",
+    "content": "How to manage taxonomy categories: Taxonomy (/admin/taxonomy) → Add category or Edit → name, description, icon → Save category. Merchants pick these when creating services; clients filter the catalog by them. Commission rules often attach to categories."
+  },
+  {
+    "source": "admin_invite_staff",
+    "audience": "admin",
+    "content": "How to invite platform staff: Staff (/admin/staff) → Invite staff → name, corporate email, role (platform admin privileges as offered) → Invite. These are platform operators, not salon stylists. Platform admin can remove staff when that control is available."
+  },
+  {
+    "source": "admin_profile_lock",
+    "audience": "admin",
+    "content": "Admin profile: /admin/profile to update account details. Lock session from the sidebar footer on shared devices. Sign in via /login?portal=admin."
+  },
+  {
+    "source": "admin_help_style",
+    "audience": "admin",
+    "content": "When helping admins, give numbered steps with sidebar page and actions (Approve Salon, Approve/Reject change request, Save commission). Explain commission billing vs merchant PayPal settlement. Never act as client booking concierge."
+  },
+  {
+    "source": "admin_not_booking_concierge",
+    "audience": "admin",
+    "content": "Admin Help explains platform operations. It does not book client appointments or recommend salons to consumers."
+  },
+  {
+    "source": "cross_salon_go_live",
+    "audience": "merchant",
+    "content": "End-to-end go-live for merchants: 1) Register on /merchant/onboarding. 2) Complete Settings (address, timezone). 3) Link PayPal (may need admin approval). 4) Add Services and Staff. 5) Wait for Admin → Salons Approve. 6) Clients can book; you settle on Appointments."
+  },
+  {
+    "source": "cross_capture_to_commission",
+    "audience": "merchant",
+    "content": "From capture to commission: client hold authorizes → you Mark Show or No-Show → PayPal captures to your merchant account → SalonDesk accrues commission_record → later ISSUED invoice for that period → you pay SalonDesk. Ask admin if an invoice is overdue or missing."
   }
 ]

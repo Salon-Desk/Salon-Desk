@@ -1,17 +1,21 @@
 import type { ReactNode } from 'react'
 
+import { type AssistantPortal, portalChrome } from '@/lib/assistant-portal'
 import { cn } from '@/lib/utils'
 
 export interface VoiceAgentShellProps {
   children: ReactNode
+  portal?: AssistantPortal
   className?: string
 }
 
-export function VoiceAgentShell({ children, className }: VoiceAgentShellProps) {
+export function VoiceAgentShell({ children, portal = 'client', className }: VoiceAgentShellProps) {
+  const chrome = portalChrome(portal)
   return (
     <div
       className={cn(
-        'flex flex-1 flex-col items-center justify-center bg-gradient-to-b from-[#FAFAFA] via-white to-amber-50/20 px-6 py-8',
+        'flex flex-1 flex-col items-center justify-center px-6 py-8',
+        chrome.voiceShellBg,
         className,
       )}
     >

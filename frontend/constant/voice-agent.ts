@@ -1,4 +1,4 @@
-/** Copy and defaults for the LiveKit voice concierge UI. */
+/** Shared LiveKit voice UI status strings. Portal-specific copy lives in `lib/assistant-portal`. */
 
 export const VOICE_AGENT_SUGGESTIONS = [
   'Find salons near me',
@@ -8,7 +8,7 @@ export const VOICE_AGENT_SUGGESTIONS = [
 ] as const
 
 export const VOICE_AGENT_STATUS = {
-  connecting: 'Connecting to voice concierge…',
+  connecting: 'Connecting to voice assistant…',
   initializing: 'Getting the room ready…',
   listening: 'Listening — speak or type',
   thinking: 'One moment…',
@@ -16,7 +16,7 @@ export const VOICE_AGENT_STATUS = {
   idle: 'Ready — speak or type below',
   disconnected: 'Session concluded',
   error: 'Voice service unavailable',
-  typePlaceholder: 'Type email or appointment details…',
+  typePlaceholder: 'Type your question…',
   micBlocked: 'Microphone access needed',
 } as const
 

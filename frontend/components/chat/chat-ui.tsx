@@ -3,14 +3,11 @@
 import {
   Bot,
   Building2,
-  Calendar,
   CheckCircle2,
   ChevronDown,
-  MapPin,
   Mic,
   Send,
   ShieldCheck,
-  Sparkles,
   Star,
   X,
 } from 'lucide-react'
@@ -22,6 +19,7 @@ import type {
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
 } from '@/components/chat/useAgentChat'
+import { type AssistantPortal, isSupportPortal, portalChrome } from '@/lib/assistant-portal'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import { cn } from '@/lib/utils'
@@ -41,6 +39,7 @@ export interface ChatMessageItem {
 
 export interface ChatPanelShellProps {
   mode: 'chat' | 'voice'
+  portal?: AssistantPortal
   onModeChange?: (mode: 'chat' | 'voice') => void
   onClose: () => void
   showModeToggle?: boolean
@@ -51,11 +50,15 @@ export function ConciergeAvatar({
   className,
   size = 'md',
   showDot = false,
+  portal = 'client',
 }: {
   className?: string
   size?: 'sm' | 'md' | 'lg'
   showDot?: boolean
+  portal?: AssistantPortal
 }) {
+  const chrome = portalChrome(portal)
+  const Icon = chrome.Icon
   const sizeClasses = {
     sm: 'h-7 w-7 rounded-full',
     md: 'h-9 w-9 rounded-full',
@@ -70,13 +73,14 @@ export function ConciergeAvatar({
   return (
     <div
       className={cn(
-        'relative flex shrink-0 items-center justify-center bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-white shadow-[0_1px_2px_rgba(180,83,9,0.25)]',
+        'relative flex shrink-0 items-center justify-center text-white shadow-[0_1px_2px_rgba(28,25,23,0.2)]',
+        chrome.avatar,
         sizeClasses[size],
         className,
       )}
       aria-hidden="true"
     >
-      <Sparkles className={cn(iconSizes[size], 'text-amber-50')} />
+      <Icon className={cn(iconSizes[size], chrome.avatarIcon)} />
       {showDot && (
         <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
           <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -89,11 +93,16 @@ export function ConciergeAvatar({
 
 export function ChatPanelShell({
   mode,
+  portal = 'client',
   onModeChange,
   onClose,
   showModeToggle = false,
   children,
 }: ChatPanelShellProps) {
+  const chrome = portalChrome(portal)
+  const title = chrome.title
+  const subtitle = mode === 'voice' ? chrome.subtitleVoice : chrome.subtitleChat
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -109,7 +118,7 @@ export function ChatPanelShell({
     <div className="fixed inset-0 z-50 flex flex-col justify-end bg-stone-950/35 backdrop-blur-[2px] sm:block motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
       <button
         type="button"
-        aria-label="Close concierge"
+        aria-label={`Close ${title}`}
         onClick={onClose}
         className="absolute inset-0 h-full w-full cursor-default"
         tabIndex={-1}
@@ -118,8 +127,11 @@ export function ChatPanelShell({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="SalonDesk Concierge"
-        className="relative z-10 flex h-[92dvh] min-h-0 w-full max-w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-stone-200/80 bg-[#F7F5F2] text-stone-900 shadow-[0_24px_64px_-16px_rgba(28,25,23,0.28)] sm:absolute sm:inset-y-3 sm:right-3 sm:left-auto sm:h-auto sm:w-[min(26.5rem,calc(100vw-1.5rem))] sm:rounded-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-6 sm:motion-safe:slide-in-from-right-6 motion-safe:duration-250"
+        aria-label={`SalonDesk ${title}`}
+        className={cn(
+          'relative z-10 flex h-[92dvh] min-h-0 w-full max-w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-stone-200/80 text-stone-900 shadow-[0_24px_64px_-16px_rgba(28,25,23,0.28)] sm:absolute sm:inset-y-3 sm:right-3 sm:left-auto sm:h-auto sm:w-[min(26.5rem,calc(100vw-1.5rem))] sm:rounded-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-6 sm:motion-safe:slide-in-from-right-6 motion-safe:duration-250',
+          chrome.panelBg,
+        )}
       >
         <div className="flex justify-center bg-transparent pb-0.5 pt-2.5 sm:hidden">
           <div className="h-1 w-10 rounded-full bg-stone-300/90" aria-hidden="true" />
@@ -127,12 +139,10 @@ export function ChatPanelShell({
 
         <header className="flex items-center justify-between border-b border-stone-200/70 bg-white/80 px-4 py-2.5 backdrop-blur-xl">
           <div className="flex min-w-0 items-center gap-2.5">
-            <ConciergeAvatar size="md" showDot />
+            <ConciergeAvatar size="md" showDot portal={portal} />
             <div className="min-w-0">
-              <h2 className="text-[13px] font-semibold tracking-tight text-stone-950">Concierge</h2>
-              <p className="truncate text-[11px] font-medium text-stone-500">
-                {mode === 'voice' ? 'Listening — talk naturally' : 'Happy to help you book'}
-              </p>
+              <h2 className="text-[13px] font-semibold tracking-tight text-stone-950">{title}</h2>
+              <p className="truncate text-[11px] font-medium text-stone-500">{subtitle}</p>
             </div>
           </div>
 
@@ -140,7 +150,7 @@ export function ChatPanelShell({
             {showModeToggle && onModeChange && (
               <div
                 role="tablist"
-                aria-label="Concierge mode"
+                aria-label={chrome.modeToggleLabel}
                 className="flex items-center rounded-full border border-stone-200/80 bg-stone-100/90 p-0.5"
               >
                 <button
@@ -149,7 +159,8 @@ export function ChatPanelShell({
                   aria-selected={mode === 'chat'}
                   onClick={() => onModeChange('chat')}
                   className={cn(
-                    'flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500',
+                    'flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2',
+                    chrome.ring,
                     mode === 'chat'
                       ? 'bg-white text-stone-950 shadow-xs'
                       : 'text-stone-500 hover:text-stone-900',
@@ -164,7 +175,8 @@ export function ChatPanelShell({
                   aria-selected={mode === 'voice'}
                   onClick={() => onModeChange('voice')}
                   className={cn(
-                    'flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500',
+                    'flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2',
+                    chrome.ring,
                     mode === 'voice'
                       ? 'bg-white text-stone-950 shadow-xs'
                       : 'text-stone-500 hover:text-stone-900',
@@ -179,8 +191,11 @@ export function ChatPanelShell({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close concierge"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
+              aria-label={`Close ${title}`}
+              className={cn(
+                'flex h-8 w-8 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2',
+                chrome.ring,
+              )}
             >
               <X className="h-4 w-4" />
             </button>
@@ -389,38 +404,11 @@ export function ConfirmedBookingCard({ booking }: { booking: AgentConfirmedBooki
   )
 }
 
-const DEFAULT_WELCOME_SUGGESTIONS = [
-  {
-    label: 'Near me',
-    hint: 'Salons close by',
-    prompt: 'Find salons near me',
-    icon: MapPin,
-  },
-  {
-    label: 'Book a cut',
-    hint: 'Tomorrow around 2',
-    prompt: 'Book haircut tomorrow at 2pm',
-    icon: Calendar,
-  },
-  {
-    label: 'How I pay',
-    hint: 'Nothing leaves today',
-    prompt: 'How does the $0 hold work?',
-    icon: ShieldCheck,
-  },
-  {
-    label: 'What’s on',
-    hint: 'A few popular picks',
-    prompt: 'Show available services',
-    icon: Sparkles,
-  },
-]
-
-const DEFAULT_CHIPS = ['Find salons near me', 'Book a haircut tomorrow', 'How does payment work?']
-
-function conversationChips(messages: ChatMessageItem[]): string[] {
+function conversationChips(messages: ChatMessageItem[], portal: AssistantPortal): string[] {
+  const chrome = portalChrome(portal)
   const lastAssistant = [...messages].reverse().find((msg) => msg.sender === 'assistant')
-  if (!lastAssistant) return DEFAULT_CHIPS
+  if (!lastAssistant) return chrome.chips
+  if (isSupportPortal(portal)) return chrome.chips
   if (lastAssistant.confirmedBooking) {
     return ['What should I bring?', 'Can I change the time?']
   }
@@ -434,7 +422,7 @@ function conversationChips(messages: ChatMessageItem[]): string[] {
   if (lastAssistant.organizations && lastAssistant.organizations.length > 0) {
     return ['Show their services', 'Something closer']
   }
-  return DEFAULT_CHIPS
+  return chrome.chips
 }
 
 export interface ChatConversationProps<T extends ChatMessageItem = ChatMessageItem> {
@@ -447,6 +435,7 @@ export interface ChatConversationProps<T extends ChatMessageItem = ChatMessageIt
   onTryVoice?: () => void
   renderExtras?: (message: T) => React.ReactNode
   suggestions?: string[]
+  portal?: AssistantPortal
   className?: string
 }
 
@@ -460,8 +449,11 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
   onTryVoice,
   renderExtras,
   suggestions,
+  portal = 'client',
   className,
 }: ChatConversationProps<T>) {
+  const chrome = portalChrome(portal)
+  const support = isSupportPortal(portal)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [isScrolledUp, setIsScrolledUp] = useState(false)
@@ -544,13 +536,14 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
 
   const isOnlyWelcome = messages.length === 1 && messages[0].sender === 'assistant'
   const activeChips =
-    suggestions && suggestions.length > 0 ? suggestions : conversationChips(messages)
+    suggestions && suggestions.length > 0 ? suggestions : conversationChips(messages, portal)
   const canSend = Boolean(prompt.trim()) && !isThinking
 
   return (
     <div
       className={cn(
-        'relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#F7F5F2]',
+        'relative flex min-h-0 flex-1 flex-col overflow-hidden',
+        chrome.panelBg,
         className,
       )}
     >
@@ -580,7 +573,11 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
               >
                 {!isUser && (
                   <div className="flex w-7 shrink-0 justify-center">
-                    {isFirstInGroup ? <ConciergeAvatar size="sm" /> : <div className="w-7" />}
+                    {isFirstInGroup ? (
+                      <ConciergeAvatar size="sm" portal={portal} />
+                    ) : (
+                      <div className="w-7" />
+                    )}
                   </div>
                 )}
 
@@ -613,13 +610,13 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                 </span>
               )}
 
-              {!isUser && msg.confirmedBooking && (
+              {!support && !isUser && msg.confirmedBooking && (
                 <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
                   <ConfirmedBookingCard booking={msg.confirmedBooking} />
                 </div>
               )}
 
-              {!isUser && effectiveOrgs.length > 0 && (
+              {!support && !isUser && effectiveOrgs.length > 0 && (
                 <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%] space-y-1.5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
                   <p className="px-0.5 text-[11px] font-medium text-stone-400">
                     {effectiveOrgs.length} salon{effectiveOrgs.length === 1 ? '' : 's'} nearby
@@ -634,7 +631,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                 </div>
               )}
 
-              {!isUser && effectiveRecs.length > 0 && (
+              {!support && !isUser && effectiveRecs.length > 0 && (
                 <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%] space-y-1.5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
                   <p className="px-0.5 text-[11px] font-medium text-stone-400">
                     {effectiveRecs.length === 1
@@ -673,7 +670,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
 
         {isOnlyWelcome && (
           <div className="ml-9 grid w-[calc(100%-2.25rem)] grid-cols-2 gap-2">
-            {DEFAULT_WELCOME_SUGGESTIONS.map((card) => {
+            {chrome.welcomeSuggestions.map((card) => {
               const Icon = card.icon
               return (
                 <button
@@ -681,10 +678,21 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                   type="button"
                   disabled={isThinking}
                   onClick={() => sendPrompt(card.prompt)}
-                  className="flex flex-col items-start rounded-2xl border border-stone-200/80 bg-white p-3 text-left shadow-[0_1px_2px_rgba(28,25,23,0.04)] transition-all hover:border-amber-300 hover:bg-amber-50/40 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-40"
+                  className={cn(
+                    'flex flex-col items-start rounded-2xl border border-stone-200/80 bg-white p-3 text-left shadow-[0_1px_2px_rgba(28,25,23,0.04)] transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 disabled:opacity-40',
+                    chrome.suggestionHover,
+                    chrome.ring,
+                  )}
                 >
-                  <span className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-amber-50 text-amber-700">
-                    <Icon className="h-3.5 w-3.5" />
+                  <span
+                    className={cn(
+                      'mb-2 flex h-9 w-9 items-center justify-center rounded-full',
+                      portal === 'merchant' && 'bg-teal-50 text-teal-700',
+                      portal === 'admin' && 'bg-sky-50 text-sky-700',
+                      portal === 'client' && 'bg-amber-50 text-amber-700',
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
                   </span>
                   <span className="text-[13px] font-semibold text-stone-950">{card.label}</span>
                   <span className="mt-0.5 text-[11px] leading-snug text-stone-500">
@@ -698,16 +706,33 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
 
         {isThinking && (
           <div className="flex max-w-[85%] items-end gap-2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
-            <ConciergeAvatar size="sm" />
+            <ConciergeAvatar size="sm" portal={portal} />
             <div className="rounded-[1.15rem] rounded-bl-md border border-white/80 bg-white px-3.5 py-2.5 shadow-[0_1px_2px_rgba(28,25,23,0.05)]">
-              <span className="sr-only">Concierge is typing</span>
+              <span className="sr-only">{chrome.title} is typing</span>
               <div className="flex items-center gap-2" aria-hidden="true">
                 <div className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 motion-safe:animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 motion-safe:animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 motion-safe:animate-bounce" />
+                  <span
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full motion-safe:animate-bounce [animation-delay:-0.3s]',
+                      chrome.typingDot,
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full motion-safe:animate-bounce [animation-delay:-0.15s]',
+                      chrome.typingDot,
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full motion-safe:animate-bounce',
+                      chrome.typingDot,
+                    )}
+                  />
                 </div>
-                <span className="text-[11px] font-medium text-stone-400">Looking that up…</span>
+                <span className="text-[11px] font-medium text-stone-400">
+                  {chrome.thinkingLabel}
+                </span>
               </div>
             </div>
           </div>
@@ -719,7 +744,10 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
           <button
             type="button"
             onClick={() => scrollToBottom(true)}
-            className="flex items-center gap-1 rounded-full bg-stone-950/95 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-black/15 transition-colors hover:bg-stone-800 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
+            className={cn(
+              'flex items-center gap-1 rounded-full bg-stone-950/95 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-black/15 transition-colors hover:bg-stone-800 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2',
+              chrome.ring,
+            )}
           >
             Latest
             <ChevronDown className="h-3.5 w-3.5" />
@@ -735,7 +763,11 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
               type="button"
               disabled={isThinking}
               onClick={() => sendPrompt(chip)}
-              className="shrink-0 rounded-full border border-stone-200/90 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-600 shadow-[0_1px_1px_rgba(28,25,23,0.04)] transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-950 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
+              className={cn(
+                'shrink-0 rounded-full border border-stone-200/90 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-600 shadow-[0_1px_1px_rgba(28,25,23,0.04)] transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40',
+                chrome.chipHover,
+                chrome.ring,
+              )}
             >
               {chip === SHOW_MORE_PROMPT ? 'A few more' : chip}
             </button>
@@ -752,7 +784,10 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
               onSend()
             }
           }}
-          className="flex items-end gap-2 rounded-[1.35rem] border border-stone-200 bg-stone-50/80 p-1.5 pl-3.5 transition-all focus-within:border-amber-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-amber-500/15"
+          className={cn(
+            'flex items-end gap-2 rounded-[1.35rem] border border-stone-200 bg-stone-50/80 p-1.5 pl-3.5 transition-all focus-within:bg-white focus-within:ring-2',
+            chrome.focusWithin,
+          )}
         >
           <textarea
             ref={textareaRef}
@@ -760,7 +795,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
             value={prompt}
             onChange={(e) => onPromptChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="What are you looking for?"
+            placeholder={chrome.placeholder}
             className="max-h-[120px] flex-1 resize-none bg-transparent py-2 text-[16px] leading-relaxed sm:text-[13px] text-stone-900 placeholder:text-stone-400 focus:outline-hidden"
           />
 
@@ -768,9 +803,15 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
             <button
               type="button"
               onClick={onTryVoice}
-              aria-label="Use voice concierge"
+              aria-label={support ? 'Use voice help' : 'Use voice concierge'}
               title="Talk instead"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-amber-50 hover:text-amber-700 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
+              className={cn(
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-stone-400 transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2',
+                portal === 'merchant' && 'hover:bg-teal-50 hover:text-teal-700',
+                portal === 'admin' && 'hover:bg-sky-50 hover:text-sky-700',
+                portal === 'client' && 'hover:bg-amber-50 hover:text-amber-700',
+                chrome.ring,
+              )}
             >
               <Mic className="h-4 w-4" />
             </button>
@@ -781,8 +822,9 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
             disabled={!canSend}
             aria-label="Send message"
             className={cn(
-              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-xs transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500',
-              canSend ? 'bg-amber-500 hover:bg-amber-600' : 'bg-stone-300',
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-xs transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2',
+              chrome.ring,
+              canSend ? chrome.sendReady : 'bg-stone-300',
             )}
           >
             <Send className="h-3.5 w-3.5" />

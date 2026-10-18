@@ -8,6 +8,7 @@ import { Toaster } from 'sonner'
 import { AuthProvider } from '@/components/auth/auth-context'
 import { AuthModalHost } from '@/components/auth/auth-modal-host'
 import { ChatWidget } from '@/components/chat'
+import { portalFromPathname } from '@/lib/assistant-portal'
 import { getPortalAuthToken } from '@/lib/authSession'
 import { type AppDispatch, store } from '@/store'
 import { hydrateAdminDemo, readAdminDemoFromStorage } from '@/store/adminDemoSlice'
@@ -72,7 +73,8 @@ function GlobalChatWidgetInner() {
   const onClientPortal =
     pathname === '/client' || pathname.startsWith('/client/') || pathname === '/book'
   if (onClientPortal) return null
-  return <ChatWidget showTriggers />
+  const portal = portalFromPathname(pathname)
+  return <ChatWidget showTriggers portal={portal} />
 }
 
 function GlobalChatWidget() {
