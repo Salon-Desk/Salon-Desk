@@ -15,12 +15,16 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-salondesk}
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@127.0.0.1:5432/${POSTGRES_DB:-salondesk}
+      STORAGE_BACKEND: local
+      STORAGE_LOCAL_DIR: /var/lib/salondesk/storage
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost"]}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "${APP_PORT:-80}:80"
     volumes:
       - salondesk_pgdata:/var/lib/postgresql/data
+      - salondesk_uploads:/var/lib/salondesk/storage
 
 volumes:
   salondesk_pgdata:
+  salondesk_uploads:

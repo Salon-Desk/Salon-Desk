@@ -68,7 +68,7 @@ COPY deploy/entrypoint.sh deploy/api-start.sh /app/deploy/
 RUN chmod +x /app/deploy/entrypoint.sh /app/deploy/api-start.sh
 
 ENV PGDATA=/var/lib/postgresql/data
-VOLUME ["/var/lib/postgresql/data"]
+VOLUME ["/var/lib/postgresql/data", "/var/lib/salondesk/storage"]
 
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=5 \

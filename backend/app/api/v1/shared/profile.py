@@ -3,7 +3,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from app.api.deps import CurrentUser, DbSession
 from app.schemas.auth import MeResponse
 from app.schemas.user import ProfileOut, ProfileUpdate, UserOut
-from app.services.storage_service import storage_service
+from app.services.storage_service import StorageUnavailableError, storage_service
 
 router = APIRouter(prefix="/auth", tags=["profile"])
 
@@ -50,12 +50,17 @@ async def upload_avatar(
     data = await file.read()
     if len(data) > 10 * 1024 * 1024:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Image exceeds 10MB limit")
-    _key, url = await storage_service.async_upload_bytes(
-        data=data,
-        filename=file.filename or "avatar.jpg",
-        content_type=file.content_type,
-        folder="avatars",
-    )
+    try:
+        _key, url = await storage_service.async_upload_bytes(
+            data=data,
+            filename=file.filename or "avatar.jpg",
+            content_type=file.content_type,
+            folder="avatars",
+        )
+    except StorageUnavailableError as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, detail="File storage is unavailable"
+        ) from exc
     user.profile.picture = url
     await db.flush()
     return ProfileOut.model_validate(user.profile)

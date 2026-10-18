@@ -126,7 +126,10 @@ class Settings(BaseSettings):
     redis_password: str | None = None
     redis_db: int = 0
 
-    # RustFS Object Storage (S3-compatible)
+    # Object storage. "s3" talks to RustFS (Compose). "local" writes under storage_local_dir
+    # (all-in-one VPS image, which does not run RustFS).
+    storage_backend: Literal["s3", "local"] = "s3"
+    storage_local_dir: str = "/var/lib/salondesk/storage"
     rustfs_endpoint_url: str = "http://localhost:9000"
     rustfs_access_key: str = "rustfsadmin"
     rustfs_secret_key: str = "rustfsadmin"

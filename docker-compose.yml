@@ -84,6 +84,7 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434/v1
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      STORAGE_BACKEND: s3
       RUSTFS_ENDPOINT_URL: http://rustfs:9000
       RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
       RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin}

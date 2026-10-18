@@ -7,6 +7,7 @@ CONTAINER_NAME="${CONTAINER_NAME:-salondesk}"
 PUBLISH_PORT="${APP_PORT:-8080}"
 ENV_FILE="${SALONDESK_ENV_FILE:-/opt/salondesk/.env}"
 VOLUME_NAME="${SALONDESK_PG_VOLUME:-salondesk_pgdata}"
+UPLOADS_VOLUME="${SALONDESK_UPLOADS_VOLUME:-salondesk_uploads}"
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "ERROR: env file not found: $ENV_FILE"
@@ -32,6 +33,7 @@ docker run -d \
   --restart unless-stopped \
   -p "127.0.0.1:${PUBLISH_PORT}:80" \
   -v "${VOLUME_NAME}:/var/lib/postgresql/data" \
+  -v "${UPLOADS_VOLUME}:/var/lib/salondesk/storage" \
   --env-file "$ENV_FILE" \
   "$IMAGE"
 

@@ -3,9 +3,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.core.config import get_settings
 from app.main import create_app
 from app.services.cache_service import CacheService
-from app.services.storage_service import StorageService
+from app.services.storage_service import StorageService, StorageUnavailableError
 
 
 @pytest.mark.asyncio
@@ -47,6 +48,32 @@ async def test_storage_service_upload_and_get():
         assert put_kwargs["Key"] == key
         assert put_kwargs["Body"] == b"image-data"
         assert put_kwargs["ContentType"] == "image/png"
+
+
+def test_local_storage_roundtrip(tmp_path, monkeypatch):
+    monkeypatch.setenv("STORAGE_BACKEND", "local")
+    monkeypatch.setenv("STORAGE_LOCAL_DIR", str(tmp_path))
+    get_settings.cache_clear()
+    try:
+        service = StorageService()
+        key, url = service.upload_bytes(
+            data=b"image-data",
+            filename="logo.png",
+            content_type="image/png",
+            folder="logos",
+        )
+        assert key.startswith("logos/")
+        assert url.endswith(f"/salondesk-assets/{key}")
+        data, content_type = service.get_object(key)
+        assert data == b"image-data"
+        assert content_type == "image/png"
+        assert service.delete_object(key) is True
+        with pytest.raises(FileNotFoundError):
+            service.get_object(key)
+        with pytest.raises(StorageUnavailableError):
+            service.get_object("../etc/passwd")
+    finally:
+        get_settings.cache_clear()
 
 
 @pytest.mark.asyncio

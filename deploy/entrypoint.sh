@@ -32,4 +32,9 @@ fi
 
 export DATABASE_URL="${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}}"
 
+# The all-in-one image has no RustFS process. Persist uploads on a volume.
+export STORAGE_BACKEND="${STORAGE_BACKEND:-local}"
+export STORAGE_LOCAL_DIR="${STORAGE_LOCAL_DIR:-/var/lib/salondesk/storage}"
+mkdir -p "$STORAGE_LOCAL_DIR"
+
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/salondesk.conf
