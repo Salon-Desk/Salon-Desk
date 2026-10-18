@@ -4,7 +4,8 @@ import { CheckCircle2, Clock, Copy, CreditCard, ShieldCheck, Sliders } from 'luc
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
-import { Badge, Card, EmptyState, SearchInput, TablePagination } from '@/components/ui'
+import { Pagination } from '@/components/table/Pagination'
+import { Badge, Card, EmptyState, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { useGetAdminChangeRequestsQuery } from '@/store/api/platformApi'
@@ -316,20 +317,18 @@ export default function AdminRequestsPage() {
           })}
 
           {filteredRequests.length > 0 && (
-            <div className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
-              <TablePagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredRequests.length}
-                pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={(size) => {
-                  setPageSize(size)
-                  setCurrentPage(1)
-                }}
-                pageSizeOptions={[5, 10, 20]}
-              />
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredRequests.length}
+              pageSize={pageSize}
+              setCurrentPage={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                setCurrentPage(1)
+              }}
+              pageSizeOptions={[5, 10, 20]}
+            />
           )}
 
           {filteredRequests.length === 0 && (

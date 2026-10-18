@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { Badge, Card, EmptyState, IconButton, SearchInput, TablePagination } from '@/components/ui'
+import { Pagination } from '@/components/table/Pagination'
+import { Badge, Card, EmptyState, IconButton, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { useGetAdminCategoriesQuery } from '@/store/api/platformApi'
@@ -179,20 +180,18 @@ export default function AdminTaxonomyPage() {
           </div>
 
           {filteredCategories.length > 0 && (
-            <div className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
-              <TablePagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredCategories.length}
-                pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={(size) => {
-                  setPageSize(size)
-                  setCurrentPage(1)
-                }}
-                pageSizeOptions={[4, 6, 12, 24]}
-              />
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredCategories.length}
+              pageSize={pageSize}
+              setCurrentPage={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                setCurrentPage(1)
+              }}
+              pageSizeOptions={[4, 6, 12, 24]}
+            />
           )}
         </div>
       </AdminQueryState>

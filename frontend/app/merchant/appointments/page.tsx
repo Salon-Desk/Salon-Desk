@@ -5,14 +5,8 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import {
-  type Column,
-  DataTable,
-  EmptyState,
-  HoldStateBadge,
-  SearchInput,
-  TablePagination,
-} from '@/components/ui'
+import { Pagination } from '@/components/table/Pagination'
+import { type Column, DataTable, EmptyState, HoldStateBadge, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { formatUsd } from '@/lib/format'
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
@@ -274,7 +268,10 @@ export default function MerchantAppointmentsPage() {
         <div className="relative flex-1 max-w-md">
           <SearchInput
             value={appointmentSearch}
-            onChange={setAppointmentSearch}
+            onChange={(q) => {
+              setAppointmentSearch(q)
+              setCurrentPage(1)
+            }}
             placeholder="Search client, reference, stylist, or status..."
             shortcut="⌘K"
             className="w-full text-xs"
@@ -290,7 +287,10 @@ export default function MerchantAppointmentsPage() {
               <button
                 key={st}
                 type="button"
-                onClick={() => setAppointmentFilter(st)}
+                onClick={() => {
+                  setAppointmentFilter(st)
+                  setCurrentPage(1)
+                }}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -342,17 +342,18 @@ export default function MerchantAppointmentsPage() {
             }
           />
 
-          <TablePagination
+          <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={filteredAppointments.length}
             pageSize={pageSize}
-            onPageChange={setCurrentPage}
+            setCurrentPage={setCurrentPage}
             onPageSizeChange={(size) => {
               setPageSize(size)
               setCurrentPage(1)
             }}
             pageSizeOptions={[5, 10, 20, 50]}
+            className="rounded-t-none border-t border-border shadow-none"
           />
         </div>
       ) : null}

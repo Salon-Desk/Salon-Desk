@@ -612,14 +612,17 @@ export function BasicDataGrid<T>({
         </Table>
       </div>
 
-      {showPagination && totalPages > 1 && (
-        <div className="w-full ">
+      {showPagination && resolvedTotalItems > 0 && (
+        <div className="w-full">
           {renderPageNumbers(
             currentPage,
             totalPages,
             resolvedTotalItems,
             itemsPerPageState,
             handlePageChange,
+            {
+              className: 'rounded-t-none border-t border-border shadow-none',
+            },
           )}
         </div>
       )}

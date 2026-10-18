@@ -5,7 +5,8 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { Badge, Card, EmptyState, IconButton, SearchInput, TablePagination } from '@/components/ui'
+import { Pagination } from '@/components/table/Pagination'
+import { Badge, Card, EmptyState, IconButton, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { formatUsd } from '@/lib/format'
 import { useGetCatalogCategoriesQuery } from '@/store/slice/catalogApi'
@@ -112,7 +113,10 @@ export default function MerchantServicesPage() {
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)] sm:flex-row sm:items-center sm:justify-between">
         <SearchInput
           value={searchQuery}
-          onChange={setSearchQuery}
+          onChange={(q) => {
+            setSearchQuery(q)
+            setCurrentPage(1)
+          }}
           placeholder="Search by service name or description…"
           shortcut="⌘K"
           className="w-full sm:max-w-xs text-xs"
@@ -128,7 +132,10 @@ export default function MerchantServicesPage() {
               <button
                 key={id}
                 type="button"
-                onClick={() => setSelectedCategory(id)}
+                onClick={() => {
+                  setSelectedCategory(id)
+                  setCurrentPage(1)
+                }}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -283,20 +290,18 @@ export default function MerchantServicesPage() {
         </div>
 
         {filteredServices.length > 0 && (
-          <div className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
-            <TablePagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={filteredServices.length}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size)
-                setCurrentPage(1)
-              }}
-              pageSizeOptions={[6, 9, 15, 30]}
-            />
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredServices.length}
+            pageSize={pageSize}
+            setCurrentPage={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setCurrentPage(1)
+            }}
+            pageSizeOptions={[6, 9, 15, 30]}
+          />
         )}
       </div>
 

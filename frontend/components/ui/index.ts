@@ -24,7 +24,12 @@ export {
   TextField,
 } from './form'
 export { Drawer, type DrawerProps, Modal, type ModalProps } from './modal'
-export { TablePagination, type TablePaginationProps } from './pagination'
+export {
+  Pagination,
+  type PaginationProps,
+  TablePagination,
+  type TablePaginationProps,
+} from './pagination'
 export { SearchInput, type SearchInputProps } from './search-input'
 export { SectionHeading, type SectionHeadingProps } from './section-heading'
 export {

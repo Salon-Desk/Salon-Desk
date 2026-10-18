@@ -24,6 +24,7 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
+import { Pagination } from '@/components/table/Pagination'
 import {
   Badge,
   Card,
@@ -32,7 +33,6 @@ import {
   IconButton,
   SegmentedControl,
   StatCard,
-  TablePagination,
 } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import {
@@ -216,7 +216,10 @@ export default function MerchantStaffPage() {
               type="text"
               placeholder="Search by name, email, or phone…"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setCurrentPage(1)
+              }}
               className="h-9.5 w-full rounded-lg border border-slate-200/80 bg-slate-50/50 pr-4 pl-9 text-xs text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 transition-all"
             />
           </div>
@@ -226,7 +229,10 @@ export default function MerchantStaffPage() {
             <SegmentedControl
               options={roleFilterOptions}
               value={roleFilter}
-              onChange={setRoleFilter}
+              onChange={(val) => {
+                setRoleFilter(val)
+                setCurrentPage(1)
+              }}
               variant="pills"
               className="h-9.5"
             />
@@ -460,20 +466,18 @@ export default function MerchantStaffPage() {
             })}
           </div>
 
-          <div className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
-            <TablePagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={filteredEmployees.length}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size)
-                setCurrentPage(1)
-              }}
-              pageSizeOptions={[6, 9, 15, 30]}
-            />
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredEmployees.length}
+            pageSize={pageSize}
+            setCurrentPage={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setCurrentPage(1)
+            }}
+            pageSizeOptions={[6, 9, 15, 30]}
+          />
         </div>
       ) : null}
 
@@ -624,17 +628,18 @@ export default function MerchantStaffPage() {
             </table>
           </div>
 
-          <TablePagination
+          <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={filteredEmployees.length}
             pageSize={pageSize}
-            onPageChange={setCurrentPage}
+            setCurrentPage={setCurrentPage}
             onPageSizeChange={(size) => {
               setPageSize(size)
               setCurrentPage(1)
             }}
             pageSizeOptions={[6, 10, 20, 50]}
+            className="rounded-t-none border-t border-border shadow-none"
           />
         </div>
       ) : null}

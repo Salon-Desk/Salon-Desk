@@ -4,7 +4,8 @@ import { Clock, CreditCard, Edit2, Percent, Plus, RefreshCw } from 'lucide-react
 import { useMemo, useState } from 'react'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { Badge, Card, EmptyState, IconButton, SearchInput, TablePagination } from '@/components/ui'
+import { Pagination } from '@/components/table/Pagination'
+import { Badge, Card, EmptyState, IconButton, SearchInput } from '@/components/ui'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { formatUsd } from '@/lib/format'
 import {
@@ -232,17 +233,18 @@ export default function AdminCommissionPage() {
               </table>
             </div>
 
-            <TablePagination
+            <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               totalItems={filteredCommissions.length}
               pageSize={pageSize}
-              onPageChange={setCurrentPage}
+              setCurrentPage={setCurrentPage}
               onPageSizeChange={(size) => {
                 setPageSize(size)
                 setCurrentPage(1)
               }}
               pageSizeOptions={[5, 8, 15, 30]}
+              className="rounded-t-none border-t border-border shadow-none"
             />
           </Card>
         ) : null}

@@ -5,7 +5,8 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { Badge, Card, EmptyState, SearchInput, TablePagination } from '@/components/ui'
+import { Pagination } from '@/components/table/Pagination'
+import { Badge, Card, EmptyState, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import {
@@ -127,7 +128,10 @@ export default function AdminSalonsPage() {
               <button
                 key={key}
                 type="button"
-                onClick={() => setFilter(key)}
+                onClick={() => {
+                  setFilter(key)
+                  setCurrentPage(1)
+                }}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -150,7 +154,10 @@ export default function AdminSalonsPage() {
         <div className="w-full sm:w-72">
           <SearchInput
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={(q) => {
+              setSearchQuery(q)
+              setCurrentPage(1)
+            }}
             placeholder="Search salon name or UUID…"
             shortcut="⌘K"
             className="w-full text-xs"
@@ -260,20 +267,18 @@ export default function AdminSalonsPage() {
           })}
 
           {organizations.length > 0 && (
-            <div className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
-              <TablePagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={organizations.length}
-                pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={(size) => {
-                  setPageSize(size)
-                  setCurrentPage(1)
-                }}
-                pageSizeOptions={[5, 8, 16, 32]}
-              />
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={organizations.length}
+              pageSize={pageSize}
+              setCurrentPage={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                setCurrentPage(1)
+              }}
+              pageSizeOptions={[5, 8, 16, 32]}
+            />
           )}
 
           {organizations.length === 0 && (
