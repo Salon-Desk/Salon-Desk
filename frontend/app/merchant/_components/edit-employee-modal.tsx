@@ -9,10 +9,11 @@ import FormProvider from '@/components/forms/FormProvider'
 import RHFDropeDown from '@/components/forms/RHFDropeDown'
 import RHFPhoneField from '@/components/forms/RHFPhoneField'
 import RHFTextField from '@/components/forms/RHFTextField'
+import { RHFUploadImage } from '@/components/forms/RHFUploadImage'
 import { Modal } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { zodResolver } from '@/lib/schema/resolver'
-import { useUpdateMyEmployeeMutation } from '@/store/slice/organizationApi'
+import { useUpdateMyEmployeeMutation, useUploadEmployeeAvatarMutation } from '@/store/api/orgApi'
 import type { User } from '@/types/user'
 
 import { type EditEmployeeFormData, editEmployeeSchema } from '../_schemas/staff.schema'
@@ -24,7 +25,10 @@ interface EditEmployeeModalProps {
 }
 
 export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModalProps) {
-  const [updateEmployee, { isLoading }] = useUpdateMyEmployeeMutation()
+  const [updateEmployee, { isLoading: isUpdating }] = useUpdateMyEmployeeMutation()
+  const [uploadAvatar, { isLoading: isUploading }] = useUploadEmployeeAvatarMutation()
+
+  const isLoading = isUpdating || isUploading
 
   const methods = useForm<EditEmployeeFormData>({
     resolver: zodResolver(editEmployeeSchema),
@@ -34,7 +38,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
       middle_name: '',
       phone: '',
       role: 'stylist',
-      picture: '',
+      picture: null,
     },
     mode: 'onBlur',
   })
@@ -47,7 +51,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
         middle_name: employee.profile?.middle_name || '',
         phone: employee.profile?.phone || employee.phone || '',
         role: employee.role === 'reception' ? 'reception' : 'stylist',
-        picture: employee.profile?.picture || '',
+        picture: employee.profile?.picture || null,
       })
     }
   }, [employee, open, methods])
@@ -55,6 +59,19 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
   const onSubmit = async (data: EditEmployeeFormData) => {
     if (!employee) return
     try {
+      // Handle avatar upload if a new file is provided
+      let pictureUrl = data.picture
+      if (data.picture instanceof File) {
+        const formData = new FormData()
+        formData.append('file', data.picture)
+        const updatedUser = await uploadAvatar({ employeeId: employee.id, file: formData }).unwrap()
+        pictureUrl = updatedUser.profile?.picture || null
+      } else if (data.picture === null) {
+        pictureUrl = null
+      } else {
+        pictureUrl = employee.profile?.picture || null
+      }
+
       await updateEmployee({
         employeeId: employee.id,
         data: {
@@ -63,7 +80,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
           middle_name: data.middle_name?.trim() || null,
           phone: data.phone?.trim() || null,
           role: data.role,
-          picture: data.picture?.trim() || null,
+          picture: pictureUrl,
         },
       }).unwrap()
       toast.success('Team member updated', toastColor.success)
@@ -100,6 +117,10 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
             <span className="font-mono text-slate-600">{employee.email}</span>
           </div>
 
+          <div className="flex justify-center">
+            <RHFUploadImage name="picture" label="Profile photo" size={96} />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <RHFTextField name="first_name" label="First name" isRequired />
             <RHFTextField name="last_name" label="Last name" isRequired />
@@ -113,13 +134,6 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
           />
 
           <RHFPhoneField name="phone" label="Phone number" isRequired={false} />
-
-          <RHFTextField
-            name="picture"
-            label="Profile Image URL"
-            isRequired={false}
-            placeholder="https://images.unsplash.com/..."
-          />
 
           {!isOwner ? (
             <RHFDropeDown

@@ -151,6 +151,15 @@ export const orgApi = baseApi.injectEndpoints({
       invalidatesTags: ['user', 'organizations'],
     }),
 
+    uploadEmployeeAvatar: builder.mutation<User, { employeeId: string; file: FormData }>({
+      query: ({ employeeId, file }) => ({
+        url: `/api/v1/organizations/me/employees/${employeeId}/avatar`,
+        method: 'POST',
+        data: file,
+      }),
+      invalidatesTags: ['user', 'organizations'],
+    }),
+
     getMyServices: builder.query<
       ApiPage<ApiOrgService>,
       {
@@ -187,6 +196,15 @@ export const orgApi = baseApi.injectEndpoints({
         url: `/api/v1/organizations/me/services/${serviceId}`,
         method: 'PATCH',
         data: body,
+      }),
+      invalidatesTags: ['organizations', 'catalog'],
+    }),
+
+    uploadServiceImage: builder.mutation<ApiOrgService, { serviceId: string; file: FormData }>({
+      query: ({ serviceId, file }) => ({
+        url: `/api/v1/organizations/me/services/${serviceId}/images`,
+        method: 'POST',
+        data: file,
       }),
       invalidatesTags: ['organizations', 'catalog'],
     }),
@@ -336,9 +354,11 @@ export const {
   useCreateMyEmployeeMutation,
   useUpdateMyEmployeeMutation,
   useDeleteMyEmployeeMutation,
+  useUploadEmployeeAvatarMutation,
   useGetMyServicesQuery,
   useCreateMyServiceMutation,
   useUpdateMyServiceMutation,
+  useUploadServiceImageMutation,
   useGetMyChangeRequestsQuery,
   useCreateMyChangeRequestMutation,
   useGetMyOrgAccountQuery,

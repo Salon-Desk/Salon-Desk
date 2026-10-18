@@ -10,6 +10,7 @@ import RHFDropeDown from '@/components/forms/RHFDropeDown'
 import RHFNumberField from '@/components/forms/RHFNumberField'
 import RHFTextArea from '@/components/forms/RHFTextArea'
 import RHFTextField from '@/components/forms/RHFTextField'
+import RHFUploadImage from '@/components/forms/RHFUploadImage'
 import { Modal } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { zodResolver } from '@/lib/schema/resolver'
@@ -17,6 +18,7 @@ import { useGetCatalogCategoriesQuery } from '@/store/slice/catalogApi'
 import {
   useCreateMyServiceMutation,
   useUpdateMyServiceMutation,
+  useUploadServiceImageMutation,
 } from '@/store/slice/organizationApi'
 import type { ApiOrgService } from '@/types/api-org'
 
@@ -37,7 +39,8 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
   const categories = categoriesData?.items ?? []
   const [createService, { isLoading: creating }] = useCreateMyServiceMutation()
   const [updateService, { isLoading: updating }] = useUpdateMyServiceMutation()
-  const isLoading = creating || updating
+  const [uploadServiceImage, { isLoading: uploadingImage }] = useUploadServiceImageMutation()
+  const isLoading = creating || updating || uploadingImage
 
   const methods = useForm<OrgServiceFormData>({
     resolver: zodResolver(orgServiceSchema),
@@ -56,6 +59,7 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
         duration_minutes: editing.duration_minutes,
         simultaneous_capacity: editing.simultaneous_capacity,
         status: editing.status === 'inactive' ? 'inactive' : 'active',
+        images: editing.images || { cover: null, additional: [] },
       })
     } else {
       methods.reset({
@@ -80,9 +84,18 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
             status: data.status,
           },
         }).unwrap()
+
+        // Handle image upload if a new file was selected
+        const coverImage = data.images?.cover
+        if (coverImage && typeof coverImage !== 'string') {
+          const formData = new FormData()
+          formData.append('file', coverImage)
+          await uploadServiceImage({ serviceId: editing.id, file: formData }).unwrap()
+        }
+
         toast.success('Service updated', toastColor.success)
       } else {
-        await createService({
+        const createdService = await createService({
           service_category_id: data.service_category_id ?? '',
           name: (data.name ?? '').trim(),
           description: data.description?.trim() || null,
@@ -90,6 +103,15 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
           duration_minutes: data.duration_minutes,
           simultaneous_capacity: data.simultaneous_capacity,
         }).unwrap()
+
+        // Handle image upload if a new file was selected
+        const coverImage = data.images?.cover
+        if (coverImage && typeof coverImage !== 'string') {
+          const formData = new FormData()
+          formData.append('file', coverImage)
+          await uploadServiceImage({ serviceId: createdService.id, file: formData }).unwrap()
+        }
+
         toast.success('Service created', toastColor.success)
       }
       onClose()
@@ -116,6 +138,7 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
         }}
       >
         <div className="space-y-3 text-xs">
+          <RHFUploadImage name="images.cover" label="Service cover image" size={128} />
           <RHFDropeDown
             name="service_category_id"
             label="Category"

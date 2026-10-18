@@ -1,6 +1,7 @@
 'use client'
 
 import { Clock, Edit2, Loader2, Plus, Scissors } from 'lucide-react'
+import Image from 'next/image'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -9,6 +10,7 @@ import { Pagination } from '@/components/table/Pagination'
 import { Badge, Card, EmptyState, IconButton, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { formatUsd } from '@/lib/format'
+import { resolveImageSrc, shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import { useGetCatalogCategoriesQuery } from '@/store/slice/catalogApi'
 import { useGetMyServicesQuery, useUpdateMyServiceMutation } from '@/store/slice/organizationApi'
 import type { ApiOrgService } from '@/types/api-org'
@@ -226,6 +228,22 @@ export default function MerchantServicesPage() {
                 className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
               >
                 <div className="space-y-2.5">
+                  {/* Cover Image */}
+                  {service.images &&
+                  typeof service.images === 'object' &&
+                  'cover' in service.images &&
+                  service.images.cover ? (
+                    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-slate-100">
+                      <Image
+                        src={resolveImageSrc(service.images.cover as string)}
+                        alt={service.name}
+                        fill
+                        className="object-cover"
+                        unoptimized={shouldUnoptimizeImage(service.images.cover as string)}
+                      />
+                    </div>
+                  ) : null}
+
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="font-bold text-base text-slate-900 tracking-tight">

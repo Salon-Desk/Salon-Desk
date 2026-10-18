@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
 
 from app.api.deps import DbSession, OrgMember, OrgOwner
@@ -18,6 +18,7 @@ from app.schemas.service import (
     ServiceOut,
     ServiceUpdate,
 )
+from app.services.storage_service import StorageUnavailableError, storage_service
 
 router = APIRouter(prefix="/organizations", tags=["org"])
 
@@ -115,3 +116,41 @@ async def add_service_giver(
     db.add(row)
     await db.flush()
     return ServiceGivingOut.model_validate(row)
+
+
+@router.post("/me/services/{service_id}/images", response_model=ServiceOut)
+async def upload_service_image(
+    service_id: UUID,
+    file: UploadFile = File(...),
+    user: OrgOwner = None,
+    db: DbSession = None,
+) -> ServiceOut:
+    """Upload a cover image for a service."""
+    result = await db.execute(
+        select(Service).where(Service.id == service_id, Service.organization_id == user.org_id)
+    )
+    service = result.scalar_one_or_none()
+    if service is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Service not found")
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Uploaded file must be an image")
+    data = await file.read()
+    if len(data) > 10 * 1024 * 1024:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Image exceeds 10MB limit")
+    try:
+        _key, url = await storage_service.async_upload_bytes(
+            data=data,
+            filename=file.filename or "service-cover.jpg",
+            content_type=file.content_type,
+            folder="services",
+        )
+    except StorageUnavailableError as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, detail="File storage is unavailable"
+        ) from exc
+    # Update the cover image in the images dict
+    if not isinstance(service.images, dict):
+        service.images = {}
+    service.images["cover"] = url
+    await db.flush()
+    return ServiceOut.model_validate(service)

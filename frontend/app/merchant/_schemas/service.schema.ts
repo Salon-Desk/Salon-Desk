@@ -10,6 +10,12 @@ export const orgServiceSchema = z.object({
   duration_minutes: z.coerce.number().int().min(1, 'Duration must be at least 1 minute'),
   simultaneous_capacity: z.coerce.number().int().min(1).default(1),
   status: z.enum(['active', 'inactive']).optional(),
+  images: z
+    .object({
+      cover: z.union([z.string().url().nullable(), z.instanceof(File)]).optional(),
+      additional: z.array(z.string().url()).optional(),
+    })
+    .optional(),
 })
 
 export type OrgServiceFormData = z.infer<typeof orgServiceSchema>
@@ -22,4 +28,8 @@ export const orgServiceDefaultValues: OrgServiceFormData = {
   duration_minutes: 60,
   simultaneous_capacity: 1,
   status: 'active',
+  images: {
+    cover: null,
+    additional: [],
+  },
 }

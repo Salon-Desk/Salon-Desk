@@ -13,6 +13,7 @@ export const createEmployeeSchema = z.object({
   middle_name: z.string().trim().optional().nullable(),
   phone: optionalAuthPhoneSchema,
   role: employeeRoleSchema,
+  picture: z.any().optional(),
 })
 
 export type CreateEmployeeFormData = z.infer<typeof createEmployeeSchema>
@@ -33,7 +34,7 @@ export const editEmployeeSchema = z.object({
   middle_name: z.string().trim().optional().nullable(),
   phone: optionalAuthPhoneSchema,
   role: employeeRoleSchema,
-  picture: z.string().trim().optional().nullable(),
+  picture: z.any().optional(),
 })
 
 export type EditEmployeeFormData = z.infer<typeof editEmployeeSchema>

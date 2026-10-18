@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -14,6 +14,7 @@ from app.models.enums import (
 from app.models.user import Profile, User
 from app.schemas.common import MessageOut, PageOut
 from app.schemas.user import EmployeeCreate, EmployeeUpdate, UserOut
+from app.services.storage_service import StorageUnavailableError, storage_service
 
 router = APIRouter(prefix="/organizations", tags=["org"])
 
@@ -176,3 +177,53 @@ async def remove_employee(employee_id: UUID, user: OrgOwner, db: DbSession) -> M
     employee.status = UserStatus.INACTIVE
     await db.flush()
     return MessageOut(detail="Employee deactivated")
+
+
+@router.post("/me/employees/{employee_id}/avatar", response_model=UserOut)
+async def upload_employee_avatar(
+    employee_id: UUID,
+    file: UploadFile = File(...),
+    user: OrgOwner = None,
+    db: DbSession = None,
+) -> UserOut:
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.profile))
+        .where(User.id == employee_id, User.org_id == user.org_id)
+    )
+    employee = result.scalar_one_or_none()
+    if employee is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Employee not found")
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Uploaded file must be an image")
+    data = await file.read()
+    if len(data) > 10 * 1024 * 1024:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Image exceeds 10MB limit")
+    try:
+        _key, url = await storage_service.async_upload_bytes(
+            data=data,
+            filename=file.filename or "avatar.jpg",
+            content_type=file.content_type,
+            folder="employee-avatars",
+        )
+    except StorageUnavailableError as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, detail="File storage is unavailable"
+        ) from exc
+
+    if employee.profile is None:
+        profile = Profile(
+            user_id=employee.id,
+            first_name="",
+            last_name="",
+            picture=url,
+        )
+        db.add(profile)
+    else:
+        employee.profile.picture = url
+
+    await db.flush()
+    result = await db.execute(
+        select(User).options(selectinload(User.profile)).where(User.id == employee_id)
+    )
+    return UserOut.model_validate(result.scalar_one())

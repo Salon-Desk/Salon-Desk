@@ -230,3 +230,4 @@ const RHFUploadImage = ({
 }
 
 export default RHFUploadImage
+export { RHFUploadImage }
