@@ -417,7 +417,6 @@ export function MerchantConsole() {
             simulatedDrift={state.simulatedDrift}
             onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
             onToggleDrift={handleToggleDrift}
-            onOpenCopilot={() => setIsCopilotOpen(true)}
           />
         }
       >

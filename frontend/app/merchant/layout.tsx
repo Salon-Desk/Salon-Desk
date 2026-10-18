@@ -151,7 +151,6 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
             simulatedDrift={state.simulatedDrift}
             onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
             onToggleDrift={handleToggleDrift}
-            onOpenCopilot={() => setIsCopilotOpen(true)}
           />
         }
       >

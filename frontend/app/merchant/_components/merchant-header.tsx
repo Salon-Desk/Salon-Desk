@@ -1,10 +1,9 @@
 'use client'
 
-import { Menu, Sparkles } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 import { UserMenu } from '@/components/auth/user-menu'
-import { Button } from '@/components/ui'
 
 import {
   getMerchantTabFromPathname,
@@ -18,13 +17,11 @@ interface MerchantHeaderProps {
   simulatedDrift?: boolean
   onOpenMobileSidebar: () => void
   onToggleDrift?: () => void
-  onOpenCopilot: () => void
 }
 
 export function MerchantHeader({
   activeTab: explicitTab,
   onOpenMobileSidebar,
-  onOpenCopilot,
 }: MerchantHeaderProps) {
   const pathname = usePathname()
   const currentTab = explicitTab || getMerchantTabFromPathname(pathname)
@@ -53,16 +50,6 @@ export function MerchantHeader({
       </div>
 
       <div className="flex items-center gap-2.5">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onOpenCopilot}
-          className="rounded-lg border-amber-300/80 bg-amber-50/40 px-3 py-1.5 text-xs font-semibold text-amber-900 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:bg-amber-100/60 hover:border-amber-400"
-        >
-          <Sparkles className="h-3.5 w-3.5 mr-1.5 text-amber-600" />
-          <span>AI Copilot</span>
-        </Button>
-
         <UserMenu portal="merchant" />
       </div>
     </header>
