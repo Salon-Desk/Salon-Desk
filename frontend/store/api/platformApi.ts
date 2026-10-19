@@ -1,3 +1,4 @@
+import type { ClientFeedbackItem } from '@/types/api-feedback'
 import {
   type AdminDashboard,
   type ApiChangeRequest,
@@ -246,6 +247,44 @@ export const platformApi = baseApi.injectEndpoints({
       invalidatesTags: ['admin', 'payments', 'organizations'],
     }),
 
+    getAdminClientFeedback: builder.query<
+      ApiPage<ClientFeedbackItem>,
+      { page?: number; page_size?: number; status?: string } | void
+    >({
+      query: (params) => ({
+        url: '/api/v1/admin/client-feedback',
+        method: 'GET',
+        params: params || { status: 'pending' },
+      }),
+      transformResponse: (res: ApiPage<ClientFeedbackItem> | ClientFeedbackItem[]) =>
+        normalizePaginated(res),
+      providesTags: ['admin'],
+    }),
+
+    approveAdminClientFeedback: builder.mutation<
+      ClientFeedbackItem,
+      { feedbackId: string; moderation_notes?: string | null }
+    >({
+      query: ({ feedbackId, moderation_notes }) => ({
+        url: `/api/v1/admin/client-feedback/${feedbackId}/approve`,
+        method: 'POST',
+        data: { moderation_notes: moderation_notes ?? null },
+      }),
+      invalidatesTags: ['admin', 'catalog', 'dashboard'],
+    }),
+
+    rejectAdminClientFeedback: builder.mutation<
+      ClientFeedbackItem,
+      { feedbackId: string; moderation_notes?: string | null }
+    >({
+      query: ({ feedbackId, moderation_notes }) => ({
+        url: `/api/v1/admin/client-feedback/${feedbackId}/reject`,
+        method: 'POST',
+        data: { moderation_notes: moderation_notes ?? null },
+      }),
+      invalidatesTags: ['admin', 'catalog', 'dashboard'],
+    }),
+
     voidAdminCommissionInvoice: builder.mutation<OrgCommissionInvoice, string>({
       query: (invoiceId) => ({
         url: `/api/v1/admin/commission-invoices/${invoiceId}/void`,
@@ -277,6 +316,9 @@ export const {
   useCreateAdminCommissionInvoiceMutation,
   useIssueAdminCommissionInvoiceMutation,
   useVoidAdminCommissionInvoiceMutation,
+  useGetAdminClientFeedbackQuery,
+  useApproveAdminClientFeedbackMutation,
+  useRejectAdminClientFeedbackMutation,
 } = platformApi
 
 /** @deprecated Use `platformApi` — kept for existing imports. */

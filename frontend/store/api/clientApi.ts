@@ -13,6 +13,11 @@ import type {
   LiveKitTokenResponse,
   PaymentHold,
 } from '@/types/api-booking'
+import type {
+  CatalogStaffMember,
+  ClientFeedbackItem,
+  CreateClientFeedbackBody,
+} from '@/types/api-feedback'
 import {
   type ApiPage,
   type ApiServiceCategory,
@@ -127,6 +132,47 @@ export const clientApi = baseApi.injectEndpoints({
         method: 'GET',
       }),
       providesTags: ['catalog'],
+    }),
+
+    getCatalogOrgStaff: builder.query<ApiPage<CatalogStaffMember>, string>({
+      query: (orgId) => ({
+        url: `/api/v1/catalog/organizations/${orgId}/staff`,
+        method: 'GET',
+      }),
+      transformResponse: (res: ApiPage<CatalogStaffMember> | CatalogStaffMember[]) =>
+        normalizePaginated(res),
+      providesTags: (_result, _err, orgId) => [{ type: 'catalog', id: `staff-${orgId}` }],
+    }),
+
+    getCatalogOrgFeedback: builder.query<
+      ApiPage<ClientFeedbackItem>,
+      { orgId: string; stylistId?: string; page_size?: number }
+    >({
+      query: ({ orgId, stylistId, page_size = 12 }) => ({
+        url: `/api/v1/catalog/organizations/${orgId}/feedback`,
+        method: 'GET',
+        params: {
+          page_size,
+          ...(stylistId ? { stylist_id: stylistId } : {}),
+        },
+      }),
+      transformResponse: (res: ApiPage<ClientFeedbackItem> | ClientFeedbackItem[]) =>
+        normalizePaginated(res),
+      providesTags: (_result, _err, arg) => [{ type: 'catalog', id: `feedback-${arg.orgId}` }],
+    }),
+
+    getMyFeedback: builder.query<ClientFeedbackItem[], void>({
+      query: () => ({ url: '/api/v1/feedback/me', method: 'GET' }),
+      providesTags: ['bookings'],
+    }),
+
+    submitClientFeedback: builder.mutation<ClientFeedbackItem, CreateClientFeedbackBody>({
+      query: (body) => ({
+        url: '/api/v1/feedback',
+        method: 'POST',
+        data: body,
+      }),
+      invalidatesTags: ['bookings', 'catalog'],
     }),
 
     getCatalogCancellationPolicy: builder.query<
@@ -259,6 +305,10 @@ export const {
   useGetCatalogServiceQuery,
   useLazyGetCatalogServiceQuery,
   useGetCatalogCancellationPolicyQuery,
+  useGetCatalogOrgStaffQuery,
+  useGetCatalogOrgFeedbackQuery,
+  useGetMyFeedbackQuery,
+  useSubmitClientFeedbackMutation,
   useCreateBookingMutation,
   useGetMyBookingsQuery,
   useGetBookingAvailabilityQuery,

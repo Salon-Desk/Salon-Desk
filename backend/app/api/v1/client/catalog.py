@@ -1,4 +1,5 @@
 import contextlib
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -7,14 +8,17 @@ from sqlalchemy import Float, Select, cast, func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DbSession
+from app.core.exceptions import NotFoundError
 from app.core.pagination import paginate_items
 from app.models.enums import OrganizationStatus, OrgCancellationPolicyStatus, ServiceStatus
 from app.models.organization import Organization, OrgSettings
 from app.models.policy import OrgCancellationPolicy
 from app.models.service import Service, ServiceCategory
 from app.schemas.common import PageOut
+from app.schemas.feedback import CatalogStaffOut, ClientFeedbackOut, OrgFeedbackSummaryOut
 from app.schemas.organization import CatalogHeroOut, CatalogOrganizationOut
 from app.schemas.service import CatalogServiceOut, CatalogServicesPage, ServiceCategoryOut
+from app.services import feedback_service
 from app.services.cache_service import cache_service
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
@@ -183,6 +187,7 @@ async def get_organization(org_id: UUID, db: DbSession) -> CatalogOrganizationOu
     if org is None or org.status != OrganizationStatus.APPROVED:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Organization not found")
     settings = org.settings
+    rating_avg, review_count = await feedback_service.org_feedback_summary(db, org.id)
     return CatalogOrganizationOut(
         id=org.id,
         name=org.name,
@@ -192,7 +197,55 @@ async def get_organization(org_id: UUID, db: DbSession) -> CatalogOrganizationOu
         lat=settings.lat if settings else None,
         lng=settings.lng if settings else None,
         timezone=settings.timezone if settings else None,
+        rating_avg=rating_avg,
+        review_count=review_count,
     )
+
+
+@router.get("/organizations/{org_id}/staff", response_model=PageOut[CatalogStaffOut])
+async def list_organization_staff(org_id: UUID, db: DbSession) -> PageOut[CatalogStaffOut]:
+    try:
+        rows = await feedback_service.list_catalog_staff(db, org_id)
+    except NotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
+    items = [CatalogStaffOut.model_validate(row) for row in rows]
+    total = len(items)
+    return PageOut(items=items, page=1, page_size=max(total, 1), total=total, has_more=False)
+
+
+@router.get("/organizations/{org_id}/feedback-summary", response_model=OrgFeedbackSummaryOut)
+async def get_organization_feedback_summary(org_id: UUID, db: DbSession) -> OrgFeedbackSummaryOut:
+    rating_avg, review_count = await feedback_service.org_feedback_summary(db, org_id)
+    return OrgFeedbackSummaryOut(org_id=org_id, rating_avg=rating_avg, review_count=review_count)
+
+
+@router.get("/organizations/{org_id}/feedback", response_model=PageOut[ClientFeedbackOut])
+async def list_organization_feedback(
+    org_id: UUID,
+    db: DbSession,
+    stylist_id: UUID | None = Query(default=None, description="Stylist-specific reviews"),
+    page_size: int = Query(default=12, ge=1, le=50),
+) -> PageOut[ClientFeedbackOut]:
+    try:
+        rows = await feedback_service.list_public_feedback(
+            db, org_id=org_id, stylist_id=stylist_id, limit=page_size
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
+    items: list[ClientFeedbackOut] = []
+    for row in rows:
+        service_name = None
+        if row.booking and row.booking.booking_services:
+            bs = row.booking.booking_services[0]
+            if getattr(bs, "service", None):
+                service_name = bs.service.name
+        items.append(
+            ClientFeedbackOut.model_validate(
+                feedback_service.feedback_to_out(row, service_name=service_name)
+            )
+        )
+    total = len(items)
+    return PageOut(items=items, page=1, page_size=page_size, total=total, has_more=False)
 
 
 class CatalogCancellationPolicyOut(BaseModel):
@@ -376,6 +429,8 @@ async def list_services(
 
 @router.get("/services/{service_id}", response_model=CatalogServiceOut)
 async def get_service(service_id: UUID, db: DbSession) -> CatalogServiceOut:
+    from app.services.commission_service import commission_amount, commission_rule_for_service
+
     result = await db.execute(
         select(Service)
         .options(
@@ -387,4 +442,13 @@ async def get_service(service_id: UUID, db: DbSession) -> CatalogServiceOut:
     service = result.scalar_one_or_none()
     if service is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Service not found")
-    return _service_to_out(service)
+    rule = await commission_rule_for_service(db, service)
+    platform_fee = commission_amount(rule, service.base_price)
+    hold_total = (service.base_price + platform_fee).quantize(Decimal("0.01"))
+    out = _service_to_out(service)
+    return out.model_copy(
+        update={
+            "platform_commission_amount": platform_fee,
+            "authorization_hold_amount": hold_total,
+        }
+    )

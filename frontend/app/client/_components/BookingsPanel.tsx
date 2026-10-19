@@ -1,9 +1,20 @@
 'use client'
 
-import { Calendar, Clock, FileText, Lock, Plus, Shield, User, XCircle } from 'lucide-react'
+import {
+  AlertTriangle,
+  Calendar,
+  Clock,
+  FileText,
+  Lock,
+  Plus,
+  Shield,
+  User,
+  XCircle,
+} from 'lucide-react'
 import Image from 'next/image'
 
 import { EmptyState, HoldStateBadge } from '@/components/ui'
+import { buildCancelOutcomePreview } from '@/lib/booking/cancel-policy'
 import { formatBookingRef, formatUsd } from '@/lib/format'
 import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import type { Booking } from '@/types'
@@ -12,7 +23,7 @@ interface BookingsPanelProps {
   activeHolds: Booking[]
   pastBookings: Booking[]
   onBrowseCatalog: () => void
-  onCancel: (bookingId: string) => void
+  onCancel: (booking: Booking) => void
   onViewReceipt: (booking: Booking) => void
 }
 
@@ -86,7 +97,7 @@ export function BookingsPanel({
               <ActiveHoldCard
                 key={booking.id}
                 booking={booking}
-                onCancel={onCancel}
+                onCancel={() => onCancel(booking)}
                 onViewReceipt={onViewReceipt}
               />
             ))}
@@ -215,9 +226,17 @@ function ActiveHoldCard({
   onViewReceipt,
 }: {
   booking: Booking
-  onCancel: (bookingId: string) => void
+  onCancel: () => void
   onViewReceipt: (booking: Booking) => void
 }) {
+  const cancelPreview = buildCancelOutcomePreview({
+    totalPrice: booking.servicePrice,
+    agreedNoShowFee: booking.noShowFee,
+    agreedLateCancelFee: booking.lateCancelFee,
+    freeCancelDeadlineAt: booking.freeCancelDeadlineAt ?? booking.authExpiresAt,
+    policySnapshot: booking.policySnapshot,
+  })
+
   return (
     <div className="flex flex-col justify-between rounded-3xl border border-stone-200/60 bg-white p-4 transition-all hover:border-stone-300 sm:p-7">
       <div>
@@ -284,11 +303,39 @@ function ActiveHoldCard({
             <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
               Cancellation
             </span>
-            <div className="font-medium text-emerald-700">
-              Free until {booking.freeCancelDeadlineLabel || booking.authExpiresAt}
+            <div
+              className={
+                cancelPreview.withinFreeWindow
+                  ? 'font-medium text-emerald-700'
+                  : 'font-medium text-amber-800'
+              }
+            >
+              {cancelPreview.withinFreeWindow
+                ? `Free until ${booking.freeCancelDeadlineLabel || booking.authExpiresAt}`
+                : `Late fee ${formatUsd(cancelPreview.lateCancelFee)} if you cancel now`}
             </div>
           </div>
         </div>
+
+        {!cancelPreview.withinFreeWindow ? (
+          <div className="mb-5 flex gap-2.5 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-3.5 py-3 text-xs leading-relaxed text-amber-950">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <p>
+              The free-cancellation window ended on{' '}
+              <span className="font-semibold">{cancelPreview.freeCancelDeadlineLabel}</span>.
+              Cancelling now captures{' '}
+              <span className="font-semibold">{formatUsd(cancelPreview.lateCancelFee)}</span> (
+              {cancelPreview.lateCancelPct}% of {formatUsd(booking.servicePrice)}) from your PayPal
+              hold. Missing the visit without cancelling may incur the no-show fee of{' '}
+              {formatUsd(cancelPreview.noShowFee)}.
+            </p>
+          </div>
+        ) : (
+          <p className="mb-5 rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-3.5 py-2.5 text-xs leading-relaxed text-emerald-900">
+            Cancel before {cancelPreview.freeCancelDeadlineLabel} to release your hold at{' '}
+            {formatUsd(0)}.
+          </p>
+        )}
 
         {booking.customerNotes ? (
           <p className="mb-5 flex items-start gap-2 rounded-xl bg-stone-50 px-3.5 py-2.5 text-xs text-stone-600">
@@ -321,12 +368,23 @@ function ActiveHoldCard({
 
         <button
           type="button"
-          onClick={() => onCancel(booking.id)}
+          onClick={onCancel}
           className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs sm:text-sm font-medium py-2.5 px-4 transition-colors cursor-pointer"
         >
           <XCircle className="h-3.5 w-3.5 text-rose-600" />
-          <span className="sm:hidden">Cancel ($0)</span>
-          <span className="hidden sm:inline">Cancel & Void ($0)</span>
+          {cancelPreview.withinFreeWindow ? (
+            <>
+              <span className="sm:hidden">Cancel ($0)</span>
+              <span className="hidden sm:inline">Cancel & release hold ($0)</span>
+            </>
+          ) : (
+            <>
+              <span className="sm:hidden">Cancel ({formatUsd(cancelPreview.chargeAmount)})</span>
+              <span className="hidden sm:inline">
+                Cancel ({formatUsd(cancelPreview.chargeAmount)} late fee)
+              </span>
+            </>
+          )}
         </button>
       </div>
     </div>
@@ -334,6 +392,15 @@ function ActiveHoldCard({
 }
 
 function SettlementLabel({ booking }: { booking: Booking }) {
+  if (booking.cancellationFeeCharged != null && booking.cancellationFeeCharged > 0) {
+    const label =
+      booking.cancellationFeeReason === 'late_cancel' ? 'late cancel fee' : 'cancellation fee'
+    return (
+      <span className="font-medium text-amber-800">
+        {formatUsd(booking.cancellationFeeCharged)} {label}
+      </span>
+    )
+  }
   if (booking.status === 'CAPTURED') {
     return (
       <span className="font-medium text-emerald-700">

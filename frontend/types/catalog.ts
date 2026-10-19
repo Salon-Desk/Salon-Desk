@@ -7,6 +7,8 @@ export interface SalonService {
   category: ServiceCategory
   durationMin: number
   price: number
+  /** Platform fee included in the PayPal authorization hold (checkout detail API). */
+  platformCommission?: number
   holdDeposit: number
   noShowFee: number
   description: string

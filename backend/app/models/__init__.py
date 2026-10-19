@@ -17,6 +17,7 @@ from app.models.enums import (
     UserRole,
     UserStatus,
 )
+from app.models.feedback import ClientFeedback
 from app.models.knowledge import KnowledgeChunk
 from app.models.ledger import (
     CommissionRecord,
@@ -62,6 +63,7 @@ __all__ = [
     "PlatformCommission",
     "CommissionRecord",
     "OrgCommissionInvoice",
+    "ClientFeedback",
     "KnowledgeChunk",
     "KnowledgeEntityType",
     "UserRole",

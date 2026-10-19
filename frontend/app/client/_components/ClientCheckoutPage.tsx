@@ -3,7 +3,7 @@
 import { AlertTriangle, Loader2, SearchX } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
@@ -11,13 +11,15 @@ import { useAuthModal } from '@/components/auth/auth-context'
 import { toastColor } from '@/constant/toast-color'
 import { useBookingContext } from '@/hooks'
 import { ROUTES } from '@/lib/constants'
-import { ANY_AVAILABLE_STYLIST, INITIAL_STAFF, stylistForCategory } from '@/lib/data/catalog'
+import { ANY_AVAILABLE_STYLIST } from '@/lib/data/catalog'
 import { createIdempotencyKey } from '@/lib/ids'
 import { mapApiBookingToUi, mapCatalogServiceToSalonService } from '@/lib/mappers/booking'
+import { mapCatalogStaffToUi } from '@/lib/mappers/staff'
 import {
   useCreateBookingConsentMutation,
   useCreateBookingMutation,
   useCreatePaymentHoldMutation,
+  useGetCatalogOrgStaffQuery,
   useGetCatalogServiceQuery,
 } from '@/store/api/clientApi'
 import { isAuthenticatedSelector, isClientUser, userSelector } from '@/store/authSlice'
@@ -37,10 +39,9 @@ export function checkoutPath(serviceId: string, opts: { slot?: string | null; st
   return `${ROUTES.clientBook}/${serviceId}${qs ? `?${qs}` : ''}`
 }
 
-function findStylist(id?: string | null): StaffMember | null {
-  if (!id) return null
-  if (id === ANY_AVAILABLE_STYLIST.id) return ANY_AVAILABLE_STYLIST
-  return INITIAL_STAFF.find((s) => s.id === id) ?? null
+function findStylist(id: string | null | undefined, staff: StaffMember[]): StaffMember {
+  if (!id || id === ANY_AVAILABLE_STYLIST.id) return ANY_AVAILABLE_STYLIST
+  return staff.find((s) => s.id === id) ?? ANY_AVAILABLE_STYLIST
 }
 
 export interface ClientCheckoutPageProps {
@@ -64,14 +65,20 @@ export function ClientCheckoutPage({
   const { openAuthModal } = useAuthModal()
 
   const { data: catalog, isLoading, isError, refetch } = useGetCatalogServiceQuery(serviceId)
+  const orgId = catalog?.organization_id ?? ''
+  const { data: staffPage, isLoading: staffLoading } = useGetCatalogOrgStaffQuery(orgId, {
+    skip: !orgId,
+  })
+  const staffOptions = useMemo(
+    () => (staffPage?.items ?? []).map(mapCatalogStaffToUi),
+    [staffPage?.items],
+  )
   const service = useMemo(
     () => (catalog ? mapCatalogServiceToSalonService(catalog) : null),
     [catalog],
   )
 
-  const [pickedStylist, setPickedStylist] = useState<StaffMember | null>(() =>
-    findStylist(initialStylistId),
-  )
+  const [pickedStylist, setPickedStylist] = useState<StaffMember>(ANY_AVAILABLE_STYLIST)
   const [startsAt, setStartsAt] = useState<string | null>(() =>
     initialSlot && !Number.isNaN(Date.parse(initialSlot)) ? initialSlot : null,
   )
@@ -82,8 +89,12 @@ export function ClientCheckoutPage({
   const [createConsent] = useCreateBookingConsentMutation()
   const [createHold] = useCreatePaymentHoldMutation()
 
-  const stylist =
-    pickedStylist ?? (service ? stylistForCategory(service.category) : INITIAL_STAFF[0])
+  const stylist = pickedStylist
+
+  useEffect(() => {
+    if (!initialStylistId) return
+    setPickedStylist(findStylist(initialStylistId, staffOptions))
+  }, [initialStylistId, staffOptions])
 
   const handleApprove = async () => {
     if (!catalog || !service || !startsAt) {
@@ -112,7 +123,7 @@ export function ClientCheckoutPage({
         org_id: catalog.organization_id,
         starts_at: startsAt,
         service_ids: [catalog.id],
-        stylist_id: null,
+        stylist_id: stylist.id === ANY_AVAILABLE_STYLIST.id ? null : stylist.id,
         customer_notes: `Booked via client portal · ${stylist.name}`,
       }).unwrap()
 
@@ -221,6 +232,8 @@ export function ClientCheckoutPage({
     <PayPalHoldCheckout
       service={service}
       stylist={stylist}
+      staffOptions={staffOptions}
+      staffLoading={staffLoading}
       startsAt={startsAt}
       step={step}
       confirmedBooking={confirmedBooking}

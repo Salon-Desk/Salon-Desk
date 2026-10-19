@@ -99,6 +99,10 @@ export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
           <span className="font-semibold text-amber-900">{formatUsd(booking.holdAmount)}</span>
         </div>
         <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">
+          <span className="text-amber-900">Late cancellation fee</span>
+          <span className="font-semibold text-amber-900">{formatUsd(booking.lateCancelFee)}</span>
+        </div>
+        <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">
           <span className="text-amber-900">Agreed no-show fee</span>
           <span className="font-semibold text-amber-900">{formatUsd(booking.noShowFee)}</span>
         </div>
@@ -106,10 +110,19 @@ export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
           <span className="text-amber-900">Free cancel until</span>
           <span className="font-semibold text-amber-900">{booking.freeCancelDeadlineLabel}</span>
         </div>
-        <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">
-          <span className="text-emerald-800">Charged today</span>
-          <span className="font-semibold text-emerald-800">{formatUsd(0)}</span>
-        </div>
+        {booking.cancellationFeeCharged != null && booking.cancellationFeeCharged > 0 ? (
+          <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">
+            <span className="text-rose-800">Cancellation charge</span>
+            <span className="font-semibold text-rose-800">
+              {formatUsd(booking.cancellationFeeCharged)}
+            </span>
+          </div>
+        ) : (
+          <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">
+            <span className="text-emerald-800">Charged today</span>
+            <span className="font-semibold text-emerald-800">{formatUsd(0)}</span>
+          </div>
+        )}
         <p className="mt-2 text-[11px] leading-relaxed text-amber-800/80">
           PayPal authorization only. Settlement uses the locked booking-time price and policy.
           Cancel before {booking.freeCancelDeadlineLabel} to release the hold at {formatUsd(0)}.

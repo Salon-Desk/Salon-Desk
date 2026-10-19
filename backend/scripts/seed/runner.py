@@ -270,7 +270,14 @@ async def _add_authorized_booking(
         **DEFAULT_CANCELLATION_POLICY,
     }
     no_show_pct = Decimal(str(DEFAULT_CANCELLATION_POLICY.get("no_show_fee_percent", 50)))
+    late_pct = Decimal(
+        str(
+            DEFAULT_CANCELLATION_POLICY.get("late_cancel_fee_percent")
+            or DEFAULT_CANCELLATION_POLICY.get("no_show_fee_percent", 50)
+        )
+    )
     agreed_no_show = (service.base_price * no_show_pct / Decimal("100")).quantize(Decimal("0.01"))
+    agreed_late_cancel = (service.base_price * late_pct / Decimal("100")).quantize(Decimal("0.01"))
     commission_rule = {
         "type": "percentage",
         "percentage": str(DEFAULT_COMMISSION_RATE),
@@ -285,8 +292,11 @@ async def _add_authorized_booking(
         ends_at=starts_at + timedelta(minutes=service.duration_minutes),
         status=BookingStatus.CONFIRMED,
         total_price=service.base_price,
-        agreed_hold_amount=service.base_price,
+        agreed_hold_amount=(
+            service.base_price + Decimal(str(commission_rule.get("amount") or "0"))
+        ).quantize(Decimal("0.01")),
         agreed_no_show_fee=agreed_no_show,
+        agreed_late_cancel_fee=agreed_late_cancel,
         free_cancel_deadline_at=starts_at
         - timedelta(hours=int(DEFAULT_CANCELLATION_POLICY.get("free_cancel_hours", 24))),
         policy_snapshot_json=policy_snapshot,

@@ -52,6 +52,10 @@ async def _ensure_enum_values(conn) -> None:
         ("org_commission_invoice_status", "PAID"),
         ("org_commission_invoice_status", "OVERDUE"),
         ("org_commission_invoice_status", "VOID"),
+        ("payment_capture_type", "LATE_CANCEL"),
+        ("feedback_moderation_status", "pending"),
+        ("feedback_moderation_status", "approved"),
+        ("feedback_moderation_status", "rejected"),
     ):
         await conn.execute(
             text(
@@ -140,6 +144,17 @@ async def _ensure_additive_columns(conn) -> None:
             UPDATE booking
             SET agreed_hold_amount = COALESCE(agreed_hold_amount, total_price),
                 agreed_no_show_fee = COALESCE(agreed_no_show_fee, ROUND(total_price * 0.5, 2)),
+                agreed_late_cancel_fee = COALESCE(
+                    agreed_late_cancel_fee,
+                    ROUND(
+                        total_price * COALESCE(
+                            NULLIF((policy_snapshot_json->>'late_cancel_fee_percent')::numeric, 0),
+                            NULLIF((policy_snapshot_json->>'no_show_fee_percent')::numeric, 0),
+                            25
+                        ) / 100,
+                        2
+                    )
+                ),
                 free_cancel_deadline_at = COALESCE(
                     free_cancel_deadline_at,
                     starts_at - INTERVAL '24 hours'
@@ -154,6 +169,7 @@ async def _ensure_additive_columns(conn) -> None:
                 )
             WHERE agreed_hold_amount IS NULL
                OR agreed_no_show_fee IS NULL
+               OR agreed_late_cancel_fee IS NULL
                OR free_cancel_deadline_at IS NULL
                OR policy_snapshot_json IS NULL
                OR commission_snapshot IS NULL

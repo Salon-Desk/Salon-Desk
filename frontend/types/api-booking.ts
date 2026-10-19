@@ -18,6 +18,7 @@ export interface ApiBooking {
   total_price: string | number
   agreed_hold_amount: string | number
   agreed_no_show_fee: string | number
+  agreed_late_cancel_fee?: string | number
   free_cancel_deadline_at: string
   policy_snapshot_json: Record<string, unknown>
   commission_snapshot: Record<string, unknown>

@@ -5,6 +5,7 @@ import pytest
 
 from app.core.exceptions import PolicyViolationException
 from app.services.policy_engine import (
+    agreed_late_cancel_fee,
     agreed_no_show_fee,
     assert_deposit_within_ceiling,
     can_self_cancel,
@@ -38,6 +39,22 @@ def test_free_cancel_deadline_at() -> None:
 
 def test_agreed_no_show_fee_percent() -> None:
     fee = agreed_no_show_fee(
+        total_price=Decimal("100.00"),
+        policy_data={"no_show_fee_percent": 50},
+    )
+    assert fee == Decimal("50.00")
+
+
+def test_agreed_late_cancel_fee_uses_late_percent() -> None:
+    fee = agreed_late_cancel_fee(
+        total_price=Decimal("1000.00"),
+        policy_data={"late_cancel_fee_percent": 25, "no_show_fee_percent": 50},
+    )
+    assert fee == Decimal("250.00")
+
+
+def test_agreed_late_cancel_fee_falls_back_to_no_show_percent() -> None:
+    fee = agreed_late_cancel_fee(
         total_price=Decimal("100.00"),
         policy_data={"no_show_fee_percent": 50},
     )

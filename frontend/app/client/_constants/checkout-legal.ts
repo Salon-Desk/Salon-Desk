@@ -24,7 +24,7 @@ export const TERMS_OF_SERVICE: LegalSection[] = [
   },
   {
     heading: 'Payment for the service',
-    body: 'After a completed appointment the salon captures the service price from the hold. Tips and add-ons agreed at the salon may be settled separately.',
+    body: 'After a completed appointment the salon captures the service price and platform fee from the hold you authorized at checkout. Tips and add-ons agreed at the salon may be settled separately.',
   },
   {
     heading: 'Changes and disputes',

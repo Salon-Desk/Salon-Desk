@@ -9,7 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.models.booking import Booking
-from app.models.enums import CommissionRecordStatus, OrgCommissionInvoiceStatus
+from app.models.enums import (
+    CommissionRecordStatus,
+    OrgCommissionInvoiceStatus,
+    PaymentCaptureType,
+)
 from app.models.ledger import CommissionRecord, OrgCommissionInvoice
 from app.models.payment import PaymentCapture
 from app.services.payment_service import append_ledger
@@ -44,11 +48,21 @@ async def accrue_commission_for_capture(
         return found
 
     applied = dict(booking.commission_snapshot or {})
-    if applied.get("percentage") is not None or applied.get("flat") is not None:
-        platform_fee = _commission_from_snapshot(capture.amount, applied)
-    elif applied.get("amount") is not None and booking.total_price and booking.total_price > 0:
-        ratio = capture.amount / booking.total_price
-        platform_fee = (Decimal(str(applied["amount"])) * ratio).quantize(Decimal("0.01"))
+    gross_service_base = booking.total_price or Decimal("0")
+    if applied.get("amount") is not None and gross_service_base > 0:
+        full_platform = Decimal(str(applied["amount"]))
+        if capture.capture_type == PaymentCaptureType.FULL and capture.amount >= (
+            gross_service_base + full_platform
+        ).quantize(Decimal("0.01")):
+            platform_fee = full_platform
+        else:
+            ratio = capture.amount / gross_service_base
+            platform_fee = (full_platform * ratio).quantize(Decimal("0.01"))
+    elif applied.get("percentage") is not None or applied.get("flat") is not None:
+        platform_fee = _commission_from_snapshot(gross_service_base, applied)
+        if gross_service_base > 0 and capture.amount < gross_service_base:
+            ratio = capture.amount / gross_service_base
+            platform_fee = (platform_fee * ratio).quantize(Decimal("0.01"))
     else:
         platform_fee = Decimal("0.00")
 

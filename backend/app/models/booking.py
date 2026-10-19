@@ -45,6 +45,7 @@ class Booking(TimestampedModel):
     total_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     agreed_hold_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     agreed_no_show_fee: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    agreed_late_cancel_fee: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     free_cancel_deadline_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )

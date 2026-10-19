@@ -527,6 +527,7 @@ export function AdminDashboard() {
             categoryCount={state.categories.length}
             staffCount={state.platformUsers.length}
             pendingCrCount={metrics.pendingCrCount}
+            pendingReviewCount={0}
             pendingSalonCount={metrics.pendingCount}
             currentUser={state.currentUser}
             onLockSession={handleLockSession}

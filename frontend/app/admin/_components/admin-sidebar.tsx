@@ -4,6 +4,7 @@ import {
   Building2,
   Layers,
   Lock,
+  MessageSquareQuote,
   Percent,
   PieChart,
   Receipt,
@@ -27,6 +28,7 @@ interface AdminSidebarProps {
   categoryCount: number
   staffCount: number
   pendingCrCount: number
+  pendingReviewCount: number
   pendingSalonCount: number
   currentUser: PlatformUser
   onLockSession: () => void
@@ -40,6 +42,7 @@ export function AdminSidebar({
   categoryCount,
   staffCount,
   pendingCrCount,
+  pendingReviewCount,
   pendingSalonCount,
   currentUser,
   onLockSession,
@@ -69,6 +72,15 @@ export function AdminSidebar({
       badge: pendingCrCount,
       isAlert: pendingCrCount > 0,
       href: ADMIN_TAB_ROUTES.requests,
+    },
+    {
+      id: 'reviews',
+      label: ADMIN_TAB_LABELS.reviews,
+      icon: MessageSquareQuote,
+      group: ADMIN_NAV_GROUPS[1],
+      badge: pendingReviewCount,
+      isAlert: pendingReviewCount > 0,
+      href: ADMIN_TAB_ROUTES.reviews,
     },
     {
       id: 'commission',

@@ -38,5 +38,6 @@ class AdminDashboardOut(BaseModel):
     approved_organizations: int
     suspended_organizations: int
     pending_change_requests: int
+    pending_client_feedback: int = 0
     ledger_entry_count: int
     ledger_amount_sum: Decimal

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import demo
-from app.api.v1.client import assistant, bookings, catalog, chat, livekit, payments
+from app.api.v1.client import assistant, bookings, catalog, chat, feedback, livekit, payments
 from app.api.v1.org import (
     bookings as org_bookings,
 )
@@ -17,7 +17,16 @@ from app.api.v1.org import (
 from app.api.v1.org import (
     settings as org_settings,
 )
-from app.api.v1.platform import analytics, categories, commissions, invoices, orgs, requests, users
+from app.api.v1.platform import (
+    analytics,
+    categories,
+    commissions,
+    feedback_reviews,
+    invoices,
+    orgs,
+    requests,
+    users,
+)
 from app.api.v1.shared import auth, profile, storage
 from app.api.v1.webhooks import paypal
 
@@ -37,6 +46,7 @@ for platform_router in (
     commissions.router,
     invoices.router,
     requests.router,
+    feedback_reviews.router,
 ):
     api_router.include_router(platform_router)
 
@@ -51,6 +61,7 @@ api_router.include_router(finance.router)
 
 # Client application
 api_router.include_router(catalog.router)
+api_router.include_router(feedback.router)
 api_router.include_router(bookings.router)
 api_router.include_router(payments.router)
 api_router.include_router(chat.router)

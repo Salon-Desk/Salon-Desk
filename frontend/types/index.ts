@@ -1,6 +1,7 @@
 export type * from './agent-status'
 export type * from './api'
 export type * from './api-booking'
+export type * from './api-feedback'
 export type * from './api-org'
 export type * from './booking'
 export type * from './catalog'

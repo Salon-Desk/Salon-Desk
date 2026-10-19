@@ -6,6 +6,7 @@ export const ADMIN_TAB_TITLES: Record<AdminTabId, string> = {
   overview: 'Overview',
   salons: 'Salons',
   requests: 'Approvals',
+  reviews: 'Client reviews',
   commission: 'Commission',
   billing: 'Billing',
   taxonomy: 'Taxonomy',
@@ -16,6 +17,7 @@ export const ADMIN_TAB_LABELS: Record<AdminTabId, string> = {
   overview: 'Overview',
   salons: 'Salons',
   requests: 'Approvals',
+  reviews: 'Reviews',
   commission: 'Commission',
   billing: 'Billing',
   taxonomy: 'Taxonomy',
@@ -26,6 +28,7 @@ export const ADMIN_TAB_SUBTITLES: Record<AdminTabId, string> = {
   overview: 'Network performance, authorization hold volume, and KPIs.',
   salons: 'Partner salon directory and PayPal credentials.',
   requests: 'Merchant policy and payout change requests.',
+  reviews: 'Moderate client salon and stylist reviews before they go public.',
   commission: 'Platform take-rate rules by service category — separate from SaaS invoices.',
   billing: 'SaaS commission invoices issued to salon organizations.',
   taxonomy: 'Discovery categories and service classification.',
@@ -36,6 +39,7 @@ export const ADMIN_TAB_ROUTES: Record<AdminTabId, string> = {
   overview: '/admin',
   salons: '/admin/salons',
   requests: '/admin/requests',
+  reviews: '/admin/reviews',
   commission: '/admin/commission',
   billing: '/admin/billing',
   taxonomy: '/admin/taxonomy',
@@ -45,6 +49,7 @@ export const ADMIN_TAB_ROUTES: Record<AdminTabId, string> = {
 export function getAdminTabFromPathname(pathname: string): AdminTabId {
   if (pathname.startsWith('/admin/salons')) return 'salons'
   if (pathname.startsWith('/admin/requests')) return 'requests'
+  if (pathname.startsWith('/admin/reviews')) return 'reviews'
   if (pathname.startsWith('/admin/commission')) return 'commission'
   if (pathname.startsWith('/admin/billing')) return 'billing'
   if (pathname.startsWith('/admin/taxonomy')) return 'taxonomy'

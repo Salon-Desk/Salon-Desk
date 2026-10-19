@@ -335,8 +335,14 @@ async def capture_hold(
     if hold is None:
         raise NotFoundError("No active payment hold for booking")
 
+    snapshot = booking.commission_snapshot or {}
+    platform_fee_on_booking = Decimal(str(snapshot.get("amount") or "0"))
+    full_settlement_amount = (booking.total_price + platform_fee_on_booking).quantize(
+        Decimal("0.01")
+    )
+
     if capture_type == PaymentCaptureType.FULL:
-        capture_amount = amount if amount is not None else booking.total_price
+        capture_amount = amount if amount is not None else full_settlement_amount
         final_capture = True
     elif capture_type == PaymentCaptureType.NO_SHOW_FEE:
         capture_amount = amount if amount is not None else booking.agreed_no_show_fee
@@ -345,6 +351,14 @@ async def capture_hold(
             raise PolicyViolationException(
                 f"No-show fee {capture_amount} exceeds agreed_no_show_fee "
                 f"{booking.agreed_no_show_fee}"
+            )
+    elif capture_type == PaymentCaptureType.LATE_CANCEL:
+        capture_amount = amount if amount is not None else booking.agreed_late_cancel_fee
+        final_capture = True
+        if capture_amount > booking.agreed_late_cancel_fee:
+            raise PolicyViolationException(
+                f"Late-cancel fee {capture_amount} exceeds agreed_late_cancel_fee "
+                f"{booking.agreed_late_cancel_fee}"
             )
     else:
         capture_amount = amount if amount is not None else hold.amount
@@ -355,9 +369,11 @@ async def capture_hold(
             f"Capture {capture_amount} would exceed authorized ceiling "
             f"(remaining {remaining} of {hold.amount})"
         )
-    if capture_type == PaymentCaptureType.FULL and capture_amount > booking.total_price:
+    if capture_type == PaymentCaptureType.FULL and capture_amount > full_settlement_amount:
         raise PolicyViolationException(
-            f"Full capture {capture_amount} exceeds booking total_price {booking.total_price}"
+            f"Full capture {capture_amount} exceeds agreed settlement "
+            f"{full_settlement_amount} (service {booking.total_price} + platform fee "
+            f"{platform_fee_on_booking})"
         )
 
     paypal = PayPalRestClient()
@@ -389,6 +405,8 @@ async def capture_hold(
     if capture_type == PaymentCaptureType.FULL:
         booking.status = BookingStatus.COMPLETED
         event_type = "FULL_PAYMENT_CAPTURED"
+    elif capture_type == PaymentCaptureType.LATE_CANCEL:
+        event_type = "LATE_CANCEL_FEE_CAPTURED"
     elif capture_type == PaymentCaptureType.NO_SHOW_FEE:
         if booking.status != BookingStatus.CANCELLED:
             booking.status = BookingStatus.NO_SHOW

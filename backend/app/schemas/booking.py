@@ -73,6 +73,7 @@ class BookingOut(ORMModel):
     total_price: Decimal
     agreed_hold_amount: Decimal
     agreed_no_show_fee: Decimal
+    agreed_late_cancel_fee: Decimal
     free_cancel_deadline_at: datetime
     policy_snapshot_json: dict
     commission_snapshot: dict
@@ -134,6 +135,7 @@ def booking_to_out(booking) -> BookingOut:
         total_price=booking.total_price,
         agreed_hold_amount=booking.agreed_hold_amount,
         agreed_no_show_fee=booking.agreed_no_show_fee,
+        agreed_late_cancel_fee=booking.agreed_late_cancel_fee,
         free_cancel_deadline_at=booking.free_cancel_deadline_at,
         policy_snapshot_json=booking.policy_snapshot_json or {},
         commission_snapshot=booking.commission_snapshot or {},

@@ -135,6 +135,8 @@ class CatalogOrganizationOut(ORMModel):
     lat: Decimal | None = None
     lng: Decimal | None = None
     timezone: str | None = None
+    rating_avg: float = 0.0
+    review_count: int = 0
 
 
 class CatalogHeroOut(BaseModel):

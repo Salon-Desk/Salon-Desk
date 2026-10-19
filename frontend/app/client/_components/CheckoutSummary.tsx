@@ -12,6 +12,7 @@ import type { SalonService } from '@/types'
 
 export interface CheckoutQuote {
   price: number
+  platformCommission: number
   hold: number
   policyName: string | null
   freeCancelHours: number
@@ -40,9 +41,13 @@ export function buildCheckoutQuote(
   const noShowPct = policy?.no_show_fee_percent ?? 50
   const lateCancelPct = policy?.late_cancel_fee_percent ?? noShowPct
   const startMs = startsAt ? Date.parse(startsAt) : Number.NaN
+  const platformCommission =
+    service.platformCommission ??
+    Math.max(0, (service.holdDeposit || service.price) - service.price)
   return {
     price: service.price,
-    hold: service.holdDeposit || service.price,
+    platformCommission,
+    hold: service.holdDeposit || service.price + platformCommission,
     policyName: policy?.name ?? null,
     freeCancelHours,
     lateCancelPct,
@@ -175,10 +180,18 @@ export function CheckoutSummary({
             <span>Service price</span>
             <span className="font-medium text-stone-900">{formatUsd(quote.price)}</span>
           </div>
+          {quote.platformCommission > 0 ? (
+            <div className="flex justify-between text-stone-600">
+              <span>Platform fee</span>
+              <span className="font-medium text-stone-900">
+                {formatUsd(quote.platformCommission)}
+              </span>
+            </div>
+          ) : null}
           <div className="flex justify-between text-stone-600">
             <span className="inline-flex items-center gap-1.5">
               <Lock className="h-3 w-3 text-amber-700" />
-              PayPal hold
+              PayPal hold (service + platform fee)
             </span>
             <span className="font-medium text-stone-900">{formatUsd(quote.hold)}</span>
           </div>

@@ -6,11 +6,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
+import { CancelBookingDialog } from '@/app/client/_components/CancelBookingDialog'
 import { EmptyState, Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useGeolocation, useToast } from '@/hooks'
 import { useAiConcierge } from '@/hooks/use-ai-concierge'
 import { useDebounce } from '@/hooks/use-debounce'
+import { buildCancelOutcomePreview } from '@/lib/booking/cancel-policy'
+import { formatUsd } from '@/lib/format'
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
 import {
   useCancelBookingMutation,
@@ -33,6 +36,8 @@ import { CatalogSection } from './CatalogSection'
 import { checkoutPath } from './ClientCheckoutPage'
 import { ClientFooter } from './ClientFooter'
 import { ClientHeader, type ClientTab } from './ClientHeader'
+import { ClientMyBookingsReviews } from './ClientMyBookingsReviews'
+import { ClientSalonFeedbackSection } from './ClientSalonFeedbackSection'
 import { AiConcierge } from './ConciergeDrawer'
 import { ProtocolModal } from './ProtocolModal'
 import { ServiceCard } from './ServiceCard'
@@ -93,6 +98,8 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
 
   const [protocolService, setProtocolService] = useState<SalonService | null>(null)
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null)
+  const [cancelSubmitting, setCancelSubmitting] = useState(false)
   const [isInputFocused, setIsInputFocused] = useState(false)
 
   // Detect mobile virtual keyboard / input focus so bottom navigation doesn't obstruct form controls
@@ -269,18 +276,34 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
     )
   }
 
-  const handleCancelBooking = async (bookingId: string) => {
+  const handleConfirmCancelBooking = async () => {
+    if (!cancelTarget) return
+    const preview = buildCancelOutcomePreview({
+      totalPrice: cancelTarget.servicePrice,
+      agreedNoShowFee: cancelTarget.noShowFee,
+      agreedLateCancelFee: cancelTarget.lateCancelFee,
+      freeCancelDeadlineAt: cancelTarget.freeCancelDeadlineAt ?? cancelTarget.authExpiresAt,
+      policySnapshot: cancelTarget.policySnapshot,
+    })
+    setCancelSubmitting(true)
     try {
       await cancelBooking({
-        bookingId,
+        bookingId: cancelTarget.id,
         body: { reason: 'Client self-service cancellation' },
       }).unwrap()
       void refetchBookings()
-      showToast(`Appointment cancelled. Authorization hold will be released ($0 charged).`)
+      setCancelTarget(null)
+      showToast(
+        preview.withinFreeWindow
+          ? 'Appointment cancelled. Your PayPal hold was released ($0 charged).'
+          : `Appointment cancelled. ${formatUsd(preview.chargeAmount)} late-cancellation fee captured; remaining hold released.`,
+      )
     } catch (err) {
       const message =
         (err as { data?: { detail?: string } })?.data?.detail || 'Could not cancel booking'
       toast.error(String(message), toastColor.error)
+    } finally {
+      setCancelSubmitting(false)
     }
   }
 
@@ -325,6 +348,7 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
         {activeTab === 'catalog' ? (
           <div>
             <CatalogHero hero={hero} isLoading={heroLoading} />
+            {filterOrgId ? <ClientSalonFeedbackSection orgId={filterOrgId} /> : null}
             <CatalogFilters
               category={selectedCategory}
               onCategoryChange={setSelectedCategory}
@@ -484,13 +508,16 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
                 Loading your bookings…
               </div>
             ) : (
-              <BookingsPanel
-                activeHolds={activeHolds}
-                pastBookings={pastBookings}
-                onBrowseCatalog={() => setActiveTab('catalog')}
-                onCancel={(id) => void handleCancelBooking(id)}
-                onViewReceipt={setReceiptBooking}
-              />
+              <>
+                <ClientMyBookingsReviews />
+                <BookingsPanel
+                  activeHolds={activeHolds}
+                  pastBookings={pastBookings}
+                  onBrowseCatalog={() => setActiveTab('catalog')}
+                  onCancel={setCancelTarget}
+                  onViewReceipt={setReceiptBooking}
+                />
+              </>
             )}
           </>
         )}
@@ -605,6 +632,24 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
       {receiptBooking && (
         <ReceiptModal booking={receiptBooking} onClose={() => setReceiptBooking(null)} />
       )}
+
+      {cancelTarget ? (
+        <CancelBookingDialog
+          booking={cancelTarget}
+          preview={buildCancelOutcomePreview({
+            totalPrice: cancelTarget.servicePrice,
+            agreedNoShowFee: cancelTarget.noShowFee,
+            agreedLateCancelFee: cancelTarget.lateCancelFee,
+            freeCancelDeadlineAt: cancelTarget.freeCancelDeadlineAt ?? cancelTarget.authExpiresAt,
+            policySnapshot: cancelTarget.policySnapshot,
+          })}
+          isSubmitting={cancelSubmitting}
+          onClose={() => {
+            if (!cancelSubmitting) setCancelTarget(null)
+          }}
+          onConfirm={() => void handleConfirmCancelBooking()}
+        />
+      ) : null}
     </div>
   )
 }

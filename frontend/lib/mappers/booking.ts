@@ -1,3 +1,4 @@
+import { parseCancellationFee } from '@/lib/booking/cancel-policy'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import type { Booking, HoldState, SalonService, ServiceCategory } from '@/types'
 import type { ApiBooking } from '@/types/api-booking'
@@ -56,6 +57,15 @@ export function mapApiBookingToUi(
   const price = Number(booking.total_price) || 0
   const holdAmount = Number(booking.agreed_hold_amount ?? booking.total_price) || price
   const noShowFee = Number(booking.agreed_no_show_fee ?? 0)
+  const lateCancelFee = Number(
+    booking.agreed_late_cancel_fee ??
+      (booking.policy_snapshot_json?.late_cancel_fee_percent != null
+        ? (price * Number(booking.policy_snapshot_json.late_cancel_fee_percent)) / 100
+        : noShowFee),
+  )
+  const { fee: cancellationFeeCharged, reason: cancellationFeeReason } = parseCancellationFee(
+    booking.cancellation_fee_json,
+  )
   const firstService = booking.booking_services?.[0]
   const starts = new Date(booking.starts_at)
   const ends = new Date(booking.ends_at)
@@ -94,6 +104,10 @@ export function mapApiBookingToUi(
     servicePrice: price,
     holdAmount,
     noShowFee,
+    lateCancelFee,
+    freeCancelDeadlineAt: booking.free_cancel_deadline_at,
+    cancellationFeeCharged: cancellationFeeCharged > 0 ? cancellationFeeCharged : null,
+    cancellationFeeReason,
     status,
     paypalAuthId: extras?.paypalAuthId || '—',
     authExpiresAt: freeCancelDeadlineLabel,
@@ -111,8 +125,11 @@ export function mapApiBookingToUi(
 
 export function mapCatalogServiceToSalonService(service: CatalogService): SalonService {
   const price = Number(service.base_price) || 0
-  // Catalog card estimates only — locked amounts come from booking snapshots after create.
-  const holdDeposit = price
+  const platformCommission = Number(service.platform_commission_amount) || 0
+  const holdFromApi = Number(service.authorization_hold_amount)
+  // List cards estimate service price; checkout detail includes platform fee in the hold.
+  const holdDeposit =
+    Number.isFinite(holdFromApi) && holdFromApi > 0 ? holdFromApi : price + platformCommission
   const rawCategory = (service.category_name || CATEGORY_FALLBACK) as ServiceCategory
 
   const distanceKm =
@@ -126,6 +143,7 @@ export function mapCatalogServiceToSalonService(service: CatalogService): SalonS
     category: rawCategory,
     durationMin: service.duration_minutes,
     price,
+    platformCommission: platformCommission > 0 ? platformCommission : undefined,
     holdDeposit,
     noShowFee: Math.round(price * 0.5),
     description: service.description || 'Salon service',

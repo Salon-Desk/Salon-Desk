@@ -19,8 +19,13 @@ export interface Booking {
   servicePrice: number
   /** Locked authorization ceiling from booking.agreed_hold_amount */
   holdAmount: number
-  /** Locked no-show / late-cancel fee from booking.agreed_no_show_fee */
+  /** Locked no-show fee from booking.agreed_no_show_fee */
   noShowFee: number
+  /** Locked late-cancellation fee from booking.agreed_late_cancel_fee */
+  lateCancelFee: number
+  freeCancelDeadlineAt?: string | null
+  cancellationFeeCharged?: number | null
+  cancellationFeeReason?: string | null
   status: HoldState
   paypalAuthId: string
   /** @deprecated Prefer freeCancelDeadlineLabel / honorExpiresLabel */

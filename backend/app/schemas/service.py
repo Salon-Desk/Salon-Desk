@@ -86,6 +86,8 @@ class CatalogServiceOut(ORMModel):
     organization_name: str | None = None
     category_name: str | None = None
     distance_km: float | None = None
+    platform_commission_amount: Decimal | None = None
+    authorization_hold_amount: Decimal | None = None
 
 
 class CatalogServicesPage(BaseModel):

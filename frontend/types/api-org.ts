@@ -92,6 +92,8 @@ export interface CatalogOrganization {
   lat?: string | number | null
   lng?: string | number | null
   timezone?: string | null
+  rating_avg?: number
+  review_count?: number
 }
 
 export interface CatalogHero {
@@ -121,6 +123,8 @@ export interface CatalogService {
   organization_name?: string | null
   category_name?: string | null
   distance_km?: number | null
+  platform_commission_amount?: string | number | null
+  authorization_hold_amount?: string | number | null
 }
 
 export type CatalogServiceSort =
@@ -248,6 +252,7 @@ export interface AdminDashboard {
   approved_organizations: number
   suspended_organizations: number
   pending_change_requests: number
+  pending_client_feedback?: number
   ledger_entry_count: number
   ledger_amount_sum: string | number
 }

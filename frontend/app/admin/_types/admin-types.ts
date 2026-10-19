@@ -1,5 +1,5 @@
 export type AdminTabId =
-  'overview' | 'salons' | 'requests' | 'commission' | 'billing' | 'taxonomy' | 'staff'
+  'overview' | 'salons' | 'requests' | 'reviews' | 'commission' | 'billing' | 'taxonomy' | 'staff'
 
 export type CrSubTab = 'POLICY' | 'PAYPAL'
 

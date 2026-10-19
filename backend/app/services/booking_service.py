@@ -15,14 +15,18 @@ from app.models.enums import (
     PaymentCaptureType,
     ServiceStatus,
 )
-from app.models.ledger import PlatformCommission
 from app.models.organization import Organization
 from app.models.policy import OrgCancellationPolicy
 from app.models.service import Service
 from app.models.user import User
 from app.services.availability_service import check_slot_available, get_availability
+from app.services.commission_service import (
+    commission_rule_for_service,
+    total_platform_commission_for_services,
+)
 from app.services.payment_service import capture_hold, void_hold
 from app.services.policy_engine import (
+    agreed_late_cancel_fee,
     agreed_no_show_fee,
     free_cancel_deadline_at,
     is_within_free_cancel_window,
@@ -45,7 +49,11 @@ _BOOKING_LOAD_OPTIONS = (
     selectinload(Booking.booking_services).selectinload(BookingService.service),
 )
 
-_DEFAULT_POLICY = {"free_cancel_hours": 24, "no_show_fee_percent": 50}
+_DEFAULT_POLICY = {
+    "free_cancel_hours": 24,
+    "no_show_fee_percent": 50,
+    "late_cancel_fee_percent": 25,
+}
 
 
 async def _load_active_policy(db: AsyncSession, org_id: UUID) -> dict:
@@ -63,35 +71,6 @@ async def _load_active_policy(db: AsyncSession, org_id: UUID) -> dict:
         "name": policy.name,
         **(policy.data or {}),
     }
-
-
-async def _commission_rule_for_service(db: AsyncSession, service: Service) -> dict:
-    result = await db.execute(
-        select(PlatformCommission)
-        .where(PlatformCommission.service_category_id == service.service_category_id)
-        .order_by(PlatformCommission.created_at.desc())
-        .limit(1)
-    )
-    commission = result.scalar_one_or_none()
-    if commission is None:
-        return {"type": "percentage", "percentage": "0", "flat": None, "commission_id": None}
-    return {
-        "type": commission.type.value,
-        "percentage": str(commission.percentage) if commission.percentage is not None else None,
-        "flat": str(commission.flat) if commission.flat is not None else None,
-        "commission_id": str(commission.id),
-    }
-
-
-def _commission_amount(rule: dict, price: Decimal) -> Decimal:
-    amount = Decimal("0")
-    if rule.get("percentage") is not None:
-        amount += (price * Decimal(str(rule["percentage"])) / Decimal("100")).quantize(
-            Decimal("0.01")
-        )
-    if rule.get("flat") is not None:
-        amount += Decimal(str(rule["flat"]))
-    return amount
 
 
 async def create_booking(
@@ -135,14 +114,16 @@ async def create_booking(
 
     policy_snapshot = await _load_active_policy(db, org_id)
     no_show_fee = agreed_no_show_fee(total_price=total_price, policy_data=policy_snapshot)
+    late_cancel_fee = agreed_late_cancel_fee(total_price=total_price, policy_data=policy_snapshot)
     deadline = free_cancel_deadline_at(starts_at=starts_at, policy_data=policy_snapshot)
 
-    primary_rule = await _commission_rule_for_service(db, primary)
-    expected_commission = _commission_amount(primary_rule, total_price)
+    platform_commission = await total_platform_commission_for_services(db, services)
+    primary_rule = await commission_rule_for_service(db, primary)
     commission_snapshot = {
         **primary_rule,
-        "amount": str(expected_commission),
+        "amount": str(platform_commission),
     }
+    agreed_hold = (total_price + platform_commission).quantize(Decimal("0.01"))
 
     booking = Booking(
         org_id=org_id,
@@ -152,8 +133,9 @@ async def create_booking(
         ends_at=ends_at,
         status=BookingStatus.PENDING,
         total_price=total_price,
-        agreed_hold_amount=total_price,
+        agreed_hold_amount=agreed_hold,
         agreed_no_show_fee=no_show_fee,
+        agreed_late_cancel_fee=late_cancel_fee,
         free_cancel_deadline_at=deadline,
         policy_snapshot_json=policy_snapshot,
         commission_snapshot=commission_snapshot,
@@ -163,7 +145,7 @@ async def create_booking(
     await db.flush()
 
     for service in services:
-        line_rule = await _commission_rule_for_service(db, service)
+        line_rule = await commission_rule_for_service(db, service)
         db.add(
             BookingService(
                 booking_id=booking.id,
@@ -237,18 +219,18 @@ async def cancel_booking(
         await void_hold(db, booking=booking)
         fee_json = {"fee": "0", "reason": "free_cancel" if free else "org_cancel"}
     else:
-        fee = booking.agreed_no_show_fee
+        fee = booking.agreed_late_cancel_fee
         await capture_hold(
             db,
             booking=booking,
-            capture_type=PaymentCaptureType.NO_SHOW_FEE,
+            capture_type=PaymentCaptureType.LATE_CANCEL,
             amount=fee,
             final_capture=True,
         )
         fee_json = {
             "fee": str(fee),
             "reason": "late_cancel",
-            "bounded_by": "agreed_no_show_fee",
+            "bounded_by": "agreed_late_cancel_fee",
         }
 
     booking.status = BookingStatus.CANCELLED

@@ -73,7 +73,14 @@ class PaymentHoldStatus(str, enum.Enum):
 class PaymentCaptureType(str, enum.Enum):
     FULL = "FULL"
     NO_SHOW_FEE = "NO_SHOW_FEE"
+    LATE_CANCEL = "LATE_CANCEL"
     PARTIAL = "PARTIAL"
+
+
+class FeedbackModerationStatus(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
 
 
 class PlatformCommissionType(str, enum.Enum):

@@ -11,9 +11,8 @@ from app.models.enums import (
 from app.models.ledger import LedgerEntry
 from app.models.organization import Organization
 from app.models.policy import ChangeRequest
-from app.schemas.platform import (
-    AdminDashboardOut,
-)
+from app.schemas.platform import AdminDashboardOut
+from app.services import feedback_service
 
 router = APIRouter(prefix="/admin", tags=["platform"])
 
@@ -54,12 +53,14 @@ async def dashboard(user: PlatformAdmin, db: DbSession) -> AdminDashboardOut:
     ledger_sum = (
         await db.execute(select(func.coalesce(func.sum(LedgerEntry.amount), 0)))
     ).scalar_one()
+    pending_feedback = await feedback_service.count_pending_feedback(db)
     return AdminDashboardOut(
         total_organizations=int(total),
         pending_organizations=int(pending),
         approved_organizations=int(approved),
         suspended_organizations=int(suspended),
         pending_change_requests=int(pending_cr),
+        pending_client_feedback=pending_feedback,
         ledger_entry_count=int(ledger_count),
         ledger_amount_sum=Decimal(str(ledger_sum)),
     )

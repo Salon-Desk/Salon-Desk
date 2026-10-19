@@ -58,6 +58,7 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
               categoryCount={categories.length}
               staffCount={0}
               pendingCrCount={dashboard?.pending_change_requests ?? 0}
+              pendingReviewCount={dashboard?.pending_client_feedback ?? 0}
               pendingSalonCount={dashboard?.pending_organizations ?? 0}
               currentUser={
                 {

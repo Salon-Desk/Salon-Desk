@@ -29,11 +29,24 @@ def free_cancel_deadline_at(*, starts_at: datetime, policy_data: dict) -> dateti
 
 
 def agreed_no_show_fee(*, total_price: Decimal, policy_data: dict) -> Decimal:
-    """Compute immutable no-show / late-cancel fee from policy at booking time."""
+    """Compute immutable no-show fee from policy at booking time."""
     if "no_show_fee_amount" in policy_data and policy_data["no_show_fee_amount"] is not None:
         return Decimal(str(policy_data["no_show_fee_amount"])).quantize(Decimal("0.01"))
     pct = Decimal(str(policy_data.get("no_show_fee_percent", 50)))
     return (total_price * pct / Decimal("100")).quantize(Decimal("0.01"))
+
+
+def agreed_late_cancel_fee(*, total_price: Decimal, policy_data: dict) -> Decimal:
+    """Compute immutable late-cancellation fee (within policy window, after free cutoff)."""
+    if (
+        "late_cancel_fee_amount" in policy_data
+        and policy_data["late_cancel_fee_amount"] is not None
+    ):
+        return Decimal(str(policy_data["late_cancel_fee_amount"])).quantize(Decimal("0.01"))
+    late_pct = policy_data.get("late_cancel_fee_percent")
+    if late_pct is None:
+        late_pct = policy_data.get("no_show_fee_percent", 50)
+    return (total_price * Decimal(str(late_pct)) / Decimal("100")).quantize(Decimal("0.01"))
 
 
 def is_within_free_cancel_window(
