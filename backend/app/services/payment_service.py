@@ -91,6 +91,7 @@ async def create_hold(
     booking: Booking,
     idempotency_key: str,
     currency: str = "USD",
+    frontend_base: str | None = None,
 ) -> tuple[PaymentHold, str | None]:
     """
     Create a PayPal AUTHORIZE order and a PENDING hold.
@@ -109,8 +110,7 @@ async def create_hold(
     if found is not None:
         # Re-issue approval link for incomplete holds.
         if found.status == PaymentHoldStatus.PENDING and found.paypal_order_id:
-            settings = get_settings()
-            base = settings.frontend_base_url.rstrip("/")
+            base = (frontend_base or get_settings().frontend_base_url).rstrip("/")
             approval = (
                 f"{base}/client/paypal/return?hold_id={found.id}&token={found.paypal_order_id}"
             )
@@ -124,8 +124,7 @@ async def create_hold(
         raise ForbiddenError("Consent required before authorization hold")
 
     hold_amount = booking.agreed_hold_amount
-    settings = get_settings()
-    base = settings.frontend_base_url.rstrip("/")
+    base = (frontend_base or get_settings().frontend_base_url).rstrip("/")
 
     # Persist hold first so return_url can include hold_id.
     hold = PaymentHold(

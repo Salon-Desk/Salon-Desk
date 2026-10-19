@@ -1,8 +1,10 @@
+import re
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.deps import ClientUser, DbSession
+from app.core.config import get_settings
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.models.payment import PaymentHold
 from app.schemas.payment import CompleteHoldRequest, CreateHoldRequest, PaymentHoldOut
@@ -20,6 +22,22 @@ def _paypal_http_error(exc: PayPalAPIError) -> HTTPException:
     return HTTPException(status.HTTP_502_BAD_GATEWAY, detail=detail)
 
 
+def _trusted_origin(request: Request) -> str | None:
+    """
+    The site the buyer is checking out on, so PayPal sends them back there rather than to
+    FRONTEND_BASE_URL. Only CORS-allowed origins are trusted for the redirect.
+    """
+    origin = (request.headers.get("origin") or "").rstrip("/")
+    if not origin:
+        return None
+    settings = get_settings()
+    if origin in settings.cors_origins:
+        return origin
+    if settings.cors_origin_regex and re.fullmatch(settings.cors_origin_regex, origin):
+        return origin
+    return None
+
+
 def _hold_out(hold: PaymentHold, approval_url: str | None = None) -> PaymentHoldOut:
     out = PaymentHoldOut.model_validate(hold)
     if approval_url:
@@ -33,7 +51,7 @@ def _hold_out(hold: PaymentHold, approval_url: str | None = None) -> PaymentHold
     status_code=status.HTTP_201_CREATED,
 )
 async def authorize_hold(
-    body: CreateHoldRequest, user: ClientUser, db: DbSession
+    body: CreateHoldRequest, user: ClientUser, db: DbSession, request: Request
 ) -> PaymentHoldOut:
     """Create a PayPal AUTHORIZE order and return the buyer approval link."""
     try:
@@ -45,6 +63,7 @@ async def authorize_hold(
             booking=booking,
             idempotency_key=body.idempotency_key,
             currency=body.currency,
+            frontend_base=_trusted_origin(request),
         )
     except PayPalAPIError as exc:
         raise _paypal_http_error(exc) from exc
