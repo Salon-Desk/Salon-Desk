@@ -8,33 +8,19 @@ import { toast } from 'sonner'
 
 import { EmptyState, Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
-import { useBookingContext, useGeolocation, useToast } from '@/hooks'
+import { useGeolocation, useToast } from '@/hooks'
 import { useAiConcierge } from '@/hooks/use-ai-concierge'
 import { useDebounce } from '@/hooks/use-debounce'
-import { BUYER_PERSONAS, type BuyerPersonaId } from '@/lib/constants'
-import { INITIAL_STAFF, stylistForCategory } from '@/lib/data/catalog'
-import { DEFAULT_TIME_SLOT } from '@/lib/data/service-content'
-import { createIdempotencyKey } from '@/lib/ids'
-import {
-  mapApiBookingToUi,
-  mapCatalogServiceToSalonService,
-  slotLabelToIso,
-} from '@/lib/mappers/booking'
+import { mapApiBookingToUi } from '@/lib/mappers/booking'
 import {
   useCancelBookingMutation,
-  useCreateBookingConsentMutation,
-  useCreateBookingMutation,
-  useGetMyBookingsQuery,
-} from '@/store/api/clientApi'
-import {
   useGetCatalogCategoriesQuery,
   useGetCatalogHeroQuery,
   useGetCatalogOrganizationsQuery,
+  useGetMyBookingsQuery,
   useLazyGetCatalogServiceQuery,
 } from '@/store/api/clientApi'
-import { useCreatePaymentHoldMutation } from '@/store/api/clientApi'
 import { isAuthenticatedSelector, isClientUser, userSelector } from '@/store/authSlice'
-import { bookingDraftSelector } from '@/store/bookingDraftSlice'
 import type { Booking, SalonService, StaffMember } from '@/types'
 import type { CatalogService, CatalogServiceSort } from '@/types/api-org'
 
@@ -44,10 +30,10 @@ import { BookingsPanel } from './BookingsPanel'
 import { CatalogFilters, type ServiceSort } from './CatalogFilters'
 import { CatalogHero } from './CatalogHero'
 import { CatalogSection } from './CatalogSection'
+import { checkoutPath } from './ClientCheckoutPage'
 import { ClientFooter } from './ClientFooter'
 import { ClientHeader, type ClientTab } from './ClientHeader'
 import { AiConcierge } from './ConciergeDrawer'
-import { type AuthStep, PaypalAuthModal } from './PayPalHoldCheckout'
 import { ProtocolModal } from './ProtocolModal'
 import { ServiceCard } from './ServiceCard'
 
@@ -65,17 +51,10 @@ function toApiSort(sort: ServiceSort, mode: 'browse' | 'results'): CatalogServic
 export interface ClientExperienceProps {
   initialTab?: ClientTab
   filterOrgId?: string
-  resumeCheckoutFromDraft?: boolean
 }
 
-export function ClientExperience({
-  initialTab = 'catalog',
-  filterOrgId,
-  resumeCheckoutFromDraft = false,
-}: ClientExperienceProps) {
+export function ClientExperience({ initialTab = 'catalog', filterOrgId }: ClientExperienceProps) {
   const router = useRouter()
-  const { saveDraft, pauseForAuth } = useBookingContext()
-  const bookingDraft = useSelector(bookingDraftSelector)
   const { message: toastMessage, show: showToast, dismiss } = useToast()
   const concierge = useAiConcierge()
   const user = useSelector(userSelector)
@@ -99,13 +78,9 @@ export function ClientExperience({
   } = useGetMyBookingsQuery(undefined, { skip: !isAuthenticated || !isClientUser(user) })
   const apiBookings = apiBookingsData?.items ?? []
 
-  const [createBooking] = useCreateBookingMutation()
-  const [createConsent] = useCreateBookingConsentMutation()
-  const [createHold] = useCreatePaymentHoldMutation()
   const [cancelBooking] = useCancelBookingMutation()
 
   const [activeTab, setActiveTab] = useState<ClientTab>(initialTab)
-  const [buyerPersona] = useState<BuyerPersonaId>('hana')
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [selectedOrgId, setSelectedOrgId] = useState(filterOrgId ?? '')
   const [searchQuery, setSearchQuery] = useState('')
@@ -116,14 +91,7 @@ export function ClientExperience({
     setSelectedOrgId(filterOrgId ?? '')
   }, [filterOrgId])
 
-  const [selectedService, setSelectedService] = useState<SalonService | null>(null)
-  const [selectedCatalogService, setSelectedCatalogService] = useState<CatalogService | null>(null)
   const [protocolService, setProtocolService] = useState<SalonService | null>(null)
-  const [selectedStylist, setSelectedStylist] = useState<StaffMember>(INITIAL_STAFF[0])
-  const [selectedSlot, setSelectedSlot] = useState(DEFAULT_TIME_SLOT)
-  const [isPayPalOpen, setIsPayPalOpen] = useState(false)
-  const [authStep, setAuthStep] = useState<AuthStep>('review')
-  const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null)
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null)
   const [isInputFocused, setIsInputFocused] = useState(false)
 
@@ -249,44 +217,6 @@ export function ClientExperience({
     setActiveTab(initialTab)
   }, [initialTab])
 
-  useEffect(() => {
-    if (!resumeCheckoutFromDraft || !isAuthenticated || !isClientUser(user)) return
-    const serviceId = bookingDraft.serviceIds[0]
-    if (!serviceId || isPayPalOpen) return
-
-    const openFromCatalog = (catalog: CatalogService) => {
-      const service = mapCatalogServiceToSalonService(catalog)
-      setSelectedService(service)
-      setSelectedCatalogService(catalog)
-      setSelectedStylist(stylistForCategory(service.category))
-      if (bookingDraft.startsAt) setSelectedSlot(bookingDraft.startsAt)
-      setAuthStep('review')
-      setIsPayPalOpen(true)
-    }
-
-    const cached = catalogById.get(serviceId)
-    if (cached) {
-      openFromCatalog(cached)
-      return
-    }
-
-    void fetchCatalogService(serviceId)
-      .unwrap()
-      .then(openFromCatalog)
-      .catch(() => {
-        toast.error('Could not restore your booking draft', toastColor.error)
-      })
-  }, [
-    resumeCheckoutFromDraft,
-    isAuthenticated,
-    user,
-    bookingDraft.serviceIds,
-    bookingDraft.startsAt,
-    catalogById,
-    isPayPalOpen,
-    fetchCatalogService,
-  ])
-
   const uiBookings = useMemo(
     () =>
       apiBookings.map((b) =>
@@ -321,28 +251,9 @@ export function ClientExperience({
       toast.error('Service is not available from the live catalog', toastColor.error)
       return
     }
-    if (!isAuthenticated || !isClientUser(user)) {
-      saveDraft({
-        orgId: catalog.organization_id,
-        serviceIds: [catalog.id],
-        startsAt: slot ?? null,
-        selectedServiceName: service.name,
-      })
-      pauseForAuth('/client/book')
-      router.push('/client/book')
-      showToast('Sign in to continue checkout — your selection is saved.')
-      return
-    }
-    setSelectedService({
-      ...service,
-      organizationId: catalog.organization_id || service.organizationId,
-      organizationName: catalog.organization_name || service.organizationName,
-    })
-    setSelectedCatalogService(catalog)
-    setSelectedStylist(stylist ?? stylistForCategory(service.category))
-    if (slot) setSelectedSlot(slot)
-    setAuthStep('review')
-    setIsPayPalOpen(true)
+    // Prefer live ISO timestamps; ignore demo labels like "Tomorrow · 2:00 PM".
+    const liveSlot = slot && !Number.isNaN(Date.parse(slot)) ? slot : null
+    router.push(checkoutPath(catalog.id, { slot: liveSlot, stylist: stylist?.id }))
   }
 
   const handleStartBooking = (service: SalonService) => {
@@ -350,80 +261,12 @@ export function ClientExperience({
   }
 
   const handleAskAi = (service: SalonService) => {
-    setSelectedService(service)
     concierge.setIsOpen(true)
     concierge.setMode('chat')
     void concierge.send(
       `I'm interested in the "${service.name}". Can you find me the next available time slot and explain the hold policy?`,
       service,
     )
-  }
-
-  const handleApproveHold = async () => {
-    if (!selectedService || !selectedCatalogService) return
-    setAuthStep('authorizing')
-
-    try {
-      const startsAt = slotLabelToIso(selectedSlot)
-      const booking = await createBooking({
-        org_id: selectedCatalogService.organization_id,
-        starts_at: startsAt,
-        service_ids: [selectedCatalogService.id],
-        stylist_id: null,
-        customer_notes: `Booked via client portal · ${selectedStylist.name}`,
-      }).unwrap()
-
-      const holdAmount = Number(booking.agreed_hold_amount ?? booking.total_price) || 0
-      const noShowFee = Number(booking.agreed_no_show_fee ?? 0)
-      const freeCancel = booking.free_cancel_deadline_at
-        ? new Date(booking.free_cancel_deadline_at).toLocaleString()
-        : 'the free-cancel deadline'
-      const termsText = `I authorize SalonDesk / PayPal to place an authorization hold of $${holdAmount.toFixed(2)} for this appointment. $0 is charged today. Free cancellation until ${freeCancel}. Agreed no-show fee: $${noShowFee.toFixed(2)}. Settlement uses the locked booking-time price and policy snapshot.`
-      await createConsent({
-        bookingId: booking.id,
-        body: {
-          terms_version: 'v1',
-          terms_text: termsText,
-          signed_payload: `${booking.id}:${user?.id || 'client'}:${Date.now()}`,
-        },
-      }).unwrap()
-
-      const hold = await createHold({
-        booking_id: booking.id,
-        idempotency_key: createIdempotencyKey(booking.id, 'AUTH_INTENT'),
-        currency: 'USD',
-      }).unwrap()
-
-      const uiBooking = mapApiBookingToUi(booking, {
-        clientName:
-          user?.name ||
-          [user?.first_name, user?.last_name].filter(Boolean).join(' ') ||
-          BUYER_PERSONAS[buyerPersona].name,
-        salonName:
-          orgNameById.get(selectedCatalogService.organization_id) ||
-          selectedCatalogService.organization_name ||
-          'Salon',
-        serviceName: selectedService.name,
-        stylistName: selectedStylist.name,
-        paypalAuthId: hold.latest_authorization_id || hold.parent_authorization_id,
-        honorExpiresAt: hold.honor_expires_at,
-        reauthorizationCount: hold.reauthorization_count,
-        holdStatus: hold.status,
-      })
-
-      setConfirmedBooking(uiBooking)
-      setAuthStep('success')
-      void refetchBookings()
-      showToast(
-        `Booking confirmed with PayPal hold of $${holdAmount.toFixed(2)}. $0 charged today — check your email for the receipt.`,
-      )
-    } catch (err) {
-      setAuthStep('review')
-      const message =
-        (err as { data?: { detail?: string } })?.data?.detail ||
-        'Could not create booking hold. Please try again.'
-      toast.error(String(message), toastColor.error)
-    }
   }
 
   const handleCancelBooking = async (bookingId: string) => {
@@ -745,24 +588,6 @@ export function ClientExperience({
           onAuthorize={({ service, stylist, slot }) => void openCheckout(service, stylist, slot)}
           onClose={() => concierge.setIsOpen(false)}
           userCoords={userCoords}
-        />
-      )}
-
-      {isPayPalOpen && selectedService && (
-        <PaypalAuthModal
-          service={selectedService}
-          stylist={selectedStylist}
-          slot={selectedSlot}
-          step={authStep}
-          confirmedBooking={confirmedBooking}
-          onSelectStylist={setSelectedStylist}
-          onSelectSlot={setSelectedSlot}
-          onApprove={() => void handleApproveHold()}
-          onClose={() => setIsPayPalOpen(false)}
-          onViewBookings={() => {
-            setIsPayPalOpen(false)
-            setActiveTab('my-bookings')
-          }}
         />
       )}
 

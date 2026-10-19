@@ -61,6 +61,7 @@ class ChangeRequestStatus(str, enum.Enum):
 
 
 class PaymentHoldStatus(str, enum.Enum):
+    PENDING = "PENDING"  # PayPal order created; waiting for buyer approval
     AUTHORIZED = "AUTHORIZED"
     REAUTHORIZED = "REAUTHORIZED"
     CAPTURED = "CAPTURED"

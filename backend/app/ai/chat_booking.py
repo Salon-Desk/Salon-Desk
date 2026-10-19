@@ -152,12 +152,13 @@ async def try_handle_chat_booking(
             terms_text=terms,
             signed_payload=f"booking={pending.id};confirmed_via_chat=true",
         )
-        await payment_service.create_hold(
+        hold, _approval = await payment_service.create_hold(
             db,
             booking=pending,
             idempotency_key=f"chat-hold-{pending.id}",
             currency="USD",
         )
+        await payment_service.complete_hold(db, hold=hold, paypal_order_token=hold.paypal_order_id)
         await db.commit()
 
         time_str = pending.starts_at.strftime("%A, %b %d at %I:%M %p")
@@ -245,12 +246,13 @@ async def try_handle_chat_booking(
             terms_text=terms,
             signed_payload=f"booking={booking.id};chat_booking=true",
         )
-        await payment_service.create_hold(
+        hold, _approval = await payment_service.create_hold(
             db,
             booking=booking,
             idempotency_key=f"chat-hold-{booking.id}",
             currency="USD",
         )
+        await payment_service.complete_hold(db, hold=hold, paypal_order_token=hold.paypal_order_id)
         await db.commit()
     except Exception as exc:
         logger.error("Failed to book via chat: %s", exc)

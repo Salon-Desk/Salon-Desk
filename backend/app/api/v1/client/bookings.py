@@ -8,12 +8,12 @@ from app.core.exceptions import ForbiddenError, NotFoundError
 from app.core.pagination import paginate_items
 from app.models.enums import UserRole
 from app.schemas.booking import (
+    AvailabilityOut,
     BookingCancelRequest,
     BookingCreate,
     BookingOut,
     ConsentCreate,
     ConsentOut,
-    TimeSlot,
     booking_to_out,
 )
 from app.schemas.common import PageOut
@@ -23,8 +23,12 @@ from app.services.payment_service import create_consent
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
 
-@router.post("/", response_model=BookingOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=BookingOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=BookingOut, status_code=status.HTTP_201_CREATED, include_in_schema=False
+)
 async def create_booking(body: BookingCreate, user: ClientUser, db: DbSession) -> BookingOut:
+    """Accept both `/bookings` and `/bookings/` — trailing-slash redirects drop some clients."""
     try:
         booking = await booking_service.create_booking(
             db,
@@ -36,6 +40,9 @@ async def create_booking(body: BookingCreate, user: ClientUser, db: DbSession) -
             customer_notes=body.customer_notes,
         )
     except (ForbiddenError, NotFoundError) as exc:
+        # Slot conflicts are client errors, not auth failures.
+        if isinstance(exc, ForbiddenError) and "not available" in exc.message.lower():
+            raise HTTPException(status.HTTP_409_CONFLICT, detail=exc.message) from exc
         code = (
             status.HTTP_403_FORBIDDEN
             if isinstance(exc, ForbiddenError)
@@ -61,13 +68,13 @@ async def my_bookings(
     return paginate_items(items, page=page, page_size=page_size)
 
 
-@router.get("/availability", response_model=list[TimeSlot])
+@router.get("/availability", response_model=AvailabilityOut)
 async def availability(
     db: DbSession,
     service_id: UUID,
-    day: date = Query(...),
+    day: date = Query(..., description="Calendar day in the salon's timezone (YYYY-MM-DD)"),
     slot_minutes: int = Query(default=30, ge=5, le=120),
-) -> list[TimeSlot]:
+) -> AvailabilityOut:
     try:
         return await booking_service.get_availability(
             db, service_id=service_id, day=day, slot_minutes=slot_minutes

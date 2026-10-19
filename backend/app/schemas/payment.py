@@ -28,6 +28,14 @@ class PaymentHoldOut(ORMModel):
     reauthorization_count: int
     idempotency_key: str
     created_at: datetime
+    # Present when status=PENDING — client opens this to approve the AUTHORIZE hold.
+    approval_url: str | None = None
+
+
+class CompleteHoldRequest(BaseModel):
+    """Finalize a PENDING hold after PayPal buyer approval (token from return URL)."""
+
+    paypal_order_token: str | None = None
 
 
 class PaymentCaptureOut(ORMModel):

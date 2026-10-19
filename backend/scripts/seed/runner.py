@@ -399,13 +399,17 @@ async def run_seed(*, clear: bool, database_url: str | None = None) -> None:
     )
 
     try:
-        await ensure_schema(engine)
+        # --clear drops + recreates tables so model changes (e.g. booking snapshots) apply.
+        # Truncate alone cannot add columns; create_all also skips existing tables.
+        await ensure_schema(engine, recreate=clear)
         async with session_factory() as session:
             if clear:
+                # Safety: empty any leftover rows if drop/create was skipped somehow.
                 await clear_database(session)
             elif await already_seeded(session):
                 logger.info(
-                    "Demo data already present (%s). Use --clear to wipe and re-seed.",
+                    "Demo data already present (%s). Schema columns patched; "
+                    "use --clear (or SEED_CLEAR=1) to wipe and re-seed.",
                     PLATFORM_ADMIN_EMAIL,
                 )
                 return
@@ -433,7 +437,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--clear",
         action="store_true",
-        help="Truncate all tables before seeding",
+        help="Drop and recreate all tables, then seed fresh demo data",
     )
     parser.add_argument(
         "--database-url",

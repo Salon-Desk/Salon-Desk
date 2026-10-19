@@ -73,22 +73,23 @@ public/                                    Static assets
 
 ### Routing (client portal)
 
-| Route                 | Purpose                                      |
-| --------------------- | -------------------------------------------- |
-| `/client`             | Catalog + concierge (default tab)            |
-| `/client/book`        | Checkout; `SplitBookingAuth` when logged out |
-| `/client/bookings`    | My bookings                                  |
-| `/client/profile`     | Client profile                               |
-| `/client/org/[orgId]` | Org-filtered catalog                         |
-| `/merchant/*`         | Merchant console (`/org/*` rewrites here)    |
-| `/admin/*`            | Platform admin                               |
+| Route                      | Purpose                                   |
+| -------------------------- | ----------------------------------------- |
+| `/client`                  | Catalog + concierge (default tab)         |
+| `/client/book`             | Redirects to the draft / last checkout    |
+| `/client/book/[serviceId]` | Full-page checkout (`?slot=&stylist=`)    |
+| `/client/bookings`         | My bookings                               |
+| `/client/profile`          | Client profile                            |
+| `/client/org/[orgId]`      | Org-filtered catalog                      |
+| `/merchant/*`              | Merchant console (`/org/*` rewrites here) |
+| `/admin/*`                 | Platform admin                            |
 
 JWT lives in **localStorage**; edge `middleware.ts` does not enforce auth (use `AuthGate` / layout guards).
 
 ## State & API
 
 - **Auth & session**: `store/authSlice.ts`; bootstrap in `Providers.tsx` (`fetchAuthData`, portal `setActiveApp` from pathname).
-- **Booking checkout draft**: `store/bookingDraftSlice.ts` + `hooks/use-booking-context.ts`; resume after login on `/client/book`.
+- **Booking checkout draft**: `store/bookingDraftSlice.ts` + `hooks/use-booking-context.ts`; sign-in from checkout resumes on `/client/book/[serviceId]` with the selection in the query string.
 - **Portal demo UI** (sandbox bookings, merchant console mock data, admin dashboard mock data): Redux slices `*DemoSlice.ts`, hydrated from localStorage in `Providers.tsx`. Read/write via `hooks/use-portal-stores.ts` (`useClientStore`, `useMerchantStore`, `useAdminStore`).
 - **RTK Query**: inject endpoints in `store/api/*Api.ts`. Prefer these over raw `axios`/`fetch` for `/api/v1/*` calls.
   - **Client**: catalog, bookings, payments, `clientConciergeChat` → `POST /api/v1/chat`, LiveKit token.
@@ -122,15 +123,17 @@ Client drawer UI: `app/client/_components/ConciergeDrawer.tsx` (export alias `Co
 
 Files under `app/client/_components/` use **PascalCase** filenames aligned with primary exports, e.g.:
 
-| File                                       | Primary export(s)                              |
-| ------------------------------------------ | ---------------------------------------------- |
-| `ClientExperience.tsx`                     | `ClientExperience`                             |
-| `ClientBookPage.tsx`                       | `ClientBookPage`                               |
-| `SplitBookingAuth.tsx`                     | `SplitBookingAuth`                             |
-| `PayPalHoldCheckout.tsx`                   | `PayPalHoldCheckout` (alias `PaypalAuthModal`) |
-| `BookingReceipt.tsx`                       | `BookingReceipt` (alias `ReceiptModal`)        |
-| `ConciergeDrawer.tsx`                      | `AiConcierge` (alias `ConciergeDrawer`)        |
-| `ServiceCard.tsx`, `CatalogFilters.tsx`, … | Same as filename                               |
+| File                                                                | Primary export(s)                               |
+| ------------------------------------------------------------------- | ----------------------------------------------- |
+| `ClientExperience.tsx`                                              | `ClientExperience`                              |
+| `ClientBookPage.tsx`                                                | `ClientBookPage`                                |
+| `SplitBookingAuth.tsx`                                              | `SplitBookingAuth`                              |
+| `ClientCheckoutPage.tsx`                                            | `ClientCheckoutPage` (booking → consent → hold) |
+| `PayPalHoldCheckout.tsx`                                            | `PayPalHoldCheckout` (full-page checkout UI)    |
+| `CheckoutSchedule.tsx`, `CheckoutReview.tsx`, `CheckoutSummary.tsx` | Checkout steps + preview                        |
+| `BookingReceipt.tsx`                                                | `BookingReceipt` (alias `ReceiptModal`)         |
+| `ConciergeDrawer.tsx`                                               | `AiConcierge` (alias `ConciergeDrawer`)         |
+| `ServiceCard.tsx`, `CatalogFilters.tsx`, …                          | Same as filename                                |
 
 Public barrel: `app/client/index.ts`.
 

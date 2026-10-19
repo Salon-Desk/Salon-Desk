@@ -35,5 +35,7 @@ async def test_paypal_reauthorize_stub() -> None:
     from app.services.paypal_rest import PayPalRestClient
 
     client = PayPalRestClient()
-    result = await client.reauthorize_authorization(authorization_id=str(uuid4()))
-    assert result["status"] == "not_implemented"
+    auth_id = str(uuid4())
+    result = await client.reauthorize_authorization(authorization_id=auth_id)
+    assert result["status"] == "CREATED"
+    assert result["authorization_id"] == f"stub-reauth-{auth_id}"

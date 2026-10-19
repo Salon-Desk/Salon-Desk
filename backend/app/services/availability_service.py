@@ -2,6 +2,7 @@
 
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +12,16 @@ from app.models.booking import Booking, BookingService
 from app.models.enums import BookingStatus, ServiceStatus
 from app.models.organization import OrgSettings
 from app.models.service import Service
-from app.schemas.booking import TimeSlot
+from app.schemas.booking import AvailabilityOut, TimeSlot
+
+_WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+
+def resolve_org_timezone(name: str | None) -> ZoneInfo:
+    try:
+        return ZoneInfo((name or "UTC").strip() or "UTC")
+    except Exception:  # noqa: BLE001 — invalid IANA id
+        return ZoneInfo("UTC")
 
 
 async def check_slot_available(
@@ -53,7 +63,13 @@ async def get_availability(
     service_id: UUID,
     day: date,
     slot_minutes: int = 30,
-) -> list[TimeSlot]:
+) -> AvailabilityOut:
+    """
+    Build slots from org working_hours for the given calendar day.
+
+    Working-hour windows are interpreted in the organization timezone and returned
+    as UTC-aware datetimes (ISO) for booking.create.
+    """
     service = await db.get(Service, service_id)
     if service is None or service.status != ServiceStatus.ACTIVE:
         raise NotFoundError("Service not found")
@@ -62,26 +78,50 @@ async def get_availability(
         select(OrgSettings).where(OrgSettings.org_id == service.organization_id)
     )
     settings = settings_result.scalar_one_or_none()
-    weekday_keys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-    day_key = weekday_keys[day.weekday()]
-    windows = (settings.working_hours if settings else {}).get(day_key, [])
-    if not windows:
-        return []
+    tz_name = settings.timezone if settings and settings.timezone else "UTC"
+    tz = resolve_org_timezone(tz_name)
+
+    day_key = _WEEKDAY_KEYS[day.weekday()]
+    windows_raw = (settings.working_hours if settings else {}).get(day_key, [])
+    open_windows: list[list[str]] = []
+    for window in windows_raw or []:
+        if isinstance(window, (list, tuple)) and len(window) == 2:
+            open_windows.append([str(window[0]), str(window[1])])
+
+    if not open_windows:
+        return AvailabilityOut(
+            timezone=str(tz),
+            day=day.isoformat(),
+            open_windows=[],
+            slots=[],
+        )
 
     slots: list[TimeSlot] = []
     duration = timedelta(minutes=service.duration_minutes)
     step = timedelta(minutes=slot_minutes)
+    now_utc = datetime.now(UTC)
 
-    for window in windows:
-        if not isinstance(window, (list, tuple)) or len(window) != 2:
-            continue
-        start_h, start_m = map(int, window[0].split(":"))
-        end_h, end_m = map(int, window[1].split(":"))
-        cursor = datetime(day.year, day.month, day.day, start_h, start_m, tzinfo=UTC)
-        window_end = datetime(day.year, day.month, day.day, end_h, end_m, tzinfo=UTC)
+    for start_s, end_s in open_windows:
+        start_h, start_m = map(int, start_s.split(":"))
+        end_h, end_m = map(int, end_s.split(":"))
+        # Local wall clock in salon TZ → UTC for persistence / overlap checks
+        cursor_local = datetime(day.year, day.month, day.day, start_h, start_m, tzinfo=tz)
+        window_end_local = datetime(day.year, day.month, day.day, end_h, end_m, tzinfo=tz)
+        cursor = cursor_local.astimezone(UTC)
+        window_end = window_end_local.astimezone(UTC)
+
         while cursor + duration <= window_end:
             slot_end = cursor + duration
+            if slot_end <= now_utc:
+                cursor += step
+                continue
             ok = await check_slot_available(db, service=service, starts_at=cursor, ends_at=slot_end)
             slots.append(TimeSlot(starts_at=cursor, ends_at=slot_end, available=ok))
             cursor += step
-    return slots
+
+    return AvailabilityOut(
+        timezone=str(tz),
+        day=day.isoformat(),
+        open_windows=open_windows,
+        slots=slots,
+    )

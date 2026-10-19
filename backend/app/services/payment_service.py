@@ -91,38 +91,137 @@ async def create_hold(
     booking: Booking,
     idempotency_key: str,
     currency: str = "USD",
-) -> PaymentHold:
+) -> tuple[PaymentHold, str | None]:
+    """
+    Create a PayPal AUTHORIZE order and a PENDING hold.
+
+    Returns (hold, approval_url). The client must open approval_url, then call
+    complete_hold to finalize authorization and confirm the booking.
+    """
+    from app.core.config import get_settings
+    from app.models.enums import OrgAccountStatus
+    from app.models.payment import OrgAccount
+
     existing = await db.execute(
         select(PaymentHold).where(PaymentHold.idempotency_key == idempotency_key)
     )
     found = existing.scalar_one_or_none()
-    if found:
-        return found
+    if found is not None:
+        # Re-issue approval link for incomplete holds.
+        if found.status == PaymentHoldStatus.PENDING and found.paypal_order_id:
+            settings = get_settings()
+            base = settings.frontend_base_url.rstrip("/")
+            approval = (
+                f"{base}/client/paypal/return?hold_id={found.id}&token={found.paypal_order_id}"
+            )
+            if str(found.paypal_order_id).startswith("STUB-"):
+                approval = f"{approval}&stub=1"
+            return found, approval
+        return found, None
 
     consent = await db.execute(select(Consent).where(Consent.booking_id == booking.id).limit(1))
     if consent.scalar_one_or_none() is None:
         raise ForbiddenError("Consent required before authorization hold")
 
     hold_amount = booking.agreed_hold_amount
-    paypal = PayPalRestClient()
-    paypal_result = await paypal.authorize_order(amount=hold_amount, currency=currency)
+    settings = get_settings()
+    base = settings.frontend_base_url.rstrip("/")
 
-    auth_id = paypal_result.get("authorization_id") or f"stub-auth-{booking.id}"
+    # Persist hold first so return_url can include hold_id.
     hold = PaymentHold(
         booking_id=booking.id,
         org_id=booking.org_id,
-        paypal_order_id=paypal_result.get("order_id") or f"stub-order-{booking.id}",
-        parent_authorization_id=auth_id,
-        latest_authorization_id=auth_id,
+        paypal_order_id=None,
+        parent_authorization_id=None,
+        latest_authorization_id=None,
         amount=hold_amount,
         captured_amount=Decimal("0.00"),
         currency=currency,
-        status=PaymentHoldStatus.AUTHORIZED,
-        honor_expires_at=datetime.now(UTC) + timedelta(days=3),
+        status=PaymentHoldStatus.PENDING,
+        honor_expires_at=None,
         reauthorization_count=0,
         idempotency_key=idempotency_key,
     )
     db.add(hold)
+    await db.flush()
+
+    return_url = f"{base}/client/paypal/return?hold_id={hold.id}"
+    cancel_url = f"{base}/client/book?paypal=cancelled&booking_id={booking.id}"
+
+    payee_merchant_id = None
+    acct = await db.execute(
+        select(OrgAccount).where(
+            OrgAccount.org_id == booking.org_id,
+            OrgAccount.status == OrgAccountStatus.APPROVED,
+        )
+    )
+    org_account = acct.scalar_one_or_none()
+    if org_account is not None and org_account.merchant_id:
+        payee_merchant_id = org_account.merchant_id
+
+    paypal = PayPalRestClient()
+    paypal_result = await paypal.create_authorize_order(
+        amount=hold_amount,
+        currency=currency,
+        return_url=return_url,
+        cancel_url=cancel_url,
+        payee_merchant_id=payee_merchant_id,
+        reference_id=str(booking.id),
+    )
+
+    hold.paypal_order_id = paypal_result.get("order_id")
+    await db.flush()
+
+    await append_ledger(
+        db,
+        event_type="AUTHORIZATION_ORDER_CREATED",
+        payload={"hold_id": str(hold.id), "paypal": paypal_result},
+        org_id=booking.org_id,
+        booking_id=booking.id,
+        hold_id=hold.id,
+        amount=hold.amount,
+        currency=hold.currency,
+    )
+    return hold, paypal_result.get("approval_url")
+
+
+async def complete_hold(
+    db: AsyncSession,
+    *,
+    hold: PaymentHold,
+    paypal_order_token: str | None = None,
+) -> PaymentHold:
+    """Authorize a buyer-approved PayPal order and confirm the booking."""
+    if hold.status in {
+        PaymentHoldStatus.AUTHORIZED,
+        PaymentHoldStatus.REAUTHORIZED,
+        PaymentHoldStatus.CAPTURED,
+        PaymentHoldStatus.PARTIALLY_CAPTURED,
+    }:
+        return hold
+    if hold.status != PaymentHoldStatus.PENDING:
+        raise ForbiddenError(f"Hold cannot be completed from status {hold.status}")
+
+    order_id = paypal_order_token or hold.paypal_order_id
+    if not order_id:
+        raise ForbiddenError("Missing PayPal order token")
+
+    booking = await db.get(Booking, hold.booking_id)
+    if booking is None:
+        raise NotFoundError("Booking not found")
+
+    paypal = PayPalRestClient()
+    paypal_result = await paypal.authorize_order(
+        order_id=order_id,
+        amount=hold.amount,
+        currency=hold.currency,
+    )
+    auth_id = paypal_result.get("authorization_id") or f"stub-auth-{hold.id}"
+    hold.paypal_order_id = order_id
+    hold.parent_authorization_id = auth_id
+    hold.latest_authorization_id = auth_id
+    hold.status = PaymentHoldStatus.AUTHORIZED
+    hold.honor_expires_at = datetime.now(UTC) + timedelta(days=3)
     booking.status = BookingStatus.CONFIRMED
     await db.flush()
 
@@ -130,8 +229,8 @@ async def create_hold(
         db,
         event_type="AUTHORIZATION_CREATED",
         payload={"hold_id": str(hold.id), "paypal": paypal_result},
-        org_id=booking.org_id,
-        booking_id=booking.id,
+        org_id=hold.org_id,
+        booking_id=hold.booking_id,
         hold_id=hold.id,
         amount=hold.amount,
         currency=hold.currency,

@@ -177,11 +177,15 @@ def build_booking_tools(
                     terms_text=terms,
                     signed_payload=f"booking={booking.id};client={client.id};auto_confirmed=true",
                 )
-                await payment_service.create_hold(
+                hold, _approval = await payment_service.create_hold(
                     db,
                     booking=booking,
                     idempotency_key=f"voice-hold-{booking.id}",
                     currency="USD",
+                )
+                # Voice channel auto-completes stub/sandbox authorize after order create.
+                await payment_service.complete_hold(
+                    db, hold=hold, paypal_order_token=hold.paypal_order_id
                 )
                 await db.commit()
             except Exception as exc:
@@ -281,11 +285,14 @@ def build_booking_tools(
                 terms_text=terms,
                 signed_payload=f"booking={booking.id};auto_confirmed=true",
             )
-            await payment_service.create_hold(
+            hold, _approval = await payment_service.create_hold(
                 db,
                 booking=booking,
                 idempotency_key=f"confirm-hold-{booking.id}",
                 currency="USD",
+            )
+            await payment_service.complete_hold(
+                db, hold=hold, paypal_order_token=hold.paypal_order_id
             )
             await db.commit()
 

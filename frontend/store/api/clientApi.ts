@@ -1,16 +1,17 @@
 import type {
   ApiBooking,
   ApiConsent,
+  AvailabilityResponse,
   CancelBookingRequest,
   ClientChatRequest,
   ClientChatResponse,
+  CompleteHoldRequest,
   ConsentRequest,
   CreateBookingRequest,
   CreateHoldRequest,
   LiveKitTokenRequest,
   LiveKitTokenResponse,
   PaymentHold,
-  TimeSlot,
 } from '@/types/api-booking'
 import {
   type ApiPage,
@@ -44,6 +45,14 @@ export const clientApi = baseApi.injectEndpoints({
       }),
       transformResponse: (res: ApiPage<CatalogOrganization> | CatalogOrganization[]) =>
         normalizePaginated(res),
+      providesTags: ['catalog'],
+    }),
+
+    getCatalogOrganization: builder.query<CatalogOrganization, string>({
+      query: (orgId) => ({
+        url: `/api/v1/catalog/organizations/${orgId}`,
+        method: 'GET',
+      }),
       providesTags: ['catalog'],
     }),
 
@@ -120,9 +129,28 @@ export const clientApi = baseApi.injectEndpoints({
       providesTags: ['catalog'],
     }),
 
+    getCatalogCancellationPolicy: builder.query<
+      {
+        org_id: string
+        name: string
+        free_cancel_hours: number
+        no_show_fee_percent: number
+        late_cancel_fee_percent?: number | null
+        data: Record<string, unknown>
+      },
+      string
+    >({
+      query: (orgId) => ({
+        url: `/api/v1/catalog/organizations/${orgId}/cancellation-policy`,
+        method: 'GET',
+      }),
+      providesTags: ['catalog'],
+    }),
+
     createBooking: builder.mutation<ApiBooking, CreateBookingRequest>({
       query: (data) => ({
-        url: '/api/v1/bookings/',
+        // Prefer no trailing slash — some proxies 307 `/bookings/` → `/bookings` and drop POST.
+        url: '/api/v1/bookings',
         method: 'POST',
         data,
       }),
@@ -143,7 +171,7 @@ export const clientApi = baseApi.injectEndpoints({
     }),
 
     getBookingAvailability: builder.query<
-      TimeSlot[],
+      AvailabilityResponse,
       { service_id: string; day: string; slot_minutes?: number }
     >({
       query: ({ service_id, day, slot_minutes }) => ({
@@ -192,6 +220,18 @@ export const clientApi = baseApi.injectEndpoints({
       invalidatesTags: ['payments', 'bookings'],
     }),
 
+    completePaymentHold: builder.mutation<
+      PaymentHold,
+      { holdId: string; body?: CompleteHoldRequest }
+    >({
+      query: ({ holdId, body }) => ({
+        url: `/api/v1/payments/holds/${holdId}/complete`,
+        method: 'POST',
+        data: body ?? {},
+      }),
+      invalidatesTags: ['payments', 'bookings'],
+    }),
+
     clientConciergeChat: builder.mutation<ClientChatResponse, ClientChatRequest>({
       query: (body) => ({
         url: '/api/v1/chat',
@@ -213,10 +253,12 @@ export const clientApi = baseApi.injectEndpoints({
 export const {
   useGetCatalogHeroQuery,
   useGetCatalogOrganizationsQuery,
+  useGetCatalogOrganizationQuery,
   useGetCatalogCategoriesQuery,
   useGetCatalogServicesQuery,
   useGetCatalogServiceQuery,
   useLazyGetCatalogServiceQuery,
+  useGetCatalogCancellationPolicyQuery,
   useCreateBookingMutation,
   useGetMyBookingsQuery,
   useGetBookingAvailabilityQuery,
@@ -225,6 +267,7 @@ export const {
   useCreateBookingConsentMutation,
   useCancelBookingMutation,
   useCreatePaymentHoldMutation,
+  useCompletePaymentHoldMutation,
   useClientConciergeChatMutation,
   useCreateLiveKitTokenMutation,
 } = clientApi

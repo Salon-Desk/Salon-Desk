@@ -214,7 +214,12 @@ async def test_booking_tools_book_and_confirm():
             return_value=mock_booking,
         ),
         patch("app.services.payment_service.create_consent", new_callable=AsyncMock),
-        patch("app.services.payment_service.create_hold", new_callable=AsyncMock),
+        patch(
+            "app.services.payment_service.create_hold",
+            new_callable=AsyncMock,
+            return_value=(MagicMock(paypal_order_id="STUB-test"), None),
+        ),
+        patch("app.services.payment_service.complete_hold", new_callable=AsyncMock),
     ):
         book_tool, _ = build_booking_tools(session_factory, on_booking_success=on_booking)
         res = await book_tool(service_query="Signature Fade", notes="Book via agent")
@@ -269,7 +274,12 @@ async def test_chat_booking_handler():
             return_value=mock_booking,
         ),
         patch("app.services.payment_service.create_consent", new_callable=AsyncMock),
-        patch("app.services.payment_service.create_hold", new_callable=AsyncMock),
+        patch(
+            "app.services.payment_service.create_hold",
+            new_callable=AsyncMock,
+            return_value=(MagicMock(paypal_order_id="STUB-test"), None),
+        ),
+        patch("app.services.payment_service.complete_hold", new_callable=AsyncMock),
     ):
         handled, reply, confirmed = await try_handle_chat_booking(
             mock_db,

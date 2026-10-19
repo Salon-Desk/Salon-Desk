@@ -2,16 +2,18 @@ import contextlib
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy import Float, Select, cast, func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DbSession
 from app.core.pagination import paginate_items
-from app.models.enums import OrganizationStatus, ServiceStatus
+from app.models.enums import OrganizationStatus, OrgCancellationPolicyStatus, ServiceStatus
 from app.models.organization import Organization, OrgSettings
+from app.models.policy import OrgCancellationPolicy
 from app.models.service import Service, ServiceCategory
 from app.schemas.common import PageOut
-from app.schemas.organization import CatalogHeroOut, CatalogOrganizationOut, OrganizationOut
+from app.schemas.organization import CatalogHeroOut, CatalogOrganizationOut
 from app.schemas.service import CatalogServiceOut, CatalogServicesPage, ServiceCategoryOut
 from app.services.cache_service import cache_service
 
@@ -170,12 +172,71 @@ async def list_organizations(
     )
 
 
-@router.get("/organizations/{org_id}", response_model=OrganizationOut)
-async def get_organization(org_id: UUID, db: DbSession) -> OrganizationOut:
+@router.get("/organizations/{org_id}", response_model=CatalogOrganizationOut)
+async def get_organization(org_id: UUID, db: DbSession) -> CatalogOrganizationOut:
+    result = await db.execute(
+        select(Organization)
+        .options(selectinload(Organization.settings))
+        .where(Organization.id == org_id)
+    )
+    org = result.scalar_one_or_none()
+    if org is None or org.status != OrganizationStatus.APPROVED:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Organization not found")
+    settings = org.settings
+    return CatalogOrganizationOut(
+        id=org.id,
+        name=org.name,
+        description=org.description,
+        picture=org.picture,
+        physical_address=settings.physical_address if settings else None,
+        lat=settings.lat if settings else None,
+        lng=settings.lng if settings else None,
+        timezone=settings.timezone if settings else None,
+    )
+
+
+class CatalogCancellationPolicyOut(BaseModel):
+    """Public booking-time policy preview (same fields locked into booking snapshots)."""
+
+    org_id: UUID
+    name: str
+    free_cancel_hours: float = 24
+    no_show_fee_percent: float = 50
+    late_cancel_fee_percent: float | None = None
+    data: dict = {}
+
+
+@router.get(
+    "/organizations/{org_id}/cancellation-policy",
+    response_model=CatalogCancellationPolicyOut,
+)
+async def get_organization_cancellation_policy(
+    org_id: UUID, db: DbSession
+) -> CatalogCancellationPolicyOut:
     org = await db.get(Organization, org_id)
     if org is None or org.status != OrganizationStatus.APPROVED:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Organization not found")
-    return OrganizationOut.model_validate(org)
+
+    result = await db.execute(
+        select(OrgCancellationPolicy).where(
+            OrgCancellationPolicy.org_id == org_id,
+            OrgCancellationPolicy.status == OrgCancellationPolicyStatus.ACTIVE,
+        )
+    )
+    policy = result.scalar_one_or_none()
+    data = dict(policy.data or {}) if policy is not None else {}
+    return CatalogCancellationPolicyOut(
+        org_id=org_id,
+        name=policy.name if policy is not None else "Default",
+        free_cancel_hours=float(data.get("free_cancel_hours", 24)),
+        no_show_fee_percent=float(data.get("no_show_fee_percent", 50)),
+        late_cancel_fee_percent=(
+            float(data["late_cancel_fee_percent"])
+            if data.get("late_cancel_fee_percent") is not None
+            else None
+        ),
+        data=data,
+    )
 
 
 @router.get("/categories", response_model=PageOut[ServiceCategoryOut])

@@ -44,6 +44,15 @@ class TimeSlot(BaseModel):
     available: bool = True
 
 
+class AvailabilityOut(BaseModel):
+    """Availability for a calendar day in the salon's configured timezone."""
+
+    timezone: str
+    day: str
+    open_windows: list[list[str]] = []
+    slots: list[TimeSlot] = []
+
+
 class BookingServiceOut(ORMModel):
     id: UUID
     booking_id: UUID

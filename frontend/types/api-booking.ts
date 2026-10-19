@@ -74,6 +74,13 @@ export interface TimeSlot {
   available: boolean
 }
 
+export interface AvailabilityResponse {
+  timezone: string
+  day: string
+  open_windows: [string, string][] | string[][]
+  slots: TimeSlot[]
+}
+
 export interface CreateHoldRequest {
   booking_id: string
   idempotency_key: string
@@ -95,6 +102,12 @@ export interface PaymentHold {
   reauthorization_count: number
   idempotency_key: string
   created_at: string
+  /** When status is PENDING — open this link to approve the AUTHORIZE hold. */
+  approval_url?: string | null
+}
+
+export interface CompleteHoldRequest {
+  paypal_order_token?: string | null
 }
 
 export interface PaymentCapture {
