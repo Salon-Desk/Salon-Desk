@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import enum
 import logging
+from decimal import Decimal
 from functools import lru_cache
 
-from sqlalchemy import select, text
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy import inspect, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 import app.models  # noqa: F401 — register all models on metadata
@@ -64,26 +67,71 @@ async def _ensure_enum_values(conn) -> None:
         )
 
 
+def _default_sql(column, dialect) -> str | None:
+    """SQL literal for a column's scalar/clause default, or None when it has none."""
+    if column.server_default is not None:
+        arg = column.server_default.arg
+        return arg if isinstance(arg, str) else str(arg.compile(dialect=dialect))
+    default = column.default
+    if default is None:
+        return None
+    if getattr(default, "is_clause_element", False):
+        return str(default.arg.compile(dialect=dialect))
+    if not getattr(default, "is_scalar", False):
+        return None
+    value = default.arg
+    if isinstance(value, enum.Enum):
+        value = value.value
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int | float | Decimal):
+        return str(value)
+    if isinstance(value, str):
+        return "'" + value.replace("'", "''") + "'"
+    return None
+
+
+def _sync_model_columns(sync_conn) -> list[str]:
+    """
+    Bring existing tables in line with the models: create_all never alters tables, so a
+    database created by an older build is missing newer columns (and inserts then fail).
+    """
+    insp = inspect(sync_conn)
+    dialect = sync_conn.dialect
+    existing_tables = set(insp.get_table_names())
+    applied: list[str] = []
+    for table in Base.metadata.sorted_tables:
+        if table.name not in existing_tables:
+            continue
+        db_columns = {c["name"]: c for c in insp.get_columns(table.name)}
+        model_columns = {c.name for c in table.columns}
+        for column in table.columns:
+            if column.name in db_columns:
+                continue
+            if isinstance(column.type, SAEnum):
+                column.type.create(sync_conn, checkfirst=True)
+            stmt = (
+                f'ALTER TABLE "{table.name}" ADD COLUMN IF NOT EXISTS "{column.name}" '
+                f"{column.type.compile(dialect=dialect)}"
+            )
+            default = _default_sql(column, dialect)
+            if default is not None:
+                stmt += f" DEFAULT {default}"
+            sync_conn.exec_driver_sql(stmt)
+            applied.append(stmt)
+        # Legacy NOT NULL columns the models no longer write would reject every insert.
+        for name, info in db_columns.items():
+            if name not in model_columns and not info["nullable"] and info.get("default") is None:
+                stmt = f'ALTER TABLE "{table.name}" ALTER COLUMN "{name}" DROP NOT NULL'
+                sync_conn.exec_driver_sql(stmt)
+                applied.append(stmt)
+    return applied
+
+
 async def _ensure_additive_columns(conn) -> None:
-    """create_all will not add columns to existing tables — patch demo schema drift."""
-    for stmt in (
-        'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ',
-        "ALTER TABLE booking ADD COLUMN IF NOT EXISTS agreed_hold_amount NUMERIC(10, 2)",
-        "ALTER TABLE booking ADD COLUMN IF NOT EXISTS agreed_no_show_fee NUMERIC(10, 2)",
-        "ALTER TABLE booking ADD COLUMN IF NOT EXISTS free_cancel_deadline_at TIMESTAMPTZ",
-        "ALTER TABLE booking ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ",
-        "ALTER TABLE booking ADD COLUMN IF NOT EXISTS policy_snapshot_json JSONB",
-        "ALTER TABLE booking ADD COLUMN IF NOT EXISTS commission_snapshot JSONB",
-        "ALTER TABLE booking ADD COLUMN IF NOT EXISTS cancellation_fee_json JSONB",
-        "ALTER TABLE booking_service ADD COLUMN IF NOT EXISTS base_price NUMERIC(10, 2)",
-        "ALTER TABLE booking_service ADD COLUMN IF NOT EXISTS service_policy_snapshot_json JSONB",
-        "ALTER TABLE booking_service ADD COLUMN IF NOT EXISTS commission_rule_snapshot_json JSONB",
-        "ALTER TABLE payment_hold ADD COLUMN IF NOT EXISTS parent_authorization_id VARCHAR(100)",
-        "ALTER TABLE payment_hold ADD COLUMN IF NOT EXISTS latest_authorization_id VARCHAR(100)",
-        "ALTER TABLE payment_hold ADD COLUMN IF NOT EXISTS honor_expires_at TIMESTAMPTZ",
-        "ALTER TABLE payment_hold ADD COLUMN IF NOT EXISTS reauthorization_count INTEGER DEFAULT 0",
-    ):
-        await conn.execute(text(stmt))
+    """Patch schema drift on databases created by older builds, then backfill old rows."""
+    for stmt in await conn.run_sync(_sync_model_columns):
+        logger.info("Schema drift patched: %s", stmt)
 
     # Backfill NOT NULL snapshot columns so subsequent inserts/reads are safe on old rows.
     await conn.execute(
@@ -109,6 +157,33 @@ async def _ensure_additive_columns(conn) -> None:
                OR free_cancel_deadline_at IS NULL
                OR policy_snapshot_json IS NULL
                OR commission_snapshot IS NULL
+            """
+        )
+    )
+    await conn.execute(
+        text(
+            """
+            UPDATE booking_service bs
+            SET base_price = COALESCE(
+                    bs.base_price,
+                    (SELECT s.base_price FROM service s WHERE s.id = bs.service_id),
+                    0
+                ),
+                service_policy_snapshot_json = COALESCE(bs.service_policy_snapshot_json, '{}'::jsonb),
+                commission_rule_snapshot_json = COALESCE(bs.commission_rule_snapshot_json, '{}'::jsonb)
+            WHERE bs.base_price IS NULL
+               OR bs.service_policy_snapshot_json IS NULL
+               OR bs.commission_rule_snapshot_json IS NULL
+            """
+        )
+    )
+    await conn.execute(
+        text(
+            """
+            UPDATE payment_hold
+            SET captured_amount = COALESCE(captured_amount, 0),
+                reauthorization_count = COALESCE(reauthorization_count, 0)
+            WHERE captured_amount IS NULL OR reauthorization_count IS NULL
             """
         )
     )
