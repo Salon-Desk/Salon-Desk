@@ -21,6 +21,7 @@ from app.api.v1.platform import (
     analytics,
     categories,
     commissions,
+    curation,
     feedback_reviews,
     invoices,
     orgs,
@@ -47,6 +48,7 @@ for platform_router in (
     invoices.router,
     requests.router,
     feedback_reviews.router,
+    curation.router,
 ):
     api_router.include_router(platform_router)
 

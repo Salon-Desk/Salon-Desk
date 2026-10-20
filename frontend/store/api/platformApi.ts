@@ -1,15 +1,22 @@
 import type { ClientFeedbackItem } from '@/types/api-feedback'
 import {
+  type AdminCuration,
   type AdminDashboard,
   type ApiChangeRequest,
   type ApiOrganization,
   type ApiPage,
   type ApiServiceCategory,
+  type CreateFeaturedItemRequest,
   type CreateServiceCategoryRequest,
   type GenerateCommissionInvoiceRequest,
+  type HeroSettings,
   normalizePaginated,
   type OrgCommissionInvoice,
   type PlatformCommission,
+  type PopularSettings,
+  type UpdateFeaturedItemRequest,
+  type UpdateHeroSettingsRequest,
+  type UpdatePopularSettingsRequest,
   type UpdateServiceCategoryRequest,
 } from '@/types/api-org'
 import type { MessageOut } from '@/types/auth'
@@ -292,6 +299,61 @@ export const platformApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['admin', 'payments', 'organizations'],
     }),
+
+    getAdminCuration: builder.query<AdminCuration, void>({
+      query: () => ({ url: '/api/v1/admin/curation', method: 'GET' }),
+      providesTags: ['admin', 'curation'],
+    }),
+
+    updateHeroSettings: builder.mutation<HeroSettings, UpdateHeroSettingsRequest>({
+      query: (body) => ({
+        url: '/api/v1/admin/curation/hero',
+        method: 'PUT',
+        data: body,
+      }),
+      invalidatesTags: ['admin', 'curation', 'catalog'],
+    }),
+
+    updatePopularAlgorithm: builder.mutation<PopularSettings, UpdatePopularSettingsRequest>({
+      query: (body) => ({
+        url: '/api/v1/admin/curation/popular-algorithm',
+        method: 'PUT',
+        data: body,
+      }),
+      invalidatesTags: ['admin', 'curation', 'catalog'],
+    }),
+
+    createFeaturedItem: builder.mutation<
+      { id: string; message: string },
+      CreateFeaturedItemRequest
+    >({
+      query: (body) => ({
+        url: '/api/v1/admin/curation/featured',
+        method: 'POST',
+        data: body,
+      }),
+      invalidatesTags: ['admin', 'curation', 'catalog'],
+    }),
+
+    updateFeaturedItem: builder.mutation<
+      { id: string; message: string },
+      { id: string; body: UpdateFeaturedItemRequest }
+    >({
+      query: ({ id, body }) => ({
+        url: `/api/v1/admin/curation/featured/${id}`,
+        method: 'PATCH',
+        data: body,
+      }),
+      invalidatesTags: ['admin', 'curation', 'catalog'],
+    }),
+
+    deleteFeaturedItem: builder.mutation<{ id: string; message: string }, string>({
+      query: (id) => ({
+        url: `/api/v1/admin/curation/featured/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['admin', 'curation', 'catalog'],
+    }),
   }),
 })
 
@@ -319,6 +381,12 @@ export const {
   useGetAdminClientFeedbackQuery,
   useApproveAdminClientFeedbackMutation,
   useRejectAdminClientFeedbackMutation,
+  useGetAdminCurationQuery,
+  useUpdateHeroSettingsMutation,
+  useUpdatePopularAlgorithmMutation,
+  useCreateFeaturedItemMutation,
+  useUpdateFeaturedItemMutation,
+  useDeleteFeaturedItemMutation,
 } = platformApi
 
 /** @deprecated Use `platformApi` — kept for existing imports. */

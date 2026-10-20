@@ -147,11 +147,18 @@ export function mapCatalogServiceToSalonService(service: CatalogService): SalonS
     holdDeposit,
     noShowFee: Math.round(price * 0.5),
     description: service.description || 'Salon service',
-    popular: price >= 80,
+    popular: service.is_featured || Number(service.rating_avg ?? 0) >= 4.5,
     imageUrl: catalogCoverUrl(service.images),
     organizationId: service.organization_id,
     organizationName: service.organization_name || undefined,
     distanceKm: Number.isFinite(distanceKm) ? distanceKm : undefined,
+    rating:
+      typeof service.rating_avg === 'number' && service.rating_avg > 0
+        ? service.rating_avg
+        : undefined,
+    reviewsCount: service.review_count ?? 0,
+    isFeatured: service.is_featured ?? false,
+    featuredBadge: service.featured_badge || undefined,
   }
 }
 

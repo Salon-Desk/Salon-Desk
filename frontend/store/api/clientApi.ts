@@ -21,6 +21,7 @@ import type {
 import {
   type ApiPage,
   type ApiServiceCategory,
+  type CatalogCuration,
   type CatalogHero,
   type CatalogOrganization,
   type CatalogService,
@@ -36,6 +37,11 @@ export const clientApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getCatalogHero: builder.query<CatalogHero, void>({
       query: () => ({ url: '/api/v1/catalog/hero', method: 'GET' }),
+      providesTags: ['catalog'],
+    }),
+
+    getCatalogCuration: builder.query<CatalogCuration, void>({
+      query: () => ({ url: '/api/v1/catalog/curation', method: 'GET' }),
       providesTags: ['catalog'],
     }),
 
@@ -84,6 +90,9 @@ export const clientApi = baseApi.injectEndpoints({
           org_id,
           q,
           sort = 'name',
+          min_price,
+          max_price,
+          min_rating,
           lat,
           lng,
           max_distance_km,
@@ -98,6 +107,9 @@ export const clientApi = baseApi.injectEndpoints({
             ...(category_id ? { category_id } : {}),
             ...(org_id ? { org_id } : {}),
             ...(q ? { q } : {}),
+            ...(min_price !== undefined ? { min_price } : {}),
+            ...(max_price !== undefined ? { max_price } : {}),
+            ...(min_rating !== undefined ? { min_rating } : {}),
             ...(lat !== undefined ? { lat } : {}),
             ...(lng !== undefined ? { lng } : {}),
             ...(max_distance_km !== undefined ? { max_distance_km } : {}),
@@ -298,6 +310,7 @@ export const clientApi = baseApi.injectEndpoints({
 
 export const {
   useGetCatalogHeroQuery,
+  useGetCatalogCurationQuery,
   useGetCatalogOrganizationsQuery,
   useGetCatalogOrganizationQuery,
   useGetCatalogCategoriesQuery,

@@ -17,6 +17,10 @@ export interface SalonService {
   organizationId?: string
   organizationName?: string
   distanceKm?: number
+  rating?: number
+  reviewsCount?: number
+  isFeatured?: boolean
+  featuredBadge?: string
 }
 
 export type StaffStatus = 'ACTIVE' | 'ON_LEAVE'

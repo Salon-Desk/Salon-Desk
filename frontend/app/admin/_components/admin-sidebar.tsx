@@ -9,6 +9,7 @@ import {
   PieChart,
   Receipt,
   Sliders,
+  Sparkles,
   Users,
   X,
 } from 'lucide-react'
@@ -103,6 +104,13 @@ export function AdminSidebar({
       group: ADMIN_NAV_GROUPS[3],
       badge: categoryCount,
       href: ADMIN_TAB_ROUTES.taxonomy,
+    },
+    {
+      id: 'curation',
+      label: ADMIN_TAB_LABELS.curation,
+      icon: Sparkles,
+      group: ADMIN_NAV_GROUPS[3],
+      href: ADMIN_TAB_ROUTES.curation,
     },
     {
       id: 'staff',

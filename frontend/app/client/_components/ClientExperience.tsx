@@ -18,6 +18,7 @@ import { mapApiBookingToUi } from '@/lib/mappers/booking'
 import {
   useCancelBookingMutation,
   useGetCatalogCategoriesQuery,
+  useGetCatalogCurationQuery,
   useGetCatalogHeroQuery,
   useGetCatalogOrganizationsQuery,
   useGetMyBookingsQuery,
@@ -30,7 +31,8 @@ import type { CatalogService, CatalogServiceSort } from '@/types/api-org'
 import { usePagedCatalog } from '../_hooks/use-paged-catalog'
 import { BookingReceipt as ReceiptModal } from './BookingReceipt'
 import { BookingsPanel } from './BookingsPanel'
-import { CatalogFilters, type ServiceSort } from './CatalogFilters'
+import { CatalogFeaturedSection } from './CatalogFeaturedSection'
+import { CatalogFilters, type PriceRange, type ServiceSort } from './CatalogFilters'
 import { CatalogHero } from './CatalogHero'
 import { CatalogSection } from './CatalogSection'
 import { checkoutPath } from './ClientCheckoutPage'
@@ -45,11 +47,12 @@ import { ServiceCard } from './ServiceCard'
 const PAGE_SIZE = 6
 const NEARBY_RADIUS_KM = 15
 
-function toApiSort(sort: ServiceSort, mode: 'browse' | 'results'): CatalogServiceSort {
+function toApiSort(sort: ServiceSort): CatalogServiceSort {
   if (sort === 'price-asc') return 'price_asc'
   if (sort === 'price-desc') return 'price_desc'
   if (sort === 'duration') return 'duration'
-  if (sort === 'popular') return mode === 'browse' ? 'name' : 'popular'
+  if (sort === 'rating') return 'rating'
+  if (sort === 'popular') return 'popular'
   return 'name'
 }
 
@@ -70,7 +73,9 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
     request: requestLocation,
   } = useGeolocation({ requestOnMount: !filterOrgId })
 
+  const { data: curation, isLoading: curationLoading } = useGetCatalogCurationQuery()
   const { data: hero, isLoading: heroLoading } = useGetCatalogHeroQuery()
+  const effectiveHero = curation?.hero || hero
   const { data: categoriesData } = useGetCatalogCategoriesQuery()
   const { data: organizationsData } = useGetCatalogOrganizationsQuery()
   const categories = categoriesData?.items ?? []
@@ -90,6 +95,9 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
   const [selectedOrgId, setSelectedOrgId] = useState(filterOrgId ?? '')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<ServiceSort>('popular')
+  const [priceRange, setPriceRange] = useState<PriceRange>('all')
+  const [minRating, setMinRating] = useState<number | null>(null)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const debouncedSearch = useDebounce(searchQuery.trim(), 300)
 
   useEffect(() => {
@@ -136,16 +144,35 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
 
   const effectiveOrgId = filterOrgId || selectedOrgId || undefined
 
+  const priceFilterParams = useMemo(() => {
+    if (priceRange === 'under-50') return { max_price: 50 }
+    if (priceRange === '50-100') return { min_price: 50, max_price: 100 }
+    if (priceRange === '100-150') return { min_price: 100, max_price: 150 }
+    if (priceRange === '150-plus') return { min_price: 150 }
+    return {}
+  }, [priceRange])
+
+  const ratingFilterParams = useMemo(() => {
+    if (minRating !== null) return { min_rating: minRating }
+    return {}
+  }, [minRating])
+
   const isFilteredView =
-    Boolean(effectiveOrgId) || selectedCategory !== 'All' || debouncedSearch.length > 0
+    Boolean(effectiveOrgId) ||
+    selectedCategory !== 'All' ||
+    debouncedSearch.length > 0 ||
+    priceRange !== 'all' ||
+    minRating !== null
 
   const sharedFilters = useMemo(
     () => ({
       ...(categoryId ? { category_id: categoryId } : {}),
       ...(effectiveOrgId ? { org_id: effectiveOrgId } : {}),
       ...(debouncedSearch ? { q: debouncedSearch } : {}),
+      ...priceFilterParams,
+      ...ratingFilterParams,
     }),
-    [categoryId, effectiveOrgId, debouncedSearch],
+    [categoryId, effectiveOrgId, debouncedSearch, priceFilterParams, ratingFilterParams],
   )
 
   const nearbyFilters = useMemo(() => {
@@ -176,7 +203,7 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
   const browseFilters = useMemo(
     () => ({
       ...sharedFilters,
-      sort: toApiSort(sortBy, 'browse'),
+      sort: toApiSort(sortBy),
     }),
     [sharedFilters, sortBy],
   )
@@ -184,7 +211,7 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
   const resultsFilters = useMemo(
     () => ({
       ...sharedFilters,
-      sort: toApiSort(sortBy, 'results'),
+      sort: toApiSort(sortBy),
     }),
     [sharedFilters, sortBy],
   )
@@ -326,6 +353,7 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
       <ServiceCard
         key={service.id}
         service={service}
+        viewMode={viewMode}
         onAskAi={handleAskAi}
         onQuickBook={handleStartBooking}
         onOpenProtocol={setProtocolService}
@@ -347,8 +375,20 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-16">
         {activeTab === 'catalog' ? (
           <div>
-            <CatalogHero hero={hero} isLoading={heroLoading} />
+            <CatalogHero hero={effectiveHero} isLoading={heroLoading && curationLoading} />
+
+            {!filterOrgId && !isFilteredView && (
+              <CatalogFeaturedSection
+                featuredOrganizations={curation?.featured_organizations ?? []}
+                featuredServices={curation?.featured_services ?? []}
+                onSelectOrganization={(orgId) => setSelectedOrgId(orgId)}
+                onQuickBookService={handleStartBooking}
+                onAskAiService={handleAskAi}
+              />
+            )}
+
             {filterOrgId ? <ClientSalonFeedbackSection orgId={filterOrgId} /> : null}
+
             <CatalogFilters
               category={selectedCategory}
               onCategoryChange={setSelectedCategory}
@@ -356,10 +396,23 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
               onSearchChange={setSearchQuery}
               sortBy={sortBy}
               onSortChange={setSortBy}
+              priceRange={priceRange}
+              onPriceRangeChange={setPriceRange}
+              minRating={minRating}
+              onMinRatingChange={setMinRating}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
               categories={categoryOptions}
               organizations={filterOrgId ? [] : organizations}
               organizationId={selectedOrgId}
               onOrganizationChange={filterOrgId ? undefined : setSelectedOrgId}
+              onClearAll={() => {
+                setSelectedCategory('All')
+                setSearchQuery('')
+                setPriceRange('all')
+                setMinRating(null)
+                if (!filterOrgId) setSelectedOrgId('')
+              }}
             />
 
             {catalogError ? (
@@ -381,24 +434,27 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
                   <EmptyState
                     icon={Search}
                     title="No services match your filters"
-                    description="Try another salon, category, or search term to find available treatments."
+                    description="Try another salon, category, price range, or search term to find available treatments."
                     actionLabel="Reset Filters"
                     onAction={() => {
                       setSelectedCategory('All')
                       setSearchQuery('')
+                      setPriceRange('all')
+                      setMinRating(null)
                       if (!filterOrgId) setSelectedOrgId('')
                     }}
                   />
                 ) : (
                   <CatalogSection
                     title="Results"
-                    subtitle={filterOrgId ? 'Services at this salon' : 'Matching your filters'}
+                    subtitle={filterOrgId ? 'Services at this salon' : 'Matching your criteria'}
                     totalCount={results.total}
                     loadedCount={results.services.length}
                     hasMore={results.hasMore}
                     onShowMore={results.loadMore}
                     isLoading={results.isInitialLoading}
                     isLoadingMore={results.isLoadingMore}
+                    viewMode={viewMode}
                   >
                     {renderCards(results.services)}
                   </CatalogSection>
@@ -417,6 +473,7 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
                   onShowMore={nearby.loadMore}
                   isLoading={Boolean(userCoords) && nearby.isInitialLoading}
                   isLoadingMore={nearby.isLoadingMore}
+                  viewMode={viewMode}
                   empty={
                     geoStatus === 'pending' || geoStatus === 'idle' ? (
                       <div className="flex items-center gap-2 rounded-2xl bg-stone-100/70 px-4 py-5 text-sm text-stone-500">
@@ -464,13 +521,14 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
 
                 <CatalogSection
                   title="Popular"
-                  subtitle="High-demand treatments across salons"
+                  subtitle="Top-rated services based on client reviews & salon reputation"
                   totalCount={popular.total}
                   loadedCount={popular.services.length}
                   hasMore={popular.hasMore}
                   onShowMore={popular.loadMore}
                   isLoading={popular.isInitialLoading}
                   isLoadingMore={popular.isLoadingMore}
+                  viewMode={viewMode}
                   empty={
                     <div className="rounded-2xl bg-stone-100/70 px-4 py-5 text-sm text-stone-500">
                       No popular services yet.
@@ -489,6 +547,7 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
                   onShowMore={browse.loadMore}
                   isLoading={browse.isInitialLoading}
                   isLoadingMore={browse.isLoadingMore}
+                  viewMode={viewMode}
                   empty={
                     <div className="rounded-2xl bg-stone-100/70 px-4 py-5 text-sm text-stone-500">
                       No services available.

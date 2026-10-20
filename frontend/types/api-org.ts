@@ -125,10 +125,14 @@ export interface CatalogService {
   distance_km?: number | null
   platform_commission_amount?: string | number | null
   authorization_hold_amount?: string | number | null
+  rating_avg?: number | null
+  review_count?: number
+  is_featured?: boolean
+  featured_badge?: string | null
 }
 
 export type CatalogServiceSort =
-  'name' | 'popular' | 'price_asc' | 'price_desc' | 'duration' | 'distance'
+  'name' | 'popular' | 'rating' | 'price_asc' | 'price_desc' | 'duration' | 'distance'
 
 export interface CatalogServicesQueryParams {
   page?: number
@@ -137,6 +141,9 @@ export interface CatalogServicesQueryParams {
   org_id?: string
   q?: string
   sort?: CatalogServiceSort
+  min_price?: number
+  max_price?: number
+  min_rating?: number
   lat?: number
   lng?: number
   max_distance_km?: number
@@ -298,4 +305,87 @@ export interface ApiOrgShift {
   org_id: string
   name: string
   data: Record<string, unknown>
+}
+
+export interface HeroSettings {
+  eyebrow: string
+  headline: string
+  highlight: string
+  subtitle: string
+  image_url?: string | null
+  image_alt: string
+  organization_id?: string | null
+  organization_name?: string | null
+  physical_address?: string | null
+  salon_count: number
+  service_count: number
+  is_active: boolean
+}
+
+export interface UpdateHeroSettingsRequest {
+  eyebrow?: string
+  headline?: string
+  highlight?: string
+  subtitle?: string
+  image_url?: string | null
+  image_alt?: string
+  organization_id?: string | null
+  is_active?: boolean
+}
+
+export interface PopularSettings {
+  min_rating: number
+  org_weight: number
+  service_weight: number
+}
+
+export interface UpdatePopularSettingsRequest {
+  min_rating?: number
+  org_weight?: number
+  service_weight?: number
+}
+
+export interface FeaturedOrganization {
+  id: string
+  item_id: string
+  badge_text: string
+  display_order: number
+  is_active: boolean
+  organization: CatalogOrganization
+}
+
+export interface FeaturedService {
+  id: string
+  item_id: string
+  badge_text: string
+  display_order: number
+  is_active: boolean
+  service: CatalogService
+}
+
+export interface CatalogCuration {
+  hero: CatalogHero
+  featured_organizations: FeaturedOrganization[]
+  featured_services: FeaturedService[]
+}
+
+export interface AdminCuration {
+  hero: HeroSettings
+  popular_settings: PopularSettings
+  featured_organizations: FeaturedOrganization[]
+  featured_services: FeaturedService[]
+}
+
+export interface CreateFeaturedItemRequest {
+  target_type: 'organization' | 'service'
+  target_id: string
+  badge_text: string
+  display_order?: number
+  is_active?: boolean
+}
+
+export interface UpdateFeaturedItemRequest {
+  badge_text?: string
+  display_order?: number
+  is_active?: boolean
 }

@@ -1,5 +1,6 @@
 from app.models.base import BaseModel, TimestampedModel
 from app.models.booking import Booking, BookingService
+from app.models.curation import FeaturedItem, PlatformCurationSetting
 from app.models.enums import (
     BookingStatus,
     ChangeRequestStatus,
@@ -39,6 +40,8 @@ from app.models.user import EmailVerificationToken, PasswordResetToken, Profile,
 __all__ = [
     "BaseModel",
     "TimestampedModel",
+    "PlatformCurationSetting",
+    "FeaturedItem",
     "User",
     "Profile",
     "PasswordResetToken",

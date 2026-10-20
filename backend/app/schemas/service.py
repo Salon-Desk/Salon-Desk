@@ -88,6 +88,10 @@ class CatalogServiceOut(ORMModel):
     distance_km: float | None = None
     platform_commission_amount: Decimal | None = None
     authorization_hold_amount: Decimal | None = None
+    rating_avg: float = 4.8
+    review_count: int = 0
+    is_featured: bool = False
+    featured_badge: str | None = None
 
 
 class CatalogServicesPage(BaseModel):

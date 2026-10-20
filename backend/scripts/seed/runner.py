@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.core.config import get_settings
 from app.core.database_url import resolve_database_url
 from app.models.booking import Booking, BookingService
+from app.models.curation import FeaturedItem, PlatformCurationSetting
 from app.models.enums import (
     BookingStatus,
     OrgAccountStatus,
@@ -399,6 +400,82 @@ async def seed_clients_and_bookings(session: AsyncSession, org_data_list: list[d
     logger.info("Seeded clients and sample bookings (pending + confirmed/hold)")
 
 
+async def seed_curation(session: AsyncSession, org_data_list: list[dict]) -> None:
+    if not org_data_list:
+        return
+    primary = org_data_list[0]
+    primary_org = primary["org"]
+    primary_services = primary["services"]
+
+    curation_setting = PlatformCurationSetting(
+        key="default",
+        hero_eyebrow="Premier Salon Network",
+        hero_headline="Book signature salon treatments with",
+        hero_highlight="zero upfront charge.",
+        hero_subtitle="Reserve top-rated stylists and salons with seamless PayPal authorization holds. Enjoy flexible rescheduling and transparent policies.",
+        hero_image_url=primary_org.picture,
+        hero_image_alt=primary_org.name,
+        hero_featured_org_id=primary_org.id,
+        popular_min_rating=Decimal("4.00"),
+        popular_org_weight=Decimal("0.40"),
+        popular_service_weight=Decimal("0.60"),
+        is_active=True,
+    )
+    session.add(curation_setting)
+
+    # Feature primary salon
+    session.add(
+        FeaturedItem(
+            target_type="organization",
+            org_id=primary_org.id,
+            service_id=None,
+            badge_text="Premier Partner",
+            display_order=1,
+            is_active=True,
+        )
+    )
+
+    # Feature second salon if available
+    if len(org_data_list) > 1:
+        second_org = org_data_list[1]["org"]
+        session.add(
+            FeaturedItem(
+                target_type="organization",
+                org_id=second_org.id,
+                service_id=None,
+                badge_text="Trending Salon",
+                display_order=2,
+                is_active=True,
+            )
+        )
+
+    # Feature single services
+    if primary_services:
+        session.add(
+            FeaturedItem(
+                target_type="service",
+                org_id=primary_org.id,
+                service_id=primary_services[0].id,
+                badge_text="Editor's Choice",
+                display_order=1,
+                is_active=True,
+            )
+        )
+    if len(org_data_list) > 1 and org_data_list[1]["services"]:
+        session.add(
+            FeaturedItem(
+                target_type="service",
+                org_id=org_data_list[1]["org"].id,
+                service_id=org_data_list[1]["services"][0].id,
+                badge_text="Must Try",
+                display_order=2,
+                is_active=True,
+            )
+        )
+
+    logger.info("Seeded platform curation hero and featured items")
+
+
 async def run_seed(*, clear: bool, database_url: str | None = None) -> None:
     settings = get_settings()
     url = resolve_database_url(database_url or settings.database_url)
@@ -427,6 +504,7 @@ async def run_seed(*, clear: bool, database_url: str | None = None) -> None:
             platform = await seed_platform(session)
             org_data_list = await seed_organizations(session, platform)
             await seed_clients_and_bookings(session, org_data_list)
+            await seed_curation(session, org_data_list)
             await session.commit()
 
         logger.info(

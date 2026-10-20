@@ -13,6 +13,7 @@ interface CatalogSectionProps {
   onShowMore: () => void
   isLoading?: boolean
   isLoadingMore?: boolean
+  viewMode?: 'grid' | 'list'
   empty?: ReactNode
   children: ReactNode
 }
@@ -26,6 +27,7 @@ export function CatalogSection({
   onShowMore,
   isLoading = false,
   isLoadingMore = false,
+  viewMode = 'grid',
   empty,
   children,
 }: CatalogSectionProps) {
@@ -52,7 +54,13 @@ export function CatalogSection({
 
       {!isLoading && hasItems ? (
         <>
-          <div className="grid grid-cols-1 gap-x-8 gap-y-9 sm:grid-cols-2 sm:gap-y-14 lg:grid-cols-3">
+          <div
+            className={
+              viewMode === 'list'
+                ? 'flex flex-col gap-4'
+                : 'grid grid-cols-1 gap-x-8 gap-y-9 sm:grid-cols-2 sm:gap-y-14 lg:grid-cols-3'
+            }
+          >
             {children}
           </div>
           {hasMore ? (

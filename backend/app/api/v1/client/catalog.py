@@ -10,11 +10,20 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import DbSession
 from app.core.exceptions import NotFoundError
 from app.core.pagination import paginate_items
-from app.models.enums import OrganizationStatus, OrgCancellationPolicyStatus, ServiceStatus
+from app.models.booking import BookingService
+from app.models.curation import FeaturedItem, PlatformCurationSetting
+from app.models.enums import (
+    FeedbackModerationStatus,
+    OrganizationStatus,
+    OrgCancellationPolicyStatus,
+    ServiceStatus,
+)
+from app.models.feedback import ClientFeedback
 from app.models.organization import Organization, OrgSettings
 from app.models.policy import OrgCancellationPolicy
 from app.models.service import Service, ServiceCategory
 from app.schemas.common import PageOut
+from app.schemas.curation import CatalogCurationOut, FeaturedOrganizationOut, FeaturedServiceOut
 from app.schemas.feedback import CatalogStaffOut, ClientFeedbackOut, OrgFeedbackSummaryOut
 from app.schemas.organization import CatalogHeroOut, CatalogOrganizationOut
 from app.schemas.service import CatalogServiceOut, CatalogServicesPage, ServiceCategoryOut
@@ -22,8 +31,6 @@ from app.services import feedback_service
 from app.services.cache_service import cache_service
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
-
-POPULAR_MIN_PRICE = 80
 
 
 def _haversine_km_expr(lat: float, lng: float):
@@ -41,7 +48,14 @@ def _haversine_km_expr(lat: float, lng: float):
     )
 
 
-def _service_to_out(service: Service, distance_km: float | None = None) -> CatalogServiceOut:
+def _service_to_out(
+    service: Service,
+    distance_km: float | None = None,
+    rating_avg: float = 4.8,
+    review_count: int = 0,
+    is_featured: bool = False,
+    featured_badge: str | None = None,
+) -> CatalogServiceOut:
     return CatalogServiceOut(
         id=service.id,
         organization_id=service.organization_id,
@@ -55,12 +69,16 @@ def _service_to_out(service: Service, distance_km: float | None = None) -> Catal
         organization_name=service.organization.name if service.organization else None,
         category_name=service.category.name if service.category else None,
         distance_km=distance_km,
+        rating_avg=rating_avg,
+        review_count=review_count,
+        is_featured=is_featured,
+        featured_badge=featured_badge,
     )
 
 
 @router.get("/hero", response_model=CatalogHeroOut)
 async def get_catalog_hero(db: DbSession) -> CatalogHeroOut:
-    """Landing hero content derived from approved salons and active services."""
+    """Landing hero content derived from approved salons and active services, with admin curation overrides."""
     cache_key = "catalog:hero"
     cached = await cache_service.get_json(cache_key)
     if cached is not None:
@@ -69,16 +87,40 @@ async def get_catalog_hero(db: DbSession) -> CatalogHeroOut:
         except Exception:
             pass
 
-    org_result = await db.execute(
-        select(Organization, OrgSettings)
-        .outerjoin(OrgSettings, OrgSettings.org_id == Organization.id)
-        .where(Organization.status == OrganizationStatus.APPROVED)
-        .order_by(Organization.name)
-        .limit(1)
+    # Check for platform curation settings
+    curation_result = await db.execute(
+        select(PlatformCurationSetting).where(PlatformCurationSetting.key == "default").limit(1)
     )
-    row = org_result.first()
-    featured_org: Organization | None = row[0] if row else None
-    featured_settings: OrgSettings | None = row[1] if row else None
+    curation_setting = curation_result.scalar_one_or_none()
+
+    featured_org: Organization | None = None
+    featured_settings: OrgSettings | None = None
+
+    if curation_setting and curation_setting.hero_featured_org_id:
+        target_res = await db.execute(
+            select(Organization, OrgSettings)
+            .outerjoin(OrgSettings, OrgSettings.org_id == Organization.id)
+            .where(
+                Organization.id == curation_setting.hero_featured_org_id,
+                Organization.status == OrganizationStatus.APPROVED,
+            )
+        )
+        target_row = target_res.first()
+        if target_row:
+            featured_org = target_row[0]
+            featured_settings = target_row[1]
+
+    if featured_org is None:
+        org_result = await db.execute(
+            select(Organization, OrgSettings)
+            .outerjoin(OrgSettings, OrgSettings.org_id == Organization.id)
+            .where(Organization.status == OrganizationStatus.APPROVED)
+            .order_by(Organization.name)
+            .limit(1)
+        )
+        row = org_result.first()
+        featured_org = row[0] if row else None
+        featured_settings = row[1] if row else None
 
     salon_count = int(
         (
@@ -103,28 +145,138 @@ async def get_catalog_hero(db: DbSession) -> CatalogHeroOut:
         ).scalar_one()
     )
 
-    name = featured_org.name if featured_org else "SalonDesk"
-    description = (
+    fallback_name = featured_org.name if featured_org else "SalonDesk"
+    fallback_desc = (
         featured_org.description if featured_org and featured_org.description else None
     ) or "Reserve salon appointments with PayPal authorization holds. $0 is debited today."
+    fallback_pic = featured_org.picture if featured_org else None
     address = featured_settings.physical_address if featured_settings else None
-    picture = featured_org.picture if featured_org else None
+
+    if curation_setting and curation_setting.is_active:
+        eyebrow = curation_setting.hero_eyebrow or fallback_name
+        headline = curation_setting.hero_headline or "Book salon services with"
+        highlight = curation_setting.hero_highlight or "zero upfront charge."
+        subtitle = curation_setting.hero_subtitle or fallback_desc
+        image_url = curation_setting.hero_image_url or fallback_pic
+        image_alt = curation_setting.hero_image_alt or fallback_name
+    else:
+        eyebrow = fallback_name if featured_org else "SalonDesk marketplace"
+        headline = "Book salon services with"
+        highlight = "zero upfront charge."
+        subtitle = fallback_desc
+        image_url = fallback_pic
+        image_alt = fallback_name
 
     hero = CatalogHeroOut(
-        eyebrow=name if featured_org else "SalonDesk marketplace",
-        headline="Book salon services with",
-        highlight="zero upfront charge.",
-        subtitle=description,
-        image_url=picture,
-        image_alt=name,
+        eyebrow=eyebrow,
+        headline=headline,
+        highlight=highlight,
+        subtitle=subtitle,
+        image_url=image_url,
+        image_alt=image_alt,
         organization_id=featured_org.id if featured_org else None,
-        organization_name=name if featured_org else None,
+        organization_name=featured_org.name if featured_org else None,
         physical_address=address,
         salon_count=salon_count,
         service_count=service_count,
     )
     await cache_service.set_json(cache_key, hero.model_dump(mode="json"), ttl_seconds=120)
     return hero
+
+
+@router.get("/curation", response_model=CatalogCurationOut)
+async def get_catalog_curation(db: DbSession) -> CatalogCurationOut:
+    """Public discovery payload containing hero banner and featured salons and services."""
+    hero = await get_catalog_hero(db)
+
+    items_res = await db.execute(
+        select(FeaturedItem)
+        .options(
+            selectinload(FeaturedItem.organization).selectinload(Organization.settings),
+            selectinload(FeaturedItem.service).selectinload(Service.organization),
+            selectinload(FeaturedItem.service).selectinload(Service.category),
+        )
+        .where(FeaturedItem.is_active.is_(True))
+        .order_by(FeaturedItem.display_order.asc(), FeaturedItem.created_at.desc())
+    )
+    items = list(items_res.scalars().all())
+
+    featured_orgs: list[FeaturedOrganizationOut] = []
+    featured_services: list[FeaturedServiceOut] = []
+
+    for item in items:
+        if (
+            item.target_type == "organization"
+            and item.organization
+            and item.organization.status == OrganizationStatus.APPROVED
+        ):
+            org = item.organization
+            settings = org.settings
+            rating_avg, review_count = await feedback_service.org_feedback_summary(db, org.id)
+            featured_orgs.append(
+                FeaturedOrganizationOut(
+                    id=item.id,
+                    item_id=org.id,
+                    badge_text=item.badge_text,
+                    display_order=item.display_order,
+                    is_active=item.is_active,
+                    organization=CatalogOrganizationOut(
+                        id=org.id,
+                        name=org.name,
+                        description=org.description,
+                        picture=org.picture,
+                        physical_address=settings.physical_address if settings else None,
+                        lat=settings.lat if settings else None,
+                        lng=settings.lng if settings else None,
+                        timezone=settings.timezone if settings else None,
+                        rating_avg=rating_avg,
+                        review_count=review_count,
+                    ),
+                )
+            )
+        elif (
+            item.target_type == "service"
+            and item.service
+            and item.service.status == ServiceStatus.ACTIVE
+        ):
+            svc = item.service
+            rating_avg, review_count = 4.8, 0
+            if svc.organization_id:
+                rating_avg, review_count = await feedback_service.org_feedback_summary(
+                    db, svc.organization_id
+                )
+            featured_services.append(
+                FeaturedServiceOut(
+                    id=item.id,
+                    item_id=svc.id,
+                    badge_text=item.badge_text,
+                    display_order=item.display_order,
+                    is_active=item.is_active,
+                    service=CatalogServiceOut(
+                        id=svc.id,
+                        organization_id=svc.organization_id,
+                        service_category_id=svc.service_category_id,
+                        name=svc.name,
+                        description=svc.description,
+                        images=svc.images,
+                        base_price=svc.base_price,
+                        duration_minutes=svc.duration_minutes,
+                        simultaneous_capacity=svc.simultaneous_capacity,
+                        organization_name=svc.organization.name if svc.organization else None,
+                        category_name=svc.category.name if svc.category else None,
+                        rating_avg=rating_avg,
+                        review_count=review_count,
+                        is_featured=True,
+                        featured_badge=item.badge_text,
+                    ),
+                )
+            )
+
+    return CatalogCurationOut(
+        hero=hero,
+        featured_organizations=featured_orgs,
+        featured_services=featured_services,
+    )
 
 
 @router.get("/organizations", response_model=PageOut[CatalogOrganizationOut])
@@ -154,6 +306,7 @@ async def list_organizations(
     result = await db.execute(paged_stmt)
     items: list[CatalogOrganizationOut] = []
     for org, settings in result.all():
+        rating_avg, review_count = await feedback_service.org_feedback_summary(db, org.id)
         items.append(
             CatalogOrganizationOut(
                 id=org.id,
@@ -164,6 +317,8 @@ async def list_organizations(
                 lat=settings.lat if settings else None,
                 lng=settings.lng if settings else None,
                 timezone=settings.timezone if settings else None,
+                rating_avg=rating_avg,
+                review_count=review_count,
             )
         )
     has_more = (offset + len(items)) < total
@@ -337,8 +492,11 @@ async def list_services(
     q: str | None = Query(default=None, max_length=100),
     sort: str = Query(
         default="name",
-        pattern="^(name|popular|price_asc|price_desc|duration|distance)$",
+        pattern="^(name|popular|rating|price_asc|price_desc|duration|distance)$",
     ),
+    min_price: float | None = Query(default=None, ge=0),
+    max_price: float | None = Query(default=None, ge=0),
+    min_rating: float | None = Query(default=None, ge=1.0, le=5.0),
     lat: float | None = Query(default=None, ge=-90, le=90),
     lng: float | None = Query(default=None, ge=-180, le=180),
     max_distance_km: float | None = Query(default=None, gt=0, le=500),
@@ -352,13 +510,59 @@ async def list_services(
 
     distance_expr = _haversine_km_expr(lat, lng) if wants_distance else None
 
+    # Organization feedback subquery
+    org_fb_sub = (
+        select(
+            ClientFeedback.org_id.label("f_org_id"),
+            func.avg(ClientFeedback.rating).label("org_avg"),
+            func.count(ClientFeedback.id).label("org_count"),
+        )
+        .where(
+            ClientFeedback.status == FeedbackModerationStatus.APPROVED,
+            ClientFeedback.stylist_id.is_(None),
+        )
+        .group_by(ClientFeedback.org_id)
+        .subquery()
+    )
+
+    # Service feedback subquery (via BookingService)
+    svc_fb_sub = (
+        select(
+            BookingService.service_id.label("f_service_id"),
+            func.avg(ClientFeedback.rating).label("svc_avg"),
+            func.count(ClientFeedback.id).label("svc_count"),
+        )
+        .join(ClientFeedback, ClientFeedback.booking_id == BookingService.booking_id)
+        .where(ClientFeedback.status == FeedbackModerationStatus.APPROVED)
+        .group_by(BookingService.service_id)
+        .subquery()
+    )
+
+    # Effective ratings:
+    # 1. service rating if available, else org rating, else standard 4.8
+    service_rating_expr = func.coalesce(svc_fb_sub.c.svc_avg, org_fb_sub.c.org_avg, 4.8)
+    service_review_count_expr = func.coalesce(svc_fb_sub.c.svc_count, org_fb_sub.c.org_count, 0)
+
+    # Popular score combines service rating and org rating with booking activity:
+    blended_popular_expr = (
+        func.coalesce(svc_fb_sub.c.svc_avg, org_fb_sub.c.org_avg, 4.8) * 0.60
+        + func.coalesce(org_fb_sub.c.org_avg, 4.8) * 0.40
+        + func.least(service_review_count_expr * 0.05, 0.5)
+    )
+
     base: Select = (
-        select(Service)
+        select(
+            Service,
+            service_rating_expr.label("calc_rating"),
+            service_review_count_expr.label("calc_reviews"),
+        )
         .options(
             selectinload(Service.organization),
             selectinload(Service.category),
         )
         .join(Organization, Organization.id == Service.organization_id)
+        .outerjoin(org_fb_sub, org_fb_sub.c.f_org_id == Service.organization_id)
+        .outerjoin(svc_fb_sub, svc_fb_sub.c.f_service_id == Service.id)
         .where(
             Service.status == ServiceStatus.ACTIVE,
             Organization.status == OrganizationStatus.APPROVED,
@@ -379,8 +583,12 @@ async def list_services(
         base = base.where(Service.service_category_id == category_id)
     if q:
         base = base.where(Service.name.ilike(f"%{q}%"))
-    if sort == "popular":
-        base = base.where(Service.base_price >= POPULAR_MIN_PRICE)
+    if min_price is not None:
+        base = base.where(Service.base_price >= min_price)
+    if max_price is not None:
+        base = base.where(Service.base_price <= max_price)
+    if min_rating is not None:
+        base = base.where(service_rating_expr >= min_rating)
 
     count_stmt = select(func.count()).select_from(base.order_by(None).subquery())
     total = int((await db.execute(count_stmt)).scalar_one())
@@ -391,8 +599,18 @@ async def list_services(
         base = base.order_by(Service.base_price.desc(), Service.name.asc())
     elif sort == "duration":
         base = base.order_by(Service.duration_minutes.asc(), Service.name.asc())
+    elif sort == "rating":
+        base = base.order_by(
+            service_rating_expr.desc(),
+            service_review_count_expr.desc(),
+            Service.name.asc(),
+        )
     elif sort == "popular":
-        base = base.order_by(Service.base_price.desc(), Service.name.asc())
+        base = base.order_by(
+            blended_popular_expr.desc(),
+            service_review_count_expr.desc(),
+            Service.name.asc(),
+        )
     elif sort == "distance" and distance_expr is not None:
         base = base.order_by(distance_expr.asc(), Service.name.asc())
     else:
@@ -400,11 +618,17 @@ async def list_services(
 
     offset = (page - 1) * page_size
     result = await db.execute(base.offset(offset).limit(page_size))
-    services = list(result.scalars().unique().all())
+    rows = result.all()
+
+    # Load featured items map to mark featured badges on services
+    featured_rows = await db.execute(select(FeaturedItem).where(FeaturedItem.is_active.is_(True)))
+    featured_items = list(featured_rows.scalars().all())
+    featured_service_badges = {f.service_id: f.badge_text for f in featured_items if f.service_id}
+    featured_org_badges = {f.org_id: f.badge_text for f in featured_items if f.org_id}
 
     items: list[CatalogServiceOut] = []
-    if wants_distance and distance_expr is not None and services:
-        # Recompute distances for the page (small) via a keyed query.
+    if wants_distance and distance_expr is not None and rows:
+        services = [r[0] for r in rows]
         ids = [s.id for s in services]
         dist_rows = await db.execute(
             select(Service.id, distance_expr.label("distance_km"))
@@ -413,10 +637,46 @@ async def list_services(
             .where(Service.id.in_(ids))
         )
         dist_by_id = {row.id: float(row.distance_km) for row in dist_rows.all()}
-        for service in services:
-            items.append(_service_to_out(service, dist_by_id.get(service.id)))
+        for service, calc_rating, calc_reviews in rows:
+            is_feat = False
+            feat_badge = None
+            if service.id in featured_service_badges:
+                is_feat = True
+                feat_badge = featured_service_badges[service.id]
+            elif service.organization_id in featured_org_badges:
+                is_feat = True
+                feat_badge = featured_org_badges[service.organization_id]
+
+            items.append(
+                _service_to_out(
+                    service,
+                    dist_by_id.get(service.id),
+                    rating_avg=round(float(calc_rating or 4.8), 1),
+                    review_count=int(calc_reviews or 0),
+                    is_featured=is_feat,
+                    featured_badge=feat_badge,
+                )
+            )
     else:
-        items = [_service_to_out(service) for service in services]
+        for service, calc_rating, calc_reviews in rows:
+            is_feat = False
+            feat_badge = None
+            if service.id in featured_service_badges:
+                is_feat = True
+                feat_badge = featured_service_badges[service.id]
+            elif service.organization_id in featured_org_badges:
+                is_feat = True
+                feat_badge = featured_org_badges[service.organization_id]
+
+            items.append(
+                _service_to_out(
+                    service,
+                    rating_avg=round(float(calc_rating or 4.8), 1),
+                    review_count=int(calc_reviews or 0),
+                    is_featured=is_feat,
+                    featured_badge=feat_badge,
+                )
+            )
 
     return CatalogServicesPage(
         items=items,
@@ -442,10 +702,17 @@ async def get_service(service_id: UUID, db: DbSession) -> CatalogServiceOut:
     service = result.scalar_one_or_none()
     if service is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Service not found")
+
+    rating_avg, review_count = 4.8, 0
+    if service.organization_id:
+        rating_avg, review_count = await feedback_service.org_feedback_summary(
+            db, service.organization_id
+        )
+
     rule = await commission_rule_for_service(db, service)
     platform_fee = commission_amount(rule, service.base_price)
     hold_total = (service.base_price + platform_fee).quantize(Decimal("0.01"))
-    out = _service_to_out(service)
+    out = _service_to_out(service, rating_avg=rating_avg, review_count=review_count)
     return out.model_copy(
         update={
             "platform_commission_amount": platform_fee,

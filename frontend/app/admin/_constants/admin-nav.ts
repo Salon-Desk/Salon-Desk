@@ -11,6 +11,7 @@ export const ADMIN_TAB_TITLES: Record<AdminTabId, string> = {
   billing: 'Billing',
   taxonomy: 'Taxonomy',
   staff: 'Staff',
+  curation: 'Discovery & Merchandising',
 }
 
 export const ADMIN_TAB_LABELS: Record<AdminTabId, string> = {
@@ -22,6 +23,7 @@ export const ADMIN_TAB_LABELS: Record<AdminTabId, string> = {
   billing: 'Billing',
   taxonomy: 'Taxonomy',
   staff: 'Staff',
+  curation: 'Merchandising',
 }
 
 export const ADMIN_TAB_SUBTITLES: Record<AdminTabId, string> = {
@@ -33,6 +35,7 @@ export const ADMIN_TAB_SUBTITLES: Record<AdminTabId, string> = {
   billing: 'SaaS commission invoices issued to salon organizations.',
   taxonomy: 'Discovery categories and service classification.',
   staff: 'Internal platform administrator accounts and roles.',
+  curation: 'Landing hero banner, featured salons & single services, and popular ranking tuning.',
 }
 
 export const ADMIN_TAB_ROUTES: Record<AdminTabId, string> = {
@@ -44,9 +47,11 @@ export const ADMIN_TAB_ROUTES: Record<AdminTabId, string> = {
   billing: '/admin/billing',
   taxonomy: '/admin/taxonomy',
   staff: '/admin/staff',
+  curation: '/admin/curation',
 }
 
 export function getAdminTabFromPathname(pathname: string): AdminTabId {
+  if (pathname.startsWith('/admin/curation')) return 'curation'
   if (pathname.startsWith('/admin/salons')) return 'salons'
   if (pathname.startsWith('/admin/requests')) return 'requests'
   if (pathname.startsWith('/admin/reviews')) return 'reviews'
