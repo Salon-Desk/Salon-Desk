@@ -2,9 +2,9 @@
 
 Multi-tenant salon booking platform with three apps:
 
-1. **Client app** — discover salons/services and book appointments  
-2. **Organization portal** — staff, services, schedules, bookings, PayPal account  
-3. **Platform admin** — orgs, commissions, categories, change-request approvals  
+1. **Client app** — discover salons/services and book appointments
+2. **Organization portal** — staff, services, schedules, bookings, PayPal account
+3. **Platform admin** — orgs, commissions, categories, change-request approvals
 
 Stack: **FastAPI** (`backend/`) + **Next.js** (`frontend/`) + **PostgreSQL**.
 
@@ -288,7 +288,7 @@ Text chat POST /api/v1/chat  (same pipeline + recommendation cards)
 | `POST /api/v1/livekit/token` | Mint room JWT + agent dispatch (`{ language?: "en"\|"am" }`) |
 | `POST /api/v1/chat` | Text chat: reply + citations + service recommendation cards |
 
-Ingest: live DB via [`backend/app/scripts/ingest_knowledge.py`](backend/app/scripts/ingest_knowledge.py) (+ optional [`backend/data/knowledge_en.json`](backend/data/knowledge_en.json) platform FAQ).  
+Ingest: live DB via [`backend/app/scripts/ingest_knowledge.py`](backend/app/scripts/ingest_knowledge.py) (+ optional [`backend/data/knowledge_en.json`](backend/data/knowledge_en.json) platform FAQ).
 Schema: [`backend/schema_rag.sql`](backend/schema_rag.sql) / ORM `KnowledgeChunk`.
 
 **Design notes:** one RAG pipeline for chat and voice; per-turn inject with timeout; booking intent keeps scheduling focus; room name encodes language (`salondesk-agent-{en|am}-…`); never invent prices or open slots.
@@ -303,7 +303,7 @@ Generate/refresh from OpenAPI (no server required):
 make postman
 ```
 
-Output: [`postman/collection.json`](postman/collection.json).  
+Output: [`postman/collection.json`](postman/collection.json).
 Details: [`docs/postman/README.md`](docs/postman/README.md).
 
 ---
@@ -351,7 +351,7 @@ postman/          Generated collection.json
 docker-compose.yml
 ```
 
-**Agent docs:** [AGENTS.md](AGENTS.md) (repo) · [frontend/AGENTS.md](frontend/AGENTS.md) (Next.js detail).  
+**Agent docs:** [AGENTS.md](AGENTS.md) (repo) · [frontend/AGENTS.md](frontend/AGENTS.md) (Next.js detail).
 Postman notes (if present): [`docs/postman/README.md`](docs/postman/README.md).
 
 ---
@@ -376,3 +376,18 @@ Routers are grouped under `backend/app/api/v1/{shared,platform,org,client,webhoo
 | `/health` | Health check |
 
 Frontend RTK Query clients: `frontend/store/api/{shared,platform,org,client}Api.ts`.
+
+
+
+
+<!-- VPS -->
+```bash
+
+docker exec -it salondesk sh -lc 'cd /app/backend && python -m app.scripts.seed --clear'
+
+
+docker exec -it salondesk sh -lc 'cd /app/backend && python -m app.scripts.seed --clear && python -m app.scripts.ingest_knowledge'
+
+
+```
+
