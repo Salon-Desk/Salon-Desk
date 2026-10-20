@@ -14,7 +14,7 @@ chown -R postgres:postgres "$PGDATA" 2>/dev/null || true
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
   echo "Initializing PostgreSQL data directory..."
   install -d -o postgres -g postgres -m 0700 "$PGDATA"
-  su - postgres -s /bin/bash -c "'$PG_BIN/initdb' -D '$PGDATA' --auth-local=trust --auth-host=scram-sha-256"
+  su - postgres -s /bin/bash -c "'$PG_BIN/initdb' -D '$PGDATA' -E UTF8 --locale=C.UTF-8 --auth-local=trust --auth-host=scram-sha-256"
 
   {
     echo "listen_addresses = '127.0.0.1'"
@@ -25,7 +25,7 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
 
   su - postgres -s /bin/bash -c "'$PG_BIN/pg_ctl' -D '$PGDATA' -o '-c listen_addresses=127.0.0.1' -w start"
   su - postgres -s /bin/bash -c "'$PG_BIN/psql' -v ON_ERROR_STOP=1 -c \"ALTER USER postgres PASSWORD '${POSTGRES_PASSWORD}';\""
-  su - postgres -s /bin/bash -c "'$PG_BIN/createdb' -O postgres '${POSTGRES_DB}'" || true
+  su - postgres -s /bin/bash -c "'$PG_BIN/createdb' -E UTF8 -O postgres '${POSTGRES_DB}'" || true
   su - postgres -s /bin/bash -c "'$PG_BIN/psql' -v ON_ERROR_STOP=1 -d '${POSTGRES_DB}' -c 'CREATE EXTENSION IF NOT EXISTS vector;'" || true
   su - postgres -s /bin/bash -c "'$PG_BIN/pg_ctl' -D '$PGDATA' -m fast -w stop"
 fi

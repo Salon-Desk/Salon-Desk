@@ -382,12 +382,16 @@ Frontend RTK Query clients: `frontend/store/api/{shared,platform,org,client}Api.
 
 <!-- VPS -->
 ```bash
-
+# Demo seed (20 orgs, ~60-100 services):
 docker exec -it salondesk sh -lc 'cd /app/backend && python -m app.scripts.seed --clear'
 
+# Full catalog seed (~432 orgs, ~9,100 services):
+docker exec -it salondesk sh -lc 'cd /app/backend && python -m app.scripts.seed --clear --all'
 
+# Seed and ingest knowledge (demo):
 docker exec -it salondesk sh -lc 'cd /app/backend && python -m app.scripts.seed --clear && python -m app.scripts.ingest_knowledge'
 
-
+# Seed and ingest knowledge (full):
+docker exec -it salondesk sh -lc 'cd /app/backend && python -m app.scripts.seed --clear --all && python -m app.scripts.ingest_knowledge'
 ```
 
