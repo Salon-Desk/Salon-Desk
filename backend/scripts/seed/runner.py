@@ -107,12 +107,27 @@ async def seed_platform(session: AsyncSession) -> dict:
     }
 
 
-async def seed_organizations(session: AsyncSession, platform: dict) -> list[dict]:
+async def seed_organizations(
+    session: AsyncSession,
+    platform: dict,
+    *,
+    limit_orgs: int | None = None,
+    limit_services: int | None = None,
+) -> list[dict]:
     org_data_list = []
     categories = platform["categories"]
     covers = CoverAllocator()
 
-    for org_def in ORGANIZATION_DEFINITIONS:
+    org_defs = ORGANIZATION_DEFINITIONS
+    if limit_orgs is not None and limit_orgs > 0:
+        org_defs = org_defs[:limit_orgs]
+
+    services_per_org = None
+    if limit_services is not None and limit_services > 0 and org_defs:
+        services_per_org = max(1, limit_services // len(org_defs))
+
+    total_services_count = 0
+    for org_def in org_defs:
         owner = build_user(
             email=org_def["owner_email"],
             role=UserRole.ORG_OWNER,
@@ -212,8 +227,20 @@ async def seed_organizations(session: AsyncSession, platform: dict) -> list[dict
             ]
         )
 
+        services_to_seed = org_def["services"]
+        if services_per_org is not None:
+            remaining = (
+                limit_services - total_services_count
+                if limit_services is not None
+                else len(services_to_seed)
+            )
+            if remaining <= 0:
+                services_to_seed = services_to_seed[:1]
+            else:
+                services_to_seed = services_to_seed[: min(services_per_org, remaining)]
+
         services = []
-        for category_name, name, description, price, duration, image_url in org_def["services"]:
+        for category_name, name, description, price, duration, image_url in services_to_seed:
             category = categories.get(category_name) or categories[FALLBACK_SERVICE_CATEGORY]
             cover = covers.allocate(image_url)
             service = Service(
@@ -234,6 +261,7 @@ async def seed_organizations(session: AsyncSession, platform: dict) -> list[dict
             session.add(service)
             services.append(service)
 
+        total_services_count += len(services)
         await session.flush()
 
         for service in services:
@@ -476,7 +504,14 @@ async def seed_curation(session: AsyncSession, org_data_list: list[dict]) -> Non
     logger.info("Seeded platform curation hero and featured items")
 
 
-async def run_seed(*, clear: bool, database_url: str | None = None) -> None:
+async def run_seed(
+    *,
+    clear: bool,
+    database_url: str | None = None,
+    seed_all: bool = False,
+    limit_orgs: int | None = None,
+    limit_services: int | None = None,
+) -> None:
     settings = get_settings()
     url = resolve_database_url(database_url or settings.database_url)
     logger.info("Connecting to database…")
@@ -484,6 +519,13 @@ async def run_seed(*, clear: bool, database_url: str | None = None) -> None:
     session_factory = async_sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False, autoflush=False
     )
+
+    if seed_all:
+        eff_limit_orgs = None
+        eff_limit_services = None
+    else:
+        eff_limit_orgs = limit_orgs if limit_orgs is not None else 20
+        eff_limit_services = limit_services if limit_services is not None else 100
 
     try:
         # --clear drops + recreates tables so model changes (e.g. booking snapshots) apply.
@@ -502,15 +544,23 @@ async def run_seed(*, clear: bool, database_url: str | None = None) -> None:
                 return
 
             platform = await seed_platform(session)
-            org_data_list = await seed_organizations(session, platform)
+            org_data_list = await seed_organizations(
+                session,
+                platform,
+                limit_orgs=eff_limit_orgs,
+                limit_services=eff_limit_services,
+            )
             await seed_clients_and_bookings(session, org_data_list)
             await seed_curation(session, org_data_list)
             await session.commit()
 
         logger.info(
-            "Seed complete! Created %s organizations and %s services.",
+            "Seed complete! Created %s organizations and %s services%s.",
             len(org_data_list),
             sum(len(org_data["services"]) for org_data in org_data_list),
+            " (full dataset)"
+            if seed_all
+            else " (demo subset: 20 orgs, ~100 services; use --all for full catalog)",
         )
         logger.info("Default password for all users: %s", DEFAULT_PASSWORD)
     finally:
@@ -528,6 +578,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="Drop and recreate all tables, then seed fresh demo data",
     )
     parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Seed full dataset (all ~432 organizations and ~9,100 services). Default is demo mode (20 orgs, 100 services).",
+    )
+    parser.add_argument(
+        "--limit-orgs",
+        type=int,
+        default=None,
+        help="Custom number of organizations to seed (overrides default of 20 when not --all)",
+    )
+    parser.add_argument(
+        "--limit-services",
+        type=int,
+        default=None,
+        help="Custom total number of services to seed (overrides default of 100 when not --all)",
+    )
+    parser.add_argument(
         "--database-url",
         default=None,
         help="Override DATABASE_URL (useful when seeding from host against localhost)",
@@ -538,4 +605,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     args = build_parser().parse_args(argv)
-    asyncio.run(run_seed(clear=args.clear, database_url=args.database_url))
+    asyncio.run(
+        run_seed(
+            clear=args.clear,
+            database_url=args.database_url,
+            seed_all=args.all,
+            limit_orgs=args.limit_orgs,
+            limit_services=args.limit_services,
+        )
+    )

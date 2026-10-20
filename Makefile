@@ -23,21 +23,32 @@ POSTGRES_PORT ?= 5432
 # Host-side seed/ingest use localhost (Compose hostname `db` only works in containers).
 # Override: make seed SEED_DATABASE_URL='postgresql+asyncpg://…'
 SEED_DATABASE_URL ?= postgresql+asyncpg://postgres:postgres@localhost:$(POSTGRES_PORT)/salondesk
+SEED_ALL ?= 0
 
-# Seed demo data (skips if already seeded).
+# Seed demo data (20 orgs, 100 services by default; set SEED_ALL=1 or make seed-all for all).
 seed:
-	cd backend && uv run python -m app.scripts.seed --database-url "$(SEED_DATABASE_URL)"
+	cd backend && uv run python -m app.scripts.seed $(if $(filter 1 true,$(SEED_ALL)),--all,) --database-url "$(SEED_DATABASE_URL)"
 
-# Wipe all tables then seed fresh demo data.
+# Wipe all tables then seed fresh demo data (20 orgs, 100 services by default).
 seed-clear:
-	cd backend && uv run python -m app.scripts.seed --clear --database-url "$(SEED_DATABASE_URL)"
+	cd backend && uv run python -m app.scripts.seed --clear $(if $(filter 1 true,$(SEED_ALL)),--all,) --database-url "$(SEED_DATABASE_URL)"
+
+# Seed full dataset (~432 orgs, ~9100 services).
+seed-all:
+	cd backend && uv run python -m app.scripts.seed --all --database-url "$(SEED_DATABASE_URL)"
+
+seed-clear-all:
+	cd backend && uv run python -m app.scripts.seed --clear --all --database-url "$(SEED_DATABASE_URL)"
 
 seed-help:
 	@echo "make seed"
-	@echo "  Insert demo data if not already present (localhost:$(POSTGRES_PORT))"
+	@echo "  Insert demo data (20 organizations, ~100 services) if not already present"
 	@echo ""
 	@echo "make seed-clear"
-	@echo "  Truncate all tables, then insert demo data"
+	@echo "  Truncate all tables, then insert demo data (20 organizations, ~100 services)"
+	@echo ""
+	@echo "make seed-all / make seed-clear-all"
+	@echo "  Seed full catalog (all ~432 organizations, ~9,100 services)"
 	@echo ""
 	@echo "Ensure Compose pgvector DB is up: docker compose up -d db"
 	@echo "  (image must be pgvector/pgvector:pg16 — not plain postgres)"
@@ -48,6 +59,7 @@ seed-help:
 	@echo ""
 	@echo "From backend/:"
 	@echo "  uv run python -m app.scripts.seed --database-url '$(SEED_DATABASE_URL)'"
+	@echo "  uv run python -m app.scripts.seed --clear --all --database-url '$(SEED_DATABASE_URL)'"
 
 # Index live orgs/services (+ optional FAQ) into pgvector (requires: ollama pull all-minilm)
 ingest-knowledge:

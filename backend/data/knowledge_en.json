@@ -373,5 +373,30 @@
     "source": "admin_featuring_and_commissions",
     "audience": "admin",
     "content": "How Featuring and Commissions Work for Admins: Admins set category commission rules (percentage, flat fee, or hybrid) that snapshot onto bookings. On capture, commission records accrue. Admins review GMV volume and issue periodic commission invoices. Featuring items on the marketplace gives salons priority visibility in client catalog curation, search ranking, and AI concierge recommendations."
+  },
+  {
+    "source": "privacy_policy_detailed",
+    "audience": "all",
+    "content": "Privacy Policy: SalonDesk is committed to client confidentiality and data security. All payment methods, credit/debit card numbers, and PayPal financial details are processed securely through PayPal's PCI-DSS compliant infrastructure and are never stored on SalonDesk servers. Client contact details (name, email, phone) are used solely to coordinate appointments and send booking reminders. We never sell personal information. Clients have the right to request access to or permanent deletion of their data at any time via profile settings or by contacting privacy@salondesk.io."
+  },
+  {
+    "source": "terms_and_agreement_platform",
+    "audience": "all",
+    "content": "Terms of Service & Platform Agreement: By using SalonDesk, clients and salons enter into a mutual service agreement. Clients agree to provide accurate information and honor booking times. Salons agree to deliver services professionally according to their posted durations, prices, and cancellation terms. SalonDesk provides software, discovery, and payment hold facilitation without acting as an employer or vendor of salon treatments. Service complaints, rescheduling, or quality inquiries are resolved directly with the salon management."
+  },
+  {
+    "source": "paypal_authorization_hold_detailed",
+    "audience": "all",
+    "content": "PayPal Authorization Hold Agreement: SalonDesk utilizes PayPal authorization holds rather than upfront payments. When booking, a temporary authorization hold is created on the client's PayPal payment method for the agreed booking amount with $0 deducted upfront. The hold guarantees fund availability. Upon completion of the salon appointment, the salon captures 100% of the service charge directly into its approved PayPal merchant account. If the client cancels within the free cancellation window, the hold is voided and released in full. If a hold remains active past 3 days, it automatically re-authorizes to extend the authorization honor window until service delivery."
+  },
+  {
+    "source": "client_booking_consent_agreement",
+    "audience": "client",
+    "content": "Client Booking Consent Agreement: At checkout, every client explicitly consents to: 'I authorize a PayPal hold for this booking under the salon cancellation policy.' This consent is recorded with a digital cryptographic signature and timestamp, and is linked to the exact version of the salon's cancellation policy active at that moment, ensuring transparency and protection for both client and salon."
+  },
+  {
+    "source": "refund_and_dispute_resolution",
+    "audience": "all",
+    "content": "Refunds and Dispute Resolution Policy: Because SalonDesk uses authorization holds rather than immediate upfront charges, free cancellations simply void and release the hold without requiring a refund wait period. If an appointment is not honored by the salon, the authorization hold is voided or any captured amount is refunded via PayPal. Disputes regarding service execution or fees can be submitted via the client bookings portal or escalated to support@salondesk.io."
   }
 ]
