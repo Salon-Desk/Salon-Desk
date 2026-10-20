@@ -48,6 +48,11 @@ export default function MerchantCalendarPage() {
   } = useGetMyOrgBookingsQuery(queryRange)
   const apiBookings = apiBookingsData?.items ?? []
 
+  // Ensure data is actively refetched whenever view or day/range changes
+  useEffect(() => {
+    void refetchBookings()
+  }, [queryRange, refetchBookings])
+
   const {
     handleMarkShow,
     handleMarkNoShow,
@@ -71,6 +76,14 @@ export default function MerchantCalendarPage() {
     if (view === 'week') {
       const days = weekDays(anchor)
       return days.flatMap((day) => filterEventsForDay(events, day, staffId))
+    }
+    if (view === 'agenda') {
+      return events
+        .filter((e) => {
+          if (!staffId || staffId === ALL_STAFF_VALUE) return true
+          return e.booking.stylistId === staffId
+        })
+        .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
     }
     return filterEventsForDay(events, anchor, staffId)
   }, [view, events, anchor, staffId])
@@ -100,6 +113,8 @@ export default function MerchantCalendarPage() {
         staffId={staffId}
         onStaffChange={setStaffId}
         bookingCount={visibleEvents.length}
+        onRefresh={() => void refetchBookings()}
+        isRefreshing={isFetching}
       />
 
       {isLoading ? (

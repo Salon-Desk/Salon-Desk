@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { type AssistantPortal, portalChrome } from '@/lib/assistant-portal'
@@ -17,6 +17,11 @@ interface DraggableChatFabProps {
 const FAB_SIZE = 56
 const PADDING = 16
 
+/**
+ * Chat Floating Action Button (FAB).
+ * Anchored to the bottom-right corner by default like regular modern chat apps.
+ * Supports smooth drag-and-drop repositioning with boundary clamping and state persistence.
+ */
 export function DraggableChatFab({ portal, onClick, className }: DraggableChatFabProps) {
   const dispatch = useDispatch()
   const customPosition = useSelector((state: RootState) => state.agentChat?.fabPosition)
@@ -25,6 +30,9 @@ export function DraggableChatFab({ portal, onClick, className }: DraggableChatFa
 
   const fabRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [livePosition, setLivePosition] = useState<{ x: number; y: number } | null>(
+    customPosition ?? null,
+  )
   const dragStartRef = useRef<{
     startX: number
     startY: number
@@ -33,33 +41,18 @@ export function DraggableChatFab({ portal, onClick, className }: DraggableChatFa
   } | null>(null)
   const hasMovedRef = useRef(false)
 
-  // Default position: bottom-right
-  const getInitialPosition = useCallback(() => {
-    if (customPosition) return customPosition
-    if (typeof window === 'undefined') return { x: 0, y: 0 }
-    return {
-      x: window.innerWidth - FAB_SIZE - 24,
-      y: window.innerHeight - FAB_SIZE - 24,
-    }
+  // Sync with Redux position updates (e.g. storage hydration or reset)
+  useEffect(() => {
+    setLivePosition(customPosition ?? null)
   }, [customPosition])
 
-  const [position, setPosition] = useState<{ x: number; y: number }>(getInitialPosition)
-
+  // Handle window resize clamp when in custom position
   useEffect(() => {
-    if (customPosition) {
-      setPosition(customPosition)
-    } else if (typeof window !== 'undefined') {
-      setPosition({
-        x: window.innerWidth - FAB_SIZE - 24,
-        y: window.innerHeight - FAB_SIZE - 24,
-      })
-    }
-  }, [customPosition])
+    if (!livePosition) return
 
-  // Handle window resize clamp
-  useEffect(() => {
     const handleResize = () => {
-      setPosition((prev) => {
+      setLivePosition((prev) => {
+        if (!prev) return null
         const maxX = window.innerWidth - FAB_SIZE - PADDING
         const maxY = window.innerHeight - FAB_SIZE - PADDING
         const clampedX = Math.max(PADDING, Math.min(maxX, prev.x))
@@ -74,17 +67,21 @@ export function DraggableChatFab({ portal, onClick, className }: DraggableChatFa
     }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
-  }, [dispatch])
+  }, [livePosition, dispatch])
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Only handle primary button
     if (e.button !== 0) return
+
+    const rect = fabRef.current?.getBoundingClientRect()
+    const initialX = rect ? rect.left : (livePosition?.x ?? window.innerWidth - FAB_SIZE - 24)
+    const initialY = rect ? rect.top : (livePosition?.y ?? window.innerHeight - FAB_SIZE - 24)
+
     hasMovedRef.current = false
     dragStartRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      initialX: position.x,
-      initialY: position.y,
+      initialX,
+      initialY,
     }
     setIsDragging(true)
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
@@ -104,7 +101,7 @@ export function DraggableChatFab({ portal, onClick, className }: DraggableChatFa
       const maxY = window.innerHeight - FAB_SIZE - PADDING
       const nextX = Math.max(PADDING, Math.min(maxX, dragStartRef.current.initialX + dx))
       const nextY = Math.max(PADDING, Math.min(maxY, dragStartRef.current.initialY + dy))
-      setPosition({ x: nextX, y: nextY })
+      setLivePosition({ x: nextX, y: nextY })
     }
   }
 
@@ -114,11 +111,20 @@ export function DraggableChatFab({ portal, onClick, className }: DraggableChatFa
       ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
     }
 
-    if (hasMovedRef.current) {
-      // Finished dragging, save position
-      dispatch(setFabPosition(position))
+    if (hasMovedRef.current && livePosition) {
+      // Check if dropped near bottom-right corner (within 40px), snap back to clean CSS positioning
+      const isNearBottomRight =
+        window.innerWidth - (livePosition.x + FAB_SIZE) <= 40 &&
+        window.innerHeight - (livePosition.y + FAB_SIZE) <= 40
+
+      if (isNearBottomRight) {
+        setLivePosition(null)
+        dispatch(setFabPosition(null))
+      } else {
+        dispatch(setFabPosition(livePosition))
+      }
     } else {
-      // Tap / click without dragging
+      // Simple click/tap
       onClick()
     }
 
@@ -127,6 +133,8 @@ export function DraggableChatFab({ portal, onClick, className }: DraggableChatFa
     hasMovedRef.current = false
   }
 
+  const isCustomPlaced = livePosition !== null
+
   return (
     <div
       ref={fabRef}
@@ -134,22 +142,29 @@ export function DraggableChatFab({ portal, onClick, className }: DraggableChatFa
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      style={{
-        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
-        touchAction: 'none',
-      }}
+      style={
+        isCustomPlaced
+          ? {
+              transform: `translate3d(${livePosition.x}px, ${livePosition.y}px, 0)`,
+              touchAction: 'none',
+            }
+          : undefined
+      }
       className={cn(
-        'fixed left-0 top-0 z-40 cursor-grab active:cursor-grabbing select-none',
-        isDragging ? 'transition-none' : 'transition-transform duration-150 ease-out',
+        'z-40 select-none cursor-grab active:cursor-grabbing',
+        isDragging && 'opacity-90 scale-105',
+        isCustomPlaced
+          ? 'fixed left-0 top-0 transition-none'
+          : 'fixed bottom-6 right-6 transition-transform duration-200 ease-out',
         className,
       )}
     >
       <button
         type="button"
         aria-label={chrome.fabLabel}
-        title={`${chrome.fabTitle} (Drag to reposition)`}
+        title={`${chrome.fabTitle} (Drag to move)`}
         className={cn(
-          'group relative flex h-14 w-14 items-center justify-center rounded-full border text-white shadow-[0_12px_28px_-6px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.12)] backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95',
+          'group relative flex h-14 w-14 items-center justify-center rounded-full border text-white shadow-[0_12px_28px_-6px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.14)] backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer',
           chrome.fabButton,
         )}
       >

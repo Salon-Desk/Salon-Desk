@@ -64,6 +64,9 @@ export interface ChatPanelShellProps {
   children: React.ReactNode
 }
 
+/**
+ * Reusable assistant avatar with online pulse dot.
+ */
 export function ConciergeAvatar({
   className,
   size = 'md',
@@ -77,6 +80,7 @@ export function ConciergeAvatar({
 }) {
   const chrome = portalChrome(portal)
   const Icon = chrome.Icon
+
   const sizeClasses = {
     sm: 'h-7 w-7 rounded-full',
     md: 'h-9 w-9 rounded-full',
@@ -91,7 +95,7 @@ export function ConciergeAvatar({
   return (
     <div
       className={cn(
-        'relative flex shrink-0 items-center justify-center text-white shadow-[0_1px_2px_rgba(28,25,23,0.2)]',
+        'relative flex shrink-0 items-center justify-center text-white shadow-xs',
         chrome.avatar,
         sizeClasses[size],
         className,
@@ -109,6 +113,10 @@ export function ConciergeAvatar({
   )
 }
 
+/**
+ * Floating Chat Panel Shell.
+ * Anchored to the bottom-right corner like regular modern chat apps (Intercom / Zendesk style).
+ */
 export function ChatPanelShell({
   mode,
   portal = 'client',
@@ -135,6 +143,7 @@ export function ChatPanelShell({
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none flex flex-col justify-end sm:block motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+      {/* Mobile-only backdrop */}
       <button
         type="button"
         aria-label={`Close ${title}`}
@@ -143,24 +152,34 @@ export function ChatPanelShell({
         tabIndex={-1}
       />
 
+      {/* Floating Dialog: bottom-right anchored on desktop, bottom-sheet on mobile */}
       <div
         role="dialog"
         aria-modal="false"
         aria-label={`SalonDesk ${title}`}
         className={cn(
-          'pointer-events-auto relative z-10 flex h-[92dvh] min-h-0 w-full max-w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-stone-200/80 text-stone-900 shadow-[0_24px_64px_-16px_rgba(28,25,23,0.28)] sm:absolute sm:inset-y-3 sm:right-3 sm:left-auto sm:h-auto sm:w-[min(26.5rem,calc(100vw-1.5rem))] sm:rounded-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-6 sm:motion-safe:slide-in-from-right-6 motion-safe:duration-250',
+          'pointer-events-auto relative z-10 flex flex-col overflow-hidden text-stone-900 border border-stone-200/90 shadow-[0_24px_64px_-16px_rgba(28,25,23,0.3),0_0_0_1px_rgba(0,0,0,0.06)]',
+          // Mobile: slide up bottom sheet
+          'h-[88dvh] max-h-[88dvh] w-full rounded-t-3xl border-b-0 motion-safe:slide-in-from-bottom-8',
+          // Desktop: bottom-right anchored widget window like regular apps
+          'sm:fixed sm:bottom-6 sm:right-6 sm:left-auto sm:top-auto sm:h-[640px] sm:max-h-[calc(100vh-3.5rem)] sm:w-[410px] sm:max-w-[calc(100vw-3rem)] sm:rounded-2xl sm:motion-safe:slide-in-from-bottom-6 sm:motion-safe:zoom-in-95',
+          'motion-safe:duration-250',
           chrome.panelBg,
         )}
       >
+        {/* Mobile handle pull bar */}
         <div className="flex justify-center bg-transparent pb-0.5 pt-2.5 sm:hidden">
           <div className="h-1 w-10 rounded-full bg-stone-300/90" aria-hidden="true" />
         </div>
 
-        <header className="flex items-center justify-between border-b border-stone-200/70 bg-white/80 px-4 py-2.5 backdrop-blur-xl">
+        {/* Panel Header */}
+        <header className="flex items-center justify-between border-b border-stone-200/80 bg-white/90 px-4 py-3 backdrop-blur-xl">
           <div className="flex min-w-0 items-center gap-2.5">
             <ConciergeAvatar size="md" showDot portal={portal} />
             <div className="min-w-0">
-              <h2 className="text-[13px] font-semibold tracking-tight text-stone-950">{title}</h2>
+              <h2 className="text-[13px] font-semibold tracking-tight text-stone-950 truncate">
+                {title}
+              </h2>
               <p className="truncate text-[11px] font-medium text-stone-500">{subtitle}</p>
             </div>
           </div>
@@ -214,7 +233,7 @@ export function ChatPanelShell({
                 aria-label={`Minimize ${title}`}
                 title="Minimize window"
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2',
+                  'flex h-7 w-7 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2',
                   chrome.ring,
                 )}
               >
@@ -227,7 +246,7 @@ export function ChatPanelShell({
               onClick={onClose}
               aria-label={`Close ${title}`}
               className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2',
+                'flex h-7 w-7 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2',
                 chrome.ring,
               )}
             >
@@ -256,6 +275,9 @@ function renderInlineFormatting(text: string): React.ReactNode {
   })
 }
 
+/**
+ * Lightweight formatting renderer for bot markdown answers (bold, bullet/number lists, paragraphs).
+ */
 export function RichText({ content, className }: { content: string; className?: string }) {
   const blocks = content.split(/\n{2,}/)
 
@@ -304,6 +326,9 @@ export function RichText({ content, className }: { content: string; className?: 
   )
 }
 
+/**
+ * Service recommendation card rendered inside assistant turn.
+ */
 export function ServiceCard({
   service,
   onSelect,
@@ -323,7 +348,7 @@ export function ServiceCard({
     <button
       type="button"
       onClick={() => onSelect(service)}
-      className="group flex w-full items-center gap-3 rounded-2xl border border-stone-200/90 bg-white p-2.5 text-left shadow-[0_1px_2px_rgba(28,25,23,0.04)] transition-all hover:border-amber-300 hover:shadow-sm cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
+      className="group flex w-full items-center gap-3 rounded-2xl border border-stone-200/90 bg-white p-2.5 text-left shadow-2xs transition-all hover:border-amber-300 hover:shadow-xs cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
     >
       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-stone-100">
         <Image
@@ -367,6 +392,9 @@ export function ServiceCard({
   )
 }
 
+/**
+ * Organization recommendation card rendered when user asks for salons/spas.
+ */
 export function OrganizationCard({
   org,
   onShowServices,
@@ -378,7 +406,7 @@ export function OrganizationCard({
     <button
       type="button"
       onClick={() => onShowServices(org.name)}
-      className="group flex w-full items-center gap-3 rounded-2xl border border-stone-200/90 bg-white p-2.5 text-left shadow-[0_1px_2px_rgba(28,25,23,0.04)] transition-all hover:border-amber-300 hover:shadow-sm cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
+      className="group flex w-full items-center gap-3 rounded-2xl border border-stone-200/90 bg-white p-2.5 text-left shadow-2xs transition-all hover:border-amber-300 hover:shadow-xs cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
     >
       <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-stone-100 bg-amber-50">
         {org.picture ? (
@@ -417,6 +445,9 @@ export function OrganizationCard({
   )
 }
 
+/**
+ * Booking confirmation card inside client concierge chat.
+ */
 export function ConfirmedBookingCard({ booking }: { booking: AgentConfirmedBooking }) {
   return (
     <div className="w-full rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white p-3.5 text-stone-900 shadow-[0_1px_2px_rgba(6,95,70,0.06)] motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-200">
@@ -432,7 +463,7 @@ export function ConfirmedBookingCard({ booking }: { booking: AgentConfirmedBooki
         <span className="font-medium text-stone-600">
           {booking.formattedTime || booking.startsAt}
         </span>
-        <span className="font-medium text-emerald-800">$0 today</span>
+        <span className="font-medium text-emerald-800">$0 today (PayPal hold)</span>
       </div>
     </div>
   )
@@ -473,6 +504,9 @@ export interface ChatConversationProps<T extends ChatMessageItem = ChatMessageIt
   className?: string
 }
 
+/**
+ * Main chat conversation view with message list, action chips, auto-resizing input, and quick actions.
+ */
 export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
   messages,
   isThinking,
@@ -581,6 +615,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
         className,
       )}
     >
+      {/* Scrollable message timeline */}
       <div
         ref={scrollContainerRef}
         role="log"
@@ -620,11 +655,11 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                     'rounded-[1.15rem] px-3.5 py-2.5 text-[13px] leading-relaxed',
                     isUser
                       ? cn(
-                          'bg-stone-950 text-stone-50 shadow-[0_1px_2px_rgba(28,25,23,0.18)]',
+                          'bg-stone-950 text-stone-50 shadow-xs',
                           isFirstInGroup && 'rounded-br-md',
                         )
                       : cn(
-                          'border border-white/80 bg-white text-stone-800 shadow-[0_1px_2px_rgba(28,25,23,0.05)]',
+                          'border border-stone-200/70 bg-white text-stone-800 shadow-2xs',
                           isFirstInGroup && 'rounded-bl-md',
                         ),
                   )}
@@ -644,9 +679,10 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                 </span>
               )}
 
+              {/* Navigation or UI Actions */}
               {!isUser && (msg.navigation || msg.uiAction) && (
                 <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
-                  <div className="flex flex-col gap-1.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-2.5 text-xs text-stone-800 shadow-xs backdrop-blur-xs">
+                  <div className="flex flex-col gap-1.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-2.5 text-xs text-stone-800 shadow-2xs backdrop-blur-xs">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5 font-bold text-amber-950">
                         <Sparkles className="h-3.5 w-3.5 text-amber-600" />
@@ -685,12 +721,14 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                 </div>
               )}
 
+              {/* Confirmed Booking Card */}
               {!support && !isUser && msg.confirmedBooking && (
                 <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
                   <ConfirmedBookingCard booking={msg.confirmedBooking} />
                 </div>
               )}
 
+              {/* Organization Cards */}
               {!support && !isUser && effectiveOrgs.length > 0 && (
                 <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%] space-y-1.5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
                   <p className="px-0.5 text-[11px] font-medium text-stone-400">
@@ -706,6 +744,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                 </div>
               )}
 
+              {/* Service Recommendation Cards */}
               {!support && !isUser && effectiveRecs.length > 0 && (
                 <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%] space-y-1.5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
                   <p className="px-0.5 text-[11px] font-medium text-stone-400">
@@ -743,6 +782,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
           )
         })}
 
+        {/* Welcome suggestions */}
         {isOnlyWelcome && (
           <div className="ml-9 grid w-[calc(100%-2.25rem)] grid-cols-2 gap-2">
             {chrome.welcomeSuggestions.map((card) => {
@@ -754,7 +794,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                   disabled={isThinking}
                   onClick={() => sendPrompt(card.prompt)}
                   className={cn(
-                    'flex flex-col items-start rounded-2xl border border-stone-200/80 bg-white p-3 text-left shadow-[0_1px_2px_rgba(28,25,23,0.04)] transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 disabled:opacity-40',
+                    'flex flex-col items-start rounded-2xl border border-stone-200/80 bg-white p-3 text-left shadow-2xs transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 disabled:opacity-40',
                     chrome.suggestionHover,
                     chrome.ring,
                   )}
@@ -779,10 +819,11 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
           </div>
         )}
 
+        {/* Thinking Indicator */}
         {isThinking && (
           <div className="flex max-w-[85%] items-end gap-2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
             <ConciergeAvatar size="sm" portal={portal} />
-            <div className="rounded-[1.15rem] rounded-bl-md border border-white/80 bg-white px-3.5 py-2.5 shadow-[0_1px_2px_rgba(28,25,23,0.05)]">
+            <div className="rounded-[1.15rem] rounded-bl-md border border-stone-200/70 bg-white px-3.5 py-2.5 shadow-2xs">
               <span className="sr-only">{chrome.title} is typing</span>
               <div className="flex items-center gap-2" aria-hidden="true">
                 <div className="flex items-center gap-1">
@@ -814,6 +855,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
         )}
       </div>
 
+      {/* Jump to bottom button */}
       {isScrolledUp && (
         <div className="absolute bottom-[7.5rem] left-1/2 z-20 -translate-x-1/2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
           <button
@@ -830,6 +872,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
         </div>
       )}
 
+      {/* Quick Suggestions / Chips */}
       {!isOnlyWelcome && activeChips.length > 0 && (
         <div className="flex items-center gap-1.5 overflow-x-auto px-4 pb-1 pt-1 scrollbar-none">
           {activeChips.map((chip) => (
@@ -839,7 +882,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
               disabled={isThinking}
               onClick={() => sendPrompt(chip)}
               className={cn(
-                'shrink-0 rounded-full border border-stone-200/90 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-600 shadow-[0_1px_1px_rgba(28,25,23,0.04)] transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40',
+                'shrink-0 rounded-full border border-stone-200/90 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-600 shadow-2xs transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40',
                 chrome.chipHover,
                 chrome.ring,
               )}
@@ -850,7 +893,8 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
         </div>
       )}
 
-      <div className="border-t border-stone-200/60 bg-white/90 px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
+      {/* Bottom Input Area */}
+      <div className="border-t border-stone-200/70 bg-white/95 px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
         <form
           onSubmit={(e) => {
             e.preventDefault()

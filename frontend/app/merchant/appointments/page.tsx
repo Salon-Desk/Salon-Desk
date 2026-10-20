@@ -1,6 +1,7 @@
 'use client'
 
-import { Calendar, FileSpreadsheet, Loader2 } from 'lucide-react'
+import { Calendar, Loader2, RefreshCw } from 'lucide-react'
+import Link from 'next/link'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -9,6 +10,7 @@ import { Pagination } from '@/components/table/Pagination'
 import { type Column, DataTable, EmptyState } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
+import { cn } from '@/lib/utils'
 import type { Booking, HoldState } from '@/types'
 
 import { ConsentModal } from '../_components/consent-modal'
@@ -119,10 +121,20 @@ export default function MerchantAppointmentsPage() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
       {/* Header */}
-      <PageHeader bookingsCount={bookings.length} isLoading={isLoading} />
+      <PageHeader
+        bookingsCount={bookings.length}
+        isLoading={isLoading}
+        onRefresh={() => void refetch()}
+      />
 
       {/* KPI Cards */}
-      {!isLoading && !isError && <AppointmentsKpiCards kpiData={kpiData} />}
+      {!isLoading && !isError && (
+        <AppointmentsKpiCards
+          kpiData={kpiData}
+          onFilterChange={handleFilterChange}
+          activeFilter={appointmentFilter}
+        />
+      )}
 
       {/* Loading State */}
       {isLoading ? <LoadingState /> : null}
@@ -185,27 +197,48 @@ export default function MerchantAppointmentsPage() {
 
 // Sub-components for better organization
 
-function PageHeader({ bookingsCount, isLoading }: { bookingsCount: number; isLoading: boolean }) {
+function PageHeader({
+  bookingsCount,
+  isLoading,
+  onRefresh,
+}: {
+  bookingsCount: number
+  isLoading: boolean
+  onRefresh?: () => void
+}) {
   return (
-    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
       <div>
         <h1 className="font-extrabold text-slate-900 text-2xl tracking-tight sm:text-3xl">
           Appointments &amp; Settlements
         </h1>
-        <p className="text-slate-500 text-sm mt-1">
+        <p className="text-slate-500 text-xs sm:text-sm mt-1">
           {isLoading
-            ? 'Loading…'
-            : `${bookingsCount} reservations tracked via PayPal escrow hold rails`}
+            ? 'Loading reservations…'
+            : `${bookingsCount} reservations protected via $0 PayPal escrow hold rails`}
         </p>
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex items-center rounded-lg border border-slate-200/80 bg-white px-4 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-          <div className="flex items-center gap-2 rounded-md bg-slate-900 px-3 py-1.5 font-semibold text-xs text-white shadow-xs">
-            <FileSpreadsheet className="h-3.5 w-3.5" />
-            <span>Active Ledger ({bookingsCount})</span>
-          </div>
-        </div>
+        <Link
+          href="/merchant/calendar"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+        >
+          <Calendar className="h-3.5 w-3.5 text-amber-600" />
+          <span>Calendar View</span>
+        </Link>
+
+        {onRefresh && (
+          <button
+            type="button"
+            onClick={onRefresh}
+            title="Refresh appointments"
+            aria-label="Refresh appointments"
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200/90 bg-white p-2 text-slate-600 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+          >
+            <RefreshCw className={cn('h-3.5 w-3.5', isLoading && 'animate-spin text-amber-600')} />
+          </button>
+        )}
       </div>
     </div>
   )

@@ -91,6 +91,8 @@ services:
       RUSTFS_BUCKET: ${RUSTFS_BUCKET:-salondesk-assets}
     ports:
       - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./backend:/app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
       interval: 10s
@@ -118,6 +120,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       RUSTFS_ENDPOINT_URL: http://rustfs:9000
+    volumes:
+      - ./backend:/app
     entrypoint: ["python", "agent.py", "start"]
 
   web:

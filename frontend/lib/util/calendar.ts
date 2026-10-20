@@ -1,4 +1,13 @@
-import { addDays, endOfDay, endOfWeek, format, isSameDay, startOfDay, startOfWeek } from 'date-fns'
+import {
+  addDays,
+  endOfDay,
+  endOfWeek,
+  format,
+  isSameDay,
+  startOfDay,
+  startOfWeek,
+  subDays,
+} from 'date-fns'
 
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
 import type { Booking } from '@/types'
@@ -26,15 +35,29 @@ export function dayKey(date: Date): string {
 export function rangeForView(
   view: CalendarViewMode,
   anchor: Date,
-): { starts_at: string; ends_at: string } {
+): { starts_at: string; ends_at: string; page_size: number } {
   if (view === 'week') {
     const start = startOfWeek(anchor, { weekStartsOn: 1 })
     const end = endOfWeek(anchor, { weekStartsOn: 1 })
-    return { starts_at: start.toISOString(), ends_at: end.toISOString() }
+    return {
+      starts_at: startOfDay(start).toISOString(),
+      ends_at: endOfDay(end).toISOString(),
+      page_size: 100,
+    }
+  }
+  if (view === 'agenda') {
+    const start = startOfDay(subDays(anchor, 1))
+    const end = endOfDay(addDays(anchor, 30))
+    return {
+      starts_at: start.toISOString(),
+      ends_at: end.toISOString(),
+      page_size: 100,
+    }
   }
   return {
     starts_at: startOfDay(anchor).toISOString(),
     ends_at: endOfDay(anchor).toISOString(),
+    page_size: 100,
   }
 }
 

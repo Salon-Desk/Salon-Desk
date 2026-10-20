@@ -33,7 +33,7 @@ export default function AdminSalonsPage() {
   const debouncedSearch = useDebounce(searchQuery, 350)
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(5)
   const [actioningOrgId, setActioningOrgId] = useState<string | null>(null)
 
   useAgentUiActions({

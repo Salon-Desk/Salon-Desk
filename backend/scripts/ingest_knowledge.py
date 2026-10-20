@@ -233,23 +233,28 @@ async def sync_from_platform(
         count += 1
 
     # Staff members and ratings
-    from app.models.enums import FeedbackModerationStatus, UserRole
+    from app.models.enums import FeedbackModerationStatus, UserRole, UserStatus
     from app.models.feedback import ClientFeedback
     from app.models.user import User
 
     staff_result = await session.execute(
-        select(User).where(
+        select(User)
+        .options(selectinload(User.profile))
+        .where(
             User.role.in_([UserRole.STYLIST, UserRole.ORG_OWNER, UserRole.RECEPTION]),
-            User.is_active.is_(True),
+            User.status == UserStatus.ACTIVE,
         )
     )
     for staff in staff_result.scalars().all():
         if not staff.org_id:
             continue
         org = next((o for o in orgs if o.id == staff.org_id), None)
-        title = f"Staff Member — {staff.first_name} {staff.last_name}"
+        first_name = staff.profile.first_name if staff.profile else ""
+        last_name = staff.profile.last_name if staff.profile else ""
+        full_name = f"{first_name} {last_name}".strip() or staff.email
+        title = f"Staff Member — {full_name}"
         content = (
-            f"Staff member {staff.first_name} {staff.last_name} at {org.name if org else 'salon'}. "
+            f"Staff member {full_name} at {org.name if org else 'salon'}. "
             f"Role: {staff.role.value}. Email: {staff.email}."
         )
         embedding = await get_embedding(content)

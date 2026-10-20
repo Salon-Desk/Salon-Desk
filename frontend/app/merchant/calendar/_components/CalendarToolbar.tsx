@@ -1,7 +1,7 @@
 'use client'
 
 import { addDays, addWeeks, format, subDays, subWeeks } from 'date-fns'
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 
 import { Calendar } from '@/components/ui/calendar'
@@ -27,6 +27,8 @@ interface CalendarToolbarProps {
   staffId: string
   onStaffChange: (id: string) => void
   bookingCount: number
+  onRefresh?: () => void
+  isRefreshing?: boolean
 }
 
 export function CalendarToolbar({
@@ -38,6 +40,8 @@ export function CalendarToolbar({
   staffId,
   onStaffChange,
   bookingCount,
+  onRefresh,
+  isRefreshing,
 }: CalendarToolbarProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
 
@@ -122,6 +126,20 @@ export function CalendarToolbar({
           >
             <ChevronRight className="h-4 w-4" />
           </button>
+
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              title="Refresh schedule"
+              aria-label="Refresh schedule"
+              className="ml-1 rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
+            >
+              <RefreshCw
+                className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin text-amber-600')}
+              />
+            </button>
+          )}
         </div>
 
         <Popover open={pickerOpen} onOpenChange={setPickerOpen}>

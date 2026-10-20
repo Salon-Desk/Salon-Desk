@@ -1,5 +1,8 @@
+'use client'
+
 import { SearchInput } from '@/components/ui'
 import { HOLD_STATE_FILTER_LABEL, HOLD_STATES } from '@/lib/status'
+import { cn } from '@/lib/utils'
 import type { HoldState } from '@/types'
 
 interface AppointmentsFilterBarProps {
@@ -20,20 +23,20 @@ export function AppointmentsFilterBar({
   const filterOptions: ('ALL' | HoldState)[] = ['ALL', ...HOLD_STATES]
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/50 p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] sm:flex-row sm:items-center sm:justify-between">
-      <div className="relative flex-1 max-w-lg">
+    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-xs lg:flex-row lg:items-center lg:justify-between">
+      {/* Search Input */}
+      <div className="relative w-full lg:max-w-md">
         <SearchInput
           value={search}
-          onChange={(q) => {
-            onSearchChange(q)
-          }}
-          placeholder="Search client, reference, stylist, or status..."
+          onChange={(q) => onSearchChange(q)}
+          placeholder="Search by client, stylist, service, or ref..."
           shortcut="⌘K"
-          className="w-full text-sm"
+          className="w-full text-xs sm:text-sm bg-slate-50/70 border-slate-200/80 focus:bg-white"
         />
       </div>
 
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1">
+      {/* Filter Tabs / Pills */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
         {filterOptions.map((st) => {
           const count = filterCounts[st] ?? 0
           const isActive = filter === st
@@ -43,17 +46,19 @@ export function AppointmentsFilterBar({
               key={st}
               type="button"
               onClick={() => onFilterChange(st)}
-              className={`inline-flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all cursor-pointer border ${
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border',
                 isActive
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-              }`}
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50/80',
+              )}
             >
               <span>{st === 'ALL' ? 'All' : HOLD_STATE_FILTER_LABEL[st]}</span>
               <span
-                className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-mono font-semibold ${
-                  isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'
-                }`}
+                className={cn(
+                  'rounded-full px-1.5 py-0.2 text-[10px] font-mono font-bold',
+                  isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-500',
+                )}
               >
                 {count}
               </span>

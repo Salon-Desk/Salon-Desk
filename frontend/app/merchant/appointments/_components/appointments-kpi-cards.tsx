@@ -1,7 +1,10 @@
+'use client'
+
 import { Clock, DollarSign, TrendingUp, Users } from 'lucide-react'
 
 import { StatCard } from '@/components/ui/stat-card'
 import { formatUsd } from '@/lib/format'
+import type { HoldState } from '@/types'
 
 interface KpiData {
   totalBookings: number
@@ -14,38 +17,51 @@ interface KpiData {
 
 interface AppointmentsKpiCardsProps {
   kpiData: KpiData
+  onFilterChange?: (filter: 'ALL' | HoldState) => void
+  activeFilter?: 'ALL' | HoldState
 }
 
-export function AppointmentsKpiCards({ kpiData }: AppointmentsKpiCardsProps) {
+export function AppointmentsKpiCards({
+  kpiData,
+  onFilterChange,
+  activeFilter = 'ALL',
+}: AppointmentsKpiCardsProps) {
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       <StatCard
         label="Total Bookings"
         value={kpiData.totalBookings}
         icon={Users}
         tone="slate"
-        footnote={`${kpiData.voidedBookings} voided`}
+        footnote={`${kpiData.voidedBookings} voided reservations`}
+        onClick={onFilterChange ? () => onFilterChange('ALL') : undefined}
+        className={activeFilter === 'ALL' ? 'ring-2 ring-slate-900/10' : undefined}
       />
       <StatCard
-        label="Total Hold Value"
+        label="Active Escrow Hold"
         value={formatUsd(kpiData.totalHoldValue)}
         icon={DollarSign}
         tone="amber"
-        footnote="Active escrow"
+        footnote="Zero upfront customer debit"
+        onClick={onFilterChange ? () => onFilterChange('HELD') : undefined}
+        className={activeFilter === 'HELD' ? 'ring-2 ring-amber-500/20' : undefined}
       />
       <StatCard
-        label="Pending Holds"
+        label="Awaiting Settlement"
         value={kpiData.pendingHolds}
         icon={Clock}
         tone="blue"
-        footnote="Awaiting settlement"
+        footnote="Requires show / no-show HITL"
+        onClick={onFilterChange ? () => onFilterChange('HELD') : undefined}
       />
       <StatCard
         label="Captured Revenue"
         value={kpiData.capturedBookings}
         icon={TrendingUp}
         tone="emerald"
-        footnote={`${kpiData.noShowCaptured} no-show fees`}
+        footnote={`${kpiData.noShowCaptured} no-show penalties`}
+        onClick={onFilterChange ? () => onFilterChange('CAPTURED') : undefined}
+        className={activeFilter === 'CAPTURED' ? 'ring-2 ring-emerald-500/20' : undefined}
       />
     </div>
   )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import httpx
@@ -32,19 +33,32 @@ async def get_embedding(
     url = f"{cfg.ollama_host.rstrip('/')}/api/embeddings"
     payload = {"model": cfg.ollama_embed_model, "prompt": prompt}
 
-    try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(url, json=payload)
-    except httpx.HTTPError as exc:
-        raise EmbeddingError(f"Ollama embeddings request failed: {exc}") from exc
+    last_exc: Exception | None = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(url, json=payload)
+            if response.status_code >= 400:
+                raise EmbeddingError(
+                    f"Ollama embeddings returned {response.status_code}: {response.text[:300]}"
+                )
 
-    if response.status_code >= 400:
-        raise EmbeddingError(
-            f"Ollama embeddings returned {response.status_code}: {response.text[:300]}"
-        )
+            data = response.json()
+            embedding = data.get("embedding")
+            if not isinstance(embedding, list) or not embedding:
+                raise EmbeddingError("Ollama response missing embedding vector")
+            return [float(x) for x in embedding]
+        except (httpx.HTTPError, EmbeddingError) as exc:
+            last_exc = exc
+            if attempt < 2:
+                logger.warning(
+                    "Ollama embeddings attempt %d failed: %s; retrying in %ds...",
+                    attempt + 1,
+                    exc,
+                    attempt + 1,
+                )
+                await asyncio.sleep(float(attempt + 1))
+            else:
+                break
 
-    data = response.json()
-    embedding = data.get("embedding")
-    if not isinstance(embedding, list) or not embedding:
-        raise EmbeddingError("Ollama response missing embedding vector")
-    return [float(x) for x in embedding]
+    raise EmbeddingError(f"Ollama embeddings request failed: {last_exc}") from last_exc
