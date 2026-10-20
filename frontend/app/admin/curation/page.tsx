@@ -14,6 +14,7 @@ import {
   useUpdateFeaturedItemMutation,
   useUpdateHeroSettingsMutation,
   useUpdatePopularAlgorithmMutation,
+  useUploadHeroImageMutation,
 } from '@/store/api/platformApi'
 import type {
   CreateFeaturedItemRequest,
@@ -54,6 +55,7 @@ export default function AdminCurationPage() {
 
   // Mutations
   const [updateHero, { isLoading: isSavingHero }] = useUpdateHeroSettingsMutation()
+  const [uploadHeroImage, { isLoading: isUploadingHeroImage }] = useUploadHeroImageMutation()
   const [updatePopular, { isLoading: isSavingPopular }] = useUpdatePopularAlgorithmMutation()
   const [createFeatured, { isLoading: isCreatingFeatured }] = useCreateFeaturedItemMutation()
   const [updateFeatured] = useUpdateFeaturedItemMutation()
@@ -111,6 +113,23 @@ export default function AdminCurationPage() {
       toast.success('Landing hero banner updated successfully', toastColor.success)
     } catch {
       toast.error('Failed to update hero settings', toastColor.error)
+    }
+  }
+
+  const handleUploadHeroImage = async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await uploadHeroImage(formData).unwrap()
+      setHeroForm((prev) => ({
+        ...prev,
+        image_url: res.image_url,
+      }))
+      toast.success('Hero image uploaded successfully', toastColor.success)
+    } catch (err) {
+      const detail = (err as { data?: { detail?: string } })?.data?.detail
+      toast.error(detail || 'Failed to upload hero image', toastColor.error)
+      throw err
     }
   }
 
@@ -233,6 +252,8 @@ export default function AdminCurationPage() {
             salonCount={curation?.hero.salon_count ?? approvedOrgs.length}
             serviceCount={curation?.hero.service_count ?? catalogServices.length}
             isSaving={isSavingHero}
+            isUploadingImage={isUploadingHeroImage}
+            onUploadImage={handleUploadHeroImage}
             onSave={handleSaveHero}
           />
         )}

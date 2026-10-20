@@ -61,3 +61,9 @@ def test_curation_schemas():
         display_order=1,
     )
     assert feat_create.badge_text == "Premier Partner"
+
+    from app.schemas.curation import HeroImageUploadOut
+
+    img_out = HeroImageUploadOut(image_url="https://example.com/banner.jpg", hero=hero_settings)
+    assert img_out.image_url == "https://example.com/banner.jpg"
+    assert img_out.hero.headline == "Headline"

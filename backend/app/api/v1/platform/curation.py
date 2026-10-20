@@ -1,7 +1,7 @@
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
@@ -16,6 +16,7 @@ from app.schemas.curation import (
     FeaturedItemUpdate,
     FeaturedOrganizationOut,
     FeaturedServiceOut,
+    HeroImageUploadOut,
     HeroSettingsOut,
     HeroSettingsUpdate,
     PopularSettingsOut,
@@ -25,6 +26,7 @@ from app.schemas.organization import CatalogOrganizationOut
 from app.schemas.service import CatalogServiceOut
 from app.services import feedback_service
 from app.services.cache_service import cache_service
+from app.services.storage_service import StorageUnavailableError, storage_service
 
 router = APIRouter(prefix="/admin/curation", tags=["platform-curation"])
 
@@ -241,6 +243,40 @@ async def update_hero_settings(
     await cache_service.delete("catalog:curation")
 
     return (await get_curation(user, db)).hero
+
+
+@router.post("/hero/image", response_model=HeroImageUploadOut)
+async def upload_hero_image(
+    file: UploadFile = File(...),
+    user: PlatformAdmin = None,
+    db: DbSession = None,
+) -> HeroImageUploadOut:
+    _ = user
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Uploaded file must be an image")
+    data = await file.read()
+    if len(data) > 10 * 1024 * 1024:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Image exceeds 10MB limit")
+    try:
+        _key, url = await storage_service.async_upload_bytes(
+            data=data,
+            filename=file.filename or "hero-banner.jpg",
+            content_type=file.content_type,
+            folder="hero",
+        )
+    except StorageUnavailableError as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, detail="File storage is unavailable"
+        ) from exc
+
+    setting = await _get_or_create_settings(db)
+    setting.hero_image_url = url
+    await db.flush()
+    await cache_service.delete("catalog:hero")
+    await cache_service.delete("catalog:curation")
+
+    curation_res = await get_curation(user, db)
+    return HeroImageUploadOut(image_url=url, hero=curation_res.hero)
 
 
 @router.put("/popular-algorithm", response_model=PopularSettingsOut)

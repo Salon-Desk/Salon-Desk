@@ -33,6 +33,11 @@ class HeroSettingsUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class HeroImageUploadOut(BaseModel):
+    image_url: str
+    hero: HeroSettingsOut
+
+
 class PopularSettingsOut(BaseModel):
     min_rating: float = 4.0
     org_weight: float = 0.40

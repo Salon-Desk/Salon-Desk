@@ -1,7 +1,17 @@
 'use client'
 
-import { CalendarDays, Clock, Lock, MapPin, ShieldCheck, User } from 'lucide-react'
+import {
+  ArrowUpRight,
+  CalendarDays,
+  Clock,
+  Info,
+  Lock,
+  MapPin,
+  ShieldCheck,
+  User,
+} from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { formatDuration, formatUsd } from '@/lib/format'
@@ -90,11 +100,13 @@ export interface CheckoutSummaryProps {
   service: SalonService
   coverSrc: string
   salonName?: string
+  orgId?: string
   address?: string | null
   stylistLabel: string
   startsAt: string | null
   displayTz: string
   quote: CheckoutQuote
+  onOpenDetails?: () => void
   children?: ReactNode
 }
 
@@ -102,11 +114,13 @@ export function CheckoutSummary({
   service,
   coverSrc,
   salonName,
+  orgId,
   address,
   stylistLabel,
   startsAt,
   displayTz,
   quote,
+  onOpenDetails,
   children,
 }: CheckoutSummaryProps) {
   const endsAt = startsAt
@@ -131,17 +145,53 @@ export function CheckoutSummary({
           </p>
           <p className="truncate font-serif text-xl leading-tight">{service.name}</p>
         </div>
+
+        {onOpenDetails && (
+          <button
+            type="button"
+            onClick={onOpenDetails}
+            className="absolute top-3 right-3 cursor-pointer rounded-full bg-stone-950/60 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md transition-colors hover:bg-stone-900"
+          >
+            Details &amp; Reviews
+          </button>
+        )}
       </div>
 
       <div className="space-y-4 p-5">
         {salonName ? (
           <SummaryRow icon={<MapPin className="h-4 w-4" />} label="Salon">
-            <p className="truncate">{salonName}</p>
+            {orgId ? (
+              <Link
+                href={`/client/org/${orgId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="group flex items-center gap-1 font-semibold text-stone-900 transition-colors hover:text-amber-800"
+              >
+                <span className="truncate">{salonName}</span>
+                <ArrowUpRight className="h-3 w-3 text-stone-400 group-hover:text-amber-800" />
+              </Link>
+            ) : (
+              <p className="truncate font-medium">{salonName}</p>
+            )}
             {address ? (
               <p className="truncate text-xs font-normal text-stone-500">{address}</p>
             ) : null}
           </SummaryRow>
         ) : null}
+
+        {onOpenDetails && (
+          <button
+            type="button"
+            onClick={onOpenDetails}
+            className="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-amber-200/80 bg-amber-50/50 p-2.5 text-xs text-amber-950 transition-colors hover:bg-amber-100/60"
+          >
+            <span className="flex items-center gap-1.5 font-bold">
+              <Info className="h-3.5 w-3.5 text-amber-700" />
+              <span>Service Details &amp; Past Reviews</span>
+            </span>
+            <span className="font-bold text-[11px] text-amber-700">View →</span>
+          </button>
+        )}
 
         <SummaryRow icon={<User className="h-4 w-4" />} label="Stylist">
           {stylistLabel}

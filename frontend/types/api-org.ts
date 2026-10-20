@@ -333,6 +333,11 @@ export interface UpdateHeroSettingsRequest {
   is_active?: boolean
 }
 
+export interface HeroImageUploadResponse {
+  image_url: string
+  hero: HeroSettings
+}
+
 export interface PopularSettings {
   min_rating: number
   org_weight: number

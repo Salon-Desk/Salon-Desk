@@ -9,6 +9,7 @@ import {
   type CreateFeaturedItemRequest,
   type CreateServiceCategoryRequest,
   type GenerateCommissionInvoiceRequest,
+  type HeroImageUploadResponse,
   type HeroSettings,
   normalizePaginated,
   type OrgCommissionInvoice,
@@ -314,6 +315,15 @@ export const platformApi = baseApi.injectEndpoints({
       invalidatesTags: ['admin', 'curation', 'catalog'],
     }),
 
+    uploadHeroImage: builder.mutation<HeroImageUploadResponse, FormData>({
+      query: (formData) => ({
+        url: '/api/v1/admin/curation/hero/image',
+        method: 'POST',
+        data: formData,
+      }),
+      invalidatesTags: ['admin', 'curation', 'catalog'],
+    }),
+
     updatePopularAlgorithm: builder.mutation<PopularSettings, UpdatePopularSettingsRequest>({
       query: (body) => ({
         url: '/api/v1/admin/curation/popular-algorithm',
@@ -383,6 +393,7 @@ export const {
   useRejectAdminClientFeedbackMutation,
   useGetAdminCurationQuery,
   useUpdateHeroSettingsMutation,
+  useUploadHeroImageMutation,
   useUpdatePopularAlgorithmMutation,
   useCreateFeaturedItemMutation,
   useUpdateFeaturedItemMutation,

@@ -1,7 +1,17 @@
 'use client'
 
-import { Building2, Clock, Lock, MapPin, MessageSquare, Sparkles, Star } from 'lucide-react'
+import {
+  ArrowUpRight,
+  Building2,
+  Clock,
+  Lock,
+  MapPin,
+  MessageSquare,
+  Sparkles,
+  Star,
+} from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useState } from 'react'
 
 import { serviceImage } from '@/lib/data/service-content'
@@ -34,8 +44,11 @@ export function CatalogFeaturedSection({
   }
 
   return (
-    <section className="mb-10 sm:mb-12">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-5">
+    <section className="relative mb-12 sm:mb-16 overflow-hidden rounded-3xl border border-stone-200/90 bg-gradient-to-b from-stone-50/90 via-white to-stone-50/40 p-5 sm:p-7 shadow-xs">
+      {/* Decorative ambient flare */}
+      <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-500/5 blur-3xl" />
+
+      <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="h-4 w-4 text-amber-600" />
@@ -140,10 +153,13 @@ export function CatalogFeaturedSection({
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Verified Partner
-                  </span>
+                  <Link
+                    href={`/client/org/${org.id}`}
+                    className="inline-flex items-center gap-1 font-bold text-xs text-stone-700 hover:text-amber-800 transition-colors"
+                  >
+                    <span>Visit Salon</span>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-stone-400" />
+                  </Link>
                   <button
                     type="button"
                     onClick={() => onSelectOrganization(org.id)}

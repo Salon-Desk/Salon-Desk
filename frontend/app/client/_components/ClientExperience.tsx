@@ -1,6 +1,15 @@
 'use client'
 
-import { Calendar, Loader2, MapPin, Search, Sparkles } from 'lucide-react'
+import {
+  Calendar,
+  Clock,
+  Compass,
+  Loader2,
+  MapPin,
+  Search,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
@@ -361,7 +370,12 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
     ))
 
   return (
-    <div className="flex min-h-dvh flex-col overflow-x-clip bg-[#fbfbfa] font-sans text-stone-900 selection:bg-amber-500/20">
+    <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-[#fbfbfa] font-sans text-stone-900 selection:bg-amber-500/20">
+      {/* Ambient background illumination */}
+      <div className="pointer-events-none absolute -top-32 left-1/2 -z-10 h-[500px] w-full max-w-7xl -translate-x-1/2 overflow-hidden blur-3xl opacity-60">
+        <div className="mx-auto h-[350px] w-[700px] rounded-full bg-gradient-to-br from-amber-200/25 via-orange-100/15 to-transparent" />
+      </div>
+
       {toastMessage && <Toast message={toastMessage} onDismiss={dismiss} position="bottom-right" />}
 
       <ClientHeader
@@ -377,14 +391,66 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
           <div>
             <CatalogHero hero={effectiveHero} isLoading={heroLoading && curationLoading} />
 
+            {/* Value Props & Trust Highlights Ribbon */}
+            <div className="mb-10 sm:mb-14 overflow-hidden rounded-3xl border border-stone-200/80 bg-white/95 shadow-xs backdrop-blur-xl">
+              <div className="grid grid-cols-2 divide-y divide-stone-100 sm:grid-cols-4 sm:divide-y-0 sm:divide-x sm:divide-stone-100">
+                <div className="flex items-center gap-3 p-3.5 sm:p-4">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 shadow-2xs">
+                    <ShieldCheck className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-stone-900">$0 Debited Today</p>
+                    <p className="truncate text-[11px] text-stone-500">
+                      PayPal auth hold guarantee
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3.5 sm:p-4">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 shadow-2xs">
+                    <Sparkles className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-stone-900">Verified Salons</p>
+                    <p className="truncate text-[11px] text-stone-500">
+                      Licensed studio specialists
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3.5 sm:p-4">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 shadow-2xs">
+                    <Calendar className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-stone-900">Instant Confirm</p>
+                    <p className="truncate text-[11px] text-stone-500">Real-time schedule lock</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3.5 sm:p-4">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-700 shadow-2xs">
+                    <Clock className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-stone-900">Free Cancellation</p>
+                    <p className="truncate text-[11px] text-stone-500">100% hold release window</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {!filterOrgId && !isFilteredView && (
-              <CatalogFeaturedSection
-                featuredOrganizations={curation?.featured_organizations ?? []}
-                featuredServices={curation?.featured_services ?? []}
-                onSelectOrganization={(orgId) => setSelectedOrgId(orgId)}
-                onQuickBookService={handleStartBooking}
-                onAskAiService={handleAskAi}
-              />
+              <>
+                <CatalogFeaturedSection
+                  featuredOrganizations={curation?.featured_organizations ?? []}
+                  featuredServices={curation?.featured_services ?? []}
+                  onSelectOrganization={(orgId) => setSelectedOrgId(orgId)}
+                  onQuickBookService={handleStartBooking}
+                  onAskAiService={handleAskAi}
+                />
+                <div className="mb-8 sm:mb-12 h-px w-full bg-gradient-to-r from-transparent via-stone-200/80 to-transparent" />
+              </>
             )}
 
             {filterOrgId ? <ClientSalonFeedbackSection orgId={filterOrgId} /> : null}
@@ -446,8 +512,15 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
                   />
                 ) : (
                   <CatalogSection
-                    title="Results"
-                    subtitle={filterOrgId ? 'Services at this salon' : 'Matching your criteria'}
+                    title="Matching Treatments"
+                    eyebrow="FILTERED DISCOVERIES"
+                    icon={<Search className="h-3 w-3 text-amber-700" />}
+                    tone="amber"
+                    subtitle={
+                      filterOrgId
+                        ? 'Services at this salon'
+                        : 'Customized to your active preferences'
+                    }
                     totalCount={results.total}
                     loadedCount={results.services.length}
                     hasMore={results.hasMore}
@@ -465,8 +538,11 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
             {!catalogError && !isFilteredView ? (
               <>
                 <CatalogSection
-                  title="Nearby"
-                  subtitle={`Salons within ${NEARBY_RADIUS_KM} km of you`}
+                  title="Nearby Salons &amp; Studios"
+                  eyebrow="LOCAL NEIGHBORHOOD"
+                  icon={<MapPin className="h-3 w-3 text-emerald-700" />}
+                  tone="emerald"
+                  subtitle={`Top treatments within ${NEARBY_RADIUS_KM} km of your position`}
                   totalCount={nearby.total}
                   loadedCount={nearby.services.length}
                   hasMore={nearby.hasMore}
@@ -520,8 +596,12 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
                 </CatalogSection>
 
                 <CatalogSection
-                  title="Popular"
-                  subtitle="Top-rated services based on client reviews & salon reputation"
+                  title="Trending &amp; Highest Rated"
+                  eyebrow="COMMUNITY FAVORITES"
+                  icon={<Sparkles className="h-3 w-3 text-amber-700" />}
+                  tone="amber"
+                  variant="island"
+                  subtitle="Ranked by client ratings, rebookings, and verified review sentiment"
                   totalCount={popular.total}
                   loadedCount={popular.services.length}
                   hasMore={popular.hasMore}
@@ -539,8 +619,12 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
                 </CatalogSection>
 
                 <CatalogSection
-                  title="Browse all"
-                  subtitle="Full marketplace catalog"
+                  title="Explore All Marketplace Treatments"
+                  eyebrow="FULL CATALOG DIRECTORY"
+                  icon={<Compass className="h-3 w-3 text-purple-700" />}
+                  tone="purple"
+                  showTopDivider
+                  subtitle="Browse the complete directory of salon styling, hair wellness, and grooming care"
                   totalCount={browse.total}
                   loadedCount={browse.services.length}
                   hasMore={browse.hasMore}

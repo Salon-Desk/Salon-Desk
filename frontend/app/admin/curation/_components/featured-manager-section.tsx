@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { Badge, Card, EmptyState, IconButton } from '@/components/ui'
+import { Badge, Card, EmptyState, IconButton, SearchableSelect } from '@/components/ui'
 import type {
   ApiOrganization,
   CatalogService,
@@ -114,28 +114,41 @@ export function FeaturedManagerSection({
               <label className="mb-1 block font-semibold text-[11px] text-slate-700">
                 {tab === 'organizations' ? 'Select Salon' : 'Select Service'}
               </label>
-              <select
+              <SearchableSelect
                 value={targetId}
-                onChange={(e) => setTargetId(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-amber-500 focus:outline-hidden"
-              >
-                <option value="">
-                  {tab === 'organizations'
+                onChange={setTargetId}
+                options={
+                  tab === 'organizations'
+                    ? approvedOrgs.map((org) => ({
+                        value: org.id,
+                        label: org.name,
+                        description: org.description || undefined,
+                      }))
+                    : catalogServices.map((svc) => ({
+                        value: svc.id,
+                        label: svc.name,
+                        badge: `$${svc.base_price}`,
+                        description: `${svc.organization_name || 'Salon'} • ${svc.duration_minutes}m`,
+                      }))
+                }
+                placeholder={
+                  tab === 'organizations'
                     ? '-- Choose Approved Salon --'
-                    : '-- Choose Active Service --'}
-                </option>
-                {tab === 'organizations'
-                  ? approvedOrgs.map((org) => (
-                      <option key={org.id} value={org.id}>
-                        {org.name}
-                      </option>
-                    ))
-                  : catalogServices.map((svc) => (
-                      <option key={svc.id} value={svc.id}>
-                        {svc.name} (${svc.base_price}) — {svc.organization_name || 'Salon'}
-                      </option>
-                    ))}
-              </select>
+                    : '-- Choose Active Service --'
+                }
+                searchPlaceholder={
+                  tab === 'organizations'
+                    ? 'Search salons by name or address...'
+                    : 'Search services by title or salon...'
+                }
+                emptyText={
+                  tab === 'organizations'
+                    ? 'No approved salons found.'
+                    : 'No active services found.'
+                }
+                triggerClassName="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 hover:border-slate-300 focus:border-amber-500"
+                contentClassName="w-[min(calc(100vw-2rem),24rem)]"
+              />
             </div>
 
             <div className="sm:col-span-4">

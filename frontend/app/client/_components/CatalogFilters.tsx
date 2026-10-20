@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
+import { SearchableSelect } from '@/components/ui'
 import { SERVICE_CATEGORIES } from '@/lib/data/catalog'
 import type { CatalogOrganization } from '@/types/api-org'
 
@@ -82,10 +83,10 @@ export function CatalogFilters({
     (minRating !== null ? 1 : 0)
 
   return (
-    <div className="relative z-30 mb-6 py-1 sm:sticky sm:top-[calc(4rem+env(safe-area-inset-top))] sm:mb-8 sm:bg-white/95 sm:py-2.5 sm:backdrop-blur-xl sm:border-b sm:border-stone-200/50">
+    <div className="relative z-30 mb-8 rounded-2xl border border-stone-200/80 bg-white/95 p-3 shadow-xs backdrop-blur-xl transition-all sm:sticky sm:top-[calc(4.25rem+env(safe-area-inset-top))] sm:mb-12 sm:rounded-3xl sm:p-4 sm:shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
       <div className="flex flex-col gap-2.5 sm:gap-3">
         {/* Row 1: Category Scroll Bar */}
-        <div className="-mx-4 flex scroll-px-4 items-center gap-1.5 overflow-x-auto px-4 pb-1 scrollbar-none snap-x sm:mx-0 sm:scroll-px-0 sm:px-0">
+        <div className="flex scroll-px-2 items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x">
           {categories.map((cat) => {
             const isSelected = category === cat
             return (
@@ -104,6 +105,9 @@ export function CatalogFilters({
             )
           })}
         </div>
+
+        {/* Subtle Horizontal Divider */}
+        <div className="hidden sm:block h-px w-full bg-stone-100" />
 
         {/* Row 2: Search, Salon Select, Sort & View Mode Toolbar */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -154,23 +158,31 @@ export function CatalogFilters({
               ) : null}
             </div>
 
-            {/* Salon Filter Dropdown */}
+            {/* Salon Filter Searchable Combobox */}
             {onOrganizationChange && organizations.length > 0 ? (
-              <div className="relative min-w-0 flex-1 sm:min-w-[11rem] sm:max-w-xs">
-                <Building2 className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
-                <select
+              <div className="min-w-0 flex-1 sm:min-w-[12rem] sm:max-w-xs">
+                <SearchableSelect
                   value={organizationId}
+                  onChange={onOrganizationChange}
+                  options={organizations.map((org) => ({
+                    value: org.id,
+                    label: org.name,
+                    description: org.physical_address || undefined,
+                    badge:
+                      typeof org.rating_avg === 'number' && org.rating_avg > 0
+                        ? `★ ${org.rating_avg.toFixed(1)}`
+                        : undefined,
+                  }))}
+                  placeholder={`All Salons (${organizations.length})`}
+                  clearLabel={`All Salons (${organizations.length})`}
+                  allowClear
+                  searchPlaceholder="Search salons by name or address..."
+                  emptyText="No matching salons found."
                   aria-label="Filter by salon"
-                  onChange={(e) => onOrganizationChange(e.target.value)}
-                  className="w-full cursor-pointer appearance-none truncate rounded-full bg-stone-100 py-1.5 pl-8 pr-8 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-200/80 focus:outline-hidden"
-                >
-                  <option value="">All Salons ({organizations.length})</option>
-                  {organizations.map((org) => (
-                    <option key={org.id} value={org.id}>
-                      {org.name}
-                    </option>
-                  ))}
-                </select>
+                  leftIcon={<Building2 className="h-3.5 w-3.5 text-stone-500" />}
+                  triggerClassName="rounded-full bg-stone-100 py-1.5 px-3 text-xs font-semibold text-stone-700 hover:bg-stone-200/80 transition-colors"
+                  contentClassName="w-[min(calc(100vw-2rem),18rem)] rounded-2xl border-stone-200"
+                />
               </div>
             ) : null}
 

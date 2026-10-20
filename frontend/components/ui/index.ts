@@ -31,6 +31,11 @@ export {
   type TablePaginationProps,
 } from './pagination'
 export { SearchInput, type SearchInputProps } from './search-input'
+export {
+  SearchableSelect,
+  type SearchableSelectOption,
+  type SearchableSelectProps,
+} from './searchable-select'
 export { SectionHeading, type SectionHeadingProps } from './section-heading'
 export {
   SegmentedControl,

@@ -2,6 +2,7 @@
 
 import { ArrowRight, Clock, Info, Lock, Sparkles, Star } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 
 import { serviceImage } from '@/lib/data/service-content'
 import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
@@ -98,11 +99,19 @@ export function ServiceCard({
               {service.name}
             </h3>
 
-            {service.organizationName && (
-              <p className="text-xs font-semibold text-stone-500 mt-0.5">
-                {service.organizationName}
-              </p>
-            )}
+            {service.organizationName &&
+              (service.organizationId ? (
+                <Link
+                  href={`/client/org/${service.organizationId}`}
+                  className="mt-0.5 inline-block text-xs font-semibold text-stone-500 hover:text-amber-700 transition-colors"
+                >
+                  {service.organizationName}
+                </Link>
+              ) : (
+                <p className="mt-0.5 text-xs font-semibold text-stone-500">
+                  {service.organizationName}
+                </p>
+              ))}
 
             <p className="mt-1.5 text-xs text-stone-500 line-clamp-2 leading-relaxed">
               {service.description}
@@ -229,9 +238,18 @@ export function ServiceCard({
           </h2>
 
           {service.organizationName ? (
-            <p className="mt-0.5 text-[11px] font-medium text-stone-500">
-              {service.organizationName}
-            </p>
+            service.organizationId ? (
+              <Link
+                href={`/client/org/${service.organizationId}`}
+                className="mt-0.5 inline-block text-[11px] font-semibold text-stone-500 hover:text-amber-700 transition-colors"
+              >
+                {service.organizationName}
+              </Link>
+            ) : (
+              <p className="mt-0.5 text-[11px] font-medium text-stone-500">
+                {service.organizationName}
+              </p>
+            )
           ) : null}
 
           <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-stone-500">

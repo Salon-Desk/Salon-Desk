@@ -1,26 +1,27 @@
 import { Suspense } from 'react'
 
-import { ClientExperience } from '@/app/client/_components/ClientExperience'
+import { OrganizationDetailPage } from '@/app/client/_components/OrganizationDetailPage'
 
 type ClientOrgPageProps = {
   params: Promise<{ orgId: string }>
 }
 
-async function OrgCatalog({ params }: ClientOrgPageProps) {
+async function OrgContent({ params }: ClientOrgPageProps) {
   const { orgId } = await params
-  return <ClientExperience filterOrgId={orgId} />
+  return <OrganizationDetailPage orgId={orgId} />
 }
 
 export default function ClientOrgPage({ params }: ClientOrgPageProps) {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[50vh] items-center justify-center text-sm text-slate-500">
-          Loading salon…
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 bg-stone-50">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-600 border-t-transparent" />
+          <p className="text-xs text-stone-500">Loading salon profile…</p>
         </div>
       }
     >
-      <OrgCatalog params={params} />
+      <OrgContent params={params} />
     </Suspense>
   )
 }

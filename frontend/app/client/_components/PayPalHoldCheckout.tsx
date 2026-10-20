@@ -6,6 +6,7 @@ import {
   CalendarCheck2,
   Check,
   CheckCircle2,
+  Info,
   Loader2,
   Lock,
   MapPin,
@@ -39,6 +40,7 @@ import type { Booking, SalonService, StaffMember } from '@/types'
 import { CheckoutReview } from './CheckoutReview'
 import { CheckoutSchedule } from './CheckoutSchedule'
 import { buildCheckoutQuote, CheckoutSummary } from './CheckoutSummary'
+import { ServiceDetailModal } from './ServiceDetailModal'
 
 export type AuthStep = 'review' | 'authorizing' | 'awaiting_paypal' | 'success'
 
@@ -319,6 +321,7 @@ export function PayPalHoldCheckout({
   const [agreedPolicy, setAgreedPolicy] = useState(false)
   const [agreedTerms, setAgreedTerms] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
 
   const quote = buildCheckoutQuote(service, policy, startsAt)
   const stylistLabel =
@@ -509,6 +512,16 @@ export function PayPalHoldCheckout({
                 · {formatDuration(service.durationMin)} · {formatUsd(service.price)}
               </span>
             </p>
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsDetailOpen(true)}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-semibold text-stone-700 shadow-2xs hover:border-amber-400 hover:bg-amber-50/40 transition-colors"
+              >
+                <Info className="h-3.5 w-3.5 text-amber-700" />
+                <span>About Service &amp; Reviews</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -572,11 +585,13 @@ export function PayPalHoldCheckout({
               service={service}
               coverSrc={coverSrc}
               salonName={salonName}
+              orgId={orgId ?? undefined}
               address={org?.physical_address}
               stylistLabel={stylistLabel}
               startsAt={startsAt}
               displayTz={displayTz}
               quote={quote}
+              onOpenDetails={() => setIsDetailOpen(true)}
             >
               <div className="hidden gap-2 pt-1 lg:flex">
                 {backButton}
@@ -591,6 +606,12 @@ export function PayPalHoldCheckout({
           </aside>
         </div>
       </main>
+
+      <ServiceDetailModal
+        service={service}
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+      />
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_32px_-16px_rgba(28,25,23,0.25)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-2xl flex-col gap-2.5">
