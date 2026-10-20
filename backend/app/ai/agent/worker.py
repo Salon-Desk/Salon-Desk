@@ -90,6 +90,13 @@ def openai_compatible_llm():
             base_url=settings.ollama_base_url,
         )
 
+    if provider == "deepseek":
+        return lk_openai.LLM(
+            model=settings.deepseek_model,
+            api_key=settings.deepseek_api_key or settings.deepgram_api_key,
+            base_url=settings.deepseek_base_url,
+        )
+
     return lk_openai.LLM(
         model=settings.groq_model,
         api_key=settings.groq_api_key,

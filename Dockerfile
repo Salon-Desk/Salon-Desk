@@ -64,8 +64,8 @@ RUN addgroup --system --gid 1001 nodejs \
 
 COPY deploy/nginx.conf /etc/nginx/nginx.conf
 COPY deploy/supervisord.conf /etc/supervisor/conf.d/salondesk.conf
-COPY deploy/entrypoint.sh deploy/api-start.sh /app/deploy/
-RUN chmod +x /app/deploy/entrypoint.sh /app/deploy/api-start.sh
+COPY deploy/entrypoint.sh deploy/api-start.sh deploy/voice-start.sh /app/deploy/
+RUN chmod +x /app/deploy/entrypoint.sh /app/deploy/api-start.sh /app/deploy/voice-start.sh
 
 ENV PGDATA=/var/lib/postgresql/data
 VOLUME ["/var/lib/postgresql/data", "/var/lib/salondesk/storage"]

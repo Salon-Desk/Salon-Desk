@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from app.core.database_url import resolve_database_url
 
-LLMProvider = Literal["groq", "ollama", "openai"]
+LLMProvider = Literal["groq", "ollama", "openai", "deepseek"]
 
 _DEFAULT_CORS_ORIGINS = [
     "http://localhost:3000",
@@ -95,6 +95,9 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     groq_model: str = "openai/gpt-oss-120b"
     groq_base_url: str = "https://api.groq.com/openai/v1"
+    deepseek_api_key: str = ""
+    deepseek_model: str = "deepseek-chat"
+    deepseek_base_url: str = "https://api.deepseek.com/v1"
     ollama_model: str = "llama3.2:1b"
     ollama_base_url: str = "http://localhost:11434/v1"
     ollama_api_key: str = "ollama"
@@ -195,6 +198,8 @@ class Settings(BaseSettings):
             return self.openai_model
         if self.llm_provider == "ollama":
             return self.ollama_model
+        if self.llm_provider == "deepseek":
+            return self.deepseek_model
         return self.groq_model
 
     @property
@@ -203,6 +208,8 @@ class Settings(BaseSettings):
             return self.openai_base_url.rstrip("/")
         if self.llm_provider == "ollama":
             return self.ollama_base_url.rstrip("/")
+        if self.llm_provider == "deepseek":
+            return self.deepseek_base_url.rstrip("/")
         return self.groq_base_url.rstrip("/")
 
     @property
@@ -212,6 +219,8 @@ class Settings(BaseSettings):
         if self.llm_provider == "ollama":
             # Local Ollama usually ignores auth; default placeholder is fine.
             return self.ollama_api_key or "ollama"
+        if self.llm_provider == "deepseek":
+            return self.deepseek_api_key or self.deepgram_api_key
         return self.groq_api_key
 
     @property

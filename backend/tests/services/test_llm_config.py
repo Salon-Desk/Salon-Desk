@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from app.core.config import Settings
 from app.services.ai_parser import AISlotParser
 from app.services.llm import (
+    DeepSeekLLMService,
     GroqLLMService,
     LLMError,
     OllamaLLMService,
@@ -61,9 +62,31 @@ def test_factory_returns_ollama_service(monkeypatch: pytest.MonkeyPatch) -> None
     assert svc.api_key() == "ollama"
 
 
+def test_deepseek_provider_wired() -> None:
+    settings = _settings(
+        llm_provider="deepseek",
+        deepseek_api_key="sk-test",
+        deepseek_model="deepseek-chat",
+    )
+    svc = get_llm_service(settings)
+    assert isinstance(svc, DeepSeekLLMService)
+    assert svc.provider_name == "deepseek"
+    assert svc.model == "deepseek-chat"
+    assert svc.api_key() == "sk-test"
+
+
 def test_llm_provider_invalid_rejected() -> None:
     with pytest.raises(ValidationError):
-        _settings(llm_provider="deepseek")
+        _settings(llm_provider="unsupported")
+
+
+@pytest.mark.asyncio
+async def test_deepseek_service_requires_api_key() -> None:
+    svc = DeepSeekLLMService(
+        _settings(llm_provider="deepseek", deepseek_api_key="", deepgram_api_key="")
+    )
+    with pytest.raises(LLMError, match="DEEPSEEK_API_KEY"):
+        await svc.chat([{"role": "user", "content": "hi"}])
 
 
 @pytest.mark.asyncio
