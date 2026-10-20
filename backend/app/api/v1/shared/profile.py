@@ -1,8 +1,10 @@
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
 from app.api.deps import CurrentUser, DbSession
-from app.schemas.auth import MeResponse
+from app.schemas.auth import ChangePasswordRequest, MeResponse
+from app.schemas.common import MessageOut
 from app.schemas.user import ProfileOut, ProfileUpdate, UserOut
+from app.services import auth_service
 from app.services.storage_service import StorageUnavailableError, storage_service
 
 router = APIRouter(prefix="/auth", tags=["profile"])
@@ -64,3 +66,11 @@ async def upload_avatar(
     user.profile.picture = url
     await db.flush()
     return ProfileOut.model_validate(user.profile)
+
+
+@router.post("/me/change-password", response_model=MessageOut)
+async def change_password(
+    body: ChangePasswordRequest, user: CurrentUser, db: DbSession
+) -> MessageOut:
+    await auth_service.change_password(db, user, body.current_password, body.new_password)
+    return MessageOut(detail="Password changed successfully")

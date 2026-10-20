@@ -232,6 +232,69 @@ async def sync_from_platform(
         )
         count += 1
 
+    # Staff members and ratings
+    from app.models.enums import FeedbackModerationStatus, UserRole
+    from app.models.feedback import ClientFeedback
+    from app.models.user import User
+
+    staff_result = await session.execute(
+        select(User).where(
+            User.role.in_([UserRole.STYLIST, UserRole.ORG_OWNER, UserRole.RECEPTION]),
+            User.is_active.is_(True),
+        )
+    )
+    for staff in staff_result.scalars().all():
+        if not staff.org_id:
+            continue
+        org = next((o for o in orgs if o.id == staff.org_id), None)
+        title = f"Staff Member — {staff.first_name} {staff.last_name}"
+        content = (
+            f"Staff member {staff.first_name} {staff.last_name} at {org.name if org else 'salon'}. "
+            f"Role: {staff.role.value}. Email: {staff.email}."
+        )
+        embedding = await get_embedding(content)
+        session.add(
+            KnowledgeChunk(
+                entity_type=KnowledgeEntityType.ORGANIZATION,
+                entity_id=staff.id,
+                org_id=staff.org_id,
+                title=title,
+                content=content,
+                language=language,
+                embedding=embedding,
+                metadata_json={"staff_id": str(staff.id), "role": staff.role.value},
+                is_active=True,
+            )
+        )
+        count += 1
+
+    # Client reviews & feedback
+    feedback_result = await session.execute(
+        select(ClientFeedback).where(ClientFeedback.status == FeedbackModerationStatus.APPROVED)
+    )
+    for fb in feedback_result.scalars().all():
+        org = next((o for o in orgs if o.id == fb.org_id), None)
+        title = f"Client Review — {org.name if org else 'Salon'} ({fb.rating} Stars)"
+        content = (
+            f"Client review for {org.name if org else 'salon'}: rating {fb.rating} out of 5 stars. "
+            f"Comment: {fb.comment or 'Great service and experience.'}"
+        )
+        embedding = await get_embedding(content)
+        session.add(
+            KnowledgeChunk(
+                entity_type=KnowledgeEntityType.ORGANIZATION,
+                entity_id=fb.id,
+                org_id=fb.org_id,
+                title=title,
+                content=content,
+                language=language,
+                embedding=embedding,
+                metadata_json={"feedback_id": str(fb.id), "rating": fb.rating},
+                is_active=True,
+            )
+        )
+        count += 1
+
     return count
 
 

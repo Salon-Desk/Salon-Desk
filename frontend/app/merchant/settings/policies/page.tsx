@@ -1,7 +1,16 @@
 'use client'
 
-import { MerchantFinanceSettings } from '@/app/merchant/_components/merchant-finance-settings'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
-export default function MerchantPoliciesSettingsPage() {
-  return <MerchantFinanceSettings mode="policies" />
+export default function MerchantPoliciesSettingsRedirect() {
+  const router = useRouter()
+  useEffect(() => {
+    router.replace('/merchant/settings?tab=policies')
+  }, [router])
+  return (
+    <div className="mx-auto w-full max-w-7xl px-4 py-12 text-sm text-slate-500">
+      Redirecting to Settings…
+    </div>
+  )
 }

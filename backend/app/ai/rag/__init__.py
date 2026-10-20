@@ -30,6 +30,8 @@ from .hydration import (
     search_services_by_keywords,
 )
 from .recommendations import (
+    is_salon_hunt,
+    is_service_request,
     recommendation_limit_for,
     select_recommendations,
     wants_more_recommendations,
@@ -38,6 +40,8 @@ from .search import search_chunks
 from .utils import build_search_query, haversine_km
 
 __all__ = [
+    "is_salon_hunt",
+    "is_service_request",
     "ADMIN_GREETING_REPLY",
     "ADMIN_PERSONA",
     "CHAT_GREETING_REPLY",

@@ -71,6 +71,11 @@ class ResendVerificationRequest(BaseModel):
     email: EmailStr
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8)
+
+
 class MeResponse(BaseModel):
     user: UserOut
     profile: ProfileOut | None = None

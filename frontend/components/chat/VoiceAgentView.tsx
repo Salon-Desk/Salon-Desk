@@ -21,6 +21,8 @@ export interface VoiceAgentViewProps {
   initialLocation?: GeoCoords | null
   onClose?: () => void
   onSwitchToText?: () => void
+  isMinimized?: boolean
+  onMinimizeChange?: (minimized: boolean) => void
   className?: string
 }
 
@@ -30,6 +32,8 @@ export function VoiceAgentView({
   initialLocation,
   onClose,
   onSwitchToText,
+  isMinimized,
+  onMinimizeChange,
   className,
 }: VoiceAgentViewProps) {
   const {
@@ -187,13 +191,19 @@ export function VoiceAgentView({
   }
 
   return (
-    <div className={cn('flex flex-1 flex-col overflow-hidden', className)}>
+    <div
+      className={cn(
+        'flex flex-1 flex-col overflow-hidden',
+        isMinimized && 'overflow-visible',
+        className,
+      )}
+    >
       <LiveKitRoom
         key={tokenData.roomName}
         token={tokenData.token}
         serverUrl={tokenData.serverUrl}
         connect
-        audio
+        audio={false}
         video={false}
         options={{
           adaptiveStream: true,
@@ -220,6 +230,8 @@ export function VoiceAgentView({
           clearLocationError={clearLocationError}
           onStartVoiceSession={() => void startVoiceSession()}
           onSetLocation={setManualLocation}
+          isMinimized={isMinimized}
+          onMinimizeChange={onMinimizeChange}
         />
       </LiveKitRoom>
     </div>

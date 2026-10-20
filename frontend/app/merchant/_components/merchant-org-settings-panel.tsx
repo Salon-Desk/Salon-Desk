@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import PrimaryButton from '@/components/button/PrimaryButton'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFAvatarImage from '@/components/forms/RHFAvatarImage'
+import RHFSelect from '@/components/forms/RHFSelect'
 import RHFTextField from '@/components/forms/RHFTextField'
 import { Card } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
@@ -17,6 +18,23 @@ import {
   useUpdateMyOrgSettingsMutation,
   useUploadOrgLogoMutation,
 } from '@/store/api/orgApi'
+
+const TIMEZONES = [
+  { value: 'UTC', label: 'UTC (Coordinated Universal Time)' },
+  { value: 'America/New_York', label: 'America/New_York (Eastern Time)' },
+  { value: 'America/Chicago', label: 'America/Chicago (Central Time)' },
+  { value: 'America/Denver', label: 'America/Denver (Mountain Time)' },
+  { value: 'America/Los_Angeles', label: 'America/Los_Angeles (Pacific Time)' },
+  { value: 'America/Anchorage', label: 'America/Anchorage (Alaska Time)' },
+  { value: 'Pacific/Honolulu', label: 'Pacific/Honolulu (Hawaii Time)' },
+  { value: 'Europe/London', label: 'Europe/London (GMT/BST)' },
+  { value: 'Europe/Paris', label: 'Europe/Paris (CET/CEST)' },
+  { value: 'Europe/Berlin', label: 'Europe/Berlin (CET/CEST)' },
+  { value: 'Asia/Tokyo', label: 'Asia/Tokyo (JST)' },
+  { value: 'Asia/Shanghai', label: 'Asia/Shanghai (CST)' },
+  { value: 'Asia/Dubai', label: 'Asia/Dubai (GST)' },
+  { value: 'Australia/Sydney', label: 'Australia/Sydney (AEST/AEDT)' },
+]
 
 interface OrgSettingsForm {
   name: string
@@ -103,7 +121,7 @@ export function MerchantOrgSettingsPanel() {
             <RHFTextField name="name" label="Salon name" isRequired />
             <RHFTextField name="description" label="Description" />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <RHFTextField name="timezone" label="Timezone (IANA)" isRequired />
+              <RHFSelect name="timezone" label="Timezone" options={TIMEZONES} isRequired />
               <RHFTextField name="physical_address" label="Physical address" isRequired />
             </div>
           </div>

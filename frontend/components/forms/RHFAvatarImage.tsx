@@ -115,9 +115,9 @@ const RHFAvatarImage = ({ name, label = 'Profile Picture' }: RHFAvatarImageProps
                   e.preventDefault()
                   handleRemove()
                 }}
-                className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground sm:right-4 sm:top-3 sm:p-1.5"
+                className="absolute right-1 top-1 rounded-full bg-destructive/90 p-1 text-destructive-foreground hover:bg-destructive"
               >
-                <X size={12} className="sm:size-14" />
+                <X size={10} />
               </button>
             )}
 

@@ -37,6 +37,8 @@ from app.ai.rag import (
     haversine_km,
     hydrate_organization_recommendations,
     hydrate_service_recommendations,
+    is_salon_hunt,
+    is_service_request,
     persona_for_portal,
     recommendation_limit_for,
     search_chunks,
@@ -244,11 +246,29 @@ async def retrieve_context(
         organizations, recommendations, rec_limit
     )
 
+    # Respect user intent:
+    # 1. When user requests salons/organizations (e.g. "show salons", "salons near me"),
+    # show organization cards and not service cards.
+    # 2. When user requests services/treatments/booking, show service cards and not organization cards.
+    # 3. For general informational queries (policies, payment methods, feedback, terms), no cards.
+    user_wants_salons = is_salon_hunt(query)
+    user_wants_services = is_service_request(query) or (intent == "booking")
+
+    if user_wants_salons:
+        effective_recs = []
+        effective_orgs = organizations[:rec_limit]
+    elif user_wants_services:
+        effective_recs = recommendations
+        effective_orgs = []
+    else:
+        effective_recs = []
+        effective_orgs = []
+
     context_text = format_context_text(merged, recommendations)
     return RetrievedContext(
         chunks=merged,
-        recommendations=recommendations,
-        organizations=organizations,
+        recommendations=effective_recs,
+        organizations=effective_orgs,
         context_text=context_text,
         detected_language=detected,
         is_greeting=False,

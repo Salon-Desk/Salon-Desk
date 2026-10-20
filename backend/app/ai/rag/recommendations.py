@@ -6,6 +6,7 @@ from .constants import (
     _MORE_RECOMMENDATIONS_RE,
     _QUERY_STOPWORDS,
     _SALON_HUNT_HINTS,
+    _SERVICE_REQUEST_HINTS,
     _SPECIFIC_SERVICE_HINTS,
     DEFAULT_RECOMMENDATION_LIMIT,
     EXPANDED_RECOMMENDATION_LIMIT,
@@ -23,6 +24,24 @@ def recommendation_limit_for(message: str) -> int:
     if wants_more_recommendations(message):
         return EXPANDED_RECOMMENDATION_LIMIT
     return DEFAULT_RECOMMENDATION_LIMIT
+
+
+def is_salon_hunt(query: str) -> bool:
+    """Check if user is looking for salons/organizations in general (not specific services)."""
+    lowered = (query or "").lower()
+    looking_for_salon = any(hint in lowered for hint in _SALON_HUNT_HINTS)
+    named_a_service = any(hint in lowered for hint in _SPECIFIC_SERVICE_HINTS)
+    return looking_for_salon and not named_a_service
+
+
+def is_service_request(query: str) -> bool:
+    """Check if user explicitly asked for services, treatments, booking, or pricing."""
+    lowered = (query or "").lower()
+    return any(hint in lowered for hint in _SERVICE_REQUEST_HINTS)
+
+
+def _is_salon_hunt(query: str) -> bool:
+    return is_salon_hunt(query)
 
 
 def _meaningful_query_tokens(query: str) -> list[str]:

@@ -7,6 +7,7 @@ import './api/userApi'
 import { configureStore } from '@reduxjs/toolkit'
 
 import { adminDemoReducer } from './adminDemoSlice'
+import { agentChatReducer } from './agentChatSlice'
 import authReducer from './authSlice'
 import { baseApi } from './baseApi'
 import bookingDraftReducer from './bookingDraftSlice'
@@ -16,6 +17,7 @@ import { merchantDemoReducer } from './merchantDemoSlice'
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    agentChat: agentChatReducer,
     bookingDraft: bookingDraftReducer,
     merchantDemo: merchantDemoReducer,
     adminDemo: adminDemoReducer,

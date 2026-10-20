@@ -12,18 +12,19 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { CancelBookingDialog } from '@/app/client/_components/CancelBookingDialog'
 import { EmptyState, Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useGeolocation, useToast } from '@/hooks'
-import { useAiConcierge } from '@/hooks/use-ai-concierge'
 import { useDebounce } from '@/hooks/use-debounce'
 import { buildCancelOutcomePreview } from '@/lib/booking/cancel-policy'
 import { formatUsd } from '@/lib/format'
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
+import type { RootState } from '@/store'
+import { setChatMode, setChatOpen } from '@/store/agentChatSlice'
 import {
   useCancelBookingMutation,
   useGetCatalogCategoriesQuery,
@@ -49,7 +50,6 @@ import { ClientFooter } from './ClientFooter'
 import { ClientHeader, type ClientTab } from './ClientHeader'
 import { ClientMyBookingsReviews } from './ClientMyBookingsReviews'
 import { ClientSalonFeedbackSection } from './ClientSalonFeedbackSection'
-import { AiConcierge } from './ConciergeDrawer'
 import { ProtocolModal } from './ProtocolModal'
 import { ServiceCard } from './ServiceCard'
 
@@ -72,8 +72,9 @@ export interface ClientExperienceProps {
 
 export function ClientExperience({ initialTab = 'catalog', filterOrgId }: ClientExperienceProps) {
   const router = useRouter()
+  const dispatch = useDispatch()
   const { message: toastMessage, show: showToast, dismiss } = useToast()
-  const concierge = useAiConcierge()
+  const isChatOpen = useSelector((state: RootState) => state.agentChat?.isOpen ?? false)
   const user = useSelector(userSelector)
   const isAuthenticated = useSelector(isAuthenticatedSelector)
   const {
@@ -303,13 +304,10 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
     void openCheckout(service)
   }
 
-  const handleAskAi = (service: SalonService) => {
-    concierge.setIsOpen(true)
-    concierge.setMode('chat')
-    void concierge.send(
-      `I'm interested in the "${service.name}". Can you find me the next available time slot and explain the hold policy?`,
-      service,
-    )
+  const handleAskAi = (_service: SalonService) => {
+    dispatch(setChatMode('chat'))
+    dispatch(setChatOpen(true))
+    window.dispatchEvent(new CustomEvent('salondesk:open_chat', { detail: { mode: 'chat' } }))
   }
 
   const handleConfirmCancelBooking = async () => {
@@ -382,8 +380,8 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
         activeTab={activeTab}
         onTabChange={setActiveTab}
         activeHoldsCount={activeHolds.length}
-        conciergeOpen={concierge.isOpen}
-        onToggleConcierge={() => concierge.setIsOpen((open) => !open)}
+        conciergeOpen={isChatOpen}
+        onToggleConcierge={() => dispatch(setChatOpen(!isChatOpen))}
       />
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-16">
@@ -669,9 +667,9 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
       <ClientFooter hero={hero} />
 
       {(() => {
-        const isCatalogActive = activeTab === 'catalog' && !concierge.isOpen
-        const isAiActive = concierge.isOpen
-        const isBookingsActive = activeTab === 'my-bookings' && !concierge.isOpen
+        const isCatalogActive = activeTab === 'catalog' && !isChatOpen
+        const isAiActive = isChatOpen
+        const isBookingsActive = activeTab === 'my-bookings' && !isChatOpen
 
         return (
           <nav
@@ -686,7 +684,6 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
               type="button"
               onClick={() => {
                 setActiveTab('catalog')
-                concierge.setIsOpen(false)
               }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
                 isCatalogActive
@@ -700,7 +697,7 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
 
             <button
               type="button"
-              onClick={() => concierge.setIsOpen((open) => !open)}
+              onClick={() => dispatch(setChatOpen(!isChatOpen))}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
                 isAiActive
                   ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
@@ -717,7 +714,6 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
               type="button"
               onClick={() => {
                 setActiveTab('my-bookings')
-                concierge.setIsOpen(false)
               }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
                 isBookingsActive
@@ -744,22 +740,6 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
           </nav>
         )
       })()}
-
-      {concierge.isOpen && (
-        <AiConcierge
-          mode={concierge.mode}
-          onModeChange={concierge.setMode}
-          prompt={concierge.prompt}
-          onPromptChange={concierge.setPrompt}
-          isThinking={concierge.isThinking}
-          messages={concierge.messages}
-          messagesEndRef={concierge.messagesEndRef}
-          onSend={concierge.send}
-          onAuthorize={({ service, stylist, slot }) => void openCheckout(service, stylist, slot)}
-          onClose={() => concierge.setIsOpen(false)}
-          userCoords={userCoords}
-        />
-      )}
 
       {protocolService && (
         <ProtocolModal

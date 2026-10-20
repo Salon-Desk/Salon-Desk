@@ -204,3 +204,32 @@ def test_haversine_km_and_distance_format() -> None:
     formatted = format_context_text([], [card])
     assert "1.2 km away" in formatted
     assert "Bole Atlas" in formatted
+
+
+def test_is_salon_hunt_and_service_request() -> None:
+    from app.ai.rag.recommendations import is_salon_hunt, is_service_request
+
+    assert is_salon_hunt("Which salons or spas are near Bole?") is True
+    assert is_salon_hunt("I want a haircut and beard trim") is False
+    assert is_service_request("Show me available haircut services") is True
+    assert is_service_request("How does the platform hold $0 authorization?") is False
+
+
+def test_compress_conversation_history() -> None:
+    from app.ai.chat_context import compress_conversation_history
+
+    short_history = [
+        {"role": "user", "content": "Hi there"},
+        {"role": "assistant", "content": "Hello! How can I help?"},
+    ]
+    compressed_short = compress_conversation_history(short_history, max_turns=6)
+    assert compressed_short == short_history
+
+    long_history = [
+        {"role": "user" if i % 2 == 0 else "assistant", "content": f"Turn message {i}"}
+        for i in range(16)
+    ]
+    compressed_long = compress_conversation_history(long_history, max_turns=4)
+    assert len(compressed_long) == 5  # 1 summary + 4 preserved recent turns
+    assert "[Prior Conversation Context Summary:" in compressed_long[0]["content"]
+    assert compressed_long[-1]["content"] == "Turn message 15"

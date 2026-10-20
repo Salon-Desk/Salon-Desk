@@ -1,5 +1,6 @@
 import type { AppPortal } from '@/lib/authSession'
 import type {
+  ChangePasswordRequest,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
   MeResponse,
@@ -28,6 +29,7 @@ const prefix = '/api/v1/auth/'
  * - PATCH /api/v1/auth/me/profile
  * - POST /api/v1/auth/forgot-password
  * - POST /api/v1/auth/reset-password
+ * - POST /api/v1/auth/me/change-password
  * - POST /api/v1/auth/demo (Judge Demo Auth)
  */
 export const sharedApi = baseApi.injectEndpoints({
@@ -121,6 +123,15 @@ export const sharedApi = baseApi.injectEndpoints({
       }),
     }),
 
+    // 9. Change Password (authenticated user)
+    changePassword: builder.mutation<MessageOut, ChangePasswordRequest>({
+      query: (body) => ({
+        url: `${prefix}me/change-password`,
+        method: 'POST',
+        data: body,
+      }),
+    }),
+
     verifyEmail: builder.mutation<MessageOut, { token: string }>({
       query: (body) => ({
         url: `${prefix}verify-email`,
@@ -138,7 +149,7 @@ export const sharedApi = baseApi.injectEndpoints({
       }),
     }),
 
-    // 9. Judge Demo Auth (instant 1-click test token)
+    // 10. Judge Demo Auth (instant 1-click test token)
     judgeDemoAuth: builder.mutation<TokenResponse, void>({
       query: () => ({
         url: `${prefix}demo`,
@@ -179,6 +190,7 @@ export const {
   useUploadAvatarMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useChangePasswordMutation,
   useVerifyEmailMutation,
   useResendVerificationMutation,
   useJudgeDemoAuthMutation,

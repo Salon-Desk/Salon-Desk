@@ -249,6 +249,18 @@ async def reset_password(db: AsyncSession, token: str, new_password: str) -> Non
     await db.flush()
 
 
+async def change_password(
+    db: AsyncSession, user: User, current_password: str, new_password: str
+) -> None:
+    """Change password for an authenticated user after verifying current password."""
+    if not user.password_hash:
+        raise ForbiddenError("User has no password set")
+    if not verify_password(current_password, user.password_hash):
+        raise ForbiddenError("Current password is incorrect")
+    user.password_hash = hash_password(new_password)
+    await db.flush()
+
+
 async def ensure_demo_user(db: AsyncSession) -> User:
     """Create or return a demo client for judge demos."""
     settings = get_settings()

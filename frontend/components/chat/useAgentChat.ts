@@ -2,20 +2,18 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { toastColor } from '@/constant/toast-color'
 import { dispatchAgentUiAction, highlightElement } from '@/hooks/useAgentUiActions'
-import {
-  type AssistantPortal,
-  isSupportPortal,
-  welcomeMessageForPortal,
-} from '@/lib/assistant-portal'
+import { type AssistantPortal, isSupportPortal } from '@/lib/assistant-portal'
 import { features } from '@/lib/features'
 import { formatClockTime } from '@/lib/format'
 import { createSequentialId } from '@/lib/ids'
 import { type GeoCoords, requestGeolocation } from '@/lib/util/geo'
+import type { RootState } from '@/store'
+import { appendChatMessage, setChatPrompt } from '@/store/agentChatSlice'
 import { useClientConciergeChatMutation } from '@/store/api/clientApi'
 import { setAuthData } from '@/store/authSlice'
 
@@ -82,38 +80,22 @@ export interface UseAgentChatOptions {
   portal?: AssistantPortal
 }
 
-function welcomeMessage(portal: AssistantPortal): AgentChatMessage {
-  return {
-    id: 'msg-welcome',
-    sender: 'assistant',
-    text: welcomeMessageForPortal(portal),
-    time: 'Just now',
-  }
-}
-
 export function useAgentChat(options: UseAgentChatOptions = {}) {
   const portal = options.portal ?? 'client'
   const support = isSupportPortal(portal)
   const dispatch = useDispatch()
   const router = useRouter()
-  const [messages, setMessages] = useState<AgentChatMessage[]>(() => [welcomeMessage(portal)])
-  const [prompt, setPrompt] = useState('')
+  const messages = useSelector((state: RootState) => state.agentChat.messages)
+  const prompt = useSelector((state: RootState) => state.agentChat.prompt)
   const [isThinking, setIsThinking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [location, setLocation] = useState<GeoCoords | null>(null)
-  const historyRef = useRef<Array<{ role: 'user' | 'assistant'; content: string }>>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const portalRef = useRef(portal)
   const [clientConciergeChat] = useClientConciergeChatMutation()
 
   useEffect(() => {
-    if (portalRef.current === portal) return
-    portalRef.current = portal
-    historyRef.current = []
-    setMessages([welcomeMessage(portal)])
-    setPrompt('')
-    setError(null)
-  }, [portal])
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isThinking])
 
   useEffect(() => {
     if (support) return
@@ -123,6 +105,13 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         /* best-effort fallback */
       })
   }, [support])
+
+  const setPrompt = useCallback(
+    (value: string) => {
+      dispatch(setChatPrompt(value))
+    },
+    [dispatch],
+  )
 
   const send = useCallback(
     async (customPrompt?: string) => {
@@ -136,16 +125,22 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         text: query,
         time: formatClockTime(),
       }
-      setMessages((prev) => [...prev, userMsg])
-      setPrompt('')
+      dispatch(appendChatMessage(userMsg))
+      dispatch(setChatPrompt(''))
       setIsThinking(true)
       setError(null)
+
+      const historyPayload: Array<{ role: 'user' | 'assistant'; content: string }> = [
+        ...messages
+          .filter((m) => !m.id.startsWith('msg-welcome'))
+          .map((m) => ({ role: m.sender, content: m.text })),
+      ].slice(-12)
 
       try {
         const data = await clientConciergeChat({
           message: query,
           language: features.defaultLanguage,
-          history: historyRef.current,
+          history: historyPayload,
           portal,
           user_lat: support ? null : (location?.lat ?? null),
           user_lng: support ? null : (location?.lng ?? null),
@@ -161,13 +156,6 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           )
           toast.success(`Signed in as ${data.user.email}`, toastColor.success)
         }
-
-        const nextHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [
-          ...historyRef.current,
-          { role: 'user', content: query },
-          { role: 'assistant', content: data.reply },
-        ]
-        historyRef.current = nextHistory.slice(-12)
 
         const recommendations: AgentServiceRecommendation[] = support
           ? []
@@ -253,9 +241,8 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           }
         }
 
-        setMessages((prev) => [
-          ...prev,
-          {
+        dispatch(
+          appendChatMessage({
             id: createSequentialId('ast'),
             sender: 'assistant',
             text: data.reply,
@@ -265,8 +252,8 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
             confirmedBooking,
             navigation: data.navigation,
             uiAction: data.ui_action,
-          },
-        ])
+          }),
+        )
       } catch (err) {
         const status = (err as { status?: number })?.status
         const fallback =
@@ -276,20 +263,19 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
               : 'Sign in to chat with the AI concierge grounded in live salon data.'
             : "I couldn't reach the assistant just now. Try again in a moment."
         setError(fallback)
-        setMessages((prev) => [
-          ...prev,
-          {
+        dispatch(
+          appendChatMessage({
             id: createSequentialId('ast'),
             sender: 'assistant',
             text: fallback,
             time: formatClockTime(),
-          },
-        ])
+          }),
+        )
       } finally {
         setIsThinking(false)
       }
     },
-    [clientConciergeChat, prompt, location, dispatch, router, portal, support],
+    [clientConciergeChat, prompt, messages, location, dispatch, router, portal, support],
   )
 
   return {

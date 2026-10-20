@@ -328,5 +328,50 @@
     "source": "cross_capture_to_commission",
     "audience": "merchant",
     "content": "From capture to commission: client hold authorizes → you Mark Show or No-Show → PayPal captures to your merchant account → SalonDesk accrues commission_record → later ISSUED invoice for that period → you pay SalonDesk. Ask admin if an invoice is overdue or missing."
+  },
+  {
+    "source": "client_customer_feedback_and_ratings",
+    "audience": "client",
+    "content": "Customer feedback and staff ratings: Clients can view verified reviews and ratings for each salon and stylist on the salon page and service detail cards. Feedback includes 1-5 star ratings and written reviews from real completed visits. Top-rated stylists and salons are highlighted with verified badges and high customer satisfaction scores (average 4.8+ stars). The AI concierge can share client ratings, reviews, and staff specialties to help you pick the best stylist."
+  },
+  {
+    "source": "client_payment_methods_policy",
+    "audience": "client",
+    "content": "Accepted payment methods and authorization hold terms: SalonDesk uses PayPal for secure client bookings. You can pay using your PayPal balance, linked bank accounts, or major debit/credit cards (Visa, Mastercard, Amex). All bookings use a $0 upfront authorization hold — no money is debited from your card at the time of booking. Holds are only captured into the salon's account after your visit is completed or in the event of an unexcused no-show fee per salon policy."
+  },
+  {
+    "source": "client_terms_and_privacy",
+    "audience": "client",
+    "content": "Terms and Privacy Policy: SalonDesk prioritizes data security and client privacy. Your payment credentials remain encrypted with PayPal and are never stored on SalonDesk servers. Personal information (name, phone, email) is shared solely with your booked salon for appointment coordination. You have the right to request data access or account deletion anytime under settings."
+  },
+  {
+    "source": "client_cancellation_gain_loss",
+    "audience": "client",
+    "content": "Cancellation Policy — What You Gain and Lose: When you cancel before the free cancellation deadline (typically 24 hours before your start time), 100% of your PayPal authorization hold is voided and released ($0 charged, full peace of mind). If you cancel late after the deadline has passed, the salon may capture the agreed late cancellation fee (e.g. 25%) while the remaining amount is released. In the case of an unexcused no-show, the agreed no-show fee (typically 50%) is captured. You can view or cancel any appointment anytime from /client/bookings."
+  },
+  {
+    "source": "merchant_billing_how_it_works",
+    "audience": "merchant",
+    "content": "How SalonDesk Works & Billing Policy for Merchants: SalonDesk operates on a direct settlement model. When you mark show or no-show in your Appointments console, 100% of the client capture settles directly into your approved PayPal merchant account. SalonDesk never withholds or touches your client funds. SalonDesk's SaaS fee is tracked separately as accrued commission records."
+  },
+  {
+    "source": "merchant_paying_back_salon_desk",
+    "audience": "merchant",
+    "content": "How Merchants Pay Back SalonDesk: Periodic SaaS commission invoices (org_commission_invoice) are issued to your salon console aggregating your platform commissions. You pay SalonDesk back via the invoice payment reference or PayPal invoice transfer by the due date. Overdue invoices may trigger compliance alerts or salon suspension until resolved."
+  },
+  {
+    "source": "merchant_support_reach_out",
+    "audience": "merchant",
+    "content": "How to Contact SalonDesk Support: Merchants can reach our support and platform operations team by emailing support@salondesk.io, contacting their assigned platform admin through the console, or opening support requests on /merchant/settings. We provide assistance with PayPal account verification, staff onboarding, and policy amendments."
+  },
+  {
+    "source": "admin_merchandise_curation_page",
+    "audience": "admin",
+    "content": "Admin Merchandise & Curation Page (/admin/curation or /admin/merchandise): Platform admins use this console to manage marketplace showcase items. You can configure the Hero banner headline, subtitle, eyebrow, and featured salon spotlight. You can also feature top salons and standout services with custom badge text (e.g. 'Featured', 'Editor Choice', 'Top Rated') and set their display order in the client marketplace."
+  },
+  {
+    "source": "admin_featuring_and_commissions",
+    "audience": "admin",
+    "content": "How Featuring and Commissions Work for Admins: Admins set category commission rules (percentage, flat fee, or hybrid) that snapshot onto bookings. On capture, commission records accrue. Admins review GMV volume and issue periodic commission invoices. Featuring items on the marketplace gives salons priority visibility in client catalog curation, search ranking, and AI concierge recommendations."
   }
 ]

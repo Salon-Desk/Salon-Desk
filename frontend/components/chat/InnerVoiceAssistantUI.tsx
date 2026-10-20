@@ -28,6 +28,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 
+import { FloatingVoicePill } from '@/components/chat/FloatingVoicePill'
 import type {
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
@@ -59,6 +60,8 @@ export interface InnerVoiceAssistantUIProps {
   clearLocationError: () => void
   onStartVoiceSession: () => void
   onSetLocation?: (coords: GeoCoords) => void
+  isMinimized?: boolean
+  onMinimizeChange?: (minimized: boolean) => void
 }
 
 export function InnerVoiceAssistantUI({
@@ -71,6 +74,8 @@ export function InnerVoiceAssistantUI({
   clearLocationError,
   onStartVoiceSession,
   onSetLocation,
+  isMinimized,
+  onMinimizeChange,
 }: InnerVoiceAssistantUIProps) {
   const dispatch = useDispatch()
   const router = useRouter()
@@ -81,7 +86,7 @@ export function InnerVoiceAssistantUI({
   const { localParticipant } = useLocalParticipant()
   const { send: sendChat, isSending } = useChat()
   const room = useRoomContext()
-  const [isMuted, setIsMuted] = useState(false)
+  const [isMuted, setIsMuted] = useState(true)
   const [micBlocked, setMicBlocked] = useState(false)
   const [draft, setDraft] = useState('')
   const [enablingMic, setEnablingMic] = useState(false)
@@ -96,29 +101,18 @@ export function InnerVoiceAssistantUI({
     }
   }, [connectionState])
 
-  const enableMic = useCallback(async () => {
-    if (!localParticipant || connectionState !== ConnectionState.Connected) return
-    setEnablingMic(true)
-    try {
-      await localParticipant.setAttributes({ language, lang: language }).catch(() => {
-        /* best-effort */
-      })
-      await localParticipant.setMicrophoneEnabled(true)
-      setMicBlocked(false)
-      setIsMuted(false)
-    } catch (err) {
-      console.warn('Microphone permission or enable failed:', err)
-      setMicBlocked(true)
-    } finally {
-      setEnablingMic(false)
-    }
-  }, [localParticipant, language, connectionState])
-
+  // Initial connection: start muted by default as requested
   useEffect(() => {
     if (localParticipant && connectionState === ConnectionState.Connected) {
-      void enableMic()
+      localParticipant.setAttributes({ language, lang: language }).catch(() => {
+        /* best-effort */
+      })
+      localParticipant.setMicrophoneEnabled(false).catch(() => {
+        /* best-effort */
+      })
+      setIsMuted(true)
     }
-  }, [localParticipant, connectionState, enableMic])
+  }, [localParticipant, connectionState, language])
 
   useEffect(() => {
     if (!localParticipant || !location || connectionState !== ConnectionState.Connected) return
@@ -308,16 +302,35 @@ export function InnerVoiceAssistantUI({
     }
   }, [agentTranscriptions, onEndCall])
 
+  const enableMic = useCallback(async () => {
+    if (!localParticipant) return
+    try {
+      setEnablingMic(true)
+      await localParticipant.setAttributes({ language, lang: language }).catch(() => {})
+      await localParticipant.setMicrophoneEnabled(true)
+      setMicBlocked(false)
+      setIsMuted(false)
+    } catch (err) {
+      console.error('Failed to enable microphone:', err)
+      setMicBlocked(true)
+    } finally {
+      setEnablingMic(false)
+    }
+  }, [localParticipant, language])
+
   const toggleMute = useCallback(async () => {
     if (!localParticipant) return
-    const nextMuted = !isMuted
-    try {
-      await localParticipant.setMicrophoneEnabled(!nextMuted)
-      setIsMuted(nextMuted)
-    } catch (err) {
-      console.error('Failed to toggle microphone:', err)
+    if (isMuted) {
+      await enableMic()
+    } else {
+      try {
+        await localParticipant.setMicrophoneEnabled(false)
+        setIsMuted(true)
+      } catch (err) {
+        console.error('Failed to mute microphone:', err)
+      }
     }
-  }, [localParticipant, isMuted])
+  }, [localParticipant, isMuted, enableMic])
 
   const handleSend = useCallback(
     async (text?: string) => {
@@ -340,6 +353,19 @@ export function InnerVoiceAssistantUI({
   const visibleOrgs = support ? [] : discoveredServices.length > 0 ? [] : discoveredOrgs
   const visibleServices = support ? [] : discoveredServices
   const canShowMoreServices = !support && discoveredServices.length === 3
+
+  if (isMinimized) {
+    return (
+      <FloatingVoicePill
+        portal={portal}
+        isMuted={isMuted}
+        state={state}
+        onToggleMute={() => void toggleMute()}
+        onMaximize={() => onMinimizeChange?.(false)}
+        onEndCall={onEndCall}
+      />
+    )
+  }
 
   const statusLabel =
     connectionState === ConnectionState.Connecting

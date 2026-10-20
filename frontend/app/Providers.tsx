@@ -12,6 +12,7 @@ import { portalFromPathname } from '@/lib/assistant-portal'
 import { getPortalAuthToken } from '@/lib/authSession'
 import { type AppDispatch, store } from '@/store'
 import { hydrateAdminDemo, readAdminDemoFromStorage } from '@/store/adminDemoSlice'
+import { hydrateFabPositionFromStorage } from '@/store/agentChatSlice'
 import { type AppPortal, fetchAuthData, logout, setActiveApp } from '@/store/authSlice'
 import { hydrateClientDemo, readClientDemoFromStorage } from '@/store/clientDemoSlice'
 import { hydrateMerchantDemo, readMerchantDemoFromStorage } from '@/store/merchantDemoSlice'
@@ -28,6 +29,7 @@ function ClientSessionInit({ children }: { children: React.ReactNode }) {
     dispatch(hydrateMerchantDemo(readMerchantDemoFromStorage()))
     dispatch(hydrateAdminDemo(readAdminDemoFromStorage()))
     dispatch(hydrateClientDemo(readClientDemoFromStorage()))
+    dispatch(hydrateFabPositionFromStorage())
 
     // Restore sessions for each of the 3 apps independently if tokens exist
     const portals: AppPortal[] = ['client', 'merchant', 'admin']
@@ -70,9 +72,15 @@ function ActiveAppSync() {
 
 function GlobalChatWidgetInner() {
   const pathname = usePathname()
-  const onClientPortal =
-    pathname === '/client' || pathname.startsWith('/client/') || pathname === '/book'
-  if (onClientPortal) return null
+  const isClientPortal = pathname.startsWith('/client') || pathname.startsWith('/book')
+  const isMerchantPortal = pathname.startsWith('/merchant') || pathname.startsWith('/org')
+  const isAdminPortal = pathname.startsWith('/admin')
+
+  // FAB is visible ONLY for admin, merchant, and client. Not shown on landing app hub (/)
+  if (!isClientPortal && !isMerchantPortal && !isAdminPortal) {
+    return null
+  }
+
   const portal = portalFromPathname(pathname)
   return <ChatWidget showTriggers portal={portal} />
 }

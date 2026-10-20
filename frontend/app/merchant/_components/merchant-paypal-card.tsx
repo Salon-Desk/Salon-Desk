@@ -174,7 +174,7 @@ export function MerchantPaypalCard({
             isDisabled={submitting}
             onClick={onRequestChange}
             icon={<ExternalLink className="h-3.5 w-3.5" />}
-            className="h-10 rounded-xl text-xs font-semibold"
+            className="h-10 rounded-xl text-xs font-semibold w-1/2"
           />
           <span className="text-[11px] text-slate-400">Changes require compliance review</span>
         </div>

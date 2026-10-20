@@ -156,7 +156,7 @@ export default function MerchantDashboardPage() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 pb-12">
       {/* ===================== HERO COMMAND BANNER ===================== */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/70 p-4 sm:p-7 text-white shadow-xl shadow-slate-950/20">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border-[1px] border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/70 p-4 sm:p-7 text-white shadow-sm shadow-slate-950/20">
         {/* Ambient background glow */}
         <div
           aria-hidden="true"

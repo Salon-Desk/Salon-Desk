@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Mic,
+  Minus,
   Send,
   ShieldCheck,
   Sparkles,
@@ -58,6 +59,7 @@ export interface ChatPanelShellProps {
   portal?: AssistantPortal
   onModeChange?: (mode: 'chat' | 'voice') => void
   onClose: () => void
+  onMinimize?: () => void
   showModeToggle?: boolean
   children: React.ReactNode
 }
@@ -112,6 +114,7 @@ export function ChatPanelShell({
   portal = 'client',
   onModeChange,
   onClose,
+  onMinimize,
   showModeToggle = false,
   children,
 }: ChatPanelShellProps) {
@@ -131,21 +134,21 @@ export function ChatPanelShell({
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end  sm:block motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+    <div className="fixed inset-0 z-50 pointer-events-none flex flex-col justify-end sm:block motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
       <button
         type="button"
         aria-label={`Close ${title}`}
         onClick={onClose}
-        className="absolute inset-0 h-full w-full cursor-default"
+        className="absolute inset-0 h-full w-full pointer-events-auto sm:hidden cursor-default bg-black/25 backdrop-blur-xs"
         tabIndex={-1}
       />
 
       <div
         role="dialog"
-        aria-modal="true"
+        aria-modal="false"
         aria-label={`SalonDesk ${title}`}
         className={cn(
-          'relative z-10 flex h-[92dvh] min-h-0 w-full max-w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-stone-200/80 text-stone-900 shadow-[0_24px_64px_-16px_rgba(28,25,23,0.28)] sm:absolute sm:inset-y-3 sm:right-3 sm:left-auto sm:h-auto sm:w-[min(26.5rem,calc(100vw-1.5rem))] sm:rounded-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-6 sm:motion-safe:slide-in-from-right-6 motion-safe:duration-250',
+          'pointer-events-auto relative z-10 flex h-[92dvh] min-h-0 w-full max-w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-stone-200/80 text-stone-900 shadow-[0_24px_64px_-16px_rgba(28,25,23,0.28)] sm:absolute sm:inset-y-3 sm:right-3 sm:left-auto sm:h-auto sm:w-[min(26.5rem,calc(100vw-1.5rem))] sm:rounded-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-6 sm:motion-safe:slide-in-from-right-6 motion-safe:duration-250',
           chrome.panelBg,
         )}
       >
@@ -202,6 +205,21 @@ export function ChatPanelShell({
                   Voice
                 </button>
               </div>
+            )}
+
+            {onMinimize && (
+              <button
+                type="button"
+                onClick={onMinimize}
+                aria-label={`Minimize ${title}`}
+                title="Minimize window"
+                className={cn(
+                  'flex h-8 w-8 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2',
+                  chrome.ring,
+                )}
+              >
+                <Minus className="h-4 w-4" />
+              </button>
             )}
 
             <button

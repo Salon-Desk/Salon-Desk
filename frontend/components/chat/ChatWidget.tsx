@@ -1,24 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 
 import { ChatConversation, ChatPanelShell } from '@/components/chat/chat-ui'
+import { DraggableChatFab } from '@/components/chat/DraggableChatFab'
 import { useAgentChat } from '@/components/chat/useAgentChat'
 import { VoiceAgentView } from '@/components/chat/VoiceAgentView'
-import { type AssistantPortal, isSupportPortal, portalChrome } from '@/lib/assistant-portal'
+import { type AssistantPortal, isSupportPortal } from '@/lib/assistant-portal'
 import { anyChatFeatureEnabled, features } from '@/lib/features'
-import { cn } from '@/lib/utils'
-
-type Mode = 'chat' | 'voice'
-
-function initialMode(): Mode {
-  if (features.agentChat) return 'chat'
-  if (features.voiceAgent) return 'voice'
-  return 'chat'
-}
+import type { AppDispatch, RootState } from '@/store'
+import { setChatMinimized, setChatMode, setChatOpen, setChatPortal } from '@/store/agentChatSlice'
 
 export interface ChatWidgetProps {
-  /** Controlled open state — omit for floating FAB ownership. */
+  /** Controlled open state — omit for Redux / floating FAB ownership. */
   open?: boolean
   onOpenChange?: (open: boolean) => void
   /** Hide floating FABs when the host already provides triggers. */
@@ -29,8 +24,8 @@ export interface ChatWidgetProps {
 }
 
 /**
- * Floating text + LiveKit voice agent shell.
- * Browser only joins LiveKit / renders UI — STT/LLM/TTS/RAG run on the backend worker.
+ * Floating text + LiveKit voice agent shell with drag-and-drop FAB,
+ * voice minimization sound-effect widget, and global persistent state across route navigation.
  */
 export function ChatWidget({
   open: openProp,
@@ -39,34 +34,46 @@ export function ChatWidget({
   portal = 'client',
   className,
 }: ChatWidgetProps) {
-  const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+  const dispatch = useDispatch<AppDispatch>()
+  const reduxOpen = useSelector((state: RootState) => state.agentChat?.isOpen ?? false)
+  const isMinimized = useSelector((state: RootState) => state.agentChat?.isMinimized ?? false)
+  const mode = useSelector((state: RootState) => state.agentChat?.mode ?? 'chat')
+
   const isControlled = openProp !== undefined
-  const isOpen = isControlled ? openProp : uncontrolledOpen
+  const isOpen = isControlled ? openProp : reduxOpen
+
   const setIsOpen = (next: boolean) => {
-    if (!isControlled) setUncontrolledOpen(next)
+    if (!isControlled) {
+      dispatch(setChatOpen(next))
+    }
     onOpenChange?.(next)
   }
 
-  const [mode, setMode] = useState<Mode>(initialMode)
+  const setMode = (nextMode: 'chat' | 'voice') => {
+    dispatch(setChatMode(nextMode))
+  }
+
+  useEffect(() => {
+    dispatch(setChatPortal(portal))
+  }, [portal, dispatch])
+
   const chat = useAgentChat({ portal })
   const support = isSupportPortal(portal)
-  const chrome = portalChrome(portal)
-  const FabIcon = chrome.Icon
 
   useEffect(() => {
     const handleOpen = (e: Event) => {
-      const customEvent = e as CustomEvent<{ mode?: Mode }>
+      const customEvent = e as CustomEvent<{ mode?: 'chat' | 'voice' }>
       if (customEvent.detail?.mode) {
-        setMode(customEvent.detail.mode)
+        dispatch(setChatMode(customEvent.detail.mode))
       }
       if (!isControlled) {
-        setUncontrolledOpen(true)
+        dispatch(setChatOpen(true))
       }
       onOpenChange?.(true)
     }
     window.addEventListener('salondesk:open_chat', handleOpen)
     return () => window.removeEventListener('salondesk:open_chat', handleOpen)
-  }, [isControlled, onOpenChange])
+  }, [isControlled, onOpenChange, dispatch])
 
   if (!anyChatFeatureEnabled) return null
 
@@ -78,76 +85,59 @@ export function ChatWidget({
   return (
     <>
       {showTriggers && !isOpen && (
-        <div className={cn('fixed bottom-6 right-6 z-40', className)}>
-          <button
-            type="button"
-            onClick={handleOpenChat}
-            aria-label={chrome.fabLabel}
-            title={chrome.fabTitle}
-            className={cn(
-              'group relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border text-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.08)] backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95',
-              chrome.fabButton,
-            )}
-          >
-            <span
-              className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110',
-                chrome.fabIconWrap,
-              )}
-            >
-              <FabIcon className={cn('h-5 w-5', chrome.fabIcon)} />
-            </span>
-            <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
-              <span
-                className={cn(
-                  'absolute inline-flex h-full w-full animate-ping rounded-full opacity-60',
-                  chrome.fabPing,
-                )}
-              />
-              <span
-                className={cn(
-                  'relative inline-flex h-3.5 w-3.5 rounded-full border-2',
-                  chrome.fabDot,
-                )}
-              />
-            </span>
-            <span className="sr-only">{chrome.fabLabel}</span>
-          </button>
-        </div>
+        <DraggableChatFab portal={portal} onClick={handleOpenChat} className={className} />
       )}
 
       {isOpen && (
-        <ChatPanelShell
-          mode={mode}
-          portal={portal}
-          onModeChange={setMode}
-          onClose={() => setIsOpen(false)}
-          showModeToggle={features.agentChat && features.voiceAgent}
-        >
-          {mode === 'voice' && features.voiceAgent ? (
+        <>
+          {mode === 'voice' && isMinimized ? (
             <VoiceAgentView
               language={features.defaultLanguage}
               portal={portal}
+              isMinimized
+              onMinimizeChange={(m) => dispatch(setChatMinimized(m))}
               onClose={() => setIsOpen(false)}
               onSwitchToText={features.agentChat ? () => setMode('chat') : () => setIsOpen(false)}
             />
           ) : (
-            <ChatConversation
+            <ChatPanelShell
+              mode={mode}
               portal={portal}
-              messages={chat.messages}
-              isThinking={chat.isThinking}
-              prompt={chat.prompt}
-              onPromptChange={chat.setPrompt}
-              onSend={chat.send}
-              onSelectService={
-                support
-                  ? undefined
-                  : (rec) => chat.send(`Book ${rec.name} at ${rec.organizationName}`)
-              }
-              onTryVoice={features.voiceAgent ? () => setMode('voice') : undefined}
-            />
+              onModeChange={setMode}
+              onClose={() => setIsOpen(false)}
+              onMinimize={mode === 'voice' ? () => dispatch(setChatMinimized(true)) : undefined}
+              showModeToggle={features.agentChat && features.voiceAgent}
+            >
+              {mode === 'voice' && features.voiceAgent ? (
+                <VoiceAgentView
+                  language={features.defaultLanguage}
+                  portal={portal}
+                  isMinimized={false}
+                  onMinimizeChange={(m) => dispatch(setChatMinimized(m))}
+                  onClose={() => setIsOpen(false)}
+                  onSwitchToText={
+                    features.agentChat ? () => setMode('chat') : () => setIsOpen(false)
+                  }
+                />
+              ) : (
+                <ChatConversation
+                  portal={portal}
+                  messages={chat.messages}
+                  isThinking={chat.isThinking}
+                  prompt={chat.prompt}
+                  onPromptChange={chat.setPrompt}
+                  onSend={chat.send}
+                  onSelectService={
+                    support
+                      ? undefined
+                      : (rec) => chat.send(`Book ${rec.name} at ${rec.organizationName}`)
+                  }
+                  onTryVoice={features.voiceAgent ? () => setMode('voice') : undefined}
+                />
+              )}
+            </ChatPanelShell>
           )}
-        </ChatPanelShell>
+        </>
       )}
     </>
   )
