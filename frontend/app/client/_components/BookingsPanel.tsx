@@ -2,11 +2,13 @@
 
 import {
   AlertTriangle,
+  ArrowUpDown,
   Calendar,
   Clock,
   FileText,
   Lock,
   Plus,
+  Search,
   Shield,
   User,
   XCircle,
@@ -25,6 +27,24 @@ interface BookingsPanelProps {
   onBrowseCatalog: () => void
   onCancel: (booking: Booking) => void
   onViewReceipt: (booking: Booking) => void
+  searchQuery: string
+  onSearchChange: (value: string) => void
+  sortBy:
+    | 'starts_at_asc'
+    | 'starts_at_desc'
+    | 'created_at_asc'
+    | 'created_at_desc'
+    | 'total_price_asc'
+    | 'total_price_desc'
+  onSortChange: (
+    value:
+      | 'starts_at_asc'
+      | 'starts_at_desc'
+      | 'created_at_asc'
+      | 'created_at_desc'
+      | 'total_price_asc'
+      | 'total_price_desc',
+  ) => void
 }
 
 export function BookingsPanel({
@@ -33,11 +53,15 @@ export function BookingsPanel({
   onBrowseCatalog,
   onCancel,
   onViewReceipt,
+  searchQuery,
+  onSearchChange,
+  sortBy,
+  onSortChange,
 }: BookingsPanelProps) {
   return (
     <div className="space-y-8 sm:space-y-12">
       {/* Editorial Header */}
-      <div className="flex items-end justify-between gap-4 border-b border-stone-200/60 pb-6 sm:gap-6 sm:pb-8">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-stone-200/60 pb-6 sm:gap-6 sm:pb-8">
         <div className="min-w-0 max-w-2xl space-y-2">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
             <Shield className="h-3.5 w-3.5 text-amber-600" />
@@ -64,6 +88,45 @@ export function BookingsPanel({
           <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           <span className="hidden sm:inline">Book New Service</span>
         </button>
+      </div>
+
+      {/* Search and Sort Controls */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+          <input
+            type="text"
+            placeholder="Search by service, salon, or stylist..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-200/80 bg-white text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+          />
+        </div>
+        <div className="relative sm:w-48">
+          <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+          <select
+            value={sortBy}
+            onChange={(e) =>
+              onSortChange(
+                e.target.value as
+                  | 'starts_at_asc'
+                  | 'starts_at_desc'
+                  | 'created_at_asc'
+                  | 'created_at_desc'
+                  | 'total_price_asc'
+                  | 'total_price_desc',
+              )
+            }
+            className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-stone-200/80 bg-white text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer"
+          >
+            <option value="starts_at_desc">Date: Newest</option>
+            <option value="starts_at_asc">Date: Oldest</option>
+            <option value="created_at_desc">Created: Newest</option>
+            <option value="created_at_asc">Created: Oldest</option>
+            <option value="total_price_desc">Price: High to Low</option>
+            <option value="total_price_asc">Price: Low to High</option>
+          </select>
+        </div>
       </div>
 
       {/* Active Holds Section */}

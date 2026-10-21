@@ -63,6 +63,20 @@ async def chat(
                 payment_link=confirmed_info.get("payment_link") if confirmed_info else None,
             )
 
+        from app.ai.tools.paypal_tools import handle_paypal_agent_chat
+
+        t9_handled, t9_reply, t9_meta = await handle_paypal_agent_chat(db, body.message, user=user)
+        if t9_handled:
+            return ChatResponse(
+                reply=t9_reply,
+                provider=llm.provider_name,
+                model=llm.model,
+                detected_language=body.language or "en",
+                intent="paypal_checkout",
+                payment_link=t9_meta.get("approval_url") if t9_meta else None,
+                confirmed_booking=t9_meta,
+            )
+
     prior = [m.content for m in body.history if m.role == "user"]
     retrieved = await retrieve_context(
         db,

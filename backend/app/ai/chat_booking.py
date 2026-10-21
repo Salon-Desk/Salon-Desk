@@ -26,7 +26,7 @@ logger = logging.getLogger("salondesk.ai.chat_booking")
 _BOOKING_EXTRACT_PROMPT = """You extract booking requests from a user chat message.
 Return ONLY a JSON object with:
 - "action": "book" | "confirm" | "none"
-- "service_query": string or null (e.g. "Haircut", "Fade", "Balayage")
+- "service_query": string or null (e.g. "Haircut", "Fade", "Balayage", "Braids", "Manicure")
 - "preferred_time": string or null (ISO datetime or human string)
 - "notes": string or null
 
@@ -80,7 +80,7 @@ async def try_handle_chat_booking(
         (handled, reply_text, confirmed_booking_dict)
     """
     lowered = message.lower().strip()
-    # Fast regex gate: only invoke LLM if words like book, reserve, schedule, confirm are present
+    # Fast regex gate: only invoke LLM if booking or appointment keywords are present
     if not any(
         w in lowered
         for w in (
@@ -90,6 +90,12 @@ async def try_handle_chat_booking(
             "schedule",
             "confirm booking",
             "hold with paypal",
+            "haircut",
+            "braid",
+            "manicure",
+            "pedicure",
+            "facial",
+            "salon",
         )
     ):
         return False, "", None

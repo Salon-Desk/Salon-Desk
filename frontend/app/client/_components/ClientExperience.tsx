@@ -111,7 +111,7 @@ export function ClientExperience({
     typeof ClientCatalogListParamsSchema
   >(ClientCatalogListParamsSchema)
 
-  const { params: myBookingsParams } = useListingParams<
+  const myBookingsListing = useListingParams<
     ClientMyBookingsListParams,
     typeof ClientMyBookingsListParamsSchema
   >(ClientMyBookingsListParamsSchema)
@@ -132,7 +132,9 @@ export function ClientExperience({
     data: apiBookingsData,
     isLoading: bookingsLoading,
     refetch: refetchBookings,
-  } = useGetMyBookingsQuery(myBookingsParams, { skip: !isAuthenticated || !isClientUser(user) })
+  } = useGetMyBookingsQuery(myBookingsListing.params, {
+    skip: !isAuthenticated || !isClientUser(user),
+  })
   const apiBookings = apiBookingsData?.items ?? []
 
   const [cancelBooking] = useCancelBookingMutation()
@@ -829,6 +831,21 @@ export function ClientExperience({
                   onBrowseCatalog={() => setActiveTab('catalog')}
                   onCancel={setCancelTarget}
                   onViewReceipt={setReceiptBooking}
+                  searchQuery={myBookingsListing.displayParams.q}
+                  onSearchChange={(value) => myBookingsListing.setParam('q', value)}
+                  sortBy={myBookingsListing.displayParams.sort}
+                  onSortChange={(value) =>
+                    myBookingsListing.setParam(
+                      'sort',
+                      value as
+                        | 'starts_at_asc'
+                        | 'starts_at_desc'
+                        | 'created_at_asc'
+                        | 'created_at_desc'
+                        | 'total_price_asc'
+                        | 'total_price_desc',
+                    )
+                  }
                 />
               </>
             )}

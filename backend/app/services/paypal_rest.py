@@ -88,6 +88,7 @@ class PayPalRestClient:
         cancel_url: str,
         payee_merchant_id: str | None = None,
         reference_id: str | None = None,
+        paypal_request_id: str | None = None,
     ) -> dict:
         """
         Create an Orders v2 order with intent=AUTHORIZE.
@@ -131,15 +132,19 @@ class PayPalRestClient:
         }
         token = await self._access_token()
         url = f"{self.settings.paypal_api_base.rstrip('/')}/v2/checkout/orders"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        }
+        if paypal_request_id:
+            headers["PayPal-Request-Id"] = paypal_request_id
+
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
                 url,
                 json=body,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
-                    "Prefer": "return=representation",
-                },
+                headers=headers,
             )
             _raise_for_paypal(resp)
             data = resp.json()
@@ -165,6 +170,7 @@ class PayPalRestClient:
         order_id: str,
         amount: Decimal | None = None,
         currency: str = "USD",
+        paypal_request_id: str | None = None,
     ) -> dict:
         """Authorize a buyer-approved order (or stub-complete when credentials missing)."""
         _ = amount, currency
@@ -179,14 +185,18 @@ class PayPalRestClient:
 
         token = await self._access_token()
         url = f"{self.settings.paypal_api_base.rstrip('/')}/v2/checkout/orders/{order_id}/authorize"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        }
+        if paypal_request_id:
+            headers["PayPal-Request-Id"] = paypal_request_id
+
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
                 url,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
-                    "Prefer": "return=representation",
-                },
+                headers=headers,
             )
             _raise_for_paypal(resp)
             data = resp.json()
@@ -209,13 +219,22 @@ class PayPalRestClient:
             "raw": data,
         }
 
-    async def partial_capture(self, *, authorization_id: str, amount: Decimal) -> dict:
+    async def partial_capture(
+        self,
+        *,
+        authorization_id: str,
+        amount: Decimal,
+        final_capture: bool = False,
+        paypal_request_id: str | None = None,
+    ) -> dict:
+        """Capture funds against an authorization hold with final_capture and idempotency support."""
         if not self.configured or str(authorization_id).startswith("stub-"):
             return {
                 "status": "COMPLETED",
                 "mode": "stub",
                 "capture_id": f"stub-cap-{authorization_id}",
                 "amount": str(amount),
+                "final_capture": final_capture,
             }
         token = await self._access_token()
         url = (
@@ -227,16 +246,20 @@ class PayPalRestClient:
                 "currency_code": "USD",
                 "value": f"{amount.quantize(Decimal('0.01'))}",
             },
-            "final_capture": False,
+            "final_capture": bool(final_capture),
         }
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        if paypal_request_id:
+            headers["PayPal-Request-Id"] = paypal_request_id
+
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
                 url,
                 json=body,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
-                },
+                headers=headers,
             )
             _raise_for_paypal(resp)
             data = resp.json()
@@ -244,10 +267,16 @@ class PayPalRestClient:
             "status": data.get("status"),
             "mode": "live",
             "capture_id": data.get("id"),
+            "final_capture": bool(final_capture),
             "raw": data,
         }
 
-    async def void_authorization(self, *, authorization_id: str) -> dict:
+    async def void_authorization(
+        self,
+        *,
+        authorization_id: str,
+        paypal_request_id: str | None = None,
+    ) -> dict:
         if not self.configured or str(authorization_id).startswith("stub-"):
             return {"status": "VOIDED", "mode": "stub"}
         token = await self._access_token()
@@ -255,15 +284,24 @@ class PayPalRestClient:
             f"{self.settings.paypal_api_base.rstrip('/')}"
             f"/v2/payments/authorizations/{authorization_id}/void"
         )
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        if paypal_request_id:
+            headers["PayPal-Request-Id"] = paypal_request_id
+
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
                 url,
-                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                headers=headers,
             )
             _raise_for_paypal(resp)
         return {"status": "VOIDED", "mode": "live"}
 
-    async def reauthorize_authorization(self, *, authorization_id: str) -> dict:
+    async def reauthorize_authorization(
+        self,
+        *,
+        authorization_id: str,
+        paypal_request_id: str | None = None,
+    ) -> dict:
         if not self.configured or str(authorization_id).startswith("stub-"):
             return {
                 "status": "CREATED",
@@ -275,10 +313,14 @@ class PayPalRestClient:
             f"{self.settings.paypal_api_base.rstrip('/')}"
             f"/v2/payments/authorizations/{authorization_id}/reauthorize"
         )
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        if paypal_request_id:
+            headers["PayPal-Request-Id"] = paypal_request_id
+
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
                 url,
-                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                headers=headers,
             )
             _raise_for_paypal(resp)
             data = resp.json()
@@ -288,3 +330,216 @@ class PayPalRestClient:
             "authorization_id": data.get("id"),
             "raw": data,
         }
+
+    # --- T9 AI Agent & Toolkit Order Methods (Intent=CAPTURE) ---
+
+    async def create_capture_order(
+        self,
+        *,
+        amount: Decimal,
+        currency: str = "USD",
+        return_url: str,
+        cancel_url: str,
+        description: str | None = None,
+        payee_merchant_id: str | None = None,
+        reference_id: str | None = None,
+        paypal_request_id: str | None = None,
+    ) -> dict:
+        """Create an Orders v2 order with intent=CAPTURE (direct deposit / checkout)."""
+        amount_str = f"{amount.quantize(Decimal('0.01'))}"
+        if not self.configured:
+            order_id = f"STUB-CAP-{uuid.uuid4().hex[:16]}"
+            sep = "&" if "?" in return_url else "?"
+            approval_url = f"{return_url}{sep}token={order_id}&stub=1"
+            return {
+                "status": "CREATED",
+                "mode": "stub",
+                "order_id": order_id,
+                "approval_url": approval_url,
+                "amount": amount_str,
+                "currency": currency,
+            }
+
+        purchase_unit: dict = {
+            "reference_id": reference_id or "order",
+            "description": description or "SalonDesk deposit",
+            "amount": {"currency_code": currency, "value": amount_str},
+        }
+        if is_paypal_merchant_id(payee_merchant_id):
+            purchase_unit["payee"] = {"merchant_id": payee_merchant_id}
+
+        body = {
+            "intent": "CAPTURE",
+            "purchase_units": [purchase_unit],
+            "application_context": {
+                "return_url": return_url,
+                "cancel_url": cancel_url,
+                "user_action": "PAY_NOW",
+                "shipping_preference": "NO_SHIPPING",
+                "brand_name": "SalonDesk",
+            },
+        }
+        token = await self._access_token()
+        url = f"{self.settings.paypal_api_base.rstrip('/')}/v2/checkout/orders"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        }
+        if paypal_request_id:
+            headers["PayPal-Request-Id"] = paypal_request_id
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(url, json=body, headers=headers)
+            _raise_for_paypal(resp)
+            data = resp.json()
+
+        approval_url = None
+        for link in data.get("links") or []:
+            if link.get("rel") == "approve":
+                approval_url = link.get("href")
+                break
+
+        return {
+            "status": data.get("status", "CREATED"),
+            "mode": "live",
+            "order_id": data.get("id"),
+            "approval_url": approval_url,
+            "raw": data,
+        }
+
+    async def capture_order(
+        self,
+        *,
+        order_id: str,
+        paypal_request_id: str | None = None,
+    ) -> dict:
+        """Capture payment for an approved CAPTURE order."""
+        if not self.configured or str(order_id).startswith("STUB-"):
+            return {
+                "status": "COMPLETED",
+                "mode": "stub",
+                "order_id": order_id,
+                "capture_id": f"stub-capture-{order_id}",
+            }
+
+        token = await self._access_token()
+        url = f"{self.settings.paypal_api_base.rstrip('/')}/v2/checkout/orders/{order_id}/capture"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        }
+        if paypal_request_id:
+            headers["PayPal-Request-Id"] = paypal_request_id
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(url, headers=headers)
+            _raise_for_paypal(resp)
+            data = resp.json()
+
+        capture_id = None
+        for unit in data.get("purchase_units") or []:
+            payments = unit.get("payments") or {}
+            for cap in payments.get("captures") or []:
+                capture_id = cap.get("id")
+                if capture_id:
+                    break
+            if capture_id:
+                break
+
+        return {
+            "status": data.get("status", "COMPLETED"),
+            "mode": "live",
+            "order_id": order_id,
+            "capture_id": capture_id,
+            "raw": data,
+        }
+
+    async def get_order(self, *, order_id: str) -> dict:
+        """Read an order status and payment breakdown."""
+        if not self.configured or str(order_id).startswith("STUB-"):
+            return {
+                "id": order_id,
+                "status": "APPROVED",
+                "mode": "stub",
+            }
+
+        token = await self._access_token()
+        url = f"{self.settings.paypal_api_base.rstrip('/')}/v2/checkout/orders/{order_id}"
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            )
+            _raise_for_paypal(resp)
+            return resp.json()
+
+    async def create_refund(
+        self,
+        *,
+        capture_id: str,
+        amount: Decimal | None = None,
+        currency: str = "USD",
+        note_to_payer: str | None = None,
+        paypal_request_id: str | None = None,
+    ) -> dict:
+        """Issue a full or partial refund on a captured payment."""
+        if not self.configured or str(capture_id).startswith("stub-"):
+            return {
+                "status": "COMPLETED",
+                "mode": "stub",
+                "refund_id": f"stub-refund-{capture_id}",
+                "amount": str(amount) if amount else "full",
+            }
+
+        token = await self._access_token()
+        url = (
+            f"{self.settings.paypal_api_base.rstrip('/')}/v2/payments/captures/{capture_id}/refund"
+        )
+        body: dict = {}
+        if amount is not None:
+            body["amount"] = {
+                "currency_code": currency,
+                "value": f"{amount.quantize(Decimal('0.01'))}",
+            }
+        if note_to_payer:
+            body["note_to_payer"] = note_to_payer
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        if paypal_request_id:
+            headers["PayPal-Request-Id"] = paypal_request_id
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(url, json=body, headers=headers)
+            _raise_for_paypal(resp)
+            data = resp.json()
+
+        return {
+            "status": data.get("status", "COMPLETED"),
+            "mode": "live",
+            "refund_id": data.get("id"),
+            "raw": data,
+        }
+
+    async def get_refund(self, *, refund_id: str) -> dict:
+        """Get refund details by ID."""
+        if not self.configured or str(refund_id).startswith("stub-"):
+            return {
+                "id": refund_id,
+                "status": "COMPLETED",
+                "mode": "stub",
+            }
+
+        token = await self._access_token()
+        url = f"{self.settings.paypal_api_base.rstrip('/')}/v2/payments/refunds/{refund_id}"
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            )
+            _raise_for_paypal(resp)
+            return resp.json()

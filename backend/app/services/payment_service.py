@@ -166,6 +166,7 @@ async def create_hold(
         cancel_url=cancel_url,
         payee_merchant_id=payee_merchant_id,
         reference_id=str(booking.id),
+        paypal_request_id=f"order-{hold.id}",
     )
 
     hold.paypal_order_id = paypal_result.get("order_id")
@@ -377,9 +378,12 @@ async def capture_hold(
         )
 
     paypal = PayPalRestClient()
+    cap_request_id = f"cap-{hold.id}-{hold.captured_amount + capture_amount}"
     paypal_result = await paypal.partial_capture(
         authorization_id=hold.latest_authorization_id or hold.parent_authorization_id or "",
         amount=capture_amount,
+        final_capture=final_capture,
+        paypal_request_id=cap_request_id,
     )
 
     capture = PaymentCapture(
@@ -446,7 +450,8 @@ async def void_hold(db: AsyncSession, *, booking: Booking) -> PaymentHold | None
 
     paypal = PayPalRestClient()
     paypal_result = await paypal.void_authorization(
-        authorization_id=hold.parent_authorization_id or hold.latest_authorization_id or ""
+        authorization_id=hold.parent_authorization_id or hold.latest_authorization_id or "",
+        paypal_request_id=f"void-{hold.id}",
     )
     hold.status = PaymentHoldStatus.VOIDED
     await db.flush()
@@ -477,7 +482,10 @@ async def reauthorize_hold(db: AsyncSession, *, booking: Booking) -> PaymentHold
 
     parent_id = hold.parent_authorization_id or hold.latest_authorization_id or ""
     paypal = PayPalRestClient()
-    paypal_result = await paypal.reauthorize_authorization(authorization_id=parent_id)
+    paypal_result = await paypal.reauthorize_authorization(
+        authorization_id=parent_id,
+        paypal_request_id=f"reauth-{hold.id}-{hold.reauthorization_count + 1}",
+    )
     new_auth_id = (
         paypal_result.get("authorization_id")
         or f"stub-reauth-{booking.id}-{hold.reauthorization_count + 1}"

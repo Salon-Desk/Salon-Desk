@@ -6,7 +6,7 @@ import json
 import re
 from datetime import datetime
 
-from app.ai.llm import BaseLLMService, LLMError, get_llm_service
+from app.ai.llm import BaseLLMService, LLMError, get_fallback_llm_service
 from app.schemas.ai import SlotParseResult
 
 _SYSTEM = """You extract salon booking slots from user text.
@@ -18,7 +18,7 @@ Do not wrap in markdown."""
 
 class AISlotParser:
     def __init__(self, client: BaseLLMService | None = None) -> None:
-        self.client = client or get_llm_service()
+        self.client = client or get_fallback_llm_service()
 
     async def parse(self, user_text: str) -> SlotParseResult:
         if not user_text.strip():
