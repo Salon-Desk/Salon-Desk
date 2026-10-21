@@ -42,7 +42,7 @@ export function DayBoardView({ day, events, stylistId, stylistName, onSelect }: 
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+    <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white">
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
         <div>
           <h2 className="text-sm font-bold text-slate-900">{format(day, 'EEEE, MMM d')}</h2>
@@ -77,7 +77,7 @@ export function DayBoardView({ day, events, stylistId, stylistName, onSelect }: 
 
           {dayEvents.length === 0 ? (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <p className="rounded-lg bg-white/90 px-3 py-2 text-xs text-slate-400 shadow-sm">
+              <p className="rounded-lg bg-white/90 px-3 py-2 text-xs text-slate-400 ring-1 ring-slate-200/70">
                 No bookings on this day
               </p>
             </div>

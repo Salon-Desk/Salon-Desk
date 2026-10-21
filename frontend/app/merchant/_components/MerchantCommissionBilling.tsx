@@ -88,8 +88,8 @@ export function MerchantCommissionBilling() {
   const isError = invoicesError || recordsError
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
         <div>
           <h2 className="font-bold text-slate-900 text-sm">Platform commission billing</h2>
           <p className="text-slate-500 text-xs">
@@ -97,7 +97,7 @@ export function MerchantCommissionBilling() {
             your PayPal; SalonDesk bills you periodically via these invoices.
           </p>
         </div>
-        <div className="rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+        <div className="rounded-xl bg-amber-50/70 px-3 py-2 text-xs sm:text-right">
           <span className="text-slate-400 uppercase font-mono text-[10px]">Accrued unpaid · </span>
           <span className="font-bold text-amber-900 tabular-nums">{formatUsd(accruedDue)}</span>
         </div>
@@ -128,9 +128,9 @@ export function MerchantCommissionBilling() {
       ) : null}
 
       {!isLoading ? (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 px-1">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
+          <div className="space-y-2 xl:col-span-7">
+            <div className="flex items-center gap-2 px-1.5">
               <FileText className="h-4 w-4 text-slate-400" />
               <h3 className="font-bold text-sm text-slate-900">Commission invoices</h3>
             </div>
@@ -142,12 +142,15 @@ export function MerchantCommissionBilling() {
               showPagination={invoices.length > 10}
               showSearch={false}
               showItemsPerPage={false}
+              showColumnSelector
+              tableClassName="border-amber-100/80"
+              headerClassName="bg-amber-50/35"
             />
           </div>
 
           <Card
             padding="none"
-            className="rounded-xl border border-slate-200/80 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+            className="overflow-hidden rounded-2xl border border-slate-200/70 xl:col-span-5"
           >
             <div className="border-b border-slate-100 px-4 py-3 flex items-center gap-2">
               <Receipt className="h-4 w-4 text-slate-400" />

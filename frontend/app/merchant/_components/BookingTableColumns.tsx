@@ -130,7 +130,7 @@ export function getBookingTableColumns({
             <button
               type="button"
               onClick={() => onInspectConsent(b)}
-              className="rounded-lg border border-slate-200/80 bg-white p-1.5 text-slate-400 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all shadow-2xs cursor-pointer"
+              className="cursor-pointer rounded-lg border border-slate-200/70 bg-white p-1.5 text-slate-400 transition-all hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700"
               title="Inspect PayPal Authorization Consent Receipt"
             >
               <ShieldCheck className="h-4 w-4" />
@@ -140,7 +140,7 @@ export function getBookingTableColumns({
               title={isSettled ? 'Details' : 'Settle'}
               size="sm"
               fullWidth={false}
-              className={`h-8 rounded-lg px-3 text-xs font-semibold shadow-2xs cursor-pointer ${
+              className={`h-8 cursor-pointer rounded-lg px-3 text-xs font-semibold ${
                 isSettled
                   ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
                   : 'bg-emerald-600 text-white hover:bg-emerald-700'

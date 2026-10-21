@@ -144,17 +144,17 @@ export function HeroControllerSection({
   return (
     <div className="space-y-6">
       {/* 1. Live Visual Preview */}
-      <Card className="overflow-hidden border border-slate-200/80 bg-white p-0 shadow-xs">
+      <Card className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-0 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-100 text-amber-700">
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/10 text-amber-700">
               <Eye className="h-3.5 w-3.5" />
             </span>
             <span className="font-bold text-slate-800 text-xs sm:text-sm">
               Live Hero Banner Preview
             </span>
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold text-[10px] ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-bold text-[10px] ${
                 heroForm.is_active
                   ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20'
                   : 'bg-slate-100 text-slate-600 ring-1 ring-slate-300'
@@ -162,19 +162,19 @@ export function HeroControllerSection({
             >
               <span
                 className={`h-1.5 w-1.5 rounded-full ${
-                  heroForm.is_active ? 'bg-emerald-500' : 'bg-slate-400'
+                  heroForm.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
                 }`}
               />
               {heroForm.is_active ? 'Published' : 'Draft / Fallback Mode'}
             </span>
           </div>
           <span className="text-[11px] text-slate-400">
-            Real-time reflection of client landing hero
+            Real-time reflection of customer landing hero viewport
           </span>
         </div>
 
         <div className="p-4 sm:p-6">
-          <div className="relative grid grid-cols-1 items-center gap-6 overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-50/90 p-6 shadow-inner lg:grid-cols-12 lg:gap-8">
+          <div className="relative grid grid-cols-1 items-center gap-6 overflow-hidden rounded-2xl border border-stone-200/90 bg-gradient-to-br from-stone-50 via-white to-amber-50/20 p-6 sm:p-8 shadow-inner lg:grid-cols-12 lg:gap-8">
             <div className="flex flex-col justify-center lg:col-span-7">
               <div className="mb-2 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-amber-500" />
@@ -196,20 +196,20 @@ export function HeroControllerSection({
               </p>
 
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-medium text-[11px] text-stone-700 shadow-2xs">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/60 bg-emerald-50/80 px-3 py-1 font-semibold text-[11px] text-emerald-800 shadow-2xs">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   $0 Debited Today
                 </span>
-                <span className="inline-flex items-center rounded-full bg-white px-3 py-1 font-medium text-[11px] text-stone-700 shadow-2xs">
+                <span className="inline-flex items-center rounded-full border border-stone-200/80 bg-white px-3 py-1 font-medium text-[11px] text-stone-700 shadow-2xs">
                   {salonCount} {salonCount === 1 ? 'salon' : 'salons'}
                 </span>
-                <span className="inline-flex items-center rounded-full bg-white px-3 py-1 font-medium text-[11px] text-stone-700 shadow-2xs">
+                <span className="inline-flex items-center rounded-full border border-stone-200/80 bg-white px-3 py-1 font-medium text-[11px] text-stone-700 shadow-2xs">
                   {serviceCount} {serviceCount === 1 ? 'service' : 'services'}
                 </span>
               </div>
             </div>
 
-            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-stone-200 shadow-md lg:col-span-5">
+            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border border-stone-200 bg-stone-200 shadow-md lg:col-span-5">
               {heroForm.image_url ? (
                 <Image
                   src={heroForm.image_url}
@@ -230,7 +230,7 @@ export function HeroControllerSection({
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-stone-950/20 to-transparent" />
-              <div className="absolute bottom-3 left-3 text-white">
+              <div className="absolute bottom-3 left-3 rounded-lg border border-white/20 bg-stone-950/60 px-2.5 py-1 text-white backdrop-blur-md">
                 <span className="font-bold text-xs drop-shadow-xs">{spotlightSalonName}</span>
               </div>
             </div>
@@ -242,7 +242,7 @@ export function HeroControllerSection({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Presets Column */}
         <div className="space-y-4 lg:col-span-4">
-          <Card className="border border-slate-200/90 bg-white p-5 shadow-xs">
+          <Card className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="mb-3 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-50 text-amber-600">
                 <Sparkles className="h-3.5 w-3.5" />
@@ -255,27 +255,42 @@ export function HeroControllerSection({
             </p>
 
             <div className="space-y-2.5">
-              {HERO_PRESETS.map((preset) => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => handleApplyPreset(preset)}
-                  className="group relative w-full cursor-pointer rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 text-left transition-all hover:border-amber-400 hover:bg-amber-50/30 hover:shadow-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 text-xs group-hover:text-amber-900">
-                      {preset.name}
-                    </span>
-                    <span className="rounded-md bg-white px-2 py-0.5 font-semibold text-[10px] text-amber-700 shadow-2xs group-hover:bg-amber-100">
-                      Apply
-                    </span>
-                  </div>
-                  <p className="mt-1.5 line-clamp-2 text-[11px] text-slate-500 leading-normal">
-                    <span className="font-medium text-slate-700">{preset.headline}</span>{' '}
-                    <span className="italic text-amber-700">{preset.highlight}</span>
-                  </p>
-                </button>
-              ))}
+              {HERO_PRESETS.map((preset) => {
+                const isCurrentPreset =
+                  heroForm.headline === preset.headline && heroForm.highlight === preset.highlight
+
+                return (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => handleApplyPreset(preset)}
+                    className={`group relative w-full cursor-pointer rounded-xl border p-3 text-left transition-all active:scale-[0.98] ${
+                      isCurrentPreset
+                        ? 'border-amber-400 bg-amber-50/50 shadow-2xs ring-1 ring-amber-300'
+                        : 'border-slate-200/80 bg-slate-50/50 hover:border-amber-400 hover:bg-amber-50/30 hover:shadow-xs'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900 text-xs group-hover:text-amber-900">
+                        {preset.name}
+                      </span>
+                      <span
+                        className={`rounded-md px-2 py-0.5 font-bold text-[10px] shadow-2xs ${
+                          isCurrentPreset
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-white text-amber-700 group-hover:bg-amber-100'
+                        }`}
+                      >
+                        {isCurrentPreset ? 'Active' : 'Apply'}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 line-clamp-2 text-[11px] text-slate-500 leading-normal">
+                      <span className="font-medium text-slate-700">{preset.headline}</span>{' '}
+                      <span className="italic text-amber-700">{preset.highlight}</span>
+                    </p>
+                  </button>
+                )
+              })}
             </div>
           </Card>
 
@@ -317,7 +332,7 @@ export function HeroControllerSection({
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-200 bg-red-50/50 px-2.5 py-1 font-semibold text-[11px] text-red-600 hover:bg-red-100/60"
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-200 bg-red-50/50 px-2.5 py-1 font-semibold text-[11px] text-red-600 transition-all hover:bg-red-100/60 active:scale-[0.98]"
                   title="Revert to dynamic partner salon cover"
                 >
                   <Trash2 className="h-3 w-3" />
@@ -633,7 +648,7 @@ export function HeroControllerSection({
                 isLoading={isSaving}
                 icon={<Save className="h-4 w-4" />}
                 onClick={() => void onSave()}
-                className="h-9 shrink-0 rounded-lg px-5 font-bold text-xs shadow-xs"
+                className="h-10 shrink-0 rounded-xl px-6 font-bold text-xs shadow-xs transition-all hover:shadow-md active:scale-[0.98]"
               />
             </div>
           </Card>

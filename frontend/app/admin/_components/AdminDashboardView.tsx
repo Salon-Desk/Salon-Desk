@@ -83,28 +83,28 @@ export function AdminDashboardView() {
               <button
                 type="button"
                 onClick={() => void refetch()}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 text-xs hover:bg-slate-50 sm:px-3.5 sm:py-2"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 text-xs shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] sm:px-3.5 sm:py-2"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 Refresh
               </button>
               <Link
                 href={ROUTES.adminCommission}
-                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 text-xs hover:bg-slate-50 sm:px-3.5 sm:py-2"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 text-xs shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] sm:px-3.5 sm:py-2"
               >
                 <Percent className="h-3.5 w-3.5 text-amber-700" />
                 Commission
               </Link>
               <Link
                 href={ROUTES.adminBilling}
-                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 text-xs hover:bg-slate-50 sm:px-3.5 sm:py-2"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 text-xs shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] sm:px-3.5 sm:py-2"
               >
                 <Receipt className="h-3.5 w-3.5 text-amber-700" />
                 Billing
               </Link>
               <Link
                 href={ROUTES.adminSalons ?? '/admin/salons'}
-                className="inline-flex items-center gap-1.5 rounded-full bg-stone-950 px-3 py-1.5 font-semibold text-white text-xs hover:bg-stone-800 sm:px-3.5 sm:py-2"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-stone-950 px-3 py-1.5 font-semibold text-white text-xs shadow-xs transition-all hover:bg-stone-800 active:scale-[0.98] sm:px-3.5 sm:py-2"
               >
                 Review salons
                 <ArrowRight className="h-3.5 w-3.5" />

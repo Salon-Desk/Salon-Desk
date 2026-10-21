@@ -158,9 +158,9 @@ export function MerchantDashboardView() {
   const isLoading = orgLoading || bookingsLoading || accountLoading
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 pb-12">
+    <div className="mx-auto w-full max-w-7xl space-y-5 pb-12 sm:space-y-6">
       {/* ===================== HERO COMMAND BANNER ===================== */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border-[1px] border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/70 p-4 sm:p-7 text-white shadow-sm shadow-slate-950/20">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/80 p-5 text-white ring-1 ring-white/10 sm:rounded-3xl sm:p-7">
         {/* Ambient background glow */}
         <div
           aria-hidden="true"
@@ -173,7 +173,7 @@ export function MerchantDashboardView() {
 
         <div className="relative z-10 flex flex-col gap-4 sm:gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start sm:items-center gap-3.5 sm:gap-4">
-            <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-500/20 to-amber-700/20 text-amber-300 font-extrabold text-xl sm:text-2xl shadow-inner backdrop-blur-sm">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400/30 to-amber-700/20 text-xl font-extrabold text-amber-200 ring-1 ring-white/10 backdrop-blur-sm sm:h-16 sm:w-16 sm:text-2xl">
               {org?.name ? org.name.charAt(0).toUpperCase() : 'S'}
             </div>
             <div className="space-y-1 sm:space-y-1.5 min-w-0">
@@ -219,7 +219,7 @@ export function MerchantDashboardView() {
               type="button"
               onClick={handleManualRefresh}
               disabled={isRefreshing}
-              className="inline-flex h-8 sm:h-9 items-center justify-center gap-1.5 rounded-full border border-slate-700/80 bg-slate-800/80 px-3 sm:px-3.5 text-xs font-semibold text-slate-200 backdrop-blur-md transition-all hover:bg-slate-700/80 hover:text-white active:scale-95 disabled:opacity-50 cursor-pointer"
+              className="inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-white/10 px-3.5 text-xs font-semibold text-slate-100 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/18 hover:text-white active:scale-95 disabled:opacity-50"
               title="Sync latest data"
             >
               <RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
@@ -228,7 +228,7 @@ export function MerchantDashboardView() {
 
             <Link
               href={ROUTES.merchantCalendar}
-              className="inline-flex h-8 sm:h-9 items-center justify-center gap-1.5 rounded-full border border-slate-700/80 bg-slate-800/80 px-3 sm:px-4 text-xs font-semibold text-slate-200 backdrop-blur-md transition-all hover:bg-slate-700/80 hover:text-white hover:border-slate-600 active:scale-95"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-white/10 px-3.5 text-xs font-semibold text-slate-100 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-white/18 hover:text-white active:scale-95 sm:px-4"
             >
               <CalendarIcon className="h-3.5 w-3.5 text-amber-400" />
               <span>Live Calendar</span>
@@ -239,7 +239,7 @@ export function MerchantDashboardView() {
               size="sm"
               fullWidth={false}
               icon={<Sparkles className="h-3.5 w-3.5 text-white" />}
-              className="h-8 sm:h-9 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold px-3 sm:px-4 text-xs shadow-md shadow-amber-500/20 transition-transform active:scale-95"
+              className="h-9 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-3 text-xs font-bold text-slate-950 transition-all hover:-translate-y-0.5 hover:from-amber-300 hover:to-amber-400 active:scale-95 sm:px-4"
               onClick={() => openAgentChat('chat')}
             />
           </div>
@@ -264,6 +264,7 @@ export function MerchantDashboardView() {
               ? [0, Math.round(activeHoldsCount * 0.5), activeHoldsCount]
               : undefined
           }
+          className="border-slate-200/60 bg-white/90 shadow-none hover:border-amber-200/80 hover:shadow-none"
         />
         <StatCard
           label="Captured Revenue"
@@ -277,6 +278,7 @@ export function MerchantDashboardView() {
               ? [0, Math.round(capturedRevenue * 0.4), Math.round(capturedRevenue)]
               : undefined
           }
+          className="border-slate-200/60 bg-white/90 shadow-none hover:border-emerald-200/80 hover:shadow-none"
         />
         <StatCard
           label="Catalog Offerings"
@@ -286,6 +288,7 @@ export function MerchantDashboardView() {
           footnote="Live services bookable online"
           trend={{ value: 'Catalog active', isPositive: true }}
           sparkline={services.length > 0 ? [services.length, services.length] : undefined}
+          className="border-slate-200/60 bg-white/90 shadow-none hover:border-sky-200/80 hover:shadow-none"
         />
         <StatCard
           label="Compliance & Requests"
@@ -300,13 +303,14 @@ export function MerchantDashboardView() {
           trend={
             pendingChangeRequests > 0 ? { value: 'Review pending', isPositive: false } : undefined
           }
+          className="border-slate-200/60 bg-white/90 shadow-none hover:border-purple-200/80 hover:shadow-none"
         />
       </div>
 
       {/* ===================== REVENUE & QUICK ACCESS HUB ===================== */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-12">
         {/* Left: 7-Day Revenue Outlook */}
-        <Card className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm shadow-slate-900/5 lg:col-span-7 flex flex-col justify-between">
+        <Card className="flex flex-col justify-between rounded-2xl border border-slate-200/60 bg-white/95 p-4 shadow-none sm:p-6 lg:col-span-7">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div>
@@ -322,13 +326,13 @@ export function MerchantDashboardView() {
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 text-right">
+                <div className="rounded-lg bg-emerald-50/80 px-2.5 py-1.5 text-right">
                   <div className="text-[10px] font-bold text-emerald-800 uppercase">Settled</div>
                   <div className="text-xs font-mono font-bold text-emerald-950">
                     {formatUsd(capturedRevenue)}
                   </div>
                 </div>
-                <div className="rounded-lg bg-amber-50 border border-amber-200/60 px-2.5 py-1 text-right">
+                <div className="rounded-lg bg-amber-50/80 px-2.5 py-1.5 text-right">
                   <div className="text-[10px] font-bold text-amber-800 uppercase">In Escrow</div>
                   <div className="text-xs font-mono font-bold text-amber-950">
                     {formatUsd(activeHoldsVolume)}
@@ -353,7 +357,7 @@ export function MerchantDashboardView() {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500">
             <span className="flex items-center gap-1.5 font-medium">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
               PayPal honor window guaranteed on active reservations
@@ -369,7 +373,7 @@ export function MerchantDashboardView() {
         </Card>
 
         {/* Right: Operational Command Tiles */}
-        <Card className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm shadow-slate-900/5 lg:col-span-5 flex flex-col justify-between">
+        <Card className="flex flex-col justify-between rounded-2xl border border-slate-200/60 bg-white/95 p-4 shadow-none sm:p-6 lg:col-span-5">
           <div>
             <div className="mb-4">
               <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
@@ -428,12 +432,12 @@ export function MerchantDashboardView() {
                   <Link
                     key={tile.href}
                     href={tile.href}
-                    className="group relative flex items-center justify-between rounded-xl border border-slate-200/70 bg-slate-50/60 p-3 sm:p-3.5 transition-all duration-200 hover:border-slate-300 hover:bg-white hover:shadow-md hover:shadow-slate-900/5"
+                    className="group relative flex items-center justify-between rounded-xl bg-slate-50/70 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white sm:p-3.5"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className={cn(
-                          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-transform duration-200 group-hover:scale-105',
+                          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105',
                           tile.toneClass,
                         )}
                       >
@@ -448,7 +452,7 @@ export function MerchantDashboardView() {
                     </div>
 
                     <div className="flex items-center gap-1.5 pl-2 shrink-0">
-                      <span className="hidden sm:inline-block rounded-md border border-slate-200 bg-white px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-600 group-hover:border-slate-300">
+                      <span className="hidden rounded-md bg-white px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-600 sm:inline-block">
                         {tile.badgeText}
                       </span>
                       <ArrowUpRight className="h-4 w-4 text-slate-400 group-hover:text-amber-800 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -459,7 +463,7 @@ export function MerchantDashboardView() {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500">
             <span>Policy amendments required?</span>
             <Link
               href={ROUTES.merchantSettings}
@@ -472,7 +476,7 @@ export function MerchantDashboardView() {
       </div>
 
       {/* ===================== RECENT RESERVATIONS FEED ===================== */}
-      <Card className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm shadow-slate-900/5">
+      <Card className="rounded-2xl border border-slate-200/60 bg-white/95 p-4 shadow-none sm:p-6">
         <div className="flex flex-col gap-3 pb-4 border-b border-slate-100">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
@@ -500,7 +504,7 @@ export function MerchantDashboardView() {
           </div>
 
           {/* Filter Pills - Swipeable on mobile without wrapping */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto rounded-xl bg-slate-50/80 p-1 no-scrollbar sm:gap-2">
             {[
               { id: 'all', label: 'All', count: bookings.length },
               { id: 'holds', label: 'Active Holds', count: activeHoldsCount },
@@ -514,10 +518,10 @@ export function MerchantDashboardView() {
                   setParam('filterTab', tab.id as MerchantDashboardBookingsListParams['filterTab'])
                 }
                 className={cn(
-                  'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border',
+                  'inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer',
                   filterTab === tab.id
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                    : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50 hover:text-slate-900',
+                    ? 'bg-slate-900 text-white'
+                    : 'text-slate-600 hover:bg-white hover:text-slate-900',
                 )}
               >
                 <span>{tab.label}</span>
@@ -593,11 +597,11 @@ export function MerchantDashboardView() {
                 return (
                   <div
                     key={b.id}
-                    className="group relative flex flex-col gap-3 rounded-xl border border-slate-200/70 bg-slate-50/50 p-3.5 sm:p-4 transition-all duration-200 hover:border-slate-300 hover:bg-white hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                    className="group relative flex flex-col gap-3 rounded-xl bg-slate-50/70 p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white sm:flex-row sm:items-center sm:justify-between sm:p-4"
                   >
                     {/* Left: Client & Service Details */}
                     <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-                      <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white font-bold text-slate-800 shadow-sm text-xs sm:text-sm">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white font-bold text-xs text-slate-800 sm:h-11 sm:w-11 sm:text-sm">
                         {b.clientName ? b.clientName.charAt(0).toUpperCase() : 'C'}
                       </div>
 
@@ -667,7 +671,7 @@ export function MerchantDashboardView() {
                         <button
                           type="button"
                           onClick={() => setInspectConsentBooking(b)}
-                          className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:border-slate-300 shadow-sm cursor-pointer"
+                          className="inline-flex h-8 cursor-pointer items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
                           title="Inspect cryptographic hold authorization receipt"
                         >
                           <Eye className="h-3.5 w-3.5 text-slate-500" />
@@ -679,7 +683,7 @@ export function MerchantDashboardView() {
                           size="sm"
                           fullWidth={false}
                           className={cn(
-                            'h-8 rounded-lg px-2.5 sm:px-3.5 text-xs font-bold shadow-sm',
+                            'h-8 rounded-lg px-2.5 text-xs font-bold shadow-none sm:px-3.5',
                             isHeld
                               ? 'bg-slate-900 hover:bg-slate-800 text-white'
                               : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200',

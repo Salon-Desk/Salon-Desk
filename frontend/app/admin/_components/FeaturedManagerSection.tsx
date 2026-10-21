@@ -69,46 +69,56 @@ export function FeaturedManagerSection({
 
   return (
     <div className="space-y-6">
-      <Card className="space-y-4 border border-slate-200 bg-white p-6 shadow-xs">
+      <Card className="space-y-5 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
         {/* Header & Sub-Tabs */}
-        <div className="flex flex-col justify-between gap-4 border-b border-slate-100 pb-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col justify-between gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-center">
           <div>
-            <h3 className="font-bold text-sm text-slate-900">Featured Showcase Manager</h3>
+            <h3 className="font-bold text-base text-slate-900">Featured Showcase Manager</h3>
             <p className="text-xs text-slate-500">
               Curate spotlight salons or specific signature services on the client landing page.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200/70 bg-slate-100/80 p-1">
             <button
               type="button"
               onClick={() => handleTabChange('organizations')}
-              className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 font-bold text-xs transition-all ${
+              className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-bold text-xs transition-all active:scale-[0.98] ${
                 tab === 'organizations'
-                  ? 'bg-amber-500 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/60'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Building2 className="h-3.5 w-3.5" />
-              Featured Salons ({featuredOrgs.length})
+              <Building2
+                className={`h-3.5 w-3.5 ${tab === 'organizations' ? 'text-amber-600' : 'text-slate-400'}`}
+              />
+              <span>Featured Salons</span>
+              <span className="rounded-full bg-amber-100 px-1.5 py-0.2 font-mono text-[10px] text-amber-800">
+                {featuredOrgs.length}
+              </span>
             </button>
             <button
               type="button"
               onClick={() => handleTabChange('services')}
-              className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 font-bold text-xs transition-all ${
+              className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-bold text-xs transition-all active:scale-[0.98] ${
                 tab === 'services'
-                  ? 'bg-amber-500 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/60'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Scissors className="h-3.5 w-3.5" />
-              Featured Services ({featuredServices.length})
+              <Scissors
+                className={`h-3.5 w-3.5 ${tab === 'services' ? 'text-amber-600' : 'text-slate-400'}`}
+              />
+              <span>Featured Services</span>
+              <span className="rounded-full bg-amber-100 px-1.5 py-0.2 font-mono text-[10px] text-amber-800">
+                {featuredServices.length}
+              </span>
             </button>
           </div>
         </div>
 
         {/* Add New Featured Item Form */}
-        <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-4">
+        <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 p-5 shadow-2xs">
           <h4 className="mb-3 flex items-center gap-1.5 font-bold text-amber-950 text-xs">
             <Plus className="h-4 w-4 text-amber-600" />
             {tab === 'organizations' ? 'Add Featured Salon' : 'Add Featured Single Service'}
@@ -151,7 +161,7 @@ export function FeaturedManagerSection({
                     ? 'No approved salons found.'
                     : 'No active services found.'
                 }
-                triggerClassName="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 hover:border-slate-300 focus:border-amber-500"
+                triggerClassName="w-full rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-xs text-slate-800 hover:border-slate-300 focus:border-amber-500"
                 contentClassName="w-[min(calc(100vw-2rem),24rem)]"
                 onSearchChange={
                   tab === 'organizations'
@@ -184,7 +194,7 @@ export function FeaturedManagerSection({
                 value={badgeText}
                 onChange={(e) => setBadgeText(e.target.value)}
                 placeholder="e.g. Editor's Choice, Trending, Staff Pick"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-amber-500 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-xs focus:border-amber-500 focus:outline-hidden"
               />
             </div>
 
@@ -195,7 +205,7 @@ export function FeaturedManagerSection({
                 min={0}
                 value={displayOrder}
                 onChange={(e) => setDisplayOrder(Number(e.target.value))}
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-center text-xs focus:border-amber-500 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200/80 bg-white px-2 py-2 text-center text-xs focus:border-amber-500 focus:outline-hidden"
               />
             </div>
 
@@ -208,7 +218,7 @@ export function FeaturedManagerSection({
                 isLoading={isCreating}
                 icon={<Plus className="h-3.5 w-3.5" />}
                 onClick={() => void handleSubmit()}
-                className="h-9 rounded-lg font-bold text-xs shadow-xs"
+                className="h-10 rounded-xl font-bold text-xs shadow-xs transition-all hover:shadow-md active:scale-[0.98]"
               />
             </div>
           </div>
@@ -234,10 +244,10 @@ export function FeaturedManagerSection({
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs transition-all hover:border-slate-300"
+                      className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs transition-all hover:border-amber-300 hover:shadow-xs"
                     >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                      <div className="flex min-w-0 items-center gap-3.5">
+                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-100 shadow-2xs">
                           {item.organization.picture ? (
                             <Image
                               src={item.organization.picture}
@@ -263,7 +273,9 @@ export function FeaturedManagerSection({
                             {item.organization.physical_address || 'Partner location'}
                           </p>
                           <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400">
-                            <span>Order #{item.display_order}</span>
+                            <span className="font-mono text-[10px]">
+                              Order #{item.display_order}
+                            </span>
                             <span>•</span>
                             {hasRating ? (
                               <span className="flex items-center font-medium text-amber-600">
@@ -277,7 +289,7 @@ export function FeaturedManagerSection({
                         </div>
                       </div>
 
-                      <div className="ml-2 flex shrink-0 items-center gap-1">
+                      <div className="ml-2 flex shrink-0 items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => void onToggleActive(item)}
@@ -286,7 +298,7 @@ export function FeaturedManagerSection({
                               ? 'Active — click to pause'
                               : 'Paused — click to activate'
                           }
-                          className={`cursor-pointer rounded-full px-2 py-0.5 font-bold text-[10px] transition-colors ${
+                          className={`cursor-pointer rounded-full px-2.5 py-0.5 font-bold text-[10px] shadow-2xs transition-all active:scale-95 ${
                             item.is_active
                               ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
                               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -298,6 +310,7 @@ export function FeaturedManagerSection({
                           tone="danger"
                           aria-label="Remove featured salon"
                           onClick={() => void onDelete(item.id)}
+                          className="h-8 w-8 rounded-lg active:scale-95"
                         >
                           <Trash2 className="h-3.5 w-3.5 text-rose-500" />
                         </IconButton>
@@ -322,10 +335,10 @@ export function FeaturedManagerSection({
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs transition-all hover:border-slate-300"
+                    className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs transition-all hover:border-amber-300 hover:shadow-xs"
                   >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                    <div className="flex min-w-0 items-center gap-3.5">
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-100 shadow-2xs">
                         {item.service.images?.cover ? (
                           <Image
                             src={String(item.service.images.cover)}
@@ -352,7 +365,7 @@ export function FeaturedManagerSection({
                           {item.service.base_price}
                         </p>
                         <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400">
-                          <span>Order #{item.display_order}</span>
+                          <span className="font-mono text-[10px]">Order #{item.display_order}</span>
                           <span>•</span>
                           <span>{item.service.duration_minutes}m</span>
                           {hasRating && (
@@ -367,14 +380,14 @@ export function FeaturedManagerSection({
                       </div>
                     </div>
 
-                    <div className="ml-2 flex shrink-0 items-center gap-1">
+                    <div className="ml-2 flex shrink-0 items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => void onToggleActive(item)}
                         title={
                           item.is_active ? 'Active — click to pause' : 'Paused — click to activate'
                         }
-                        className={`cursor-pointer rounded-full px-2 py-0.5 font-bold text-[10px] transition-colors ${
+                        className={`cursor-pointer rounded-full px-2.5 py-0.5 font-bold text-[10px] shadow-2xs transition-all active:scale-95 ${
                           item.is_active
                             ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -386,6 +399,7 @@ export function FeaturedManagerSection({
                         tone="danger"
                         aria-label="Remove featured service"
                         onClick={() => void onDelete(item.id)}
+                        className="h-8 w-8 rounded-lg active:scale-95"
                       >
                         <Trash2 className="h-3.5 w-3.5 text-rose-500" />
                       </IconButton>

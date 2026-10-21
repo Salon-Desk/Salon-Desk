@@ -42,18 +42,24 @@ export function getStaffTableColumns({
               <img
                 src={picture}
                 alt={name}
-                className="h-9 w-9 rounded-xl border border-slate-200 object-cover shadow-xs"
+                className="h-9 w-9 rounded-xl border border-slate-200 object-cover shadow-2xs"
               />
             ) : (
               <div
-                className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-xs font-bold text-white shadow-xs`}
+                className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-xs font-bold text-white shadow-2xs`}
               >
                 {initials || <UserRound className="h-4 w-4" />}
               </div>
             )}
-            <div>
-              <div className="font-bold text-slate-900 text-xs">{name}</div>
-              <div className="text-[11px] text-slate-500 font-mono">{member.email}</div>
+            <div className="min-w-0">
+              <div className="font-bold text-slate-900 text-xs truncate">{name}</div>
+              <a
+                href={`mailto:${member.email}`}
+                className="block truncate font-mono text-[11px] text-slate-500 transition-colors hover:text-amber-700 hover:underline"
+                title="Send email"
+              >
+                {member.email}
+              </a>
             </div>
           </div>
         )
@@ -85,9 +91,15 @@ export function getStaffTableColumns({
       cell: (member) => {
         const phone = staffPhone(member)
         return phone ? (
-          <span className="font-mono text-slate-700 text-xs">{phone}</span>
+          <a
+            href={`tel:${phone}`}
+            className="font-mono text-xs text-slate-700 transition-colors hover:text-amber-700 hover:underline"
+            title="Call phone"
+          >
+            {phone}
+          </a>
         ) : (
-          <span className="text-slate-400 italic text-[11px]">—</span>
+          <span className="italic text-[11px] text-slate-400">—</span>
         )
       },
     },
@@ -114,7 +126,7 @@ export function getStaffTableColumns({
             <button
               type="button"
               onClick={() => onCopyId(member.id)}
-              className="p-1 hover:text-slate-700 transition-colors rounded-md hover:bg-slate-100 cursor-pointer"
+              className="cursor-pointer rounded-md p-1 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95"
               title="Copy ID"
             >
               {isCopied ? (
@@ -133,11 +145,11 @@ export function getStaffTableColumns({
       cell: (member) => {
         const isOwner = member.role === 'org_owner'
         return (
-          <div className="flex items-center justify-end gap-1">
+          <div className="flex items-center justify-end gap-1.5">
             <IconButton
               aria-label="Edit team member"
               onClick={() => onEdit(member)}
-              className="h-8 w-8 rounded-lg text-slate-500 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200"
+              className="h-8 w-8 rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 active:scale-95"
               title="Edit details"
             >
               <Edit2 className="h-3.5 w-3.5" />
@@ -147,7 +159,7 @@ export function getStaffTableColumns({
               <IconButton
                 aria-label="Remove team member"
                 onClick={() => onDelete(member)}
-                className="h-8 w-8 rounded-lg text-rose-600 hover:bg-rose-50 hover:border-rose-200"
+                className="h-8 w-8 rounded-lg border border-slate-200/80 bg-white text-rose-600 shadow-2xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95"
                 title="Remove member"
               >
                 <Trash2 className="h-3.5 w-3.5" />

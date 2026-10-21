@@ -41,7 +41,7 @@ export function StaffAvatar({ name, picture, seed, size = 'md', className }: Sta
   return (
     <div
       className={cn(
-        'flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br font-bold text-white shadow-xs',
+        'flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br font-bold text-white',
         gradient,
         SIZE_CLASS[size],
         className,

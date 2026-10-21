@@ -110,7 +110,8 @@ export function getSalonTableColumns({
                 size="sm"
                 fullWidth={false}
                 icon={<Sparkles className="h-3.5 w-3.5" />}
-                className="h-8 rounded-lg px-3 text-xs"
+                className="h-8 rounded-lg px-3 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
+                isLoading={isActioning && approving}
                 isDisabled={isActioning}
                 onClick={() => onApprove(org)}
               />
@@ -121,7 +122,8 @@ export function getSalonTableColumns({
                 size="sm"
                 fullWidth={false}
                 icon={<PauseCircle className="h-3.5 w-3.5 text-rose-600" />}
-                className="h-8 rounded-lg px-3 text-xs text-rose-700 hover:bg-rose-50 border-rose-200"
+                className="h-8 rounded-lg px-3 text-xs font-semibold text-rose-700 hover:bg-rose-50 border-rose-200 transition-all active:scale-[0.98]"
+                isLoading={isActioning && suspending}
                 isDisabled={isActioning}
                 onClick={() => onSuspend(org)}
               />

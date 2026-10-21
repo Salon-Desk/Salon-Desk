@@ -114,7 +114,7 @@ export function SalonCard({
             fullWidth={false}
             isLoading={isActioning && approving}
             icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-            className="h-9 rounded-xl px-4 text-xs font-semibold shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white border-transparent"
+            className="h-9 rounded-xl px-4 text-xs font-semibold shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white border-transparent transition-all active:scale-[0.98]"
             onClick={() => onApprove(org)}
           />
         )}
@@ -126,7 +126,7 @@ export function SalonCard({
             fullWidth={false}
             isLoading={isActioning && suspending}
             icon={<PauseCircle className="h-3.5 w-3.5" />}
-            className="h-9 rounded-xl px-4 text-xs font-semibold shadow-xs"
+            className="h-9 rounded-xl px-4 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
             onClick={() => onSuspend(org)}
           />
         )}

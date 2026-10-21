@@ -104,20 +104,23 @@ export function getReviewTableColumns({
           <div className="flex items-center justify-end gap-1.5">
             <PrimaryButton
               title="Approve"
+              variant="success"
               size="sm"
               fullWidth={false}
               icon={<Check className="h-3 w-3" />}
-              className="h-7.5 bg-emerald-600 px-2.5 text-[11px] text-white hover:bg-emerald-700"
+              className="h-8 rounded-lg px-2.5 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
+              isLoading={isBusy}
               isDisabled={isBusy}
               onClick={() => onApprove(item)}
             />
             <PrimaryButton
               title="Reject"
-              variant="destructive"
+              variant="danger"
               size="sm"
               fullWidth={false}
               icon={<X className="h-3 w-3" />}
-              className="h-7.5 px-2.5 text-[11px]"
+              className="h-8 rounded-lg px-2.5 text-xs font-semibold transition-all active:scale-[0.98]"
+              isLoading={isBusy}
               isDisabled={isBusy}
               onClick={() => onReject(item)}
             />

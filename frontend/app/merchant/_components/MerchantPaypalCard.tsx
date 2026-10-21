@@ -29,11 +29,11 @@ export function MerchantPaypalCard({
     <div className="space-y-6">
       <Card
         padding="lg"
-        className="space-y-5 rounded-2xl border border-slate-200/90 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]"
+        className="space-y-5 rounded-2xl border border-slate-200/70 bg-white shadow-none"
       >
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-200/80 bg-gradient-to-br from-sky-50 to-blue-50 text-sky-800 shadow-2xs">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-200/70 bg-gradient-to-br from-sky-50 to-blue-50 text-sky-800">
               <CreditCard className="h-5 w-5 text-sky-700" />
             </div>
             <div>
@@ -44,7 +44,7 @@ export function MerchantPaypalCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold capitalize ${
                 account?.status === 'approved'
@@ -110,13 +110,18 @@ export function MerchantPaypalCard({
             </span>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-slate-200/90 bg-white p-2.5 font-mono text-xs shadow-2xs">
-            <span className="font-bold tracking-wide text-slate-900">{merchantId}</span>
+          <div className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-200/80 bg-white p-2.5 font-mono text-xs">
+            <span
+              className="min-w-0 truncate font-bold tracking-wide text-slate-900"
+              title={merchantId}
+            >
+              {merchantId}
+            </span>
             {account?.merchant_id ? (
               <button
                 type="button"
                 onClick={onCopyMerchantId}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
                 title="Copy Merchant ID"
               >
                 {copied ? (
@@ -151,15 +156,15 @@ export function MerchantPaypalCard({
             <span>How SalonDesk PayPal Authorization Holds Work</span>
           </div>
           <div className="grid grid-cols-1 gap-2.5 pt-1 text-[11px] sm:grid-cols-3">
-            <div className="rounded-lg border border-slate-200/60 bg-white p-2.5 shadow-2xs">
+            <div className="rounded-lg border border-slate-200/60 bg-white p-2.5">
               <span className="mb-0.5 block font-bold text-slate-900">1. Zero-Debit Hold</span>
               <span>Client card is authorized at booking. No money charged up front.</span>
             </div>
-            <div className="rounded-lg border border-slate-200/60 bg-white p-2.5 shadow-2xs">
+            <div className="rounded-lg border border-slate-200/60 bg-white p-2.5">
               <span className="mb-0.5 block font-bold text-slate-900">2. Appointment</span>
               <span>Hold remains secure until client arrives at salon for appointment.</span>
             </div>
-            <div className="rounded-lg border border-slate-200/60 bg-white p-2.5 shadow-2xs">
+            <div className="rounded-lg border border-slate-200/60 bg-white p-2.5">
               <span className="mb-0.5 block font-bold text-slate-900">3. Payout Capture</span>
               <span>Capture routes funds directly to your verified PayPal account.</span>
             </div>

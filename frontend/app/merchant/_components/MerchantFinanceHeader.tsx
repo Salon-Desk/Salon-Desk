@@ -90,7 +90,7 @@ export function MerchantFinanceHeader({
               </div>
             ) : (
               <>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/90 bg-white px-2.5 py-0.5 text-[11px] font-semibold text-slate-700 shadow-2xs">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   {orgName || activePolicyOrgName || 'Salon'}
                 </span>
@@ -108,12 +108,12 @@ export function MerchantFinanceHeader({
         </div>
 
         <div className="overflow-x-auto no-scrollbar py-0.5">
-          <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200/70 bg-slate-100/90 p-1 text-xs shadow-2xs shrink-0">
+          <div className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200/70 bg-slate-100/90 p-1 text-xs">
             <Link
               href="/merchant/settings"
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all ${
                 isOverview
-                  ? 'border border-slate-200/60 bg-white font-semibold text-slate-900 shadow-2xs'
+                  ? 'border border-slate-200/60 bg-white font-semibold text-slate-900'
                   : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
               }`}
             >
@@ -124,7 +124,7 @@ export function MerchantFinanceHeader({
               href="/merchant/settings/paypal"
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all ${
                 isPaypal
-                  ? 'border border-slate-200/60 bg-white font-semibold text-slate-900 shadow-2xs'
+                  ? 'border border-slate-200/60 bg-white font-semibold text-slate-900'
                   : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
               }`}
             >
@@ -135,7 +135,7 @@ export function MerchantFinanceHeader({
               href="/merchant/settings/policies"
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all ${
                 isPolicies
-                  ? 'border border-slate-200/60 bg-white font-semibold text-slate-900 shadow-2xs'
+                  ? 'border border-slate-200/60 bg-white font-semibold text-slate-900'
                   : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
               }`}
             >
@@ -146,7 +146,7 @@ export function MerchantFinanceHeader({
               href="/merchant/billing"
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all ${
                 isBilling
-                  ? 'border border-slate-200/60 bg-white font-semibold text-slate-900 shadow-2xs'
+                  ? 'border border-slate-200/60 bg-white font-semibold text-slate-900'
                   : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
               }`}
             >

@@ -1,13 +1,15 @@
 'use client'
 
 import { Calendar, Search, Sparkles } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import React from 'react'
+
+import { ROUTES } from '@/lib/constants'
 
 import type { ClientTab } from './ClientHeader'
 
 export interface ClientExperienceMobileNavProps {
   activeTab: ClientTab
-  setActiveTab: (tab: ClientTab) => void
   isChatOpen: boolean
   onToggleChat: () => void
   isInputFocused: boolean
@@ -16,12 +18,12 @@ export interface ClientExperienceMobileNavProps {
 
 export function ClientExperienceMobileNav({
   activeTab,
-  setActiveTab,
   isChatOpen,
   onToggleChat,
   isInputFocused,
   activeHoldsCount,
 }: ClientExperienceMobileNavProps) {
+  const router = useRouter()
   const isCatalogActive = activeTab === 'catalog' && !isChatOpen
   const isAiActive = isChatOpen
   const isBookingsActive = activeTab === 'my-bookings' && !isChatOpen
@@ -38,9 +40,9 @@ export function ClientExperienceMobileNav({
       <button
         type="button"
         onClick={() => {
-          setActiveTab('catalog')
+          router.push(ROUTES.client)
         }}
-        className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
+        className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
           isCatalogActive
             ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
             : 'text-stone-400 hover:text-white hover:bg-white/[0.06]'
@@ -53,7 +55,7 @@ export function ClientExperienceMobileNav({
       <button
         type="button"
         onClick={onToggleChat}
-        className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
+        className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
           isAiActive
             ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
             : 'text-stone-400 hover:text-white hover:bg-white/[0.06]'
@@ -68,9 +70,9 @@ export function ClientExperienceMobileNav({
       <button
         type="button"
         onClick={() => {
-          setActiveTab('my-bookings')
+          router.push(ROUTES.clientBookings)
         }}
-        className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
+        className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
           isBookingsActive
             ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
             : 'text-stone-400 hover:text-white hover:bg-white/[0.06]'

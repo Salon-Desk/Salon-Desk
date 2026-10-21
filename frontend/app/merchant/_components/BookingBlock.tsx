@@ -59,7 +59,7 @@ export function BookingBlock({
           : undefined
       }
       className={cn(
-        'w-full overflow-hidden rounded-lg border border-slate-200/80 border-l-[3.5px] text-left shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all hover:shadow-md',
+        'w-full overflow-hidden rounded-xl border border-slate-200/70 border-l-[3.5px] text-left transition-all duration-200 hover:-translate-y-px hover:brightness-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/30',
         holdStripClass(booking.status),
         compact ? 'px-2 py-1.5' : 'p-3',
         className,

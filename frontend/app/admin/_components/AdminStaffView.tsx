@@ -26,7 +26,7 @@ export function AdminStaffView() {
           size="sm"
           fullWidth={false}
           icon={<Plus className="h-4 w-4" />}
-          className="h-9 rounded-lg px-3.5 text-xs"
+          className="h-9 rounded-lg px-3.5 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
           onClick={() => setIsOpen(true)}
         />
       </div>

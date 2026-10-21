@@ -101,7 +101,8 @@ export function EmployeeFormModal({ open, onClose }: EmployeeFormModalProps) {
             isLoading={isLoading}
             type="submit"
             size="sm"
-            className="mt-1 h-11 w-full rounded-xl"
+            fullWidth
+            className="mt-1 h-11 w-full rounded-xl font-bold text-xs shadow-xs transition-all active:scale-[0.98]"
           />
         </div>
       </FormProvider>

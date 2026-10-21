@@ -23,7 +23,7 @@ export function AppointmentsFilterBar({
   const filterOptions: ('ALL' | HoldState)[] = ['ALL', ...HOLD_STATES]
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-xs lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/70 bg-white/95 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
       {/* Search Input */}
       <div className="relative w-full lg:max-w-md">
         <SearchInput
@@ -31,12 +31,12 @@ export function AppointmentsFilterBar({
           onChange={(q) => onSearchChange(q)}
           placeholder="Search by client, stylist, service, or ref..."
           shortcut="⌘K"
-          className="w-full text-xs sm:text-sm bg-slate-50/70 border-slate-200/80 focus:bg-white"
+          className="w-full border-slate-200/80 bg-slate-50/70 text-xs focus:bg-white sm:text-sm"
         />
       </div>
 
       {/* Filter Tabs / Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar rounded-xl bg-slate-50/80 p-1 py-1.5">
         {filterOptions.map((st) => {
           const count = filterCounts[st] ?? 0
           const isActive = filter === st
@@ -47,10 +47,10 @@ export function AppointmentsFilterBar({
               type="button"
               onClick={() => onFilterChange(st)}
               className={cn(
-                'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border',
+                'inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer',
                 isActive
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50/80',
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-transparent bg-transparent text-slate-600 hover:border-slate-200 hover:bg-white',
               )}
             >
               <span>{st === 'ALL' ? 'All' : HOLD_STATE_FILTER_LABEL[st]}</span>

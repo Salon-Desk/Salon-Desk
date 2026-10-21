@@ -14,21 +14,27 @@ export function MerchantSettingsView() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general')
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-7 animate-in fade-in duration-300">
-      <div>
-        <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
-          Salon Settings
-        </h1>
-        <p className="text-slate-500 text-xs">
-          Manage location, operating timezone, PayPal disbursement rails, cancellation guarantee
-          rules, and account security.
-        </p>
+    <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white via-white to-violet-50/60 p-5 sm:p-6">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-violet-300/20 blur-3xl" />
+        <div className="relative">
+          <span className="mb-2 inline-flex rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-violet-800">
+            Organization controls
+          </span>
+          <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
+            Salon Settings
+          </h1>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500 sm:text-sm">
+            Manage location, operating timezone, PayPal disbursement rails, cancellation guarantee
+            rules, and account security.
+          </p>
+        </div>
       </div>
 
       <SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       {activeTab === 'general' && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           <div className="lg:col-span-7">
             <MerchantOrgSettingsPanel />
           </div>
@@ -36,7 +42,7 @@ export function MerchantSettingsView() {
           <div className="space-y-4 lg:col-span-5">
             <Card
               padding="lg"
-              className="rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] space-y-3"
+              className="space-y-3 rounded-2xl border border-slate-200/70 bg-white shadow-none"
             >
               <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-700">

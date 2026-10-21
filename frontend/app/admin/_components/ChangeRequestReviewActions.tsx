@@ -76,7 +76,7 @@ export function ChangeRequestReviewActions({ request }: ChangeRequestReviewActio
             fullWidth
             isLoading={approving}
             isDisabled={isLoading}
-            className="h-10 rounded-xl"
+            className="h-10 rounded-xl font-bold text-xs shadow-xs transition-all active:scale-[0.98]"
             onClick={() => void submit('approve')}
           />
           <PrimaryButton
@@ -87,7 +87,7 @@ export function ChangeRequestReviewActions({ request }: ChangeRequestReviewActio
             fullWidth
             isLoading={rejecting}
             isDisabled={isLoading}
-            className="h-10 rounded-xl"
+            className="h-10 rounded-xl font-bold text-xs transition-all active:scale-[0.98]"
             onClick={() => void submit('reject')}
           />
         </div>

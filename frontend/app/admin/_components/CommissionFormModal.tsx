@@ -150,7 +150,8 @@ export function CommissionFormModal({
             isLoading={isLoading}
             type="submit"
             size="sm"
-            className="h-11 w-full rounded-xl"
+            fullWidth
+            className="h-11 w-full rounded-xl font-bold text-xs shadow-xs transition-all active:scale-[0.98]"
           />
         </div>
       </FormProvider>

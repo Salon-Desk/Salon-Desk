@@ -83,7 +83,8 @@ export function getTaxonomyTableColumns({
         <IconButton
           aria-label="Edit category"
           onClick={() => onEdit(category)}
-          className="rounded-lg opacity-80 transition-opacity duration-150 sm:opacity-0 sm:group-hover:opacity-100"
+          className="h-8 w-8 rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 active:scale-95"
+          title="Edit category"
         >
           <Edit2 className="h-3.5 w-3.5" />
         </IconButton>

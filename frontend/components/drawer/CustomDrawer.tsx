@@ -88,7 +88,7 @@ export const CustomDrawer: React.FC<CustomDrawerProps> = ({
       type="button"
       onClick={() => onOpenChange?.(false)}
       className={cn(
-        'absolute top-4 right-4 z-50 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer',
+        'absolute top-3 right-3 z-50 flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer sm:top-4 sm:right-4 sm:h-8 sm:w-8',
         classNameCloseBtn,
       )}
       aria-label="Close drawer"
@@ -121,7 +121,7 @@ export const CustomDrawer: React.FC<CustomDrawerProps> = ({
         {hasHeader ? (
           <DrawerHeader
             className={cn(
-              'flex-none flex flex-col gap-1.5 text-left px-6 py-5 border-b border-border/50',
+              'flex-none flex flex-col gap-1.5 border-b border-border/50 px-4 py-4 text-left sm:px-6 sm:py-5',
               shouldShowClose && 'pr-14',
               effectiveHeaderClass,
             )}
@@ -139,7 +139,7 @@ export const CustomDrawer: React.FC<CustomDrawerProps> = ({
 
         <div
           className={cn(
-            'flex-1 min-h-0 overflow-y-auto px-6 py-5 scrollbar-thin',
+            'flex-1 min-h-0 overflow-y-auto px-4 py-4 scrollbar-thin sm:px-6 sm:py-5',
             effectiveBodyClass,
           )}
         >
@@ -149,7 +149,7 @@ export const CustomDrawer: React.FC<CustomDrawerProps> = ({
         {footer && (
           <DrawerFooter
             className={cn(
-              'flex-none m-0 px-6 py-4 border-t border-border/50 bg-background/95 backdrop-blur-xs',
+              'flex-none m-0 border-t border-border/50 bg-background/95 px-4 py-4 backdrop-blur-xs sm:px-6',
               'pb-[max(1rem,env(safe-area-inset-bottom,0px))]',
               effectiveFooterClass,
             )}

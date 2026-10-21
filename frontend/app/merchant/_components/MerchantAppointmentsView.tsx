@@ -129,7 +129,7 @@ export function MerchantAppointmentsView() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-7xl space-y-5 animate-in fade-in duration-300 sm:space-y-6">
       {/* Header */}
       <AppointmentsPageHeader
         bookingsCount={bookings.length}
@@ -171,7 +171,7 @@ export function MerchantAppointmentsView() {
 
       {/* BasicDataGridTable */}
       {!isError && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.02)]">
+        <div className="min-w-0">
           <BasicDataGridTable
             data={paginatedAppointments}
             columns={bookingColumns}
@@ -186,6 +186,9 @@ export function MerchantAppointmentsView() {
             showSearch={false}
             showPagination={true}
             showItemsPerPage={true}
+            showColumnSelector
+            tableClassName="border-amber-100/80"
+            headerClassName="bg-amber-50/35"
           />
         </div>
       )}

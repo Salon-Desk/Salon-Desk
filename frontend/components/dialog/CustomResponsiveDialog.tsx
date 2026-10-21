@@ -131,7 +131,7 @@ const CustomResponsiveDialog = forwardRef<
     // Shared Header
     const headerClasses = cn(
       'flex-none flex flex-col gap-1.5 text-left',
-      'px-5 sm:px-6',
+      'px-4 sm:px-6',
       // Balanced vertical padding: on mobile, accounts for drawer drag handle; on desktop, clean top spacing
       'pt-4 pb-3 sm:pt-6 sm:pb-3.5',
       // Ensure content doesn't collide with the absolute close button
@@ -143,7 +143,7 @@ const CustomResponsiveDialog = forwardRef<
     // Shared Body
     const bodyClasses = cn(
       'flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-thin',
-      'px-5 sm:px-6',
+      'px-4 sm:px-6',
       // Balanced top spacing: tighter if header exists to avoid double-gap; full if no header
       hasHeader ? 'pt-1.5 sm:pt-2' : shouldShowClose ? 'pt-6 pr-12 sm:pr-14' : 'pt-5 sm:pt-6',
       // Balanced bottom spacing: tighter if footer divider exists; full if no footer
@@ -158,7 +158,7 @@ const CustomResponsiveDialog = forwardRef<
     const footerClasses = cn(
       'flex-none m-0 rounded-none bg-background',
       'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:items-center',
-      'px-5 sm:px-6 pt-3.5 pb-4 sm:pb-5',
+      'px-4 sm:px-6 pt-3.5 pb-4 sm:pb-5',
       hideFooterBorder ? 'border-t-0' : 'border-t border-border/50',
       classNameFooter,
     )
@@ -171,8 +171,8 @@ const CustomResponsiveDialog = forwardRef<
     )
 
     const closeBtnClasses = cn(
-      'absolute top-3.5 right-3.5 sm:top-4 sm:right-4 z-50',
-      'flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-full',
+      'absolute top-3 right-3 sm:top-4 sm:right-4 z-50',
+      'flex h-10 w-10 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-full',
       'text-muted-foreground hover:text-foreground hover:bg-muted/80',
       'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
       'cursor-pointer',

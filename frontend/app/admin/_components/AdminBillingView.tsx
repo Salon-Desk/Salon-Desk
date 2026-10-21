@@ -25,7 +25,7 @@ export function AdminBillingView() {
         </div>
         <Link
           href="/admin/commission"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700 text-xs shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:bg-slate-50"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700 text-xs shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
         >
           <Receipt className="h-3.5 w-3.5 text-amber-700" />
           Manage take-rate rules

@@ -9,15 +9,21 @@ import type { CatalogHero } from '@/types/api-org'
 
 interface ClientFooterProps {
   hero?: CatalogHero | null
+  /** Reserves room for the fixed mobile navigation when it is present above the footer. */
+  hasMobileNav?: boolean
 }
 
-export function ClientFooter({ hero }: ClientFooterProps) {
+export function ClientFooter({ hero, hasMobileNav = false }: ClientFooterProps) {
   const brand = hero?.organization_name || 'SalonDesk'
   const address = hero?.physical_address
 
   return (
     <footer className="border-t border-stone-200/80 bg-stone-50/60 text-stone-700">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <div
+        className={`mx-auto max-w-7xl px-4 pt-10 sm:px-6 sm:py-12 lg:px-8 ${
+          hasMobileNav ? 'pb-[calc(7rem+env(safe-area-inset-bottom))]' : 'pb-10'
+        }`}
+      >
         <div className="grid grid-cols-1 gap-10 border-b border-stone-200/60 pb-10 sm:grid-cols-3 lg:grid-cols-12">
           {/* Brand column */}
           <div className="space-y-3 sm:col-span-2 lg:col-span-5">

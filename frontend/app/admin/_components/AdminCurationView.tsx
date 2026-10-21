@@ -1,8 +1,10 @@
 'use client'
 
+import { Building2, Eye, RefreshCw, Scissors, Sliders, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { StatCard } from '@/components/card'
 import { AdminQueryState } from '@/components/ui/query-state-view'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
@@ -197,57 +199,152 @@ export function AdminCurationView() {
     }
   }
 
-  const totalFeaturedCount =
-    (curation?.featured_organizations.length ?? 0) + (curation?.featured_services.length ?? 0)
+  const featuredOrgsCount = curation?.featured_organizations.length ?? 0
+  const featuredServicesCount = curation?.featured_services.length ?? 0
+  const totalFeaturedCount = featuredOrgsCount + featuredServicesCount
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 animate-in fade-in duration-300">
-      {/* Top Header */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
-            Discovery &amp; Merchandising Controller
-          </h1>
-          <p className="text-slate-500 text-xs">
-            Control the client landing hero banner, featured showcases, and rating-based popular
-            rankings.
-          </p>
-        </div>
+    <div className="mx-auto w-full max-w-7xl space-y-5 pb-12 animate-in fade-in duration-300 sm:space-y-6">
+      {/* Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-amber-50/25 to-amber-100/20 p-6 shadow-xs backdrop-blur-md sm:p-8">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
+        <div className="pointer-events-none absolute -left-12 -bottom-12 h-44 w-44 rounded-full bg-amber-200/20 blur-3xl" />
 
-        {/* Section Navigation Tabs */}
-        <div className="flex items-center gap-1 rounded-xl bg-slate-200/70 p-1">
+        <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-center">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-900 shadow-2xs">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+              </span>
+              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+              <span>Discovery &amp; Merchandising · Editorial &amp; Algorithm Control</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-extrabold text-slate-900 text-2xl tracking-tight sm:text-3xl">
+                Marketplace Merchandising &amp; Curation
+              </h1>
+              <span className="rounded-full bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white shadow-2xs">
+                {totalFeaturedCount} Featured
+              </span>
+            </div>
+
+            <p className="max-w-2xl text-xs text-slate-600 sm:text-sm leading-relaxed">
+              Curate the customer landing hero showcase, spotlight premier partner salons and
+              signature treatments, and fine-tune rating weights for the algorithmic Popular
+              rankings.
+            </p>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-xs backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 font-semibold text-slate-700 text-xs shadow-2xs transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.92]"
+              title="Refresh curation configuration"
+            >
+              <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+              <span>Sync</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Stat Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <StatCard
+          label="Hero Status"
+          value={heroForm.is_active ? 'Live Banner' : 'Fallback'}
+          icon={Eye}
+          tone={heroForm.is_active ? 'emerald' : 'slate'}
+          footnote={heroForm.is_active ? 'Published on landing' : 'Standard default mode'}
+          className="hover:border-emerald-200 hover:shadow-xs transition-all"
+        />
+        <StatCard
+          label="Featured Salons"
+          value={featuredOrgsCount}
+          icon={Building2}
+          tone="amber"
+          footnote="Spotlight partners"
+          className="hover:border-amber-200 hover:shadow-xs transition-all"
+        />
+        <StatCard
+          label="Featured Services"
+          value={featuredServicesCount}
+          icon={Scissors}
+          tone="purple"
+          footnote="Signature treatments"
+          className="hover:border-purple-200 hover:shadow-xs transition-all"
+        />
+        <StatCard
+          label="Popular Min Rating"
+          value={`${(popularForm.min_rating ?? 4.0).toFixed(1)} ★`}
+          icon={Sliders}
+          tone="sky"
+          footnote="Algorithm quality floor"
+          className="hover:border-sky-200 hover:shadow-xs transition-all"
+        />
+      </div>
+
+      {/* Segmented Section Navigation Tabs */}
+      <div className="flex w-full items-center justify-start overflow-x-auto rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1.5 shadow-2xs backdrop-blur-xs">
+        <div className="flex w-full items-center gap-1 sm:w-auto">
           <button
             type="button"
             onClick={() => setActiveSection('hero')}
-            className={`cursor-pointer rounded-lg px-3 py-1.5 font-semibold text-xs transition-all ${
+            className={`flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 font-bold text-xs transition-all active:scale-[0.98] ${
               activeSection === 'hero'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/60'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
             }`}
           >
-            Landing Hero
+            <Sparkles
+              className={`h-3.5 w-3.5 ${activeSection === 'hero' ? 'text-amber-600' : 'text-slate-400'}`}
+            />
+            <span>Landing Hero Banner</span>
+            <span
+              className={`rounded-full px-1.5 py-0.2 font-mono text-[10px] ${
+                heroForm.is_active
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-slate-200 text-slate-600'
+              }`}
+            >
+              {heroForm.is_active ? 'Live' : 'Draft'}
+            </span>
           </button>
+
           <button
             type="button"
             onClick={() => setActiveSection('featured')}
-            className={`cursor-pointer rounded-lg px-3 py-1.5 font-semibold text-xs transition-all ${
+            className={`flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 font-bold text-xs transition-all active:scale-[0.98] ${
               activeSection === 'featured'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/60'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
             }`}
           >
-            Featured Items ({totalFeaturedCount})
+            <Building2
+              className={`h-3.5 w-3.5 ${activeSection === 'featured' ? 'text-amber-600' : 'text-slate-400'}`}
+            />
+            <span>Featured Showcase</span>
+            <span className="rounded-full bg-amber-100 px-1.5 py-0.2 font-mono text-[10px] text-amber-800">
+              {totalFeaturedCount}
+            </span>
           </button>
+
           <button
             type="button"
             onClick={() => setActiveSection('popular')}
-            className={`cursor-pointer rounded-lg px-3 py-1.5 font-semibold text-xs transition-all ${
+            className={`flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 font-bold text-xs transition-all active:scale-[0.98] ${
               activeSection === 'popular'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-200/60'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
             }`}
           >
-            Popular Tuning
+            <Sliders
+              className={`h-3.5 w-3.5 ${activeSection === 'popular' ? 'text-amber-600' : 'text-slate-400'}`}
+            />
+            <span>Popular Tuning</span>
           </button>
         </div>
       </div>

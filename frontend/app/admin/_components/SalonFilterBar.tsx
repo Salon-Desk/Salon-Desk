@@ -42,7 +42,7 @@ export function SalonFilterBar({
                 key={key}
                 type="button"
                 onClick={() => onFilterChange(key)}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold capitalize transition-all cursor-pointer ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold capitalize transition-all cursor-pointer active:scale-[0.98] ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'

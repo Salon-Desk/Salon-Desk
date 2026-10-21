@@ -45,6 +45,7 @@ import {
   staffPhone,
   staffPicture,
 } from '@/lib/util/staff-display'
+import { cn } from '@/lib/utils'
 import { useDeleteMyEmployeeMutation, useGetMyEmployeesQuery } from '@/store/api/orgApi'
 import type { User } from '@/types/user'
 
@@ -148,29 +149,43 @@ export function MerchantStaffView() {
   )
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 pb-12 animate-in fade-in duration-300">
+    <div className="mx-auto w-full max-w-7xl space-y-5 pb-12 animate-in fade-in duration-300 sm:space-y-6">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-6 shadow-xs backdrop-blur-sm sm:p-7">
-        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-100/70 px-3 py-0.5 text-xs font-semibold text-amber-800">
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-amber-50/25 to-amber-100/20 p-6 shadow-xs backdrop-blur-md sm:p-8">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
+        <div className="pointer-events-none absolute -left-12 -bottom-12 h-44 w-44 rounded-full bg-amber-200/20 blur-3xl" />
+
+        <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-center">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-900 shadow-2xs">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+              </span>
               <Sparkles className="h-3.5 w-3.5 text-amber-600" />
               <span>Salon Team Management</span>
             </div>
-            <h1 className="font-extrabold text-slate-900 text-2xl tracking-tight sm:text-3xl">
-              Stylists &amp; Staff Directory
-            </h1>
-            <p className="max-w-2xl text-xs sm:text-sm text-slate-600">
+
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-extrabold text-slate-900 text-2xl tracking-tight sm:text-3xl">
+                Stylists &amp; Staff Directory
+              </h1>
+              <span className="rounded-full bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white shadow-2xs">
+                {stats.total} {stats.total === 1 ? 'Member' : 'Members'}
+              </span>
+            </div>
+
+            <p className="max-w-2xl text-xs text-slate-600 sm:text-sm leading-relaxed">
               Manage your verified roster, assign schedule permissions, track contact details, and
               organize your front desk and stylist team.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex shrink-0 items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-xs backdrop-blur-sm">
             <IconButton
               aria-label="Refresh roster"
               onClick={() => void refetch()}
-              className="h-10 w-10 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-xs hover:bg-slate-50 hover:text-slate-900"
+              className="h-10 w-10 cursor-pointer rounded-xl border border-slate-200 bg-white text-slate-600 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-[0.92]"
               title="Refresh staff"
             >
               <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin text-amber-600' : ''}`} />
@@ -182,7 +197,7 @@ export function MerchantStaffView() {
                 size="sm"
                 fullWidth={false}
                 icon={<Plus className="h-4 w-4" />}
-                className="h-10 rounded-xl px-5 text-xs font-semibold shadow-sm transition-transform active:scale-[0.98]"
+                className="h-10 rounded-xl px-5 text-xs font-bold shadow-xs transition-all hover:shadow-md active:scale-[0.98]"
                 onClick={() => setIsAddOpen(true)}
               />
             </div>
@@ -190,7 +205,7 @@ export function MerchantStaffView() {
         </div>
       </div>
 
-      {/* Metric Stat Cards */}
+      {/* Interactive Metric Stat Cards with Quick Filtering */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         <StatCard
           label="Total Staff"
@@ -198,6 +213,13 @@ export function MerchantStaffView() {
           icon={Users}
           tone="amber"
           footnote="Registered team profiles"
+          onClick={() => setParams({ role: 'all', page: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200',
+            roleFilter === 'all'
+              ? 'border-amber-400 bg-amber-50/20 shadow-xs ring-2 ring-amber-500/40'
+              : 'hover:border-amber-200 hover:shadow-xs',
+          )}
         />
         <StatCard
           label="Active Stylists"
@@ -205,6 +227,13 @@ export function MerchantStaffView() {
           icon={UserCheck}
           tone="emerald"
           footnote="Available for bookings"
+          onClick={() => setParams({ role: 'stylist', page: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200',
+            roleFilter === 'stylist'
+              ? 'border-emerald-400 bg-emerald-50/20 shadow-xs ring-2 ring-emerald-500/40'
+              : 'hover:border-emerald-200 hover:shadow-xs',
+          )}
         />
         <StatCard
           label="Receptionists"
@@ -212,6 +241,13 @@ export function MerchantStaffView() {
           icon={Calendar}
           tone="sky"
           footnote="Front desk & check-in"
+          onClick={() => setParams({ role: 'reception', page: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200',
+            roleFilter === 'reception'
+              ? 'border-sky-400 bg-sky-50/20 shadow-xs ring-2 ring-sky-500/40'
+              : 'hover:border-sky-200 hover:shadow-xs',
+          )}
         />
         <StatCard
           label="Operational"
@@ -219,14 +255,14 @@ export function MerchantStaffView() {
           icon={CheckCircle2}
           tone="purple"
           footnote="Active status accounts"
+          className="border-purple-100/80 hover:border-purple-200/90 hover:shadow-xs transition-all"
         />
       </div>
 
-      {/* Filter and View Toolbar */}
-      <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-xs sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-          {/* Search bar */}
-          <div className="relative min-w-[240px] max-w-sm flex-1">
+      {/* Filter and View Command Bar */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 flex-col gap-2.5 sm:flex-row sm:items-center">
+          <div className="relative min-w-[220px] max-w-sm flex-1">
             <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -235,12 +271,12 @@ export function MerchantStaffView() {
               onChange={(e) => {
                 setParams({ search: e.target.value, page: 1 })
               }}
-              className="h-9.5 w-full rounded-lg border border-slate-200/80 bg-slate-50/50 pr-4 pl-9 text-xs text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 transition-all"
+              className="h-9.5 w-full rounded-xl border border-slate-200/90 bg-slate-50/70 pr-4 pl-9 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-amber-500 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20"
             />
           </div>
 
-          {/* Role pills */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+          {/* Role filter pills */}
+          <div className="flex items-center gap-1 overflow-x-auto rounded-xl bg-slate-100/80 p-1">
             <SegmentedControl
               options={roleFilterOptions}
               value={roleFilter}
@@ -248,16 +284,15 @@ export function MerchantStaffView() {
                 setParams({ role: val, page: 1 })
               }}
               variant="pills"
-              className="h-9.5"
+              className="h-8.5"
             />
           </div>
         </div>
 
-        {/* View Switcher */}
-        <div className="flex items-center justify-between sm:justify-end gap-2 border-t border-slate-100 pt-2 sm:border-t-0 sm:pt-0">
-          <span className="text-[11px] font-medium text-slate-500">
-            Showing <strong className="text-slate-800">{employees.length}</strong> of{' '}
-            {employees.length}
+        {/* View Switcher & Roster Count */}
+        <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-2.5 sm:justify-end sm:border-t-0 sm:pt-0">
+          <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200/70 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-500">
+            Total: <strong className="font-bold text-slate-900">{totalItems}</strong>
           </span>
           <SegmentedControl
             options={viewModeOptions}
@@ -269,9 +304,42 @@ export function MerchantStaffView() {
         </div>
       </div>
 
+      {/* Active Filter Strip if query or role filter is applied */}
+      {(settledSearch || roleFilter !== 'all') && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200/60 bg-amber-50/50 px-4 py-2.5 text-xs text-amber-900 animate-in fade-in duration-200">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-amber-950">Active filters:</span>
+            {roleFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-amber-200/80 bg-white px-2 py-0.5 font-medium shadow-2xs">
+                Role:{' '}
+                <strong className="capitalize">
+                  {roleFilter === 'org_owner' ? 'Owner' : roleFilter}
+                </strong>
+              </span>
+            )}
+            {settledSearch.trim() && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-amber-200/80 bg-white px-2 py-0.5 font-medium shadow-2xs">
+                Search: &ldquo;<strong>{settledSearch}</strong>&rdquo;
+              </span>
+            )}
+            <span className="text-amber-700">· {totalItems} matching</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setParams(merchantStaffListDefaults)
+            }}
+            className="inline-flex cursor-pointer items-center gap-1 font-semibold text-amber-800 transition-all hover:text-amber-950 hover:underline active:scale-[0.98]"
+          >
+            <span>Reset filters</span>
+          </button>
+        </div>
+      )}
+
       {/* Loading & Error States */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200/80 bg-white py-20 text-slate-500 text-sm shadow-xs">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200/70 bg-white py-20 text-slate-500 text-sm shadow-xs">
           <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
           <p className="font-medium text-slate-700">Loading roster directory…</p>
           <p className="text-xs text-slate-400">Fetching team members and service schedules</p>
@@ -279,7 +347,7 @@ export function MerchantStaffView() {
       ) : null}
 
       {isError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-8 text-center text-rose-800 shadow-xs">
+        <div className="rounded-2xl border border-rose-200/80 bg-rose-50/80 p-8 text-center text-rose-800 shadow-xs">
           <h3 className="font-bold text-base">Could not load employees</h3>
           <p className="mt-1 text-xs text-rose-600">
             Sign in as an organization owner or check your server connection and try again.
@@ -289,14 +357,18 @@ export function MerchantStaffView() {
             variant="outline"
             size="sm"
             fullWidth={false}
-            className="mt-4 h-9 rounded-lg px-5 bg-white text-rose-700 border-rose-200 hover:bg-rose-100"
+            className="mt-4 h-9 rounded-lg border-rose-200 bg-white px-5 text-rose-700 hover:bg-rose-100 transition-all active:scale-[0.98]"
             onClick={() => void refetch()}
           />
         </div>
       ) : null}
 
       {/* Empty State */}
-      {!isLoading && !isError && employees.length === 0 ? (
+      {!isLoading &&
+      !isError &&
+      employees.length === 0 &&
+      !settledSearch &&
+      roleFilter === 'all' ? (
         <EmptyState
           icon={Users}
           title="No staff members registered yet"
@@ -307,7 +379,7 @@ export function MerchantStaffView() {
               size="sm"
               fullWidth={false}
               icon={<Plus className="h-4 w-4" />}
-              className="h-9.5 rounded-lg px-5 text-xs font-semibold"
+              className="h-9.5 rounded-lg px-5 text-xs font-bold shadow-xs transition-all active:scale-[0.98]"
               onClick={() => setIsAddOpen(true)}
             />
           }
@@ -317,9 +389,9 @@ export function MerchantStaffView() {
       {/* Empty Search Results */}
       {!isLoading && !isError && totalItems === 0 && (settledSearch || roleFilter !== 'all') ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center shadow-xs">
-          <Filter className="h-8 w-8 text-slate-300 mb-2" />
+          <Filter className="mb-2 h-8 w-8 text-slate-300" />
           <h3 className="font-semibold text-sm text-slate-800">No matching team members</h3>
-          <p className="mt-1 text-xs text-slate-500 max-w-sm">
+          <p className="mt-1 max-w-sm text-xs text-slate-500">
             No employees match your filter
             {settledSearch ? ` “${settledSearch}”` : ''}. Try clearing filters or searching another
             keyword.
@@ -329,7 +401,7 @@ export function MerchantStaffView() {
             onClick={() => {
               setParams(merchantStaffListDefaults)
             }}
-            className="mt-3.5 text-xs font-semibold text-amber-700 hover:text-amber-800 underline underline-offset-2"
+            className="mt-3.5 cursor-pointer text-xs font-bold text-amber-700 underline underline-offset-2 transition-all hover:text-amber-800 active:scale-[0.98]"
           >
             Clear all filters
           </button>
@@ -365,10 +437,22 @@ export function MerchantStaffView() {
               return (
                 <Card
                   key={member.id}
-                  className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all duration-200 hover:-translate-y-1 hover:border-amber-300 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.12),0_4px_12px_-2px_rgba(0,0,0,0.03)]"
                 >
+                  {/* Decorative top accent line with role-based gradient */}
+                  <div
+                    className={cn(
+                      'pointer-events-none absolute inset-x-0 top-0 h-1 transition-opacity duration-200 opacity-60 group-hover:opacity-100',
+                      member.role === 'org_owner'
+                        ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600'
+                        : member.role === 'reception'
+                          ? 'bg-gradient-to-r from-sky-400 via-sky-500 to-sky-600'
+                          : 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600',
+                    )}
+                  />
+
                   <div className="space-y-4">
-                    {/* Top bar: Avatar + Status */}
+                    {/* Top bar: Avatar + Status + Badges */}
                     <div className="flex items-start justify-between">
                       <div className="relative">
                         {picture ? (
@@ -376,32 +460,38 @@ export function MerchantStaffView() {
                           <img
                             src={picture}
                             alt={name}
-                            className="h-14 w-14 rounded-2xl border-2 border-white object-cover shadow-sm ring-1 ring-slate-200/80"
+                            className="h-14 w-14 rounded-2xl border-2 border-white object-cover shadow-sm ring-1 ring-slate-200/80 transition-transform duration-200 group-hover:scale-105"
                           />
                         ) : (
                           <div
-                            className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-base font-bold text-white shadow-sm ring-1 ring-slate-200/50`}
+                            className={cn(
+                              'flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-base font-bold text-white shadow-sm ring-1 ring-white/40 transition-transform duration-200 group-hover:scale-105',
+                              gradient,
+                            )}
                           >
                             {initials || <UserRound className="h-6 w-6" />}
                           </div>
                         )}
                         <span
-                          className={`absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white ${
-                            isActive ? 'bg-emerald-500' : 'bg-slate-400'
-                          }`}
-                          title={isActive ? 'Active' : 'Inactive'}
+                          className={cn(
+                            'absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs',
+                            isActive ? 'bg-emerald-500' : 'bg-slate-400',
+                          )}
+                          title={isActive ? 'Active Member' : 'Inactive Member'}
                         />
                       </div>
 
-                      <div className="flex items-center gap-1.5">
-                        <Badge tone={roleTone} size="sm" variant="soft">
+                      <div className="flex flex-wrap items-center justify-end gap-1.5 pl-3">
+                        <Badge tone={roleTone} size="sm" variant="soft" className="font-semibold">
                           {roleLabel}
                         </Badge>
                         <Badge
                           tone={isActive ? 'emerald' : 'slate'}
                           size="sm"
-                          variant={isActive ? 'soft' : 'soft'}
+                          variant="soft"
                           dot
+                          pulsing={isActive}
+                          className="font-medium"
                         >
                           {member.status || 'Active'}
                         </Badge>
@@ -410,25 +500,33 @@ export function MerchantStaffView() {
 
                     {/* Name and Contact details */}
                     <div>
-                      <h3 className="font-bold text-base text-slate-900 tracking-tight group-hover:text-amber-800 transition-colors">
+                      <h3 className="font-bold text-base text-slate-900 tracking-tight transition-colors group-hover:text-amber-800">
                         {name}
                       </h3>
 
-                      <div className="mt-2.5 space-y-1.5 text-xs text-slate-500">
-                        <div className="flex items-center gap-2 truncate">
-                          <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      <div className="mt-3 space-y-2 text-xs text-slate-500">
+                        <a
+                          href={`mailto:${member.email}`}
+                          className="flex items-center gap-2 truncate text-slate-600 transition-colors hover:text-amber-700 hover:underline"
+                          title="Send email"
+                        >
+                          <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-colors group-hover:text-amber-600" />
                           <span className="truncate font-mono text-[11.5px]">{member.email}</span>
-                        </div>
+                        </a>
 
                         {phone ? (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                            <span className="font-mono text-[11.5px] text-slate-600">{phone}</span>
-                          </div>
+                          <a
+                            href={`tel:${phone}`}
+                            className="flex items-center gap-2 font-mono text-[11.5px] text-slate-600 transition-colors hover:text-amber-700 hover:underline"
+                            title="Call phone number"
+                          >
+                            <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-colors group-hover:text-amber-600" />
+                            <span>{phone}</span>
+                          </a>
                         ) : (
                           <div className="flex items-center gap-2 text-slate-400">
-                            <Phone className="h-3.5 w-3.5 shrink-0" />
-                            <span className="text-[11px] italic">No phone provided</span>
+                            <Phone className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                            <span className="italic text-[11px]">No phone provided</span>
                           </div>
                         )}
                       </div>
@@ -442,7 +540,7 @@ export function MerchantStaffView() {
                       <button
                         type="button"
                         onClick={() => handleCopyId(member.id)}
-                        className="p-1 hover:text-slate-700 transition-colors rounded-md hover:bg-slate-100"
+                        className="cursor-pointer rounded-md p-1 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95"
                         title="Copy staff ID"
                       >
                         {copiedId === member.id ? (
@@ -453,11 +551,11 @@ export function MerchantStaffView() {
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <IconButton
                         aria-label="Edit team member"
                         onClick={() => setEditingEmployee(member)}
-                        className="h-8 w-8 rounded-lg text-slate-500 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200"
+                        className="h-8 w-8 rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 active:scale-95"
                         title="Edit details"
                       >
                         <Edit2 className="h-3.5 w-3.5" />
@@ -467,7 +565,7 @@ export function MerchantStaffView() {
                         <IconButton
                           aria-label="Remove team member"
                           onClick={() => setDeleting(member)}
-                          className="h-8 w-8 rounded-lg text-rose-600 hover:bg-rose-50 hover:border-rose-200"
+                          className="h-8 w-8 rounded-lg border border-slate-200/80 bg-white text-rose-600 shadow-2xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95"
                           title="Remove member"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -509,6 +607,20 @@ export function MerchantStaffView() {
           showPagination={true}
           showSearch={false}
           showItemsPerPage={true}
+          showColumnSelector
+          tableClassName="border-slate-200/80"
+          headerClassName="bg-slate-50/70"
+          customButtons={[
+            <PrimaryButton
+              key="add-staff"
+              title="Add team member"
+              size="sm"
+              fullWidth={false}
+              icon={<Plus className="h-3.5 w-3.5" />}
+              className="h-9 rounded-xl px-4 text-xs font-bold shadow-xs transition-all active:scale-[0.98]"
+              onClick={() => setIsAddOpen(true)}
+            />,
+          ]}
         />
       ) : null}
 

@@ -10,7 +10,7 @@ export default function MerchantBillingSettingsRedirect() {
     router.replace('/merchant/billing')
   }, [router])
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-12 text-sm text-slate-500">
+    <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-500">
       Redirecting to Billing…
     </div>
   )

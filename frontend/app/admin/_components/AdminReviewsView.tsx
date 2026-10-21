@@ -112,20 +112,23 @@ export function AdminReviewsView() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
-          {(Object.keys(FILTER_LABELS) as AdminReviewsListParams['status'][]).map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setParams({ status: key, page: 1 })}
-              className={
-                displayParams.status === key
-                  ? 'rounded-full bg-slate-900 px-3 py-1.5 font-semibold text-white text-xs'
-                  : 'rounded-full border border-slate-200 px-3 py-1.5 font-medium text-slate-600 text-xs'
-              }
-            >
-              {FILTER_LABELS[key]}
-            </button>
-          ))}
+          {(Object.keys(FILTER_LABELS) as AdminReviewsListParams['status'][]).map((key) => {
+            const isActive = displayParams.status === key
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setParams({ status: key, page: 1 })}
+                className={`cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all active:scale-[0.98] ${
+                  isActive
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'border border-slate-200/80 bg-white text-slate-600 shadow-2xs hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                {FILTER_LABELS[key]}
+              </button>
+            )
+          })}
         </div>
         <SearchInput
           value={displayParams.search}

@@ -1,6 +1,6 @@
 'use client'
 
-import { Sliders, Star } from 'lucide-react'
+import { Sliders, Sparkles, Star } from 'lucide-react'
 
 import { Card } from '@/components/ui'
 import PrimaryButton from '@/components/ui/primary-button'
@@ -25,22 +25,30 @@ export function PopularTuningSection({
 
   return (
     <div className="space-y-6">
-      <Card className="space-y-6 border border-slate-200 bg-white p-6 shadow-xs">
-        <div>
-          <h3 className="font-bold text-sm text-slate-900">
-            Popular Ranking Algorithm Weights &amp; Scoring
-          </h3>
-          <p className="text-xs text-slate-500">
-            The Popular catalog section ranks services dynamically based on authentic customer
-            ratings and review volume rather than arbitrary price gates.
-          </p>
+      <Card className="space-y-6 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
+        <div className="flex flex-col justify-between gap-2 border-b border-slate-100 pb-5 sm:flex-row sm:items-center">
+          <div>
+            <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-amber-300/60 bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-900">
+              <Sparkles className="h-3 w-3 text-amber-600" />
+              <span>Algorithmic Quality Engine</span>
+            </div>
+            <h3 className="font-bold text-base text-slate-900">
+              Popular Ranking Algorithm Weights &amp; Scoring
+            </h3>
+            <p className="text-xs text-slate-500">
+              The Popular catalog section ranks services dynamically based on authentic customer
+              ratings and review volume rather than arbitrary price gates.
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="space-y-3.5 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-slate-50/80 to-white p-5 shadow-2xs">
             <div className="flex items-center justify-between">
               <label className="font-bold text-xs text-slate-900">Service Rating Weight</label>
-              <span className="font-bold font-mono text-amber-600 text-xs">{servicePct}%</span>
+              <span className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-0.5 font-bold font-mono text-amber-800 text-xs">
+                {servicePct}%
+              </span>
             </div>
             <input
               type="range"
@@ -56,15 +64,17 @@ export function PopularTuningSection({
               }
               className="w-full cursor-pointer accent-amber-600"
             />
-            <p className="text-[11px] text-slate-500">
-              Weight assigned to specific client reviews for the treatment.
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Weight assigned to specific client reviews for the individual treatment.
             </p>
           </div>
 
-          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+          <div className="space-y-3.5 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-slate-50/80 to-white p-5 shadow-2xs">
             <div className="flex items-center justify-between">
               <label className="font-bold text-xs text-slate-900">Salon Rating Weight</label>
-              <span className="font-bold font-mono text-amber-600 text-xs">{orgPct}%</span>
+              <span className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-0.5 font-bold font-mono text-amber-800 text-xs">
+                {orgPct}%
+              </span>
             </div>
             <input
               type="range"
@@ -80,15 +90,17 @@ export function PopularTuningSection({
               }
               className="w-full cursor-pointer accent-amber-600"
             />
-            <p className="text-[11px] text-slate-500">
-              Weight assigned to overall salon organization reputation.
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Weight assigned to overall salon organization reputation and consistency.
             </p>
           </div>
 
-          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+          <div className="space-y-3.5 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-slate-50/80 to-white p-5 shadow-2xs">
             <div className="flex items-center justify-between">
               <label className="font-bold text-xs text-slate-900">Min Rating Threshold</label>
-              <span className="font-bold font-mono text-amber-600 text-xs">{minRating} ★</span>
+              <span className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-0.5 font-bold font-mono text-amber-800 text-xs">
+                {minRating} ★
+              </span>
             </div>
             <input
               type="range"
@@ -104,21 +116,21 @@ export function PopularTuningSection({
               }
               className="w-full cursor-pointer accent-amber-600"
             />
-            <p className="text-[11px] text-slate-500">
-              Threshold required for prime placement in popular badges.
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Threshold required for prime placement in consumer popular badges.
             </p>
           </div>
         </div>
 
-        <div className="space-y-2 rounded-xl border border-slate-200/80 bg-slate-50 p-4 text-slate-600 text-xs">
-          <div className="flex items-center gap-1.5 font-bold text-slate-800">
+        <div className="space-y-2 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50/50 via-white to-amber-50/30 p-5 text-slate-700 text-xs shadow-2xs">
+          <div className="flex items-center gap-1.5 font-bold text-amber-950">
             <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-            How Popular Ranking Works in the API
+            <span>How Popular Ranking Works in the API</span>
           </div>
-          <p className="leading-relaxed">
+          <p className="leading-relaxed text-slate-600">
             When clients browse the Popular section, the backend queries approved post-visit reviews
             from verified visits. Scores are calculated as{' '}
-            <code className="rounded-sm bg-slate-200/80 px-1.5 py-0.5 font-mono text-[11px]">
+            <code className="rounded-md border border-slate-200 bg-white px-2 py-0.5 font-mono font-bold text-[11px] text-amber-900 shadow-2xs">
               (Service Rating × {servicePct}%) + (Salon Rating × {orgPct}%)
             </code>{' '}
             with log volume smoothing so that both top-rated boutique stylists and high-volume
@@ -134,7 +146,7 @@ export function PopularTuningSection({
             isLoading={isSaving}
             icon={<Sliders className="h-4 w-4" />}
             onClick={() => void onSave()}
-            className="h-9 rounded-lg px-4 font-bold text-xs shadow-xs"
+            className="h-10 rounded-xl px-5 font-bold text-xs shadow-xs transition-all hover:shadow-md active:scale-[0.98]"
           />
         </div>
       </Card>

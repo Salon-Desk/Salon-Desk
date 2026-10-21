@@ -463,7 +463,7 @@ export function ClientExperience({
         onToggleConcierge={() => dispatch(setChatOpen(!isChatOpen))}
       />
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-16">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 md:pb-16 lg:px-8">
         {activeTab === 'catalog' ? (
           <div>
             {isExplorePage ? (
@@ -795,11 +795,10 @@ export function ClientExperience({
         )}
       </main>
 
-      <ClientFooter hero={hero} />
+      <ClientFooter hero={hero} hasMobileNav />
 
       <ClientExperienceMobileNav
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
         isChatOpen={isChatOpen}
         onToggleChat={() => dispatch(setChatOpen(!isChatOpen))}
         isInputFocused={isInputFocused}

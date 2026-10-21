@@ -33,7 +33,7 @@ export function ChangeRequestHistory({
   return (
     <Card
       padding="lg"
-      className="space-y-4 rounded-2xl border border-slate-200/90 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]"
+      className="space-y-4 rounded-2xl border border-slate-200/70 bg-white shadow-none"
     >
       <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -49,15 +49,15 @@ export function ChangeRequestHistory({
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 self-start rounded-xl bg-slate-100 p-1 text-xs sm:self-auto">
+        <div className="flex w-full items-center gap-1.5 overflow-x-auto rounded-xl bg-slate-100 p-1 text-xs sm:w-auto sm:self-auto">
           {FILTER_OPTIONS.map((filter) => (
             <button
               key={filter}
               type="button"
               onClick={() => onFilterChange(filter)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold capitalize transition-colors ${
+              className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold capitalize transition-colors ${
                 requestFilter === filter
-                  ? 'bg-white text-slate-900 shadow-2xs'
+                  ? 'bg-white text-slate-900'
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >

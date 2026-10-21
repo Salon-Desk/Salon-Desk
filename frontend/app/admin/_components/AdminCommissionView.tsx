@@ -1,8 +1,9 @@
 'use client'
 
-import { Percent, Plus, RefreshCw } from 'lucide-react'
+import { CreditCard, Percent, Plus, Receipt, RefreshCw, Sparkles } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
 
+import { StatCard } from '@/components/card'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
 import { Card, EmptyState, SearchInput } from '@/components/ui'
 import PrimaryButton from '@/components/ui/primary-button'
@@ -51,6 +52,7 @@ export function AdminCommissionView() {
 
   const currentPage = displayParams.page
   const pageSize = displayParams.limit
+  const settledSearch = typeof params.q === 'string' ? params.q : ''
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>()
@@ -60,6 +62,16 @@ export function AdminCommissionView() {
 
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
   const ledgerSum = Number(dashboard?.ledger_amount_sum || 0)
+  const entryCount = dashboard?.ledger_entry_count || 0
+
+  const pctRules = useMemo(
+    () => commissions.filter((c) => c.type === 'percentage').length,
+    [commissions],
+  )
+  const flatHybridRules = useMemo(
+    () => commissions.filter((c) => c.type === 'flat' || c.type === 'hybrid').length,
+    [commissions],
+  )
 
   const columns = useMemo(
     () =>
@@ -74,47 +86,98 @@ export function AdminCommissionView() {
   )
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
-      {/* Header bar */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
-            Take-Rate Rules
-          </h1>
-          <p className="text-slate-500 text-xs">
-            Configure platform commission rates by service category. SaaS invoices live under
-            Billing.
-          </p>
-        </div>
+    <div className="mx-auto w-full max-w-7xl space-y-5 pb-12 animate-in fade-in duration-300 sm:space-y-6">
+      {/* Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-amber-50/25 to-amber-100/20 p-6 shadow-xs backdrop-blur-md sm:p-8">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
+        <div className="pointer-events-none absolute -left-12 -bottom-12 h-44 w-44 rounded-full bg-amber-200/20 blur-3xl" />
 
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-3 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-            <span className="font-mono text-[10px] text-slate-400 uppercase">Ledger volume:</span>
-            <span className="font-bold text-emerald-800 text-xs">{formatUsd(ledgerSum)}</span>
+        <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-center">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-900 shadow-2xs">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+              </span>
+              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+              <span>Platform Take-Rate · PayPal Settlement Split</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-extrabold text-slate-900 text-2xl tracking-tight sm:text-3xl">
+                Take-Rate Rules &amp; Commission Matrix
+              </h1>
+              <span className="rounded-full bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white shadow-2xs">
+                {totalItems} {totalItems === 1 ? 'Rule' : 'Rules'}
+              </span>
+            </div>
+
+            <p className="max-w-2xl text-xs text-slate-600 sm:text-sm leading-relaxed">
+              Configure platform commission percentages and flat fees by service category. Automated
+              revenue splits trigger when bookings settle via PayPal Orders v2.
+            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 py-2 font-semibold text-slate-700 text-xs shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all hover:bg-slate-50 hover:text-slate-900"
-            title="Refresh rules"
-          >
-            <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
-            <span>Sync</span>
-          </button>
+          <div className="flex shrink-0 items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-xs backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 font-semibold text-slate-700 text-xs shadow-2xs transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.92]"
+              title="Refresh rules from ledger"
+            >
+              <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+              <span>Sync</span>
+            </button>
 
-          <PrimaryButton
-            title="Add Commission Rule"
-            size="sm"
-            fullWidth={false}
-            icon={<Plus className="h-3.5 w-3.5" />}
-            className="h-9 rounded-lg px-3.5 font-semibold text-xs shadow-xs"
-            onClick={() => {
-              setEditing(null)
-              setIsOpen(true)
-            }}
-          />
+            <PrimaryButton
+              title="Add Commission Rule"
+              size="sm"
+              fullWidth={false}
+              icon={<Plus className="h-3.5 w-3.5" />}
+              className="h-10 rounded-xl px-4.5 text-xs font-bold shadow-xs transition-all hover:shadow-md active:scale-[0.98]"
+              onClick={() => {
+                setEditing(null)
+                setIsOpen(true)
+              }}
+            />
+          </div>
         </div>
+      </div>
+
+      {/* KPI Stat Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <StatCard
+          label="Total Rules"
+          value={totalItems}
+          icon={Percent}
+          tone="amber"
+          footnote="Active category rules"
+          className="hover:border-amber-200 hover:shadow-xs transition-all"
+        />
+        <StatCard
+          label="Revenue Share"
+          value={pctRules}
+          icon={CreditCard}
+          tone="emerald"
+          footnote="Percentage take-rates"
+          className="hover:border-emerald-200 hover:shadow-xs transition-all"
+        />
+        <StatCard
+          label="Fixed / Hybrid"
+          value={flatHybridRules}
+          icon={Sparkles}
+          tone="sky"
+          footnote="Flat fee & tiered models"
+          className="hover:border-sky-200 hover:shadow-xs transition-all"
+        />
+        <StatCard
+          label="Settled Volume"
+          value={formatUsd(ledgerSum)}
+          icon={Receipt}
+          tone="purple"
+          footnote={`${entryCount} ledger entries recorded`}
+          className="hover:border-purple-200 hover:shadow-xs transition-all"
+        />
       </div>
 
       <AdminQueryState
@@ -135,7 +198,7 @@ export function AdminCommissionView() {
                 size="sm"
                 fullWidth={false}
                 icon={<Plus className="h-3.5 w-3.5" />}
-                className="h-8.5 rounded-lg px-4 text-xs"
+                className="h-9 rounded-xl px-5 text-xs font-bold shadow-xs transition-all active:scale-[0.98]"
                 onClick={() => {
                   setEditing(null)
                   setIsOpen(true)
@@ -148,7 +211,7 @@ export function AdminCommissionView() {
         {commissions.length > 0 ? (
           <Card
             padding="none"
-            className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+            className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
           >
             <div className="flex flex-col justify-between gap-3 border-slate-100 border-b p-4 sm:flex-row sm:items-center">
               <div>
@@ -164,13 +227,28 @@ export function AdminCommissionView() {
                   value={displayParams.search}
                   onChange={(val) => setParams({ search: val, page: 1 })}
                   placeholder="Search rules…"
-                  className="w-48 text-xs"
+                  className="w-48 text-xs sm:w-60"
                 />
-                <span className="shrink-0 rounded-md border border-slate-200/70 bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-500">
+                <span className="shrink-0 rounded-lg border border-slate-200/70 bg-slate-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-slate-600">
                   {totalItems} rules
                 </span>
               </div>
             </div>
+
+            {settledSearch.trim() && (
+              <div className="flex items-center justify-between border-b border-amber-200/60 bg-amber-50/50 px-4 py-2 text-xs text-amber-900">
+                <span>
+                  Filtering by: &ldquo;<strong>{settledSearch}</strong>&rdquo;
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setParams({ search: '', page: 1 })}
+                  className="cursor-pointer font-bold text-amber-800 hover:text-amber-950 hover:underline active:scale-[0.98]"
+                >
+                  Clear search
+                </button>
+              </div>
+            )}
 
             <BasicDataGridTable
               data={commissions}
@@ -184,6 +262,8 @@ export function AdminCommissionView() {
               showPagination={totalItems > 0}
               showSearch={false}
               showItemsPerPage={true}
+              tableClassName="border-slate-200/80"
+              headerClassName="bg-slate-50/70"
             />
           </Card>
         ) : null}

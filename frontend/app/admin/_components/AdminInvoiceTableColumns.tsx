@@ -95,7 +95,7 @@ export function getAdminInvoiceTableColumns({
               type="button"
               disabled={issuing}
               onClick={() => onIssue(inv)}
-              className="font-semibold text-sky-700 text-xs hover:text-sky-900 disabled:opacity-50"
+              className="cursor-pointer rounded-md px-2 py-1 font-semibold text-sky-700 text-xs transition-all hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98] disabled:opacity-50"
             >
               Issue
             </button>
@@ -105,7 +105,7 @@ export function getAdminInvoiceTableColumns({
               type="button"
               disabled={voiding}
               onClick={() => onVoid(inv)}
-              className="font-semibold text-rose-700 text-xs hover:text-rose-900 disabled:opacity-50"
+              className="cursor-pointer rounded-md px-2 py-1 font-semibold text-rose-700 text-xs transition-all hover:bg-rose-50 hover:text-rose-900 active:scale-[0.98] disabled:opacity-50"
             >
               Void
             </button>

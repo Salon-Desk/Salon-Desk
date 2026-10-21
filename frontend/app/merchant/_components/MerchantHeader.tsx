@@ -27,12 +27,12 @@ export function MerchantHeader({
   const currentTab = explicitTab || getMerchantTabFromPathname(pathname)
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/85 px-3 sm:px-6 backdrop-blur-md">
+    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/85 px-4 sm:px-6 backdrop-blur-md">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button
           type="button"
           onClick={onOpenMobileSidebar}
-          className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 lg:hidden cursor-pointer shrink-0"
+          className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 lg:hidden"
           aria-label="Open navigation menu"
         >
           <Menu className="h-4 w-4" />

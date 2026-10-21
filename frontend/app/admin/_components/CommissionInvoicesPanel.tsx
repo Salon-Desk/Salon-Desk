@@ -135,7 +135,7 @@ export function CommissionInvoicesPanel({ skip = false }: CommissionInvoicesPane
           size="sm"
           fullWidth={false}
           icon={<Plus className="h-3.5 w-3.5" />}
-          className="h-9 rounded-lg px-3.5 font-semibold text-xs"
+          className="h-9 rounded-lg px-3.5 font-semibold text-xs shadow-xs transition-all active:scale-[0.98]"
           onClick={() => setGenerateOpen(true)}
         />
       </div>
@@ -239,15 +239,16 @@ export function CommissionInvoicesPanel({ skip = false }: CommissionInvoicesPane
               variant="outline"
               size="sm"
               fullWidth={false}
-              className="h-9 rounded-lg px-3 text-xs"
+              className="h-9 rounded-lg px-3 text-xs transition-all active:scale-[0.98]"
               onClick={() => setGenerateOpen(false)}
             />
             <PrimaryButton
               title={creating ? 'Generating…' : 'Generate draft'}
               size="sm"
               fullWidth={false}
+              isLoading={creating}
               isDisabled={creating}
-              className="h-9 rounded-lg px-3.5 text-xs"
+              className="h-9 rounded-lg px-3.5 text-xs shadow-xs transition-all active:scale-[0.98]"
               onClick={() => void handleGenerate()}
             />
           </div>

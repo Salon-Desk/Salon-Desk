@@ -38,11 +38,11 @@ export function MerchantPolicyCard({
     <div className="space-y-6">
       <Card
         padding="lg"
-        className="space-y-5 rounded-2xl border border-slate-200/90 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]"
+        className="space-y-5 rounded-2xl border border-slate-200/70 bg-white shadow-none"
       >
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50 text-amber-900 shadow-2xs">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-200/70 bg-gradient-to-br from-amber-50 to-orange-50 text-amber-900">
               <Shield className="h-5 w-5 text-amber-700" />
             </div>
             <div>

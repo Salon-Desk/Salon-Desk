@@ -22,15 +22,15 @@ export function PolicyPreviewSummary({ control }: PolicyPreviewSummaryProps) {
         <span>Live Customer Consent Terms Preview</span>
       </div>
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
-        <div className="rounded-lg bg-white/80 p-2 border border-amber-200/60 shadow-2xs">
+        <div className="rounded-lg border border-amber-200/60 bg-white/80 p-2">
           <span className="block text-[10px] text-slate-500 uppercase">Notice Cutoff</span>
           <span className="font-bold text-slate-900 text-xs">{watchedHours}h Notice</span>
         </div>
-        <div className="rounded-lg bg-white/80 p-2 border border-amber-200/60 shadow-2xs">
+        <div className="rounded-lg border border-amber-200/60 bg-white/80 p-2">
           <span className="block text-[10px] text-slate-500 uppercase">Late Cancel</span>
           <span className="font-bold text-amber-900 text-xs">{watchedLate}% Penalty</span>
         </div>
-        <div className="rounded-lg bg-white/80 p-2 border border-amber-200/60 shadow-2xs">
+        <div className="rounded-lg border border-amber-200/60 bg-white/80 p-2">
           <span className="block text-[10px] text-slate-500 uppercase">No-Show Fee</span>
           <span className="font-bold text-rose-800 text-xs">{watchedNoShow}% Charge</span>
         </div>

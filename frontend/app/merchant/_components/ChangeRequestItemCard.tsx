@@ -20,7 +20,7 @@ export function ChangeRequestItemCard({ cr, defaultOrgName }: ChangeRequestItemC
   const submitterName = cr.submitter_name || 'Salon Staff'
 
   return (
-    <div className="space-y-3 rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 text-xs shadow-2xs transition-colors hover:border-slate-300 hover:bg-white">
+    <div className="space-y-3 rounded-xl border border-slate-200/70 bg-slate-50/50 p-4 text-xs transition-colors hover:border-slate-300 hover:bg-white">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -139,7 +139,7 @@ function PolicySnapshotDiff({
           </div>
         </div>
 
-        <div className="space-y-1 rounded-md border border-amber-200/80 bg-white/90 p-2 shadow-2xs">
+        <div className="space-y-1 rounded-md border border-amber-200/70 bg-white/90 p-2">
           <span className="flex items-center gap-1 text-[10px] font-semibold uppercase text-amber-800">
             <span>Proposed Amendment</span>
             <ArrowRight className="h-3 w-3 text-amber-600" />
@@ -183,7 +183,7 @@ function PaypalSnapshotDiff({
           </span>
         </div>
         <ArrowRight className="hidden h-4 w-4 shrink-0 self-center text-sky-600 sm:block" />
-        <div className="flex-1 rounded-md border border-sky-200/80 bg-white/90 p-2 shadow-2xs">
+        <div className="flex-1 rounded-md border border-sky-200/70 bg-white/90 p-2">
           <span className="block font-sans text-[10px] font-semibold uppercase text-sky-800">
             Proposed Merchant ID
           </span>

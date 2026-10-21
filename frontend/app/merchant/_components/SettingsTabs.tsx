@@ -31,14 +31,18 @@ export function SettingsTabs({ activeTab, onTabChange }: SettingsTabsProps) {
   }, [searchParams, onTabChange])
 
   return (
-    <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-4">
+    <div className="flex gap-1.5 overflow-x-auto rounded-2xl border border-slate-200/70 bg-white p-1.5 no-scrollbar">
       {TABS.map((tab) => (
         <Button
           key={tab.id}
           variant={activeTab === tab.id ? 'default' : 'ghost'}
           size="sm"
           onClick={() => onTabChange(tab.id)}
-          className={activeTab === tab.id ? 'bg-amber-600 hover:bg-amber-700' : ''}
+          className={`shrink-0 rounded-xl ${
+            activeTab === tab.id
+              ? 'bg-slate-900 text-white hover:bg-slate-800'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
         >
           <span className="mr-2">{tab.icon}</span>
           {tab.label}

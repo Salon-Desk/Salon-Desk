@@ -149,7 +149,7 @@ export function AdminSidebar({
               <button
                 type="button"
                 onClick={onCloseMobile}
-                className="rounded-md p-1 text-slate-400 hover:bg-white/10 hover:text-white cursor-pointer transition-all active:scale-90"
+                className="rounded-md p-1 text-slate-400 hover:bg-white/10 hover:text-white cursor-pointer transition-all active:scale-[0.92]"
                 aria-label="Close navigation"
                 title="Close"
               >
@@ -184,7 +184,7 @@ export function AdminSidebar({
           <button
             type="button"
             onClick={onLockSession}
-            className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-all hover:bg-white/10 hover:text-white active:scale-95 cursor-pointer"
+            className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-all hover:bg-white/10 hover:text-white active:scale-[0.95] cursor-pointer"
             title="Lock session"
             aria-label="Lock session"
           >

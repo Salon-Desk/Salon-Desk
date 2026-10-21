@@ -40,7 +40,7 @@ export function WeekBoardView({
   const days = weekDays(anchor)
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+    <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white">
       <div className="border-b border-slate-100 px-4 py-3">
         <h2 className="text-sm font-bold text-slate-900">Week of {format(days[0], 'MMM d')}</h2>
         <p className="text-xs text-slate-500">{stylistName || 'Stylist'}</p>

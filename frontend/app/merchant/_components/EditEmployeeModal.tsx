@@ -162,8 +162,8 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
               title="Cancel"
               variant="outline"
               size="sm"
-              fullWidth
-              className="h-10 rounded-xl"
+              fullWidth={false}
+              className="h-10 rounded-xl px-5 text-xs font-semibold transition-all active:scale-[0.98]"
               onClick={onClose}
             />
             <PrimaryButton
@@ -171,8 +171,8 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
               isLoading={isLoading}
               type="submit"
               size="sm"
-              fullWidth
-              className="h-10 rounded-xl"
+              fullWidth={false}
+              className="h-10 rounded-xl px-5 text-xs font-bold shadow-xs transition-all active:scale-[0.98]"
             />
           </div>
         </div>
