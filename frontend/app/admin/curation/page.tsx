@@ -1,16 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
-import { useGetCatalogServicesQuery } from '@/store/api/clientApi'
+import { useSearchableAdminOrganizations } from '@/hooks/use-searchable-admin-organizations'
+import { useSearchableCatalogServices } from '@/hooks/use-searchable-catalog-options'
 import {
   useCreateFeaturedItemMutation,
   useDeleteFeaturedItemMutation,
   useGetAdminCurationQuery,
-  useGetAdminOrganizationsQuery,
   useUpdateFeaturedItemMutation,
   useUpdateHeroSettingsMutation,
   useUpdatePopularAlgorithmMutation,
@@ -41,17 +41,32 @@ export default function AdminCurationPage() {
     refetch,
   } = useGetAdminCurationQuery(undefined, { skip: skipAdminApi })
 
-  const { data: orgsData } = useGetAdminOrganizationsQuery(
-    { page_size: 100 },
-    { skip: skipAdminApi },
-  )
-  const approvedOrgs = (orgsData?.items ?? []).filter((o) => o.status.toLowerCase() === 'approved')
+  const orgPicker = useSearchableAdminOrganizations({ skip: skipAdminApi, status: 'approved' })
+  const servicePicker = useSearchableCatalogServices({ skip: skipAdminApi })
+  const approvedOrgs = orgPicker.items
+  const catalogServices = servicePicker.items
 
-  const { data: servicesData } = useGetCatalogServicesQuery(
-    { page_size: 50 },
-    { skip: skipAdminApi },
+  const orgListControls = useMemo(
+    () => ({
+      onSearchChange: orgPicker.setSearch,
+      hasMore: orgPicker.hasMore,
+      onLoadMore: orgPicker.loadMore,
+      isLoadingMore: orgPicker.isFetching,
+      total: orgPicker.total,
+    }),
+    [orgPicker],
   )
-  const catalogServices = servicesData?.items ?? []
+
+  const serviceListControls = useMemo(
+    () => ({
+      onSearchChange: servicePicker.setSearch,
+      hasMore: servicePicker.hasMore,
+      onLoadMore: servicePicker.loadMore,
+      isLoadingMore: servicePicker.isFetching,
+      total: servicePicker.total,
+    }),
+    [servicePicker],
+  )
 
   // Mutations
   const [updateHero, { isLoading: isSavingHero }] = useUpdateHeroSettingsMutation()
@@ -249,8 +264,9 @@ export default function AdminCurationPage() {
             heroForm={heroForm}
             setHeroForm={setHeroForm}
             approvedOrgs={approvedOrgs}
-            salonCount={curation?.hero.salon_count ?? approvedOrgs.length}
-            serviceCount={curation?.hero.service_count ?? catalogServices.length}
+            orgListControls={orgListControls}
+            salonCount={curation?.hero.salon_count ?? orgPicker.total}
+            serviceCount={curation?.hero.service_count ?? servicePicker.total}
             isSaving={isSavingHero}
             isUploadingImage={isUploadingHeroImage}
             onUploadImage={handleUploadHeroImage}
@@ -264,6 +280,8 @@ export default function AdminCurationPage() {
             featuredServices={curation?.featured_services ?? []}
             approvedOrgs={approvedOrgs}
             catalogServices={catalogServices}
+            orgListControls={orgListControls}
+            serviceListControls={serviceListControls}
             isCreating={isCreatingFeatured}
             onCreate={handleCreateFeatured}
             onToggleActive={handleToggleActive}

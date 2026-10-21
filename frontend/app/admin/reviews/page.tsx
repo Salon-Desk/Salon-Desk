@@ -8,6 +8,11 @@ import { Pagination } from '@/components/table/Pagination'
 import { Badge, Button, Card, EmptyState, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
+import { useListingParams } from '@/hooks/useListingParams'
+import {
+  type AdminReviewsListParams,
+  AdminReviewsListParamsSchema,
+} from '@/lib/listing-params/admin-reviews-list-params'
 import {
   useApproveAdminClientFeedbackMutation,
   useGetAdminClientFeedbackQuery,
@@ -17,9 +22,7 @@ import type { ClientFeedbackItem } from '@/types/api-feedback'
 
 import { AdminQueryState } from '../_components/admin-query-state'
 
-type ReviewFilter = 'pending' | 'approved' | 'rejected' | 'all'
-
-const FILTER_LABELS: Record<ReviewFilter, string> = {
+const FILTER_LABELS: Record<AdminReviewsListParams['status'], string> = {
   pending: 'Pending',
   approved: 'Approved',
   rejected: 'Rejected',
@@ -117,20 +120,23 @@ function ReviewModerationCard({ item }: { item: ClientFeedbackItem }) {
 
 export default function AdminReviewsPage() {
   const { skipAdminApi } = useAdminSession()
-  const [filter, setFilter] = useState<ReviewFilter>('pending')
-  const [page, setPage] = useState(1)
-  const [search, setSearch] = useState('')
-  const pageSize = 10
+  const { params, displayParams, setParam, setParams } = useListingParams<
+    AdminReviewsListParams,
+    typeof AdminReviewsListParamsSchema
+  >(AdminReviewsListParamsSchema)
 
-  const { data, isLoading, isError, refetch } = useGetAdminClientFeedbackQuery(
-    { page, page_size: pageSize, status: filter },
-    { skip: skipAdminApi },
-  )
+  const { data, isLoading, isError, refetch } = useGetAdminClientFeedbackQuery(params, {
+    skip: skipAdminApi,
+  })
+
+  const settledSearch = typeof params.q === 'string' ? params.q : ''
+  const pageSize = displayParams.limit
+  const page = displayParams.page
 
   const items = useMemo(() => {
     const rows = data?.items ?? []
-    if (!search.trim()) return rows
-    const term = search.trim().toLowerCase()
+    if (!settledSearch.trim()) return rows
+    const term = settledSearch.trim().toLowerCase()
     return rows.filter(
       (r) =>
         (r.comment && r.comment.toLowerCase().includes(term)) ||
@@ -138,7 +144,7 @@ export default function AdminReviewsPage() {
         (r.organization_name && r.organization_name.toLowerCase().includes(term)) ||
         (r.stylist_name && r.stylist_name.toLowerCase().includes(term)),
     )
-  }, [data?.items, search])
+  }, [data?.items, settledSearch])
 
   return (
     <div className="space-y-6">
@@ -151,16 +157,13 @@ export default function AdminReviewsPage() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
-          {(Object.keys(FILTER_LABELS) as ReviewFilter[]).map((key) => (
+          {(Object.keys(FILTER_LABELS) as AdminReviewsListParams['status'][]).map((key) => (
             <button
               key={key}
               type="button"
-              onClick={() => {
-                setFilter(key)
-                setPage(1)
-              }}
+              onClick={() => setParams({ status: key, page: 1 })}
               className={
-                filter === key
+                displayParams.status === key
                   ? 'rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white'
                   : 'rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600'
               }
@@ -169,7 +172,11 @@ export default function AdminReviewsPage() {
             </button>
           ))}
         </div>
-        <SearchInput value={search} onChange={setSearch} placeholder="Search reviews…" />
+        <SearchInput
+          value={displayParams.search}
+          onChange={(val) => setParams({ search: val, page: 1 })}
+          placeholder="Search reviews…"
+        />
       </div>
 
       <AdminQueryState isLoading={isLoading} isError={isError} onRetry={() => void refetch()}>
@@ -192,7 +199,7 @@ export default function AdminReviewsPage() {
             pageSize={pageSize}
             totalItems={data.total}
             totalPages={Math.max(1, Math.ceil(data.total / pageSize))}
-            onPageChange={setPage}
+            onPageChange={(next) => setParam('page', next)}
           />
         ) : null}
       </AdminQueryState>

@@ -8,6 +8,8 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
+import { buildClientMyBookingsApiParams } from '@/lib/listing-params/client-my-bookings-list-params'
+import { buildClientOrgStaffQueryArg } from '@/lib/listing-params/client-org-staff-list-params'
 import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import {
   useGetCatalogOrganizationQuery,
@@ -90,7 +92,7 @@ export function ClientSalonFeedbackSection({ orgId }: { orgId: string }) {
   const canReview = isAuthenticated && isClientUser(user)
 
   const { data: org, isLoading: orgLoading } = useGetCatalogOrganizationQuery(orgId)
-  const { data: staffPage } = useGetCatalogOrgStaffQuery(orgId)
+  const { data: staffPage } = useGetCatalogOrgStaffQuery(buildClientOrgStaffQueryArg(orgId))
   const { data: allReviewsPage, isLoading: reviewsLoading } = useGetCatalogOrgFeedbackQuery({
     orgId,
     page_size: 24,
@@ -105,7 +107,9 @@ export function ClientSalonFeedbackSection({ orgId }: { orgId: string }) {
     }
   }, [allReviewsPage?.items])
 
-  const { data: bookingsData } = useGetMyBookingsQuery(undefined, { skip: !canReview })
+  const { data: bookingsData } = useGetMyBookingsQuery(buildClientMyBookingsApiParams(), {
+    skip: !canReview,
+  })
   const { data: myFeedback = [] } = useGetMyFeedbackQuery(undefined, { skip: !canReview })
 
   const hasSalonReview = (bookingId: string) =>

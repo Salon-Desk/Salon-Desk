@@ -1,7 +1,7 @@
 'use client'
 
 import { Building2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
@@ -9,8 +9,13 @@ import { Pagination } from '@/components/table/Pagination'
 import { EmptyState } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
-import { useDebounce } from '@/hooks/use-debounce'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
+import { useListingParams } from '@/hooks/useListingParams'
+import {
+  adminSalonsListDefaults,
+  type AdminSalonsListParams,
+  AdminSalonsListParamsSchema,
+} from '@/lib/listing-params/admin-salons-list-params'
 import {
   useApproveOrganizationMutation,
   useGetAdminDashboardQuery,
@@ -24,52 +29,31 @@ import { SalonCard } from './_components/salon-card'
 import { SalonFilterBar } from './_components/salon-filter-bar'
 import { SalonHeader } from './_components/salon-header'
 import { SalonKpiGrid } from './_components/salon-kpi-grid'
-import type { SalonCounts, StatusFilter } from './_types'
+import type { SalonCounts } from './_types'
 
 export default function AdminSalonsPage() {
   const { skipAdminApi } = useAdminSession()
-  const [filter, setFilter] = useState<StatusFilter>('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const debouncedSearch = useDebounce(searchQuery, 350)
+  const { params, displayParams, setParam, setParams } = useListingParams<
+    AdminSalonsListParams,
+    typeof AdminSalonsListParamsSchema
+  >(AdminSalonsListParamsSchema)
+
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5)
   const [actioningOrgId, setActioningOrgId] = useState<string | null>(null)
 
   useAgentUiActions({
     onAction: (payload) => {
       if (payload.action === 'filter_pending') {
-        setFilter('pending')
+        setParams({ status: 'pending', page: 1 })
       } else if (payload.action === 'filter_approved') {
-        setFilter('approved')
+        setParams({ status: 'approved', page: 1 })
       }
     },
   })
 
-  // Reset pagination on filter or search updates
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [filter, debouncedSearch])
-
-  // System-wide dashboard statistics
   const { data: dashboardData, refetch: refetchDashboard } = useGetAdminDashboardQuery(undefined, {
     skip: skipAdminApi,
   })
-
-  // Paginated query with search & status filters
-  const queryParams = useMemo(() => {
-    const params: { page: number; page_size: number; status?: string; q?: string } = {
-      page: currentPage,
-      page_size: pageSize,
-    }
-    if (filter !== 'all') {
-      params.status = filter
-    }
-    if (debouncedSearch.trim()) {
-      params.q = debouncedSearch.trim()
-    }
-    return params
-  }, [currentPage, pageSize, filter, debouncedSearch])
 
   const {
     data: organizationsData,
@@ -77,16 +61,18 @@ export default function AdminSalonsPage() {
     isFetching,
     isError,
     refetch: refetchOrganizations,
-  } = useGetAdminOrganizationsQuery(queryParams, { skip: skipAdminApi })
+  } = useGetAdminOrganizationsQuery(params, { skip: skipAdminApi })
 
   const [approveOrg, { isLoading: approving }] = useApproveOrganizationMutation()
   const [suspendOrg, { isLoading: suspending }] = useSuspendOrganizationMutation()
 
   const organizations = organizationsData?.items ?? []
   const totalItems = organizationsData?.total ?? 0
+  const pageSize = displayParams.limit
+  const currentPage = displayParams.page
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const settledSearch = typeof params.q === 'string' ? params.q : ''
 
-  // True system counts from dashboard
   const counts: SalonCounts = useMemo(
     () => ({
       all: dashboardData?.total_organizations ?? totalItems,
@@ -145,31 +131,30 @@ export default function AdminSalonsPage() {
   }
 
   const handleResetFilters = () => {
-    setFilter('all')
-    setSearchQuery('')
+    setParams(adminSalonsListDefaults)
   }
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
-      {/* Header bar */}
       <SalonHeader totalSalons={counts.all} isFetching={isFetching} onRefresh={handleRefresh} />
 
-      {/* KPI Metric Cards */}
-      <SalonKpiGrid counts={counts} activeFilter={filter} onSelectFilter={setFilter} />
-
-      {/* Filter Tabs, Search & Active Filter Strip */}
-      <SalonFilterBar
-        filter={filter}
+      <SalonKpiGrid
         counts={counts}
-        searchQuery={searchQuery}
-        debouncedSearch={debouncedSearch}
+        activeFilter={displayParams.status}
+        onSelectFilter={(status) => setParams({ status, page: 1 })}
+      />
+
+      <SalonFilterBar
+        filter={displayParams.status}
+        counts={counts}
+        searchQuery={displayParams.search}
+        debouncedSearch={settledSearch}
         totalMatching={totalItems}
-        onFilterChange={setFilter}
-        onSearchChange={setSearchQuery}
+        onFilterChange={(status) => setParams({ status, page: 1 })}
+        onSearchChange={(search) => setParam('search', search)}
         onResetFilters={handleResetFilters}
       />
 
-      {/* Salons List */}
       <AdminQueryState
         isLoading={isLoading}
         isError={isError}
@@ -199,11 +184,8 @@ export default function AdminSalonsPage() {
                 totalPages={totalPages}
                 totalItems={totalItems}
                 pageSize={pageSize}
-                setCurrentPage={setCurrentPage}
-                onPageSizeChange={(size) => {
-                  setPageSize(size)
-                  setCurrentPage(1)
-                }}
+                setCurrentPage={(page) => setParam('page', page)}
+                onPageSizeChange={(size) => setParams({ limit: size, page: 1 })}
                 pageSizeOptions={[10, 20, 50]}
               />
             </div>
@@ -214,14 +196,14 @@ export default function AdminSalonsPage() {
               icon={Building2}
               title="No partner salons found"
               description={
-                debouncedSearch
-                  ? `No salons matching "${debouncedSearch}". Clear your search query or switch filters.`
-                  : filter !== 'all'
-                    ? `No salons found in "${filter}" status. Try selecting another filter.`
+                settledSearch
+                  ? `No salons matching "${settledSearch}". Clear your search query or switch filters.`
+                  : displayParams.status !== 'all'
+                    ? `No salons found in "${displayParams.status}" status. Try selecting another filter.`
                     : 'No partner salons have been registered on the platform yet.'
               }
               action={
-                filter !== 'all' || debouncedSearch ? (
+                displayParams.status !== 'all' || settledSearch ? (
                   <PrimaryButton
                     title="Clear search and filters"
                     size="sm"

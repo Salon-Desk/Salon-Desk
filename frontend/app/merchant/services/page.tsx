@@ -10,7 +10,15 @@ import { Pagination } from '@/components/table/Pagination'
 import { Badge, Card, EmptyState, IconButton, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
+import { useListingParams } from '@/hooks/useListingParams'
 import { formatUsd } from '@/lib/format'
+import { buildClientCatalogCategoriesApiParams } from '@/lib/listing-params/client-catalog-categories-list-params'
+import {
+  buildMerchantServicesCategoryCountsApiParams,
+  merchantServicesListDefaults,
+  type MerchantServicesListParams,
+  MerchantServicesListParamsSchema,
+} from '@/lib/listing-params/merchant-services-list-params'
 import { resolveImageSrc, shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import { useGetCatalogCategoriesQuery } from '@/store/api/clientApi'
 import { useGetMyServicesQuery, useUpdateMyServiceMutation } from '@/store/api/orgApi'
@@ -19,18 +27,31 @@ import type { ApiOrgService } from '@/types/api-org'
 import { OrgServiceFormModal } from '../_components/org-service-form-modal'
 
 export default function MerchantServicesPage() {
-  const { data: servicesData, isLoading, isError, refetch } = useGetMyServicesQuery()
-  const { data: categoriesData } = useGetCatalogCategoriesQuery()
+  const { params, displayParams, setParam, setParams } = useListingParams<
+    MerchantServicesListParams,
+    typeof MerchantServicesListParamsSchema
+  >(MerchantServicesListParamsSchema)
+
+  const { data: allServicesData } = useGetMyServicesQuery(
+    buildMerchantServicesCategoryCountsApiParams(),
+  )
+  const { data: servicesData, isLoading, isError, refetch } = useGetMyServicesQuery(params)
+  const { data: categoriesData } = useGetCatalogCategoriesQuery(
+    buildClientCatalogCategoriesApiParams(),
+  )
   const services = servicesData?.items ?? []
+  const allServices = allServicesData?.items ?? []
+  const totalItems = servicesData?.total ?? services.length
   const categories = categoriesData?.items ?? []
   const [deactivateService, { isLoading: deactivating }] = useUpdateMyServiceMutation()
 
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('ALL')
+  const settledSearch = typeof params.q === 'string' ? params.q : ''
+  const selectedCategory = displayParams.categoryId
+  const currentPage = displayParams.page
+  const pageSize = displayParams.limit
+
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editing, setEditing] = useState<ApiOrgService | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(9)
 
   useAgentUiActions({
     onOpenAddService: () => {
@@ -46,37 +67,20 @@ export default function MerchantServicesPage() {
   }, [categories])
 
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { ALL: services.length }
-    services.forEach((s) => {
+    const counts: Record<string, number> = { ALL: allServices.length }
+    allServices.forEach((s) => {
       counts[s.service_category_id] = (counts[s.service_category_id] || 0) + 1
     })
     return counts
-  }, [services])
+  }, [allServices])
 
   const categoryFilters = useMemo(() => {
-    const ids = new Set(services.map((s) => s.service_category_id))
+    const ids = new Set(allServices.map((s) => s.service_category_id))
     return ['ALL', ...Array.from(ids)]
-  }, [services])
+  }, [allServices])
 
-  const filteredServices = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim()
-    return services.filter((s) => {
-      const matchesCat = selectedCategory === 'ALL' || s.service_category_id === selectedCategory
-      const catName = categoryNameById.get(s.service_category_id) || ''
-      const matchesQuery =
-        !q ||
-        s.name.toLowerCase().includes(q) ||
-        catName.toLowerCase().includes(q) ||
-        (s.description || '').toLowerCase().includes(q)
-      return matchesCat && matchesQuery
-    })
-  }, [services, selectedCategory, searchQuery, categoryNameById])
-
-  const totalPages = Math.max(1, Math.ceil(filteredServices.length / pageSize))
-  const paginatedServices = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return filteredServices.slice(start, start + pageSize)
-  }, [filteredServices, currentPage, pageSize])
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const paginatedServices = services
 
   const handleDeactivate = async (service: ApiOrgService) => {
     try {
@@ -103,7 +107,7 @@ export default function MerchantServicesPage() {
           <p className="text-slate-500 text-xs">
             {isLoading
               ? 'Loading…'
-              : `${services.length} services configured for client online booking`}
+              : `${allServices.length} services configured for client online booking`}
           </p>
         </div>
         <div data-agent-action="add-service">
@@ -124,11 +128,8 @@ export default function MerchantServicesPage() {
       {/* Search and Category Filter Tabs */}
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)] sm:flex-row sm:items-center sm:justify-between">
         <SearchInput
-          value={searchQuery}
-          onChange={(q) => {
-            setSearchQuery(q)
-            setCurrentPage(1)
-          }}
+          value={displayParams.search}
+          onChange={(q) => setParams({ search: q, page: 1 })}
           placeholder="Search by service name or description…"
           shortcut="⌘K"
           className="w-full sm:max-w-xs text-xs"
@@ -145,8 +146,7 @@ export default function MerchantServicesPage() {
                 key={id}
                 type="button"
                 onClick={() => {
-                  setSelectedCategory(id)
-                  setCurrentPage(1)
+                  setParams({ categoryId: id, page: 1 })
                 }}
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                   isActive
@@ -189,25 +189,24 @@ export default function MerchantServicesPage() {
         </div>
       ) : null}
 
-      {!isLoading && !isError && filteredServices.length === 0 ? (
+      {!isLoading && !isError && paginatedServices.length === 0 ? (
         <EmptyState
           icon={Scissors}
           title="No services found"
           description={
-            searchQuery
-              ? `No services match "${searchQuery}". Clear your search query or switch categories.`
+            settledSearch
+              ? `No services match "${settledSearch}". Clear your search query or switch categories.`
               : 'You have not added any services in this category yet.'
           }
           action={
-            searchQuery ? (
+            settledSearch ? (
               <PrimaryButton
                 title="Clear filter"
                 size="sm"
                 fullWidth={false}
                 className="h-8 rounded-lg px-3.5 text-xs"
                 onClick={() => {
-                  setSearchQuery('')
-                  setSelectedCategory('ALL')
+                  setParams(merchantServicesListDefaults)
                 }}
               />
             ) : (
@@ -317,17 +316,14 @@ export default function MerchantServicesPage() {
           })}
         </div>
 
-        {filteredServices.length > 0 && (
+        {paginatedServices.length > 0 && (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={filteredServices.length}
+            totalItems={totalItems}
             pageSize={pageSize}
-            setCurrentPage={setCurrentPage}
-            onPageSizeChange={(size) => {
-              setPageSize(size)
-              setCurrentPage(1)
-            }}
+            setCurrentPage={(page) => setParam('page', page)}
+            onPageSizeChange={(size) => setParams({ limit: size, page: 1 })}
             pageSizeOptions={[6, 9, 15, 30]}
           />
         )}

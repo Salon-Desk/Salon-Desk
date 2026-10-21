@@ -12,6 +12,12 @@ import { Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useMerchantSession } from '@/hooks/use-merchant-session'
 import { openAgentChat } from '@/hooks/useAgentUiActions'
+import {
+  buildMerchantLayoutBookingsSnapshotApiParams,
+  buildMerchantLayoutChangeRequestsSnapshotApiParams,
+  buildMerchantLayoutEmployeesSnapshotApiParams,
+  buildMerchantLayoutServicesSnapshotApiParams,
+} from '@/lib/listing-params/merchant-dashboard-snapshot-list-params'
 import { mapBookingStatusToHoldState } from '@/lib/mappers/booking'
 import type { AppDispatch } from '@/store'
 import {
@@ -43,10 +49,22 @@ function MerchantLayoutInner({ children }: { children: ReactNode }) {
 
   const { data: org } = useGetMyOrganizationQuery(undefined, { skip: skipOrgApi })
   const { data: account } = useGetMyOrgAccountQuery(undefined, { skip: skipOrgApi })
-  const { data: apiBookingsData } = useGetMyOrgBookingsQuery(undefined, { skip: skipOrgApi })
-  const { data: employeesData } = useGetMyEmployeesQuery(undefined, { skip: skipOrgApi })
-  const { data: servicesData } = useGetMyServicesQuery(undefined, { skip: skipOrgApi })
-  const { data: changeRequestsData } = useGetMyChangeRequestsQuery(undefined, { skip: skipOrgApi })
+  const { data: apiBookingsData } = useGetMyOrgBookingsQuery(
+    buildMerchantLayoutBookingsSnapshotApiParams(),
+    { skip: skipOrgApi },
+  )
+  const { data: employeesData } = useGetMyEmployeesQuery(
+    buildMerchantLayoutEmployeesSnapshotApiParams(),
+    { skip: skipOrgApi },
+  )
+  const { data: servicesData } = useGetMyServicesQuery(
+    buildMerchantLayoutServicesSnapshotApiParams(),
+    { skip: skipOrgApi },
+  )
+  const { data: changeRequestsData } = useGetMyChangeRequestsQuery(
+    buildMerchantLayoutChangeRequestsSnapshotApiParams(),
+    { skip: skipOrgApi },
+  )
 
   const apiBookings = apiBookingsData?.items ?? []
   const employees = employeesData?.items ?? []

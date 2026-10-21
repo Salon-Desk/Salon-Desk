@@ -25,6 +25,7 @@ import PrimaryButton from '@/components/button/PrimaryButton'
 import { Card, SearchableSelect } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import type { ApiOrganization, UpdateHeroSettingsRequest } from '@/types/api-org'
+import type { SearchableListControls } from '@/types/searchable-list-controls'
 
 import { HERO_PRESETS, type HeroPreset } from '../_constants/hero-presets'
 
@@ -40,6 +41,7 @@ interface HeroControllerSectionProps {
   isUploadingImage?: boolean
   onUploadImage?: (file: File) => Promise<void>
   onSave: () => Promise<void>
+  orgListControls?: SearchableListControls
 }
 
 export function HeroControllerSection({
@@ -52,6 +54,7 @@ export function HeroControllerSection({
   isUploadingImage = false,
   onUploadImage,
   onSave,
+  orgListControls,
 }: HeroControllerSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
@@ -592,6 +595,11 @@ export function HeroControllerSection({
                 emptyText="No matching salons found."
                 triggerClassName="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 hover:border-slate-300 focus:border-amber-500"
                 contentClassName="w-[min(calc(100vw-2rem),24rem)]"
+                onSearchChange={orgListControls?.onSearchChange}
+                hasMore={orgListControls?.hasMore}
+                onLoadMore={orgListControls?.onLoadMore}
+                isLoadingMore={orgListControls?.isLoadingMore}
+                loadMoreLabel="Load more salons"
               />
               <p className="mt-1 text-[11px] text-slate-400">
                 When selected, the spotlight badge will highlight this specific salon. If no custom

@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 
+import { buildClientMyBookingsApiParams } from '@/lib/listing-params/client-my-bookings-list-params'
 import { useGetMyBookingsQuery } from '@/store/api/clientApi'
 import { isAuthenticatedSelector, isClientUser, userSelector } from '@/store/authSlice'
 
@@ -14,7 +15,9 @@ export function ClientMyBookingsReviews() {
   const isAuthenticated = useSelector(isAuthenticatedSelector)
   const canLoad = isAuthenticated && isClientUser(user)
 
-  const { data: bookingsData } = useGetMyBookingsQuery(undefined, { skip: !canLoad })
+  const { data: bookingsData } = useGetMyBookingsQuery(buildClientMyBookingsApiParams(), {
+    skip: !canLoad,
+  })
 
   const orgIds = useMemo(() => {
     const ids = new Set<string>()

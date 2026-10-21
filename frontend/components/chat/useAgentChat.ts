@@ -200,7 +200,30 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
               }
             : null
 
-        if (confirmedBooking) {
+        // Handle payment link
+        if (!support && data.payment_link) {
+          toast.success(
+            'Booking created! Click the payment link to complete your reservation.',
+            toastColor.success,
+          )
+          // Store payment link for display
+          window.dispatchEvent(
+            new CustomEvent('salondesk:payment_link', {
+              detail: {
+                bookingId: data.confirmed_booking?.id,
+                serviceId: data.confirmed_booking?.service_name,
+                serviceName: data.confirmed_booking?.service_name,
+                organizationName: data.confirmed_booking?.organization_name,
+                startsAt: data.confirmed_booking?.starts_at,
+                formattedTime: data.confirmed_booking?.formatted_time,
+                totalPrice: data.confirmed_booking?.total_price,
+                paymentLink: data.payment_link,
+              },
+            }),
+          )
+        }
+
+        if (confirmedBooking && !data.payment_link) {
           toast.success(
             `Booking confirmed for ${confirmedBooking.serviceName}! $0 hold placed.`,
             toastColor.success,

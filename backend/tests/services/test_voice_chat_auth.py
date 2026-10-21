@@ -221,7 +221,9 @@ async def test_booking_tools_book_and_confirm():
         ),
         patch("app.services.payment_service.complete_hold", new_callable=AsyncMock),
     ):
-        book_tool, _ = build_booking_tools(session_factory, on_booking_success=on_booking)
+        tools = build_booking_tools(session_factory, on_booking_success=on_booking)
+        assert len(tools) >= 1
+        book_tool = tools[0]
         res = await book_tool(service_query="Signature Fade", notes="Book via agent")
         data = json.loads(res)
         assert data["status"] == "success"
@@ -267,19 +269,10 @@ async def test_chat_booking_handler():
     mock_db.execute.return_value = srv_res
     mock_db.get.return_value = mock_org
 
-    with (
-        patch(
-            "app.services.booking_service.create_booking",
-            new_callable=AsyncMock,
-            return_value=mock_booking,
-        ),
-        patch("app.services.payment_service.create_consent", new_callable=AsyncMock),
-        patch(
-            "app.services.payment_service.create_hold",
-            new_callable=AsyncMock,
-            return_value=(MagicMock(paypal_order_id="STUB-test"), None),
-        ),
-        patch("app.services.payment_service.complete_hold", new_callable=AsyncMock),
+    with patch(
+        "app.services.booking_service.create_booking",
+        new_callable=AsyncMock,
+        return_value=mock_booking,
     ):
         handled, reply, confirmed = await try_handle_chat_booking(
             mock_db,
@@ -290,9 +283,11 @@ async def test_chat_booking_handler():
         )
         assert handled is True
         assert confirmed is not None
-        assert confirmed["status"] == "CONFIRMED"
+        assert confirmed["status"] == "PENDING"
         assert confirmed["service_name"] == "Balayage Highlight"
+        assert confirmed["payment_link"].startswith("/client/book/")
         assert "Balayage Highlight" in reply
+        assert "payment link" in reply.lower()
 
 
 @pytest.mark.asyncio

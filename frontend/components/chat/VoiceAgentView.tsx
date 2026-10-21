@@ -199,7 +199,6 @@ export function VoiceAgentView({
       )}
     >
       <LiveKitRoom
-        key={tokenData.roomName}
         token={tokenData.token}
         serverUrl={tokenData.serverUrl}
         connect

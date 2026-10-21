@@ -7,7 +7,13 @@ import PrimaryButton from '@/components/button/PrimaryButton'
 import { Pagination } from '@/components/table/Pagination'
 import { Badge, Card, EmptyState, IconButton, SearchInput } from '@/components/ui'
 import { useAdminSession } from '@/hooks/use-admin-session'
+import { useListingParams } from '@/hooks/useListingParams'
 import { formatUsd } from '@/lib/format'
+import {
+  type AdminCommissionListParams,
+  AdminCommissionListParamsSchema,
+} from '@/lib/listing-params/admin-commission-list-params'
+import { buildAdminCategoriesNavApiParams } from '@/lib/listing-params/admin-taxonomy-list-params'
 import {
   useGetAdminCategoriesQuery,
   useGetAdminCommissionsQuery,
@@ -28,22 +34,30 @@ function formatCommissionRate(c: PlatformCommission): string {
 
 export default function AdminCommissionPage() {
   const { skipAdminApi } = useAdminSession()
+  const { params, displayParams, setParam, setParams } = useListingParams<
+    AdminCommissionListParams,
+    typeof AdminCommissionListParamsSchema
+  >(AdminCommissionListParamsSchema)
+
   const {
     data: commissionsData,
     isLoading,
     isError,
     refetch,
-  } = useGetAdminCommissionsQuery(undefined, { skip: skipAdminApi })
-  const { data: categoriesData } = useGetAdminCategoriesQuery(undefined, { skip: skipAdminApi })
+  } = useGetAdminCommissionsQuery(params, { skip: skipAdminApi })
+  const { data: categoriesData } = useGetAdminCategoriesQuery(buildAdminCategoriesNavApiParams(), {
+    skip: skipAdminApi,
+  })
   const commissions = commissionsData?.items ?? []
+  const totalItems = commissionsData?.total ?? commissions.length
   const categories = categoriesData?.items ?? []
   const { data: dashboard } = useGetAdminDashboardQuery(undefined, { skip: skipAdminApi })
 
   const [isOpen, setIsOpen] = useState(false)
   const [editing, setEditing] = useState<PlatformCommission | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(8)
+
+  const currentPage = displayParams.page
+  const pageSize = displayParams.limit
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>()
@@ -51,22 +65,8 @@ export default function AdminCommissionPage() {
     return map
   }, [categories])
 
-  const filteredCommissions = useMemo(() => {
-    if (!searchQuery.trim()) return commissions
-    const q = searchQuery.toLowerCase().trim()
-    return commissions.filter((c) => {
-      const catName = (categoryNameById.get(c.service_category_id) || '').toLowerCase()
-      return (
-        c.name.toLowerCase().includes(q) || c.type.toLowerCase().includes(q) || catName.includes(q)
-      )
-    })
-  }, [commissions, searchQuery, categoryNameById])
-
-  const totalPages = Math.max(1, Math.ceil(filteredCommissions.length / pageSize))
-  const paginatedCommissions = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return filteredCommissions.slice(start, start + pageSize)
-  }, [filteredCommissions, currentPage, pageSize])
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const paginatedCommissions = commissions
 
   const ledgerSum = Number(dashboard?.ledger_amount_sum || 0)
 
@@ -158,16 +158,13 @@ export default function AdminCommissionPage() {
               </div>
               <div className="flex items-center gap-2">
                 <SearchInput
-                  value={searchQuery}
-                  onChange={(val) => {
-                    setSearchQuery(val)
-                    setCurrentPage(1)
-                  }}
+                  value={displayParams.search}
+                  onChange={(val) => setParams({ search: val, page: 1 })}
                   placeholder="Search rules…"
                   className="w-48 text-xs"
                 />
                 <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/70 shrink-0">
-                  {filteredCommissions.length} rules
+                  {totalItems} rules
                 </span>
               </div>
             </div>
@@ -237,13 +234,10 @@ export default function AdminCommissionPage() {
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
-              totalItems={filteredCommissions.length}
+              totalItems={totalItems}
               pageSize={pageSize}
-              setCurrentPage={setCurrentPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size)
-                setCurrentPage(1)
-              }}
+              setCurrentPage={(page) => setParam('page', page)}
+              onPageSizeChange={(size) => setParams({ limit: size, page: 1 })}
               pageSizeOptions={[5, 8, 15, 30]}
               className="rounded-t-none border-t border-border shadow-none"
             />

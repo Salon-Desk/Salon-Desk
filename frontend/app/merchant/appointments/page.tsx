@@ -10,8 +10,16 @@ import { Pagination } from '@/components/table/Pagination'
 import { type Column, DataTable, EmptyState } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
+import { useListingParams } from '@/hooks/useListingParams'
+import {
+  merchantAppointmentsListDefaults,
+  type MerchantAppointmentsListParams,
+  MerchantAppointmentsListParamsSchema,
+} from '@/lib/listing-params/merchant-appointments-list-params'
+import { mapApiBookingToUi } from '@/lib/mappers/booking'
 import { cn } from '@/lib/utils'
-import type { Booking, HoldState } from '@/types'
+import { useGetMyOrgBookingsQuery } from '@/store/api/orgApi'
+import type { Booking } from '@/types'
 
 import { ConsentModal } from '../_components/consent-modal'
 import { SettlementDrawer } from '../_components/settlement-drawer'
@@ -21,38 +29,49 @@ import { getBookingTableColumns } from './_components/booking-table-columns'
 import { useAppointmentsData, useAppointmentsFilter } from './_hooks/use-appointments-data'
 import { useSettlementActions } from './_hooks/use-settlement-actions'
 
-type AppointmentFilter = 'ALL' | HoldState
+type AppointmentFilter = MerchantAppointmentsListParams['holdStatus']
 
 export default function MerchantAppointmentsPage() {
-  const { bookings, kpiData, isLoading, isError, refetch } = useAppointmentsData()
+  const { params, displayParams, setParam, setParams } = useListingParams<
+    MerchantAppointmentsListParams,
+    typeof MerchantAppointmentsListParamsSchema
+  >(MerchantAppointmentsListParamsSchema)
 
-  const [appointmentSearch, setAppointmentSearch] = useState('')
-  const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('ALL')
+  const { bookings, kpiData, isError: kpiError, refetch: refetchKpi } = useAppointmentsData()
+  const {
+    data: tableData,
+    isLoading,
+    isError: tableError,
+    refetch: refetchTable,
+  } = useGetMyOrgBookingsQuery(params)
+
+  const isError = kpiError || tableError
+  const refetch = useCallback(() => {
+    void refetchKpi()
+    void refetchTable()
+  }, [refetchKpi, refetchTable])
+
+  const settledSearch = typeof params.q === 'string' ? params.q : ''
+  const appointmentFilter = displayParams.holdStatus
+  const currentPage = displayParams.page
+  const pageSize = displayParams.limit
+  const totalItems = tableData?.total ?? 0
+
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [inspectConsentBooking, setInspectConsentBooking] = useState<Booking | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
 
   useAgentUiActions({
-    onFilterHolds: () => {
-      setAppointmentFilter('HELD')
-      setCurrentPage(1)
-    },
-    onFilterCaptured: () => {
-      setAppointmentFilter('CAPTURED')
-      setCurrentPage(1)
-    },
-    onFilterVoided: () => {
-      setAppointmentFilter('VOIDED')
-      setCurrentPage(1)
-    },
+    onFilterHolds: () => setParams({ holdStatus: 'HELD', page: 1 }),
+    onFilterCaptured: () => setParams({ holdStatus: 'CAPTURED', page: 1 }),
+    onFilterVoided: () => setParams({ holdStatus: 'VOIDED', page: 1 }),
   })
 
-  const { filteredAppointments, filterCounts } = useAppointmentsFilter(
-    bookings,
-    appointmentSearch,
-    appointmentFilter,
+  const { filterCounts } = useAppointmentsFilter(bookings, '', 'ALL')
+
+  const paginatedAppointments = useMemo(
+    () => (tableData?.items ?? []).map((b) => mapApiBookingToUi(b)),
+    [tableData?.items],
   )
 
   const {
@@ -91,11 +110,7 @@ export default function MerchantAppointmentsPage() {
     [refetch],
   )
 
-  const totalPages = Math.max(1, Math.ceil(filteredAppointments.length / pageSize))
-  const paginatedAppointments = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return filteredAppointments.slice(start, start + pageSize)
-  }, [filteredAppointments, currentPage, pageSize])
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
 
   const bookingColumns = useMemo(
     () =>
@@ -108,15 +123,15 @@ export default function MerchantAppointmentsPage() {
     [handleCopy, copiedId, handleInspectConsent, handleSettle],
   )
 
-  const handleFilterChange = useCallback((newFilter: AppointmentFilter) => {
-    setAppointmentFilter(newFilter)
-    setCurrentPage(1)
-  }, [])
+  const handleFilterChange = useCallback(
+    (newFilter: AppointmentFilter) => setParams({ holdStatus: newFilter, page: 1 }),
+    [setParams],
+  )
 
-  const handleSearchChange = useCallback((newSearch: string) => {
-    setAppointmentSearch(newSearch)
-    setCurrentPage(1)
-  }, [])
+  const handleSearchChange = useCallback(
+    (newSearch: string) => setParams({ search: newSearch, page: 1 }),
+    [setParams],
+  )
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
@@ -145,7 +160,7 @@ export default function MerchantAppointmentsPage() {
       {/* Search & Filter Bar */}
       {!isLoading && !isError && (
         <AppointmentsFilterBar
-          search={appointmentSearch}
+          search={displayParams.search}
           onSearchChange={handleSearchChange}
           filter={appointmentFilter}
           onFilterChange={handleFilterChange}
@@ -160,15 +175,17 @@ export default function MerchantAppointmentsPage() {
           columns={bookingColumns}
           currentPage={currentPage}
           totalPages={totalPages}
-          totalItems={filteredAppointments.length}
+          totalItems={totalItems}
           pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size)
-            setCurrentPage(1)
-          }}
-          searchQuery={appointmentSearch}
-          onClearSearch={() => setAppointmentSearch('')}
+          onPageChange={(page) => setParam('page', page)}
+          onPageSizeChange={(size) => setParams({ limit: size, page: 1 })}
+          searchQuery={settledSearch}
+          onClearSearch={() =>
+            setParams({
+              search: merchantAppointmentsListDefaults.search,
+              page: merchantAppointmentsListDefaults.page,
+            })
+          }
         />
       )}
 

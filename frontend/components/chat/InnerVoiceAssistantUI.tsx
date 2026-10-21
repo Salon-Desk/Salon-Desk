@@ -92,6 +92,14 @@ export function InnerVoiceAssistantUI({
   const [enablingMic, setEnablingMic] = useState(false)
   const [discoveredOrgs, setDiscoveredOrgs] = useState<AgentOrganizationRecommendation[]>([])
   const [discoveredServices, setDiscoveredServices] = useState<AgentServiceRecommendation[]>([])
+  const [paymentLinkData, setPaymentLinkData] = useState<{
+    bookingId: string
+    serviceName: string
+    organizationName: string
+    formattedTime: string
+    totalPrice: string
+    paymentLink: string
+  } | null>(null)
   const endedByAgentRef = useRef(false)
   const hasConnectedRef = useRef(false)
 
@@ -147,6 +155,24 @@ export function InnerVoiceAssistantUI({
   }, [localParticipant, room, language, location, connectionState])
 
   useEffect(() => {
+    const handlePaymentLink = (e: Event) => {
+      const customEvent = e as CustomEvent<{
+        bookingId: string
+        serviceName: string
+        organizationName: string
+        formattedTime: string
+        totalPrice: string
+        paymentLink: string
+      }>
+      if (customEvent.detail) {
+        setPaymentLinkData(customEvent.detail)
+      }
+    }
+    window.addEventListener('salondesk:payment_link', handlePaymentLink)
+    return () => window.removeEventListener('salondesk:payment_link', handlePaymentLink)
+  }, [])
+
+  useEffect(() => {
     if (!room) return
 
     const finishFromAgent = () => {
@@ -182,6 +208,29 @@ export function InnerVoiceAssistantUI({
           toast.success(
             `Appointment for ${parsed.service_name || 'Service'} confirmed! $0 PayPal hold active.`,
             toastColor.success,
+          )
+          return
+        }
+
+        if (parsed?.type === 'payment_link' && parsed?.payment_link) {
+          toast.success(
+            `Booking created! Click the payment link to complete your reservation.`,
+            toastColor.success,
+          )
+          // Store payment link for display
+          window.dispatchEvent(
+            new CustomEvent('salondesk:payment_link', {
+              detail: {
+                bookingId: parsed.booking_id,
+                serviceId: parsed.service_id,
+                serviceName: parsed.service_name,
+                organizationName: parsed.organization_name,
+                startsAt: parsed.starts_at,
+                formattedTime: parsed.formatted_time,
+                totalPrice: parsed.total_price,
+                paymentLink: parsed.payment_link,
+              },
+            }),
           )
           return
         }
@@ -513,6 +562,41 @@ export function InnerVoiceAssistantUI({
                 : 'Say hi, or tell me what you are hoping to book.')}
           </p>
         </div>
+
+        {/* Payment Link Card (When present) */}
+        {paymentLinkData && (
+          <div className="rounded-xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30 p-3.5 text-stone-900 shadow-[0_1px_2px_rgba(6,95,70,0.06)] motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-200">
+            <div className="mb-2 flex items-center gap-1.5 text-emerald-800">
+              <CalendarCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+              <span className="text-[11px] font-semibold">Booking Created</span>
+            </div>
+            <h4 className="text-sm font-semibold text-stone-950">{paymentLinkData.serviceName}</h4>
+            {paymentLinkData.organizationName && (
+              <p className="mt-0.5 text-xs text-stone-500">at {paymentLinkData.organizationName}</p>
+            )}
+            <div className="mt-2 flex items-center justify-between border-t border-emerald-100 pt-2 text-xs">
+              <span className="font-medium text-stone-600">{paymentLinkData.formattedTime}</span>
+              <span className="font-medium text-emerald-800">${paymentLinkData.totalPrice}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                router.push(paymentLinkData.paymentLink)
+                setPaymentLinkData(null)
+              }}
+              className="mt-2.5 w-full rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            >
+              Complete Payment →
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentLinkData(null)}
+              className="mt-1.5 w-full text-[10px] text-stone-500 hover:text-stone-700 cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* Real Discovered Salons / Organizations Cards (When present) */}
         {visibleOrgs.length > 0 && (

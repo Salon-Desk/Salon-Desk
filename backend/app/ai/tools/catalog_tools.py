@@ -259,11 +259,18 @@ def build_voice_tools(
     on_booking_success: Callable[[dict[str, Any]], Any] | None = None,
     on_discovery_results: Callable[[dict[str, Any]], Any] | None = None,
     on_ui_action: Callable[[dict[str, Any]], Any] | None = None,
+    on_payment_link: Callable[[dict[str, Any]], Any] | None = None,
     portal: str = "client",
 ):
     """Aggregate tools for the voice worker (booking or support by portal)."""
     if is_support_portal(portal):
-        return build_support_tools(session_factory, portal=portal, on_ui_action=on_ui_action)
+        from app.ai.tools.merchant_tools import build_merchant_tools
+
+        support_tools = build_support_tools(
+            session_factory, portal=portal, on_ui_action=on_ui_action
+        )
+        merchant_tools = build_merchant_tools(session_factory)
+        return support_tools + merchant_tools
 
     from app.ai.tools.auth_tools import build_auth_tools
     from app.ai.tools.booking_tools import build_booking_tools
@@ -275,7 +282,13 @@ def build_voice_tools(
         on_discovery_results=on_discovery_results,
     )
     tools.extend(build_schedule_tools(session_factory))
-    tools.extend(build_booking_tools(session_factory, on_booking_success=on_booking_success))
+    tools.extend(
+        build_booking_tools(
+            session_factory,
+            on_booking_success=on_booking_success,
+            on_payment_link=on_payment_link,
+        )
+    )
     tools.extend(build_auth_tools(session_factory, on_auth_success=on_auth_success))
     return tools
 

@@ -16,8 +16,10 @@ import { useState } from 'react'
 import { SearchableSelect } from '@/components/ui'
 import { SERVICE_CATEGORIES } from '@/lib/data/catalog'
 import type { CatalogOrganization } from '@/types/api-org'
+import type { SearchableListControls } from '@/types/searchable-list-controls'
 
-export type ServiceSort = 'popular' | 'rating' | 'price-asc' | 'price-desc' | 'duration'
+export type ServiceSort =
+  'popular' | 'rating' | 'price-asc' | 'price-desc' | 'duration' | 'distance'
 export type PriceRange = 'all' | 'under-50' | '50-100' | '100-150' | '150-plus'
 
 interface CatalogFiltersProps {
@@ -37,6 +39,8 @@ interface CatalogFiltersProps {
   organizations?: CatalogOrganization[]
   organizationId?: string
   onOrganizationChange?: (orgId: string) => void
+  organizationListControls?: SearchableListControls
+  categoryListControls?: SearchableListControls
   onClearAll?: () => void
 }
 
@@ -71,6 +75,8 @@ export function CatalogFilters({
   organizations = [],
   organizationId = '',
   onOrganizationChange,
+  organizationListControls,
+  categoryListControls,
   onClearAll,
 }: CatalogFiltersProps) {
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -85,7 +91,18 @@ export function CatalogFilters({
   return (
     <div className="relative z-30 mb-8 rounded-2xl border border-stone-200/80 bg-white/95 p-3 shadow-xs backdrop-blur-xl transition-all sm:sticky sm:top-[calc(4.25rem+env(safe-area-inset-top))] sm:mb-12 sm:rounded-3xl sm:p-4 sm:shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
       <div className="flex flex-col gap-2.5 sm:gap-3">
-        {/* Row 1: Category Scroll Bar */}
+        {/* Row 1: Category search + scroll bar */}
+        {categoryListControls ? (
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
+            <input
+              type="search"
+              placeholder="Search categories…"
+              className="w-full rounded-full border border-stone-200 bg-stone-50 py-1.5 pl-9 pr-3 text-xs text-stone-800 placeholder:text-stone-400 focus:border-stone-400 focus:outline-hidden"
+              onChange={(e) => categoryListControls.onSearchChange(e.target.value)}
+            />
+          </div>
+        ) : null}
         <div className="flex scroll-px-2 items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x">
           {categories.map((cat) => {
             const isSelected = category === cat
@@ -104,6 +121,16 @@ export function CatalogFilters({
               </button>
             )
           })}
+          {categoryListControls?.hasMore ? (
+            <button
+              type="button"
+              onClick={() => categoryListControls.onLoadMore()}
+              disabled={categoryListControls.isLoadingMore}
+              className="snap-start shrink-0 rounded-full border border-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-100 disabled:opacity-50"
+            >
+              {categoryListControls.isLoadingMore ? 'Loading…' : 'More categories'}
+            </button>
+          ) : null}
         </div>
 
         {/* Subtle Horizontal Divider */}
@@ -159,7 +186,7 @@ export function CatalogFilters({
             </div>
 
             {/* Salon Filter Searchable Combobox */}
-            {onOrganizationChange && organizations.length > 0 ? (
+            {onOrganizationChange ? (
               <div className="min-w-0 flex-1 sm:min-w-[12rem] sm:max-w-xs">
                 <SearchableSelect
                   value={organizationId}
@@ -173,8 +200,8 @@ export function CatalogFilters({
                         ? `★ ${org.rating_avg.toFixed(1)}`
                         : undefined,
                   }))}
-                  placeholder={`All Salons (${organizations.length})`}
-                  clearLabel={`All Salons (${organizations.length})`}
+                  placeholder={`All Salons (${organizationListControls?.total ?? organizations.length})`}
+                  clearLabel={`All Salons (${organizationListControls?.total ?? organizations.length})`}
                   allowClear
                   searchPlaceholder="Search salons by name or address..."
                   emptyText="No matching salons found."
@@ -182,6 +209,11 @@ export function CatalogFilters({
                   leftIcon={<Building2 className="h-3.5 w-3.5 text-stone-500" />}
                   triggerClassName="rounded-full bg-stone-100 py-1.5 px-3 text-xs font-semibold text-stone-700 hover:bg-stone-200/80 transition-colors"
                   contentClassName="w-[min(calc(100vw-2rem),18rem)] rounded-2xl border-stone-200"
+                  onSearchChange={organizationListControls?.onSearchChange}
+                  hasMore={organizationListControls?.hasMore}
+                  onLoadMore={organizationListControls?.onLoadMore}
+                  isLoadingMore={organizationListControls?.isLoadingMore}
+                  loadMoreLabel="Load more salons"
                 />
               </div>
             ) : null}
@@ -215,6 +247,7 @@ export function CatalogFilters({
                 className="cursor-pointer appearance-none rounded-full bg-stone-100 py-1.5 pl-7 pr-8 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-200/80 focus:outline-hidden"
               >
                 <option value="popular">Popular (Rating &amp; Demand)</option>
+                <option value="distance">Nearest</option>
                 <option value="rating">Top Rated (★ Stars)</option>
                 <option value="price-asc">Price: Low to High</option>
                 <option value="price-desc">Price: High to Low</option>

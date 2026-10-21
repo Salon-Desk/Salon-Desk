@@ -49,6 +49,7 @@ export function useVoiceAgentSession({
   const [locationError, setLocationError] = useState<string | null>(null)
   const closingRef = useRef(false)
   const sessionConnectedRef = useRef(false)
+  const hasStartedRef = useRef(false)
   const support = isSupportPortal(portal)
 
   // Keep location in sync if initialLocation prop changes
@@ -96,6 +97,7 @@ export function useVoiceAgentSession({
         },
       })
       setTokenData(data)
+      hasStartedRef.current = true
     } catch (err: unknown) {
       console.error('Failed to acquire LiveKit token:', err)
       setError(liveKitTokenErrorMessage(err))
@@ -105,7 +107,10 @@ export function useVoiceAgentSession({
   }, [language, portal, support, initialLocation, location])
 
   useEffect(() => {
-    if (startOnMount) void startVoiceSession()
+    // Only start on mount if not already started and not closing
+    if (startOnMount && !hasStartedRef.current && !closingRef.current) {
+      void startVoiceSession()
+    }
   }, [startOnMount, startVoiceSession])
 
   const setManualLocation = useCallback((coords: GeoCoords) => {
@@ -118,6 +123,7 @@ export function useVoiceAgentSession({
     closingRef.current = true
     setTokenData(null)
     setEnded(true)
+    hasStartedRef.current = false
   }, [])
 
   const clearLocationError = useCallback(() => {

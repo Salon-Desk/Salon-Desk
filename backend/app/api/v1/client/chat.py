@@ -60,6 +60,7 @@ async def chat(
                 detected_language=body.language or "en",
                 intent="booking",
                 confirmed_booking=confirmed_info,
+                payment_link=confirmed_info.get("payment_link") if confirmed_info else None,
             )
 
     prior = [m.content for m in body.history if m.role == "user"]
@@ -100,9 +101,22 @@ async def chat(
                 "what did i book",
                 "when is my",
                 "cancellation status",
+                "view booking",
+                "show booking",
             )
         )
-        if is_asking_booking:
+        is_asking_details = any(
+            phrase in lower_msg
+            for phrase in (
+                "organization detail",
+                "salon detail",
+                "service detail",
+                "about the salon",
+                "about the service",
+                "more about",
+            )
+        )
+        if is_asking_booking or is_asking_details:
             if user:
                 from app.ai.support_actions import AgentNavigation
                 from app.services import booking_service

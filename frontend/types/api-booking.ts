@@ -199,6 +199,7 @@ export interface ClientChatResponse {
     details?: string | null
     selector?: string | null
   } | null
+  payment_link?: string | null
 }
 
 export interface LiveKitTokenRequest {

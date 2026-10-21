@@ -13,6 +13,7 @@ import { useBookingContext } from '@/hooks'
 import { ROUTES } from '@/lib/constants'
 import { ANY_AVAILABLE_STYLIST } from '@/lib/data/catalog'
 import { createIdempotencyKey } from '@/lib/ids'
+import { buildClientOrgStaffQueryArg } from '@/lib/listing-params/client-org-staff-list-params'
 import { mapApiBookingToUi, mapCatalogServiceToSalonService } from '@/lib/mappers/booking'
 import { mapCatalogStaffToUi } from '@/lib/mappers/staff'
 import {
@@ -66,9 +67,12 @@ export function ClientCheckoutPage({
 
   const { data: catalog, isLoading, isError, refetch } = useGetCatalogServiceQuery(serviceId)
   const orgId = catalog?.organization_id ?? ''
-  const { data: staffPage, isLoading: staffLoading } = useGetCatalogOrgStaffQuery(orgId, {
-    skip: !orgId,
-  })
+  const { data: staffPage, isLoading: staffLoading } = useGetCatalogOrgStaffQuery(
+    buildClientOrgStaffQueryArg(orgId),
+    {
+      skip: !orgId,
+    },
+  )
   const staffOptions = useMemo(
     () => (staffPage?.items ?? []).map(mapCatalogStaffToUi),
     [staffPage?.items],

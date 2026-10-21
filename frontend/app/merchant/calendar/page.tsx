@@ -4,6 +4,7 @@ import { Loader2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/ui'
+import { buildMerchantLayoutEmployeesSnapshotApiParams } from '@/lib/listing-params/merchant-dashboard-snapshot-list-params'
 import {
   type CalendarEvent,
   type CalendarViewMode,
@@ -35,7 +36,9 @@ export default function MerchantCalendarPage() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
 
   const { data: org } = useGetMyOrganizationQuery()
-  const { data: employeesData, isLoading: staffLoading } = useGetMyEmployeesQuery()
+  const { data: employeesData, isLoading: staffLoading } = useGetMyEmployeesQuery(
+    buildMerchantLayoutEmployeesSnapshotApiParams(),
+  )
   const employees = employeesData?.items ?? []
 
   const queryRange = useMemo(() => rangeForView(view, anchor), [view, anchor])

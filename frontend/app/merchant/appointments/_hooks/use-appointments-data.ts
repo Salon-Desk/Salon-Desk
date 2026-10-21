@@ -1,12 +1,18 @@
 import { useMemo } from 'react'
 
+import { buildMerchantAppointmentsKpiApiParams } from '@/lib/listing-params/merchant-appointments-list-params'
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
 import { HOLD_STATES } from '@/lib/status'
 import { useGetMyOrgBookingsQuery } from '@/store/api/orgApi'
 import type { Booking, HoldState } from '@/types'
 
 export function useAppointmentsData() {
-  const { data: apiBookingsData, isLoading, isError, refetch } = useGetMyOrgBookingsQuery()
+  const {
+    data: apiBookingsData,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetMyOrgBookingsQuery(buildMerchantAppointmentsKpiApiParams())
   const apiBookings = apiBookingsData?.items ?? []
 
   const bookings = useMemo(() => apiBookings.map((b) => mapApiBookingToUi(b)), [apiBookings])

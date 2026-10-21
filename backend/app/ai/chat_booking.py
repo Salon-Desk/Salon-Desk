@@ -227,6 +227,7 @@ async def try_handle_chat_booking(
 
     starts_at = _parse_starts_at(parsed.get("preferred_time"))
 
+    # Create pending booking with payment link
     try:
         booking = await booking_service.create_booking(
             db,
@@ -237,25 +238,9 @@ async def try_handle_chat_booking(
             stylist_id=None,
             customer_notes=parsed.get("notes") or "Booked via AI Concierge Chat",
         )
-        terms = "I authorize a $0 PayPal authorization hold for this booking."
-        await payment_service.create_consent(
-            db,
-            booking=booking,
-            client_id=client.id,
-            terms_version="v1",
-            terms_text=terms,
-            signed_payload=f"booking={booking.id};chat_booking=true",
-        )
-        hold, _approval = await payment_service.create_hold(
-            db,
-            booking=booking,
-            idempotency_key=f"chat-hold-{booking.id}",
-            currency="USD",
-        )
-        await payment_service.complete_hold(db, hold=hold, paypal_order_token=hold.paypal_order_id)
         await db.commit()
     except Exception as exc:
-        logger.error("Failed to book via chat: %s", exc)
+        logger.error("Failed to create booking via chat: %s", exc)
         return (
             True,
             f"I ran into a snag reserving that slot: {exc}. Want to try another time?",
@@ -266,19 +251,23 @@ async def try_handle_chat_booking(
     org_name = org.name if org else "Salon"
     time_str = starts_at.strftime("%A, %b %d at %I:%M %p")
 
-    confirmed_info = {
+    # Generate payment link
+    payment_link = f"/client/book/{service.id}?slot={starts_at.isoformat()}"
+
+    booking_info = {
         "id": str(booking.id),
         "service_name": service.name,
         "organization_name": org_name,
         "starts_at": starts_at.isoformat(),
         "formatted_time": time_str,
         "total_price": str(booking.total_price),
-        "status": "CONFIRMED",
+        "status": "PENDING",
+        "payment_link": payment_link,
     }
 
     return (
         True,
-        f"You're booked — {service.name} at {org_name} on {time_str}. "
-        f"A $0 PayPal hold is in place; you'll pay at the salon.",
-        confirmed_info,
+        f"I've created your appointment for {service.name} at {org_name} on {time_str}. "
+        f"The total is ${booking.total_price}. Please click the payment link to complete your booking with a $0 PayPal authorization hold.",
+        booking_info,
     )

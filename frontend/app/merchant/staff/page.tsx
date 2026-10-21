@@ -36,6 +36,13 @@ import {
 } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
+import { useListingParams } from '@/hooks/useListingParams'
+import {
+  buildMerchantStaffCountApiParams,
+  merchantStaffListDefaults,
+  type MerchantStaffListParams,
+  MerchantStaffListParamsSchema,
+} from '@/lib/listing-params/merchant-staff-list-params'
 import {
   staffAvatarGradient,
   staffDisplayName,
@@ -49,12 +56,27 @@ import type { User } from '@/types/user'
 import { EditEmployeeModal } from '../_components/edit-employee-modal'
 import { EmployeeFormModal } from '../_components/employee-form-modal'
 
-type RoleFilter = 'all' | 'stylist' | 'reception' | 'org_owner'
-type ViewMode = 'grid' | 'table'
-
 export default function MerchantStaffPage() {
-  const { data: employeesData, isLoading, isError, isFetching, refetch } = useGetMyEmployeesQuery()
+  const { params, displayParams, setParam, setParams } = useListingParams<
+    MerchantStaffListParams,
+    typeof MerchantStaffListParamsSchema
+  >(MerchantStaffListParamsSchema)
+
+  const { data: allStaffCount } = useGetMyEmployeesQuery(buildMerchantStaffCountApiParams('all'))
+  const { data: stylistCount } = useGetMyEmployeesQuery(buildMerchantStaffCountApiParams('stylist'))
+  const { data: receptionCount } = useGetMyEmployeesQuery(
+    buildMerchantStaffCountApiParams('reception'),
+  )
+
+  const {
+    data: employeesData,
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useGetMyEmployeesQuery(params)
   const employees = employeesData?.items ?? []
+  const totalItems = employeesData?.total ?? employees.length
   const [deleteEmployee, { isLoading: isDeleting }] = useDeleteMyEmployeeMutation()
 
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -66,12 +88,11 @@ export default function MerchantStaffPage() {
     onOpenAddStaff: () => setIsAddOpen(true),
   })
 
-  // Filtering & view states
-  const [searchQuery, setSearchQuery] = useState('')
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(6)
+  const settledSearch = typeof params.q === 'string' ? params.q : ''
+  const roleFilter = displayParams.role
+  const viewMode = displayParams.viewMode
+  const currentPage = displayParams.page
+  const pageSize = displayParams.limit
 
   const handleCopyId = (id: string) => {
     void navigator.clipboard.writeText(id)
@@ -94,40 +115,21 @@ export default function MerchantStaffPage() {
     }
   }
 
-  // Filtered employees
-  const filteredEmployees = useMemo(() => {
-    return employees.filter((member) => {
-      const name = staffDisplayName(member).toLowerCase()
-      const email = member.email.toLowerCase()
-      const phone = (staffPhone(member) || '').toLowerCase()
-      const query = searchQuery.trim().toLowerCase()
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const paginatedEmployees = employees
 
-      const matchesSearch =
-        !query || name.includes(query) || email.includes(query) || phone.includes(query)
-      const matchesRole = roleFilter === 'all' || member.role === roleFilter
-
-      return matchesSearch && matchesRole
-    })
-  }, [employees, searchQuery, roleFilter])
-
-  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / pageSize))
-  const paginatedEmployees = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return filteredEmployees.slice(start, start + pageSize)
-  }, [filteredEmployees, currentPage, pageSize])
-
-  // Aggregate statistics
-  const stats = useMemo(() => {
-    const total = employees.length
-    const stylists = employees.filter((e) => e.role === 'stylist').length
-    const reception = employees.filter((e) => e.role === 'reception').length
-    const active = employees.filter((e) => (e.status || 'active').toLowerCase() === 'active').length
-
-    return { total, stylists, reception, active }
-  }, [employees])
+  const stats = useMemo(
+    () => ({
+      total: allStaffCount?.total ?? 0,
+      stylists: stylistCount?.total ?? 0,
+      reception: receptionCount?.total ?? 0,
+      active: allStaffCount?.total ?? 0,
+    }),
+    [allStaffCount?.total, stylistCount?.total, receptionCount?.total],
+  )
 
   const roleFilterOptions = [
-    { value: 'all' as const, label: `All (${employees.length})` },
+    { value: 'all' as const, label: `All (${stats.total})` },
     { value: 'stylist' as const, label: `Stylists (${stats.stylists})` },
     { value: 'reception' as const, label: `Front Desk (${stats.reception})` },
     { value: 'org_owner' as const, label: 'Owners' },
@@ -222,10 +224,9 @@ export default function MerchantStaffPage() {
             <input
               type="text"
               placeholder="Search by name, email, or phone…"
-              value={searchQuery}
+              value={displayParams.search}
               onChange={(e) => {
-                setSearchQuery(e.target.value)
-                setCurrentPage(1)
+                setParams({ search: e.target.value, page: 1 })
               }}
               className="h-9.5 w-full rounded-lg border border-slate-200/80 bg-slate-50/50 pr-4 pl-9 text-xs text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 transition-all"
             />
@@ -237,8 +238,7 @@ export default function MerchantStaffPage() {
               options={roleFilterOptions}
               value={roleFilter}
               onChange={(val) => {
-                setRoleFilter(val)
-                setCurrentPage(1)
+                setParams({ role: val, page: 1 })
               }}
               variant="pills"
               className="h-9.5"
@@ -249,13 +249,13 @@ export default function MerchantStaffPage() {
         {/* View Switcher */}
         <div className="flex items-center justify-between sm:justify-end gap-2 border-t border-slate-100 pt-2 sm:border-t-0 sm:pt-0">
           <span className="text-[11px] font-medium text-slate-500">
-            Showing <strong className="text-slate-800">{filteredEmployees.length}</strong> of{' '}
+            Showing <strong className="text-slate-800">{employees.length}</strong> of{' '}
             {employees.length}
           </span>
           <SegmentedControl
             options={viewModeOptions}
             value={viewMode}
-            onChange={setViewMode}
+            onChange={(mode) => setParam('viewMode', mode)}
             variant="tabs"
             className="h-8.5"
           />
@@ -308,19 +308,19 @@ export default function MerchantStaffPage() {
       ) : null}
 
       {/* Empty Search Results */}
-      {!isLoading && !isError && employees.length > 0 && filteredEmployees.length === 0 ? (
+      {!isLoading && !isError && totalItems === 0 && (settledSearch || roleFilter !== 'all') ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center shadow-xs">
           <Filter className="h-8 w-8 text-slate-300 mb-2" />
           <h3 className="font-semibold text-sm text-slate-800">No matching team members</h3>
           <p className="mt-1 text-xs text-slate-500 max-w-sm">
-            No employees match your filter &ldquo;{searchQuery}&rdquo;. Try clearing filters or
-            searching another keyword.
+            No employees match your filter
+            {settledSearch ? ` “${settledSearch}”` : ''}. Try clearing filters or searching another
+            keyword.
           </p>
           <button
             type="button"
             onClick={() => {
-              setSearchQuery('')
-              setRoleFilter('all')
+              setParams(merchantStaffListDefaults)
             }}
             className="mt-3.5 text-xs font-semibold text-amber-700 hover:text-amber-800 underline underline-offset-2"
           >
@@ -330,7 +330,7 @@ export default function MerchantStaffPage() {
       ) : null}
 
       {/* Grid View */}
-      {!isLoading && !isError && filteredEmployees.length > 0 && viewMode === 'grid' ? (
+      {!isLoading && !isError && paginatedEmployees.length > 0 && viewMode === 'grid' ? (
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {paginatedEmployees.map((member) => {
@@ -476,20 +476,17 @@ export default function MerchantStaffPage() {
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={filteredEmployees.length}
+            totalItems={totalItems}
             pageSize={pageSize}
-            setCurrentPage={setCurrentPage}
-            onPageSizeChange={(size) => {
-              setPageSize(size)
-              setCurrentPage(1)
-            }}
+            setCurrentPage={(page) => setParam('page', page)}
+            onPageSizeChange={(size) => setParams({ limit: size, page: 1 })}
             pageSizeOptions={[6, 9, 15, 30]}
           />
         </div>
       ) : null}
 
       {/* Table / Roster View */}
-      {!isLoading && !isError && filteredEmployees.length > 0 && viewMode === 'table' ? (
+      {!isLoading && !isError && paginatedEmployees.length > 0 && viewMode === 'table' ? (
         <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -638,13 +635,10 @@ export default function MerchantStaffPage() {
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={filteredEmployees.length}
+            totalItems={totalItems}
             pageSize={pageSize}
-            setCurrentPage={setCurrentPage}
-            onPageSizeChange={(size) => {
-              setPageSize(size)
-              setCurrentPage(1)
-            }}
+            setCurrentPage={(page) => setParam('page', page)}
+            onPageSizeChange={(size) => setParams({ limit: size, page: 1 })}
             pageSizeOptions={[6, 10, 20, 50]}
             className="rounded-t-none border-t border-border shadow-none"
           />

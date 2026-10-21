@@ -13,6 +13,7 @@ import type {
   FeaturedOrganization,
   FeaturedService,
 } from '@/types/api-org'
+import type { SearchableListControls } from '@/types/searchable-list-controls'
 
 export type FeaturedTab = 'organizations' | 'services'
 
@@ -25,6 +26,8 @@ interface FeaturedManagerSectionProps {
   onCreate: (req: CreateFeaturedItemRequest) => Promise<void>
   onToggleActive: (item: FeaturedOrganization | FeaturedService) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  orgListControls?: SearchableListControls
+  serviceListControls?: SearchableListControls
 }
 
 export function FeaturedManagerSection({
@@ -36,6 +39,8 @@ export function FeaturedManagerSection({
   onCreate,
   onToggleActive,
   onDelete,
+  orgListControls,
+  serviceListControls,
 }: FeaturedManagerSectionProps) {
   const [tab, setTab] = useState<FeaturedTab>('organizations')
   const [targetId, setTargetId] = useState('')
@@ -148,6 +153,25 @@ export function FeaturedManagerSection({
                 }
                 triggerClassName="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 hover:border-slate-300 focus:border-amber-500"
                 contentClassName="w-[min(calc(100vw-2rem),24rem)]"
+                onSearchChange={
+                  tab === 'organizations'
+                    ? orgListControls?.onSearchChange
+                    : serviceListControls?.onSearchChange
+                }
+                hasMore={
+                  tab === 'organizations' ? orgListControls?.hasMore : serviceListControls?.hasMore
+                }
+                onLoadMore={
+                  tab === 'organizations'
+                    ? orgListControls?.onLoadMore
+                    : serviceListControls?.onLoadMore
+                }
+                isLoadingMore={
+                  tab === 'organizations'
+                    ? orgListControls?.isLoadingMore
+                    : serviceListControls?.isLoadingMore
+                }
+                loadMoreLabel={tab === 'organizations' ? 'Load more salons' : 'Load more services'}
               />
             </div>
 

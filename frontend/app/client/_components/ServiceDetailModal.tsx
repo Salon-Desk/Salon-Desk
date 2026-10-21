@@ -19,6 +19,7 @@ import { useEffect, useId, useState } from 'react'
 
 import { serviceImage } from '@/lib/data/service-content'
 import { formatDuration, formatUsd } from '@/lib/format'
+import { buildClientOrgStaffQueryArg } from '@/lib/listing-params/client-org-staff-list-params'
 import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import {
   useGetCatalogCancellationPolicyQuery,
@@ -70,7 +71,9 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
     : ''
 
   const { data: org } = useGetCatalogOrganizationQuery(orgId, { skip: !isOpen || !orgId })
-  const { data: staffPage } = useGetCatalogOrgStaffQuery(orgId, { skip: !isOpen || !orgId })
+  const { data: staffPage } = useGetCatalogOrgStaffQuery(buildClientOrgStaffQueryArg(orgId), {
+    skip: !isOpen || !orgId,
+  })
   const { data: reviewsPage } = useGetCatalogOrgFeedbackQuery(
     { orgId, page_size: 10 },
     { skip: !isOpen || !orgId },

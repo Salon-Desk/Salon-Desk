@@ -146,14 +146,36 @@ export const clientApi = baseApi.injectEndpoints({
       providesTags: ['catalog'],
     }),
 
-    getCatalogOrgStaff: builder.query<ApiPage<CatalogStaffMember>, string>({
-      query: (orgId) => ({
-        url: `/api/v1/catalog/organizations/${orgId}/staff`,
-        method: 'GET',
-      }),
+    getCatalogOrgStaff: builder.query<
+      ApiPage<CatalogStaffMember>,
+      | string
+      | {
+          orgId: string
+          page?: number
+          page_size?: number
+        }
+    >({
+      query: (arg) => {
+        const orgId = typeof arg === 'string' ? arg : arg.orgId
+        const params =
+          typeof arg === 'string'
+            ? undefined
+            : {
+                ...(arg.page !== undefined ? { page: arg.page } : {}),
+                ...(arg.page_size !== undefined ? { page_size: arg.page_size } : {}),
+              }
+        return {
+          url: `/api/v1/catalog/organizations/${orgId}/staff`,
+          method: 'GET',
+          params,
+        }
+      },
       transformResponse: (res: ApiPage<CatalogStaffMember> | CatalogStaffMember[]) =>
         normalizePaginated(res),
-      providesTags: (_result, _err, orgId) => [{ type: 'catalog', id: `staff-${orgId}` }],
+      providesTags: (_result, _err, arg) => {
+        const orgId = typeof arg === 'string' ? arg : arg.orgId
+        return [{ type: 'catalog', id: `staff-${orgId}` }]
+      },
     }),
 
     getCatalogOrgFeedback: builder.query<

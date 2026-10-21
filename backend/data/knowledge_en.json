@@ -57,7 +57,7 @@
   {
     "source": "booking_flow",
     "audience": "client",
-    "content": "To book as a client: choose a salon and service (catalog or AI concierge), pick an available time, sign in if needed, accept hold / cancellation terms (consent), then place a PayPal authorization hold. No money leaves your account upfront — it is a hold, not a charge. The salon later captures on completion or a no-show fee, or voids on free cancel."
+    "content": "To book as a client: choose a salon and service (catalog or AI concierge), pick an available time, sign in if needed. You can book entirely through the AI voice assistant - just tell it what service you want and when. The AI will create your booking and provide a payment link for you to click. When you click the link, you'll accept the hold / cancellation terms (consent) and place a PayPal authorization hold. No money leaves your account upfront — it is a hold, not a charge. The salon later captures on completion or a no-show fee, or voids on free cancel."
   },
   {
     "source": "client_app_nav",
@@ -82,7 +82,7 @@
   {
     "source": "client_voice_agent",
     "audience": "client",
-    "content": "Client voice agent: talk or type to find salons and book. It can search services, help log in or sign up, and call booking tools. Say goodbye to end the call. Location helps nearby recommendations."
+    "content": "Client voice agent: talk or type to find salons and book. It can search services, help log in or sign up, and call booking tools. Say goodbye to end the call. Location helps nearby recommendations. When you book through voice, the AI creates a pending booking and shows a payment link - just click it to complete your reservation with a $0 PayPal hold."
   },
   {
     "source": "client_zero_dollar_hold",
@@ -398,5 +398,60 @@
     "source": "refund_and_dispute_resolution",
     "audience": "all",
     "content": "Refunds and Dispute Resolution Policy: Because SalonDesk uses authorization holds rather than immediate upfront charges, free cancellations simply void and release the hold without requiring a refund wait period. If an appointment is not honored by the salon, the authorization hold is voided or any captured amount is refunded via PayPal. Disputes regarding service execution or fees can be submitted via the client bookings portal or escalated to support@salondesk.io."
+  },
+  {
+    "source": "client_payment_methods_detailed",
+    "audience": "client",
+    "content": "Accepted Payment Methods: SalonDesk accepts PayPal balance, linked bank accounts, and major debit/credit cards (Visa, Mastercard, American Express, Discover). All transactions use PayPal's secure payment infrastructure. The authorization hold reserves funds without charging them. When the salon marks show or no-show, the actual capture is processed through PayPal. You can manage your payment methods in your PayPal account settings."
+  },
+  {
+    "source": "client_paypal_hold_explained",
+    "audience": "client",
+    "content": "PayPal Authorization Hold Explained: When you book, we place a temporary authorization hold on your payment method. This is a reservation, not a charge. Your bank may show a pending transaction, but no money is transferred. After your appointment, the salon captures the actual payment amount. If you cancel within the free window, the hold is voided and released immediately. Holds older than 3 days are automatically re-authorized to maintain the reservation."
+  },
+  {
+    "source": "client_feature_meanings",
+    "audience": "client",
+    "content": "Client App Features Explained: Catalog shows all salons and services with prices and ratings. AI Concierge (chat and voice) helps you find salons, book appointments, and answer questions. My Bookings shows your upcoming and past appointments with hold status. Profile manages your contact information. Location-based search finds salons near you when you allow GPS access. Filter by category, salon, price, and distance."
+  },
+  {
+    "source": "merchant_all_pages_explained",
+    "audience": "merchant",
+    "content": "Merchant Console Pages Explained: Dashboard shows your active holds, captured revenue, compliance alerts, and recent bookings. Calendar displays your schedule in Agenda/Day/Week views with color-coded booking blocks. Appointments lists all bookings with filtering by status (Held, Reauth, Captured, No-Show, Voided). Staff manages your team members (Stylists, Reception, Owners). Services creates and edits your service offerings with prices and durations. Settings configures salon branding, address, timezone, PayPal account, and cancellation policies."
+  },
+  {
+    "source": "merchant_form_fields_explained",
+    "audience": "merchant",
+    "content": "Merchant Form Fields Explained: Staff Form - First/Last Name, Work Email, Temporary Password, Role (Stylist/Reception/Owner). Service Form - Category, Name, Description, Base Price, Duration (minutes), Simultaneous Capacity, Cover Image. PayPal Form - Merchant ID, Email, Currency, Status (Pending/Approved/Rejected/Suspended). Policy Form - Free Cancel Hours (hours before appointment), No-Show Fee %, Late Cancel Fee %, Hold % of service price."
+  },
+  {
+    "source": "merchant_api_response_fields",
+    "audience": "merchant",
+    "content": "API Response Fields in UI: Booking responses include id, status (PENDING/CONFIRMED/COMPLETED/NO_SHOW/CANCELLED), starts_at (ISO datetime), agreed_hold_amount (decimal), free_cancel_deadline_at (ISO datetime), agreed_late_cancel_fee (decimal). Service responses include id, name, base_price, duration_minutes, category_name, organization_id. Staff responses include id, email, role, status. PayPal account responses include merchant_id, email, currency, status."
+  },
+  {
+    "source": "merchant_filtering_capacity",
+    "audience": "merchant",
+    "content": "Filtering in Merchant Console: Dashboard filter shows All / Active Holds / Settled / Voided / No-Show bookings. Appointments page supports status filtering and search by booking reference. Calendar can filter by specific staff members. Staff page has All / Stylists / Front Desk / Owners views with Cards or Roster layout. Services page can filter by category or status (Active/Inactive). Change Request History filters by type (PAYPAL_ACCOUNT, CANCELLATION_POLICY) and status (Pending/Approved/Rejected)."
+  },
+  {
+    "source": "admin_all_pages_explained",
+    "audience": "admin",
+    "content": "Admin Console Pages Explained: Overview displays network KPIs: salon counts, pending approvals, settled volume, change requests, commission activity. Salons manages all organizations with filters for All / Pending / Active / Suspended. Approvals handles PayPal account and cancellation policy change requests (Pending/Approved/Rejected). Commission manages category commission rules (percentage, flat, hybrid) and shows accrued GMV. Taxonomy creates and edits service categories with icons and descriptions. Staff invites and manages platform admin operators. Curation configures marketplace hero banner and featured salons."
+  },
+  {
+    "source": "admin_db_read_access",
+    "audience": "admin",
+    "content": "Database Read Access for Admin: Admin AI assistant can read from core tables for troubleshooting: bookings (id, status, starts_at, agreed_hold_amount), services (id, name, base_price, duration_minutes, organization_id), organizations (id, name, status, physical_address), users (id, email, role, status). Read access is read-only with limits (max 10 rows per query). Admin can filter by status or organization ID. This helps diagnose booking issues, verify service data, and check organization approval status."
+  },
+  {
+    "source": "admin_form_fields_explained",
+    "audience": "admin",
+    "content": "Admin Form Fields Explained: Salon Approval Form - Organization Name, Description, Physical Address, Timezone, Approval Status (Pending/Active/Suspended). Commission Rule Form - Name, Category, Type (Percentage/Flat/Hybrid), Rate Value. Taxonomy Category Form - Name, Description, Icon. Staff Invite Form - Name, Corporate Email, Role (Platform Admin privileges). Curation Form - Hero Banner Headline, Subtitle, Eyebrow, Featured Salon Selection, Badge Text (Featured/Editor's Choice/Top Rated)."
+  },
+  {
+    "source": "client_voice_booking_payment_link",
+    "audience": "client",
+    "content": "Voice Booking with Payment Link: When you book through the AI voice assistant, it creates a pending booking and provides a payment link for you to click. This link takes you to the checkout page where you review your booking details, accept the cancellation policy terms, and authorize a $0 PayPal hold. The link contains your selected service, time, and salon information. Just click the link to complete your reservation - no other steps needed."
   }
 ]

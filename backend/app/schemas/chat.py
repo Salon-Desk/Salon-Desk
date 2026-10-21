@@ -75,6 +75,7 @@ class ChatResponse(BaseModel):
     user: dict[str, str | None] | None = None
     navigation: AgentNavigation | None = None
     ui_action: AgentUiAction | None = None
+    payment_link: str | None = None
 
 
 class LiveKitTokenRequest(BaseModel):

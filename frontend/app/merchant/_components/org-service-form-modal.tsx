@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useEffect, useMemo } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
@@ -11,10 +11,10 @@ import RHFNumberField from '@/components/forms/RHFNumberField'
 import RHFTextArea from '@/components/forms/RHFTextArea'
 import RHFTextField from '@/components/forms/RHFTextField'
 import RHFUploadImage from '@/components/forms/RHFUploadImage'
-import { Modal } from '@/components/ui'
+import { Modal, SearchableSelect } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
+import { useSearchableCatalogCategories } from '@/hooks/use-searchable-catalog-options'
 import { zodResolver } from '@/lib/schema/resolver'
-import { useGetCatalogCategoriesQuery } from '@/store/api/clientApi'
 import {
   useCreateMyServiceMutation,
   useUpdateMyServiceMutation,
@@ -35,8 +35,18 @@ interface OrgServiceFormModalProps {
 }
 
 export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormModalProps) {
-  const { data: categoriesData, isLoading: categoriesLoading } = useGetCatalogCategoriesQuery()
-  const categories = categoriesData?.items ?? []
+  const categoryPicker = useSearchableCatalogCategories({ skip: !open })
+  const categories = categoryPicker.items
+  const categoryListControls = useMemo(
+    () => ({
+      onSearchChange: categoryPicker.setSearch,
+      hasMore: categoryPicker.hasMore,
+      onLoadMore: categoryPicker.loadMore,
+      isLoadingMore: categoryPicker.isFetching,
+      total: categoryPicker.total,
+    }),
+    [categoryPicker],
+  )
   const [createService, { isLoading: creating }] = useCreateMyServiceMutation()
   const [updateService, { isLoading: updating }] = useUpdateMyServiceMutation()
   const [uploadServiceImage, { isLoading: uploadingImage }] = useUploadServiceImageMutation()
@@ -133,13 +143,32 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
       >
         <div className="space-y-3 text-xs">
           <RHFUploadImage name="images.cover" label="Service cover image" size={160} />
-          <RHFDropeDown
-            name="service_category_id"
-            label="Category"
-            isRequired
-            isLoading={categoriesLoading}
-            options={categories.map((c) => ({ label: c.name, value: c.id }))}
-          />
+          <div className="space-y-1">
+            <span className="block font-semibold text-slate-700">
+              Category <span className="text-rose-600">*</span>
+            </span>
+            <Controller
+              name="service_category_id"
+              control={methods.control}
+              render={({ field }) => (
+                <SearchableSelect
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  disabled={categoryPicker.isLoading && categories.length === 0}
+                  options={categories.map((c) => ({ value: c.id, label: c.name }))}
+                  placeholder="Select category…"
+                  searchPlaceholder="Search categories…"
+                  emptyText="No categories found."
+                  triggerClassName="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                  onSearchChange={categoryListControls.onSearchChange}
+                  hasMore={categoryListControls.hasMore}
+                  onLoadMore={categoryListControls.onLoadMore}
+                  isLoadingMore={categoryListControls.isLoadingMore}
+                  loadMoreLabel="Load more categories"
+                />
+              )}
+            />
+          </div>
           <RHFTextField name="name" label="Service name" isRequired />
           <RHFTextArea name="description" label="Description" isRequired={false} rows={2} />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

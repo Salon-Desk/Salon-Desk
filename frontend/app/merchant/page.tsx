@@ -23,8 +23,18 @@ import PrimaryButton from '@/components/button/PrimaryButton'
 import { LineTrendChart } from '@/components/chart/LineTrendChart'
 import { Badge, Card, EmptyState, HoldStateBadge, SearchInput, StatCard } from '@/components/ui'
 import { openAgentChat } from '@/hooks/useAgentUiActions'
+import { useListingParams } from '@/hooks/useListingParams'
 import { ROUTES } from '@/lib/constants'
 import { formatUsd } from '@/lib/format'
+import {
+  buildMerchantDashboardBookingsApiParams,
+  type MerchantDashboardBookingsListParams,
+  MerchantDashboardBookingsListParamsSchema,
+} from '@/lib/listing-params/merchant-dashboard-bookings-list-params'
+import {
+  buildMerchantDashboardChangeRequestsSnapshotApiParams,
+  buildMerchantDashboardServicesSnapshotApiParams,
+} from '@/lib/listing-params/merchant-dashboard-snapshot-list-params'
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
 import { cn } from '@/lib/utils'
 import {
@@ -38,23 +48,35 @@ import type { Booking, HoldState } from '@/types'
 
 import { useMerchantContext } from './_context/merchant-context'
 
-type BookingFilterTab = 'all' | 'holds' | 'captured' | 'voided'
-
 export default function MerchantDashboardPage() {
   const { setSelectedBooking, setInspectConsentBooking } = useMerchantContext()
-  const [filterTab, setFilterTab] = useState<BookingFilterTab>('all')
-  const [searchQuery, setSearchQuery] = useState('')
+  const { params, displayParams, setParam } = useListingParams<
+    MerchantDashboardBookingsListParams,
+    typeof MerchantDashboardBookingsListParamsSchema
+  >(MerchantDashboardBookingsListParamsSchema)
+
+  const filterTab = displayParams.filterTab
+  const searchQuery = typeof params.q === 'string' ? params.q : ''
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const { data: org, isLoading: orgLoading, refetch: refetchOrg } = useGetMyOrganizationQuery()
   const { data: account, isLoading: accountLoading } = useGetMyOrgAccountQuery()
+  const bookingsQuery = buildMerchantDashboardBookingsApiParams({
+    search: displayParams.search,
+    filterTab: displayParams.filterTab,
+  })
+
   const {
     data: apiBookingsData,
     isLoading: bookingsLoading,
     refetch: refetchBookings,
-  } = useGetMyOrgBookingsQuery()
-  const { data: changeRequestsData } = useGetMyChangeRequestsQuery()
-  const { data: servicesData } = useGetMyServicesQuery()
+  } = useGetMyOrgBookingsQuery(bookingsQuery)
+  const { data: changeRequestsData } = useGetMyChangeRequestsQuery(
+    buildMerchantDashboardChangeRequestsSnapshotApiParams(),
+  )
+  const { data: servicesData } = useGetMyServicesQuery(
+    buildMerchantDashboardServicesSnapshotApiParams(),
+  )
 
   const apiBookings = apiBookingsData?.items ?? []
   const changeRequests = changeRequestsData?.items ?? []
@@ -109,27 +131,8 @@ export default function MerchantDashboardPage() {
       default:
         list = bookings
     }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim()
-      list = list.filter((b) => {
-        const name = (b.clientName || '').toLowerCase()
-        const service = (b.serviceName || '').toLowerCase()
-        const stylist = (b.stylistName || '').toLowerCase()
-        const phone = (b.clientPhone || '').toLowerCase()
-        const id = (b.id || '').toLowerCase()
-        const status = (b.status || '').toLowerCase()
-        return (
-          name.includes(q) ||
-          service.includes(q) ||
-          stylist.includes(q) ||
-          phone.includes(q) ||
-          id.includes(q) ||
-          status.includes(q)
-        )
-      })
-    }
     return list
-  }, [filterTab, activeHolds, capturedBookings, voidedBookings, bookings, searchQuery])
+  }, [filterTab, activeHolds, capturedBookings, voidedBookings, bookings])
 
   const revenueTrend = useMemo(() => {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -487,8 +490,8 @@ export default function MerchantDashboardPage() {
             {/* Mobile-Friendly Search Box */}
             <div className="w-full sm:w-72">
               <SearchInput
-                value={searchQuery}
-                onChange={setSearchQuery}
+                value={displayParams.search}
+                onChange={(val) => setParam('search', val)}
                 placeholder="Search reservations, clients, stylists…"
                 className="w-full text-xs"
               />
@@ -506,7 +509,9 @@ export default function MerchantDashboardPage() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setFilterTab(tab.id as BookingFilterTab)}
+                onClick={() =>
+                  setParam('filterTab', tab.id as MerchantDashboardBookingsListParams['filterTab'])
+                }
                 className={cn(
                   'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border',
                   filterTab === tab.id
@@ -531,7 +536,7 @@ export default function MerchantDashboardPage() {
             {searchQuery.trim() ? (
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
+                onClick={() => setParam('search', '')}
                 className="shrink-0 text-xs text-amber-700 hover:text-amber-900 font-semibold underline decoration-amber-300 ml-1 cursor-pointer"
               >
                 Clear query
@@ -572,7 +577,7 @@ export default function MerchantDashboardPage() {
                 actionLabel={searchQuery.trim() ? 'Clear search' : 'Open Live Calendar'}
                 onAction={() => {
                   if (searchQuery.trim()) {
-                    setSearchQuery('')
+                    setParam('search', '')
                   } else {
                     window.location.href = ROUTES.merchantCalendar
                   }

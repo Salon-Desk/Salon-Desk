@@ -29,6 +29,7 @@ from .messaging import (
     publish_call_ended,
     publish_discovery_results,
     publish_nearby_orgs,
+    publish_payment_link,
     publish_ui_action,
 )
 
@@ -351,6 +352,7 @@ async def entrypoint(ctx: Any) -> None:
         on_booking_success=lambda p: publish_booking_success(room, p),
         on_discovery_results=lambda p: publish_discovery_results(room, p),
         on_ui_action=lambda p: publish_ui_action(room, p),
+        on_payment_link=lambda p: publish_payment_link(room, p),
     )
 
     # Initialize agent

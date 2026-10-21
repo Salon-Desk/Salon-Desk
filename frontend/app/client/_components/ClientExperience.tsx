@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  ArrowLeft,
   Calendar,
   Clock,
   Compass,
@@ -10,6 +11,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -19,18 +21,30 @@ import { CancelBookingDialog } from '@/app/client/_components/CancelBookingDialo
 import { EmptyState, Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useGeolocation, useToast } from '@/hooks'
-import { useDebounce } from '@/hooks/use-debounce'
+import {
+  useSearchableCatalogCategories,
+  useSearchableCatalogOrganizations,
+} from '@/hooks/use-searchable-catalog-options'
+import { useListingParams } from '@/hooks/useListingParams'
 import { buildCancelOutcomePreview } from '@/lib/booking/cancel-policy'
+import { ROUTES } from '@/lib/constants'
 import { formatUsd } from '@/lib/format'
+import {
+  clientCatalogListDefaults,
+  type ClientCatalogListParams,
+  ClientCatalogListParamsSchema,
+} from '@/lib/listing-params/client-catalog-list-params'
+import {
+  type ClientMyBookingsListParams,
+  ClientMyBookingsListParamsSchema,
+} from '@/lib/listing-params/client-my-bookings-list-params'
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
 import type { RootState } from '@/store'
 import { setChatMode, setChatOpen } from '@/store/agentChatSlice'
 import {
   useCancelBookingMutation,
-  useGetCatalogCategoriesQuery,
   useGetCatalogCurationQuery,
   useGetCatalogHeroQuery,
-  useGetCatalogOrganizationsQuery,
   useGetMyBookingsQuery,
   useLazyGetCatalogServiceQuery,
 } from '@/store/api/clientApi'
@@ -42,7 +56,7 @@ import { usePagedCatalog } from '../_hooks/use-paged-catalog'
 import { BookingReceipt as ReceiptModal } from './BookingReceipt'
 import { BookingsPanel } from './BookingsPanel'
 import { CatalogFeaturedSection } from './CatalogFeaturedSection'
-import { CatalogFilters, type PriceRange, type ServiceSort } from './CatalogFilters'
+import { CatalogFilters, type ServiceSort } from './CatalogFilters'
 import { CatalogHero } from './CatalogHero'
 import { CatalogSection } from './CatalogSection'
 import { checkoutPath } from './ClientCheckoutPage'
@@ -62,15 +76,23 @@ function toApiSort(sort: ServiceSort): CatalogServiceSort {
   if (sort === 'duration') return 'duration'
   if (sort === 'rating') return 'rating'
   if (sort === 'popular') return 'popular'
+  if (sort === 'distance') return 'distance'
   return 'name'
 }
 
 export interface ClientExperienceProps {
   initialTab?: ClientTab
   filterOrgId?: string
+  /** `discover` is the catalog landing. `explore` is the dedicated filter page. */
+  catalogMode?: 'discover' | 'explore'
 }
 
-export function ClientExperience({ initialTab = 'catalog', filterOrgId }: ClientExperienceProps) {
+export function ClientExperience({
+  initialTab = 'catalog',
+  filterOrgId,
+  catalogMode = 'discover',
+}: ClientExperienceProps) {
+  const isExplorePage = catalogMode === 'explore' || Boolean(filterOrgId)
   const router = useRouter()
   const dispatch = useDispatch()
   const { message: toastMessage, show: showToast, dismiss } = useToast()
@@ -81,38 +103,48 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
     coords: userCoords,
     status: geoStatus,
     request: requestLocation,
-  } = useGeolocation({ requestOnMount: !filterOrgId })
+  } = useGeolocation({ requestOnMount: !isExplorePage })
 
-  const { data: curation, isLoading: curationLoading } = useGetCatalogCurationQuery()
+  const [activeTab, setActiveTab] = useState<ClientTab>(initialTab)
+  const { params, displayParams, setParam, setParams } = useListingParams<
+    ClientCatalogListParams,
+    typeof ClientCatalogListParamsSchema
+  >(ClientCatalogListParamsSchema)
+
+  const { params: myBookingsParams } = useListingParams<
+    ClientMyBookingsListParams,
+    typeof ClientMyBookingsListParamsSchema
+  >(ClientMyBookingsListParamsSchema)
+
+  const { data: curation, isLoading: curationLoading } = useGetCatalogCurationQuery(undefined, {
+    skip: isExplorePage,
+  })
   const { data: hero, isLoading: heroLoading } = useGetCatalogHeroQuery()
   const effectiveHero = curation?.hero || hero
-  const { data: categoriesData } = useGetCatalogCategoriesQuery()
-  const { data: organizationsData } = useGetCatalogOrganizationsQuery()
-  const categories = categoriesData?.items ?? []
-  const organizations = organizationsData?.items ?? []
+  const categoryPicker = useSearchableCatalogCategories({ skip: !isExplorePage })
+  const orgPicker = useSearchableCatalogOrganizations({
+    selectedOrgId: filterOrgId ?? displayParams.orgId,
+  })
+  const categories = categoryPicker.items
+  const organizations = orgPicker.items
   const [fetchCatalogService] = useLazyGetCatalogServiceQuery()
   const {
     data: apiBookingsData,
     isLoading: bookingsLoading,
     refetch: refetchBookings,
-  } = useGetMyBookingsQuery(undefined, { skip: !isAuthenticated || !isClientUser(user) })
+  } = useGetMyBookingsQuery(myBookingsParams, { skip: !isAuthenticated || !isClientUser(user) })
   const apiBookings = apiBookingsData?.items ?? []
 
   const [cancelBooking] = useCancelBookingMutation()
 
-  const [activeTab, setActiveTab] = useState<ClientTab>(initialTab)
-  const [selectedCategory, setSelectedCategory] = useState<string>('All')
-  const [selectedOrgId, setSelectedOrgId] = useState(filterOrgId ?? '')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<ServiceSort>('popular')
-  const [priceRange, setPriceRange] = useState<PriceRange>('all')
-  const [minRating, setMinRating] = useState<number | null>(null)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const debouncedSearch = useDebounce(searchQuery.trim(), 300)
-
-  useEffect(() => {
-    setSelectedOrgId(filterOrgId ?? '')
-  }, [filterOrgId])
+  const selectedCategory = displayParams.category
+  const selectedOrgId = filterOrgId ?? displayParams.orgId
+  const searchQuery = displayParams.search
+  const debouncedSearch = (typeof params.q === 'string' ? params.q : '').trim()
+  const sortBy = displayParams.sortBy
+  const priceRange = displayParams.priceRange
+  const minRating = displayParams.minRating > 0 ? displayParams.minRating : null
+  const viewMode = displayParams.viewMode
 
   const [protocolService, setProtocolService] = useState<SalonService | null>(null)
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null)
@@ -152,6 +184,28 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
     return ['All', ...names]
   }, [categories])
 
+  const categoryListControls = useMemo(
+    () => ({
+      onSearchChange: categoryPicker.setSearch,
+      hasMore: categoryPicker.hasMore,
+      onLoadMore: categoryPicker.loadMore,
+      isLoadingMore: categoryPicker.isFetching,
+      total: categoryPicker.total,
+    }),
+    [categoryPicker],
+  )
+
+  const organizationListControls = useMemo(
+    () => ({
+      onSearchChange: orgPicker.setSearch,
+      hasMore: orgPicker.hasMore,
+      onLoadMore: orgPicker.loadMore,
+      isLoadingMore: orgPicker.isFetching,
+      total: orgPicker.total,
+    }),
+    [orgPicker],
+  )
+
   const effectiveOrgId = filterOrgId || selectedOrgId || undefined
 
   const priceFilterParams = useMemo(() => {
@@ -162,28 +216,41 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
     return {}
   }, [priceRange])
 
-  const ratingFilterParams = useMemo(() => {
-    if (minRating !== null) return { min_rating: minRating }
-    return {}
-  }, [minRating])
-
   const isFilteredView =
-    Boolean(effectiveOrgId) ||
-    selectedCategory !== 'All' ||
-    debouncedSearch.length > 0 ||
-    priceRange !== 'all' ||
-    minRating !== null
+    isExplorePage &&
+    (Boolean(effectiveOrgId) ||
+      selectedCategory !== 'All' ||
+      debouncedSearch.length > 0 ||
+      priceRange !== 'all' ||
+      minRating !== null)
 
-  const sharedFilters = useMemo(
-    () => ({
+  const sharedFilters = useMemo(() => {
+    if (!isExplorePage) return {}
+    return {
       ...(categoryId ? { category_id: categoryId } : {}),
       ...(effectiveOrgId ? { org_id: effectiveOrgId } : {}),
       ...(debouncedSearch ? { q: debouncedSearch } : {}),
+      ...(typeof params.min_rating === 'number' && params.min_rating > 0
+        ? { min_rating: params.min_rating }
+        : {}),
       ...priceFilterParams,
-      ...ratingFilterParams,
-    }),
-    [categoryId, effectiveOrgId, debouncedSearch, priceFilterParams, ratingFilterParams],
-  )
+    }
+  }, [
+    isExplorePage,
+    categoryId,
+    effectiveOrgId,
+    debouncedSearch,
+    params.min_rating,
+    priceFilterParams,
+  ])
+
+  const isNearbyExplore = isExplorePage && sortBy === 'distance'
+
+  useEffect(() => {
+    if (isNearbyExplore && geoStatus === 'idle') {
+      requestLocation()
+    }
+  }, [isNearbyExplore, geoStatus, requestLocation])
 
   const nearbyFilters = useMemo(() => {
     if (!userCoords) {
@@ -210,37 +277,50 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
     [sharedFilters],
   )
 
+  const distanceFilters = useMemo(() => {
+    if (sortBy !== 'distance') return {}
+    return {
+      sort: 'distance' as const,
+      max_distance_km: NEARBY_RADIUS_KM,
+      ...(userCoords ? { lat: userCoords.lat, lng: userCoords.lng } : {}),
+    }
+  }, [sortBy, userCoords])
+
   const browseFilters = useMemo(
     () => ({
       ...sharedFilters,
       sort: toApiSort(sortBy),
+      ...distanceFilters,
     }),
-    [sharedFilters, sortBy],
+    [sharedFilters, sortBy, distanceFilters],
   )
 
   const resultsFilters = useMemo(
     () => ({
       ...sharedFilters,
       sort: toApiSort(sortBy),
+      ...distanceFilters,
     }),
-    [sharedFilters, sortBy],
+    [sharedFilters, sortBy, distanceFilters],
   )
+
+  const awaitingNearbyLocation = isNearbyExplore && !userCoords
 
   const nearby = usePagedCatalog(nearbyFilters, {
     pageSize: PAGE_SIZE,
-    skip: isFilteredView || !userCoords,
+    skip: isExplorePage || !userCoords,
   })
   const popular = usePagedCatalog(popularFilters, {
     pageSize: PAGE_SIZE,
-    skip: isFilteredView,
+    skip: isExplorePage,
   })
   const browse = usePagedCatalog(browseFilters, {
     pageSize: PAGE_SIZE,
-    skip: isFilteredView,
+    skip: !isExplorePage || isFilteredView || awaitingNearbyLocation,
   })
   const results = usePagedCatalog(resultsFilters, {
     pageSize: PAGE_SIZE,
-    skip: !isFilteredView,
+    skip: !isExplorePage || !isFilteredView || awaitingNearbyLocation,
   })
 
   const orgNameById = useMemo(() => {
@@ -341,18 +421,23 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
     }
   }
 
-  const catalogError = isFilteredView
-    ? results.isError
-    : popular.isError || browse.isError || (userCoords ? nearby.isError : false)
+  const catalogError = isExplorePage
+    ? isFilteredView
+      ? results.isError
+      : browse.isError
+    : popular.isError || (userCoords ? nearby.isError : false)
 
   const refetchCatalog = () => {
+    if (!isExplorePage) {
+      void popular.refetch()
+      if (userCoords) void nearby.refetch()
+      return
+    }
     if (isFilteredView) {
       void results.refetch()
       return
     }
-    void popular.refetch()
     void browse.refetch()
-    if (userCoords) void nearby.refetch()
   }
 
   const renderCards = (services: SalonService[]) =>
@@ -387,63 +472,86 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-16">
         {activeTab === 'catalog' ? (
           <div>
-            <CatalogHero hero={effectiveHero} isLoading={heroLoading && curationLoading} />
+            {isExplorePage ? (
+              <div className="mb-6 sm:mb-8">
+                <Link
+                  href={ROUTES.client}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 transition-colors hover:text-stone-900"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back to discovery
+                </Link>
+                <h1 className="mt-3 font-extrabold text-2xl tracking-tight text-stone-950 sm:text-3xl">
+                  Explore treatments
+                </h1>
+                <p className="mt-1 max-w-2xl text-sm text-stone-500">
+                  Filter by salon, category, price, and rating to find a service.
+                </p>
+              </div>
+            ) : (
+              <CatalogHero hero={effectiveHero} isLoading={heroLoading && curationLoading} />
+            )}
 
-            {/* Value Props & Trust Highlights Ribbon */}
-            <div className="mb-10 sm:mb-14 overflow-hidden rounded-3xl border border-stone-200/80 bg-white/95 shadow-xs backdrop-blur-xl">
-              <div className="grid grid-cols-2 divide-y divide-stone-100 sm:grid-cols-4 sm:divide-y-0 sm:divide-x sm:divide-stone-100">
-                <div className="flex items-center gap-3 p-3.5 sm:p-4">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 shadow-2xs">
-                    <ShieldCheck className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-bold text-xs text-stone-900">$0 Debited Today</p>
-                    <p className="truncate text-[11px] text-stone-500">
-                      PayPal auth hold guarantee
-                    </p>
+            {!isExplorePage && (
+              <div className="mb-10 sm:mb-14 overflow-hidden rounded-3xl border border-stone-200/80 bg-white/95 shadow-xs backdrop-blur-xl">
+                <div className="grid grid-cols-2 divide-y divide-stone-100 sm:grid-cols-4 sm:divide-y-0 sm:divide-x sm:divide-stone-100">
+                  <div className="flex items-center gap-3 p-3.5 sm:p-4">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 shadow-2xs">
+                      <ShieldCheck className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-stone-900">$0 Debited Today</p>
+                      <p className="truncate text-[11px] text-stone-500">
+                        PayPal auth hold guarantee
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3 p-3.5 sm:p-4">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 shadow-2xs">
-                    <Sparkles className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-bold text-xs text-stone-900">Verified Salons</p>
-                    <p className="truncate text-[11px] text-stone-500">
-                      Licensed studio specialists
-                    </p>
+                  <div className="flex items-center gap-3 p-3.5 sm:p-4">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 shadow-2xs">
+                      <Sparkles className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-stone-900">Verified Salons</p>
+                      <p className="truncate text-[11px] text-stone-500">
+                        Licensed studio specialists
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3 p-3.5 sm:p-4">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 shadow-2xs">
-                    <Calendar className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-bold text-xs text-stone-900">Instant Confirm</p>
-                    <p className="truncate text-[11px] text-stone-500">Real-time schedule lock</p>
+                  <div className="flex items-center gap-3 p-3.5 sm:p-4">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 shadow-2xs">
+                      <Calendar className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-stone-900">Instant Confirm</p>
+                      <p className="truncate text-[11px] text-stone-500">Real-time schedule lock</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3 p-3.5 sm:p-4">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-700 shadow-2xs">
-                    <Clock className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-bold text-xs text-stone-900">Free Cancellation</p>
-                    <p className="truncate text-[11px] text-stone-500">100% hold release window</p>
+                  <div className="flex items-center gap-3 p-3.5 sm:p-4">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-700 shadow-2xs">
+                      <Clock className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-stone-900">Free Cancellation</p>
+                      <p className="truncate text-[11px] text-stone-500">
+                        100% hold release window
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {!filterOrgId && !isFilteredView && (
+            {!isExplorePage && (
               <>
                 <CatalogFeaturedSection
                   featuredOrganizations={curation?.featured_organizations ?? []}
                   featuredServices={curation?.featured_services ?? []}
-                  onSelectOrganization={(orgId) => setSelectedOrgId(orgId)}
+                  onSelectOrganization={(orgId) =>
+                    router.push(`${ROUTES.clientExplore}?orgId=${encodeURIComponent(orgId)}`)
+                  }
                   onQuickBookService={handleStartBooking}
                   onAskAiService={handleAskAi}
                 />
@@ -452,32 +560,6 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
             )}
 
             {filterOrgId ? <ClientSalonFeedbackSection orgId={filterOrgId} /> : null}
-
-            <CatalogFilters
-              category={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              priceRange={priceRange}
-              onPriceRangeChange={setPriceRange}
-              minRating={minRating}
-              onMinRatingChange={setMinRating}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              categories={categoryOptions}
-              organizations={filterOrgId ? [] : organizations}
-              organizationId={selectedOrgId}
-              onOrganizationChange={filterOrgId ? undefined : setSelectedOrgId}
-              onClearAll={() => {
-                setSelectedCategory('All')
-                setSearchQuery('')
-                setPriceRange('all')
-                setMinRating(null)
-                if (!filterOrgId) setSelectedOrgId('')
-              }}
-            />
 
             {catalogError ? (
               <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 text-center text-sm text-rose-700">
@@ -492,48 +574,141 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
               </div>
             ) : null}
 
-            {!catalogError && isFilteredView ? (
+            {isExplorePage ? (
               <>
-                {!results.isInitialLoading && results.services.length === 0 ? (
-                  <EmptyState
-                    icon={Search}
-                    title="No services match your filters"
-                    description="Try another salon, category, price range, or search term to find available treatments."
-                    actionLabel="Reset Filters"
-                    onAction={() => {
-                      setSelectedCategory('All')
-                      setSearchQuery('')
-                      setPriceRange('all')
-                      setMinRating(null)
-                      if (!filterOrgId) setSelectedOrgId('')
-                    }}
-                  />
-                ) : (
-                  <CatalogSection
-                    title="Matching Treatments"
-                    eyebrow="FILTERED DISCOVERIES"
-                    icon={<Search className="h-3 w-3 text-amber-700" />}
-                    tone="amber"
-                    subtitle={
-                      filterOrgId
-                        ? 'Services at this salon'
-                        : 'Customized to your active preferences'
-                    }
-                    totalCount={results.total}
-                    loadedCount={results.services.length}
-                    hasMore={results.hasMore}
-                    onShowMore={results.loadMore}
-                    isLoading={results.isInitialLoading}
-                    isLoadingMore={results.isLoadingMore}
-                    viewMode={viewMode}
-                  >
-                    {renderCards(results.services)}
-                  </CatalogSection>
-                )}
-              </>
-            ) : null}
+                <CatalogFilters
+                  category={selectedCategory}
+                  onCategoryChange={(category) => setParam('category', category)}
+                  searchQuery={searchQuery}
+                  onSearchChange={(value) => setParam('search', value)}
+                  sortBy={sortBy}
+                  onSortChange={(sort) => setParam('sortBy', sort)}
+                  priceRange={priceRange}
+                  onPriceRangeChange={(range) => setParam('priceRange', range)}
+                  minRating={minRating}
+                  onMinRatingChange={(rating) => setParam('minRating', rating ?? 0)}
+                  viewMode={viewMode}
+                  onViewModeChange={(mode) => setParam('viewMode', mode)}
+                  categories={categoryOptions}
+                  organizations={filterOrgId ? [] : organizations}
+                  organizationId={selectedOrgId}
+                  onOrganizationChange={
+                    filterOrgId ? undefined : (orgId) => setParam('orgId', orgId)
+                  }
+                  organizationListControls={filterOrgId ? undefined : organizationListControls}
+                  categoryListControls={categoryListControls}
+                  onClearAll={() => {
+                    setParams({
+                      ...clientCatalogListDefaults,
+                      ...(filterOrgId ? { orgId: filterOrgId } : {}),
+                    })
+                  }}
+                />
 
-            {!catalogError && !isFilteredView ? (
+                {!catalogError && awaitingNearbyLocation ? (
+                  <div className="flex flex-col items-start gap-3 rounded-2xl bg-stone-100/70 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-2.5">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                      <div>
+                        <p className="text-sm font-semibold text-stone-900">
+                          {geoStatus === 'pending' || geoStatus === 'idle'
+                            ? 'Finding salons near you…'
+                            : 'Enable location to see nearby salons'}
+                        </p>
+                        <p className="mt-0.5 text-xs text-stone-500">
+                          Nearby results stay within {NEARBY_RADIUS_KM} km of your position.
+                        </p>
+                      </div>
+                    </div>
+                    {geoStatus !== 'pending' && geoStatus !== 'idle' ? (
+                      <button
+                        type="button"
+                        onClick={requestLocation}
+                        className="cursor-pointer rounded-full bg-stone-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-stone-800"
+                      >
+                        Use my location
+                      </button>
+                    ) : (
+                      <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+                    )}
+                  </div>
+                ) : null}
+
+                {!catalogError && isFilteredView && !awaitingNearbyLocation ? (
+                  !results.isInitialLoading && results.services.length === 0 ? (
+                    <EmptyState
+                      icon={Search}
+                      title="No services match your filters"
+                      description="Try another salon, category, price range, or search term to find available treatments."
+                      actionLabel="Reset Filters"
+                      onAction={() => {
+                        setParams({
+                          ...clientCatalogListDefaults,
+                          ...(filterOrgId ? { orgId: filterOrgId } : {}),
+                        })
+                      }}
+                    />
+                  ) : (
+                    <CatalogSection
+                      title="Matching Treatments"
+                      eyebrow="FILTERED DISCOVERIES"
+                      icon={<Search className="h-3 w-3 text-amber-700" />}
+                      tone="amber"
+                      subtitle={
+                        filterOrgId
+                          ? 'Services at this salon'
+                          : 'Customized to your active preferences'
+                      }
+                      totalCount={results.total}
+                      loadedCount={results.services.length}
+                      hasMore={results.hasMore}
+                      onShowMore={results.loadMore}
+                      isLoading={results.isInitialLoading}
+                      isLoadingMore={results.isLoadingMore}
+                      viewMode={viewMode}
+                    >
+                      {renderCards(results.services)}
+                    </CatalogSection>
+                  )
+                ) : null}
+
+                {!catalogError && !isFilteredView && !awaitingNearbyLocation ? (
+                  <CatalogSection
+                    title={
+                      isNearbyExplore ? 'Nearby Salons & Studios' : 'All Marketplace Treatments'
+                    }
+                    eyebrow={isNearbyExplore ? 'LOCAL NEIGHBORHOOD' : 'FULL CATALOG DIRECTORY'}
+                    icon={
+                      isNearbyExplore ? (
+                        <MapPin className="h-3 w-3 text-emerald-700" />
+                      ) : (
+                        <Compass className="h-3 w-3 text-purple-700" />
+                      )
+                    }
+                    tone={isNearbyExplore ? 'emerald' : 'purple'}
+                    subtitle={
+                      isNearbyExplore
+                        ? `Treatments within ${NEARBY_RADIUS_KM} km of your position`
+                        : 'Browse the complete directory of salon styling, hair wellness, and grooming care'
+                    }
+                    totalCount={browse.total}
+                    loadedCount={browse.services.length}
+                    hasMore={browse.hasMore}
+                    onShowMore={browse.loadMore}
+                    isLoading={browse.isInitialLoading}
+                    isLoadingMore={browse.isLoadingMore}
+                    viewMode={viewMode}
+                    empty={
+                      <div className="rounded-2xl bg-stone-100/70 px-4 py-5 text-sm text-stone-500">
+                        No services available.
+                      </div>
+                    }
+                  >
+                    {renderCards(browse.services)}
+                  </CatalogSection>
+                ) : null}
+              </>
+            ) : !catalogError ? (
               <>
                 <CatalogSection
                   title="Nearby Salons &amp; Studios"
@@ -544,9 +719,9 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
                   totalCount={nearby.total}
                   loadedCount={nearby.services.length}
                   hasMore={nearby.hasMore}
-                  onShowMore={nearby.loadMore}
+                  onShowMore={() => router.push(`${ROUTES.clientExplore}?sort=distance`)}
                   isLoading={Boolean(userCoords) && nearby.isInitialLoading}
-                  isLoadingMore={nearby.isLoadingMore}
+                  isLoadingMore={false}
                   viewMode={viewMode}
                   empty={
                     geoStatus === 'pending' || geoStatus === 'idle' ? (
@@ -562,7 +737,14 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
                             No salons within {NEARBY_RADIUS_KM} km
                           </p>
                           <p className="mt-0.5 text-xs text-stone-500">
-                            Browse popular treatments below, or widen your search with filters.
+                            Browse popular treatments below, or{' '}
+                            <Link
+                              href={ROUTES.clientExplore}
+                              className="font-semibold text-amber-800 hover:underline"
+                            >
+                              explore more
+                            </Link>{' '}
+                            with filters.
                           </p>
                         </div>
                       </div>
@@ -603,9 +785,9 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
                   totalCount={popular.total}
                   loadedCount={popular.services.length}
                   hasMore={popular.hasMore}
-                  onShowMore={popular.loadMore}
+                  onShowMore={() => router.push(`${ROUTES.clientExplore}?sort=popular`)}
                   isLoading={popular.isInitialLoading}
-                  isLoadingMore={popular.isLoadingMore}
+                  isLoadingMore={false}
                   viewMode={viewMode}
                   empty={
                     <div className="rounded-2xl bg-stone-100/70 px-4 py-5 text-sm text-stone-500">
@@ -616,28 +798,18 @@ export function ClientExperience({ initialTab = 'catalog', filterOrgId }: Client
                   {renderCards(popular.services)}
                 </CatalogSection>
 
-                <CatalogSection
-                  title="Explore All Marketplace Treatments"
-                  eyebrow="FULL CATALOG DIRECTORY"
-                  icon={<Compass className="h-3 w-3 text-purple-700" />}
-                  tone="purple"
-                  showTopDivider
-                  subtitle="Browse the complete directory of salon styling, hair wellness, and grooming care"
-                  totalCount={browse.total}
-                  loadedCount={browse.services.length}
-                  hasMore={browse.hasMore}
-                  onShowMore={browse.loadMore}
-                  isLoading={browse.isInitialLoading}
-                  isLoadingMore={browse.isLoadingMore}
-                  viewMode={viewMode}
-                  empty={
-                    <div className="rounded-2xl bg-stone-100/70 px-4 py-5 text-sm text-stone-500">
-                      No services available.
-                    </div>
-                  }
-                >
-                  {renderCards(browse.services)}
-                </CatalogSection>
+                <div className="mb-12 flex flex-col items-center gap-3 text-center sm:mb-16">
+                  <p className="max-w-md text-sm text-stone-500">
+                    Search the full marketplace by salon, category, price, and rating.
+                  </p>
+                  <Link
+                    href={ROUTES.clientExplore}
+                    className="inline-flex items-center gap-2 rounded-full bg-stone-950 px-7 py-3 text-sm font-bold text-white shadow-xs transition-colors hover:bg-amber-700"
+                  >
+                    <Compass className="h-4 w-4" />
+                    Explore more
+                  </Link>
+                </div>
               </>
             ) : null}
           </div>

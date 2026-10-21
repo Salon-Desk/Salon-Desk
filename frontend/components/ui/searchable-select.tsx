@@ -37,6 +37,12 @@ export interface SearchableSelectProps {
   allowClear?: boolean
   clearLabel?: string
   'aria-label'?: string
+  /** When set, search is driven by the server (`shouldFilter={false}` on the command list). */
+  onSearchChange?: (query: string) => void
+  hasMore?: boolean
+  onLoadMore?: () => void
+  loadMoreLabel?: string
+  isLoadingMore?: boolean
 }
 
 export function SearchableSelect({
@@ -54,9 +60,16 @@ export function SearchableSelect({
   allowClear = false,
   clearLabel = 'All Options',
   'aria-label': ariaLabel,
+  onSearchChange,
+  hasMore = false,
+  onLoadMore,
+  loadMoreLabel = 'Load more…',
+  isLoadingMore = false,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
   const id = useId()
+  const serverSideSearch = Boolean(onSearchChange)
 
   const selectedOption = useMemo(() => options.find((opt) => opt.value === value), [options, value])
 
@@ -101,8 +114,18 @@ export function SearchableSelect({
             contentClassName,
           )}
         >
-          <Command className="w-full">
-            <CommandInput placeholder={searchPlaceholder} className="text-xs h-9" />
+          <Command className="w-full" shouldFilter={!serverSideSearch}>
+            <CommandInput
+              placeholder={searchPlaceholder}
+              className="text-xs h-9"
+              value={serverSideSearch ? search : undefined}
+              onValueChange={(next) => {
+                if (serverSideSearch) {
+                  setSearch(next)
+                  onSearchChange?.(next)
+                }
+              }}
+            />
             <CommandList className="max-h-60 overflow-y-auto p-1">
               <CommandEmpty className="p-3 text-center text-xs text-slate-400">
                 {emptyText}
@@ -157,6 +180,18 @@ export function SearchableSelect({
                   )
                 })}
               </CommandGroup>
+              {hasMore && onLoadMore ? (
+                <div className="border-t border-slate-100 p-1.5">
+                  <button
+                    type="button"
+                    disabled={isLoadingMore}
+                    onClick={() => onLoadMore()}
+                    className="w-full rounded-lg py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+                  >
+                    {isLoadingMore ? 'Loading…' : loadMoreLabel}
+                  </button>
+                </div>
+              ) : null}
             </CommandList>
           </Command>
         </PopoverContent>

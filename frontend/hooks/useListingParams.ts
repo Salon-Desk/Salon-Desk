@@ -17,25 +17,20 @@ type FieldSchema<V extends ListingParamValue> = {
    * URL sync and `displayParams` still use the empty string.
    */
   omitEmptyForApi?: boolean
+  /** When true and the value equals the field default, omit from `params`. */
+  omitDefaultForApi?: boolean
+  /** Omit from `params` when the value equals this sentinel (e.g. status `all`). */
+  omitWhen?: ListingParamValue
+  /** Rename this field in `params` for API calls (URL keys stay on `urlKey` / param name). */
+  apiKey?: string
+  /** When true, field syncs to the URL and `displayParams` but is omitted from `params` (UI-only). */
+  urlOnly?: boolean
   parse?: (raw: string | null, defaultValue: V) => V
   serialize?: (value: V, defaultValue: V) => string | null
 }
 
 export type ListingParamSchema<T extends Record<string, ListingParamValue>> = {
   [K in keyof T]: FieldSchema<T[K]>
-}
-
-/** Widens `as const` defaults (`''`, `1`, `true`) to `string` / `number` / `boolean`. */
-type WidenListingParamValue<V extends ListingParamValue> = V extends string
-  ? string
-  : V extends number
-    ? number
-    : V extends boolean
-      ? boolean
-      : V
-
-type InferListingParams<S extends Record<string, { default: ListingParamValue }>> = {
-  [K in keyof S]: WidenListingParamValue<S[K]['default']>
 }
 
 /**
@@ -47,6 +42,10 @@ type ListingFieldSchemaInput = {
   urlKey?: string
   debounceMs?: number
   omitEmptyForApi?: boolean
+  omitDefaultForApi?: boolean
+  omitWhen?: ListingParamValue
+  apiKey?: string
+  urlOnly?: boolean
   parse?: (raw: string | null, defaultValue: never) => ListingParamValue
   serialize?: (value: never, defaultValue: never) => string | null
 }
@@ -158,30 +157,86 @@ function mergeValuesForUrl<T extends Record<string, ListingParamValue>>(
   return { ...state, [debouncedKey]: debouncedValue }
 }
 
-function applyOmitEmptyForApi<T extends Record<string, ListingParamValue>>(
-  values: T,
-  schema: ListingParamSchema<T>,
-): T {
-  const out = { ...values }
-  for (const key of Object.keys(schema) as (keyof T)[]) {
-    if (schema[key].omitEmptyForApi && out[key] === '') {
-      delete (out as Record<string, unknown>)[key as string]
-    }
-  }
-  return out
-}
+type FieldApiOutputKey<
+  K extends PropertyKey,
+  S extends Record<PropertyKey, ListingFieldSchemaInput>,
+> = K extends keyof S ? (S[K] extends { apiKey: infer A extends string } ? A : K) : K
+
+type FieldOmitFromApi<
+  K extends PropertyKey,
+  T extends Record<string, ListingParamValue>,
+  S extends Record<keyof T, ListingFieldSchemaInput>,
+> = K extends keyof S
+  ? S[K] extends { omitEmptyForApi: true }
+    ? true
+    : S[K] extends { omitDefaultForApi: true }
+      ? true
+      : S[K] extends { omitWhen: ListingParamValue }
+        ? true
+        : false
+  : false
 
 export type ListingApiParamsFromSchema<
   T extends Record<string, ListingParamValue>,
   S extends Record<keyof T, ListingFieldSchemaInput>,
 > = {
-  [K in keyof T]: K extends keyof S
-    ? S[K] extends { omitEmptyForApi: true }
-      ? T[K] extends string
-        ? T[K] | undefined
-        : T[K]
-      : T[K]
+  [K in keyof T as FieldApiOutputKey<K, S>]: FieldOmitFromApi<K, T, S> extends true
+    ? T[K] | undefined
     : T[K]
+}
+
+/** Default UI/API field values from a module-level listing schema (single source of truth). */
+export function listingDefaultsFromSchema<
+  T extends Record<string, ListingParamValue>,
+  S extends ListingParamSchema<T>,
+>(schema: S): T {
+  const out = {} as T
+  for (const key of Object.keys(schema) as (keyof T)[]) {
+    out[key] = schema[key].default as T[keyof T]
+  }
+  return out
+}
+
+/** Build API query args from a listing schema + optional overrides (same rules as hook `params`). */
+export function listingApiParams(
+  schema: Record<string, ListingFieldSchemaInput>,
+  patch: Record<string, ListingParamValue> = {},
+): Record<string, ListingParamValue> {
+  const defaults: Record<string, ListingParamValue> = {}
+  for (const key of Object.keys(schema)) {
+    defaults[key] = schema[key].default
+  }
+  const merged = { ...defaults, ...patch }
+  return buildListingApiParams(
+    merged as Record<string, ListingParamValue>,
+    schema as ListingParamSchema<Record<string, ListingParamValue>>,
+  )
+}
+
+function buildListingApiParams<T extends Record<string, ListingParamValue>>(
+  values: T,
+  schema: ListingParamSchema<T>,
+): ListingParamValue extends never ? never : Record<string, ListingParamValue> {
+  const out: Record<string, ListingParamValue> = {}
+  for (const key of Object.keys(schema) as (keyof T)[]) {
+    const field = schema[key]
+    if (field.urlOnly) {
+      continue
+    }
+    const value = values[key]
+    if (field.omitEmptyForApi && value === '') {
+      continue
+    }
+    if (field.omitWhen !== undefined && value === field.omitWhen) {
+      continue
+    }
+    if (field.omitDefaultForApi && value === field.default) {
+      continue
+    }
+    const outputKey = field.apiKey ?? String(key)
+    out[outputKey] = value
+  }
+  return out
 }
 
 export type UseListingParamsResult<
@@ -204,11 +259,13 @@ export type UseListingParamsResult<
  * - At most one field may use `debounceMs` (usually `search`); extras log a dev warning.
  * - Use `params` for data fetching; use `displayParams` for controlled inputs when that field is debounced.
  * - Use `omitEmptyForApi` on string fields (e.g. search) so empty string is not sent to APIs that reject `""`.
+ * - Use `omitDefaultForApi` for sentinel defaults (e.g. status `all`) so they are omitted from `params`.
+ * - Use `apiKey` to rename fields in `params` for backend query names (e.g. `search` → `q`, `limit` → `page_size`).
  */
-export function useListingParams<S extends Record<string, ListingFieldSchemaInput>>(
-  schema: S,
-): UseListingParamsResult<InferListingParams<S>, S> {
-  type T = InferListingParams<S>
+export function useListingParams<
+  T extends Record<string, ListingParamValue>,
+  S extends ListingParamSchema<T>,
+>(schema: S): UseListingParamsResult<T, S> {
   const typedSchema = schema as unknown as ListingParamSchema<T>
 
   const router = useRouter()
@@ -251,7 +308,7 @@ export function useListingParams<S extends Record<string, ListingFieldSchemaInpu
       debouncedKey === undefined || debounceMs <= 0
         ? state
         : ({ ...state, [debouncedKey]: debouncedFieldValue } as T)
-    return applyOmitEmptyForApi(base, typedSchema) as ListingApiParamsFromSchema<T, S>
+    return buildListingApiParams(base, typedSchema) as ListingApiParamsFromSchema<T, S>
   }, [state, debouncedKey, debouncedFieldValue, debounceMs, typedSchema])
 
   const lastReplacedQueryRef = useRef<string | null>(null)

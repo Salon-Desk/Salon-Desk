@@ -111,6 +111,10 @@ export function DraggableChatFab({ portal, onClick, className }: DraggableChatFa
       ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
     }
 
+    // Prevent click event from firing after drag
+    e.stopPropagation()
+    e.preventDefault()
+
     if (hasMovedRef.current && livePosition) {
       // Check if dropped near bottom-right corner (within 40px), snap back to clean CSS positioning
       const isNearBottomRight =
@@ -124,8 +128,12 @@ export function DraggableChatFab({ portal, onClick, className }: DraggableChatFa
         dispatch(setFabPosition(livePosition))
       }
     } else {
-      // Simple click/tap
-      onClick()
+      // Simple click/tap - delay slightly to ensure drag state is cleared
+      setTimeout(() => {
+        if (!hasMovedRef.current) {
+          onClick()
+        }
+      }, 0)
     }
 
     dragStartRef.current = null

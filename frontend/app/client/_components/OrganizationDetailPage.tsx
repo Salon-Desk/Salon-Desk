@@ -27,8 +27,16 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { toastColor } from '@/constant/toast-color'
+import { useListingParams } from '@/hooks/useListingParams'
 import { serviceImage } from '@/lib/data/service-content'
 import { formatDuration, formatUsd } from '@/lib/format'
+import {
+  buildClientOrgDetailServicesApiParams,
+  clientOrgDetailListDefaults,
+  type ClientOrgDetailListParams,
+  ClientOrgDetailListParamsSchema,
+} from '@/lib/listing-params/client-org-detail-list-params'
+import { buildClientOrgStaffQueryArg } from '@/lib/listing-params/client-org-staff-list-params'
 import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import {
   useGetCatalogCancellationPolicyQuery,
@@ -46,13 +54,16 @@ interface OrganizationDetailPageProps {
   orgId: string
 }
 
-type OrgTab = 'services' | 'about' | 'staff' | 'reviews'
-
 export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<OrgTab>('services')
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [searchQuery, setSearchQuery] = useState<string>('')
+  const { params, displayParams, setParam, setParams } = useListingParams<
+    ClientOrgDetailListParams,
+    typeof ClientOrgDetailListParamsSchema
+  >(ClientOrgDetailListParamsSchema)
+
+  const activeTab = displayParams.tab
+  const selectedCategory = displayParams.category
+  const searchQuery = displayParams.search
   const [selectedService, setSelectedService] = useState<CatalogService | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
@@ -65,13 +76,14 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
   } = useGetCatalogOrganizationQuery(orgId)
 
   // Fetch Services for this Org
-  const { data: servicesPage, isLoading: servicesLoading } = useGetCatalogServicesQuery({
-    org_id: orgId,
-    page_size: 100,
-  })
+  const { data: servicesPage, isLoading: servicesLoading } = useGetCatalogServicesQuery(
+    buildClientOrgDetailServicesApiParams(orgId, params),
+  )
 
   // Fetch Staff for this Org
-  const { data: staffPage, isLoading: staffLoading } = useGetCatalogOrgStaffQuery(orgId)
+  const { data: staffPage, isLoading: staffLoading } = useGetCatalogOrgStaffQuery(
+    buildClientOrgStaffQueryArg(orgId),
+  )
 
   // Fetch Cancellation Policy for this Org
   const { data: policy } = useGetCatalogCancellationPolicyQuery(orgId)
@@ -88,19 +100,14 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
     return ['all', ...Array.from(set)]
   }, [services])
 
-  // Filter services by category and search
   const filteredServices = useMemo(() => {
     return services.filter((s) => {
       const matchesCat =
         selectedCategory === 'all' ||
         s.category_name?.toLowerCase() === selectedCategory.toLowerCase()
-      const matchesSearch =
-        !searchQuery.trim() ||
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      return matchesCat && matchesSearch
+      return matchesCat
     })
-  }, [services, selectedCategory, searchQuery])
+  }, [services, selectedCategory])
 
   const handleOpenDetail = (service: CatalogService) => {
     setSelectedService(service)
@@ -258,7 +265,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-stone-600">
                   <button
                     type="button"
-                    onClick={() => setActiveTab('reviews')}
+                    onClick={() => setParam('tab', 'reviews')}
                     className="flex cursor-pointer items-center gap-1 font-bold text-amber-700 hover:underline"
                   >
                     <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
@@ -300,7 +307,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
               <button
                 type="button"
                 onClick={() => {
-                  setActiveTab('services')
+                  setParam('tab', 'services')
                   const el = document.getElementById('services-section')
                   if (el) el.scrollIntoView({ behavior: 'smooth' })
                 }}
@@ -365,7 +372,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
         <div className="mb-8 flex border-b border-stone-200">
           <button
             type="button"
-            onClick={() => setActiveTab('services')}
+            onClick={() => setParam('tab', 'services')}
             className={`cursor-pointer border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
               activeTab === 'services'
                 ? 'border-stone-950 text-stone-950'
@@ -376,7 +383,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('about')}
+            onClick={() => setParam('tab', 'about')}
             className={`cursor-pointer border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
               activeTab === 'about'
                 ? 'border-stone-950 text-stone-950'
@@ -387,7 +394,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('staff')}
+            onClick={() => setParam('tab', 'staff')}
             className={`cursor-pointer border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
               activeTab === 'staff'
                 ? 'border-stone-950 text-stone-950'
@@ -398,7 +405,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('reviews')}
+            onClick={() => setParam('tab', 'reviews')}
             className={`cursor-pointer border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
               activeTab === 'reviews'
                 ? 'border-stone-950 text-stone-950'
@@ -423,7 +430,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                   <button
                     key={cat}
                     type="button"
-                    onClick={() => setSelectedCategory(cat)}
+                    onClick={() => setParam('category', cat)}
                     className={`cursor-pointer rounded-full px-3.5 py-1.5 font-bold text-xs capitalize transition-all ${
                       selectedCategory.toLowerCase() === cat.toLowerCase()
                         ? 'bg-stone-950 text-white shadow-2xs'
@@ -441,7 +448,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => setParam('search', e.target.value)}
                   placeholder="Search salon treatments…"
                   className="w-full rounded-full border border-stone-200 bg-white py-2 pr-4 pl-9 text-xs text-stone-900 shadow-2xs focus:border-amber-500 focus:outline-hidden"
                 />
@@ -466,10 +473,12 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                 </p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedCategory('all')
-                    setSearchQuery('')
-                  }}
+                  onClick={() =>
+                    setParams({
+                      category: clientOrgDetailListDefaults.category,
+                      search: clientOrgDetailListDefaults.search,
+                    })
+                  }
                   className="mt-4 rounded-full border border-stone-200 px-4 py-1.5 font-bold text-xs text-stone-700 hover:bg-stone-50"
                 >
                   Clear Filters
@@ -755,7 +764,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                           if (services.length > 0) {
                             handleBookService(services[0].id, member.id)
                           } else {
-                            setActiveTab('services')
+                            setParam('tab', 'services')
                           }
                         }}
                         className="w-full cursor-pointer rounded-full bg-stone-100 py-2 font-bold text-xs text-stone-800 transition-colors hover:bg-stone-200"

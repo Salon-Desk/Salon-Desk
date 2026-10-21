@@ -5,13 +5,13 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import PrimaryButton from '@/components/button/PrimaryButton'
-import { Badge, Card, EmptyState, Modal } from '@/components/ui'
+import { Badge, Card, EmptyState, Modal, SearchableSelect } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
+import { useSearchableAdminOrganizations } from '@/hooks/use-searchable-admin-organizations'
 import { formatUsd } from '@/lib/format'
 import {
   useCreateAdminCommissionInvoiceMutation,
   useGetAdminCommissionInvoicesQuery,
-  useGetAdminOrganizationsQuery,
   useIssueAdminCommissionInvoiceMutation,
   useVoidAdminCommissionInvoiceMutation,
 } from '@/store/api/platformApi'
@@ -52,10 +52,7 @@ export function CommissionInvoicesPanel({ skip = false }: CommissionInvoicesPane
     isError,
     refetch,
   } = useGetAdminCommissionInvoicesQuery(undefined, { skip })
-  const { data: orgsData } = useGetAdminOrganizationsQuery(
-    { page: 1, page_size: 100, status: 'approved' },
-    { skip },
-  )
+  const orgPicker = useSearchableAdminOrganizations({ skip, status: 'approved' })
   const [createInvoice, { isLoading: creating }] = useCreateAdminCommissionInvoiceMutation()
   const [issueInvoice, { isLoading: issuing }] = useIssueAdminCommissionInvoiceMutation()
   const [voidInvoice, { isLoading: voiding }] = useVoidAdminCommissionInvoiceMutation()
@@ -67,7 +64,7 @@ export function CommissionInvoicesPanel({ skip = false }: CommissionInvoicesPane
   const [periodEnd, setPeriodEnd] = useState(periodDefaults.period_end)
 
   const invoices = invoicesData?.items ?? []
-  const orgs = orgsData?.items ?? []
+  const orgs = orgPicker.items
   const orgNameById = useMemo(() => {
     const map = new Map<string, string>()
     orgs.forEach((o) => map.set(o.id, o.name))
@@ -244,18 +241,24 @@ export function CommissionInvoicesPanel({ skip = false }: CommissionInvoicesPane
           <div className="space-y-4">
             <label className="block space-y-1.5">
               <span className="text-xs font-semibold text-slate-700">Organization</span>
-              <select
+              <SearchableSelect
                 value={orgId}
-                onChange={(e) => setOrgId(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-              >
-                <option value="">Select salon…</option>
-                {orgs.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setOrgId}
+                options={orgs.map((o) => ({
+                  value: o.id,
+                  label: o.name,
+                  description: o.description || undefined,
+                }))}
+                placeholder="Select salon…"
+                searchPlaceholder="Search approved salons…"
+                emptyText="No matching salons."
+                triggerClassName="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 hover:border-slate-300 focus:border-amber-500"
+                onSearchChange={orgPicker.setSearch}
+                hasMore={orgPicker.hasMore}
+                onLoadMore={orgPicker.loadMore}
+                isLoadingMore={orgPicker.isFetching}
+                loadMoreLabel="Load more salons"
+              />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="block space-y-1.5">

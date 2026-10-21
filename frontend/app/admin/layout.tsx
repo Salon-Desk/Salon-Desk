@@ -9,6 +9,7 @@ import { ConsoleShell } from '@/components/layout/console-shell'
 import { PortalGuard } from '@/components/layout/portal-guard'
 import { Toast } from '@/components/ui'
 import { useAdminSession } from '@/hooks/use-admin-session'
+import { buildAdminCategoriesNavApiParams } from '@/lib/listing-params/admin-taxonomy-list-params'
 import type { AppDispatch } from '@/store'
 import { useGetAdminCategoriesQuery, useGetAdminDashboardQuery } from '@/store/api/platformApi'
 import { logout, userSelector } from '@/store/authSlice'
@@ -27,7 +28,9 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
   const user = useSelector(userSelector)
   const { skipAdminApi } = useAdminSession()
   const { data: dashboard } = useGetAdminDashboardQuery(undefined, { skip: skipAdminApi })
-  const { data: categoriesData } = useGetAdminCategoriesQuery(undefined, { skip: skipAdminApi })
+  const { data: categoriesData } = useGetAdminCategoriesQuery(buildAdminCategoriesNavApiParams(), {
+    skip: skipAdminApi,
+  })
   const categories = categoriesData?.items ?? []
   const { message } = useAdminContext()
 

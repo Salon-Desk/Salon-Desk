@@ -120,3 +120,26 @@ async def publish_ui_action(room: Any, payload: dict[str, Any]) -> None:
             )
     except Exception as exc:
         logger.warning("Failed to publish ui_action data: %s", exc)
+
+
+async def publish_payment_link(room: Any, payload: dict[str, Any]) -> None:
+    """Publish payment link for pending booking to room."""
+    try:
+        if room.local_participant:
+            data = json.dumps(
+                {
+                    "type": "payment_link",
+                    "booking_id": payload.get("booking_id"),
+                    "service_id": payload.get("service_id"),
+                    "service_name": payload.get("service_name"),
+                    "organization_name": payload.get("organization_name"),
+                    "starts_at": payload.get("starts_at"),
+                    "formatted_time": payload.get("formatted_time"),
+                    "total_price": payload.get("total_price"),
+                    "payment_link": payload.get("payment_link"),
+                }
+            )
+            await room.local_participant.publish_data(data, topic="lk.client.payment")
+            logger.info("Published payment_link message to room participant")
+    except Exception as exc:
+        logger.warning("Failed to publish payment_link data: %s", exc)

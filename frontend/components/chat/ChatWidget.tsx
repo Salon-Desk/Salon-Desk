@@ -92,6 +92,7 @@ export function ChatWidget({
         <>
           {mode === 'voice' && isMinimized ? (
             <VoiceAgentView
+              key="voice-minimized"
               language={features.defaultLanguage}
               portal={portal}
               isMinimized
@@ -110,6 +111,7 @@ export function ChatWidget({
             >
               {mode === 'voice' && features.voiceAgent ? (
                 <VoiceAgentView
+                  key="voice-maximized"
                   language={features.defaultLanguage}
                   portal={portal}
                   isMinimized={false}

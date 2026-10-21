@@ -9,6 +9,11 @@ import { Pagination } from '@/components/table/Pagination'
 import { Badge, Card, EmptyState, IconButton, SearchInput } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
+import { useListingParams } from '@/hooks/useListingParams'
+import {
+  type AdminTaxonomyListParams,
+  AdminTaxonomyListParamsSchema,
+} from '@/lib/listing-params/admin-taxonomy-list-params'
 import { useGetAdminCategoriesQuery } from '@/store/api/platformApi'
 import type { ApiServiceCategory } from '@/types/api-org'
 
@@ -17,19 +22,27 @@ import { CategoryFormModal } from '../_components/category-form-modal'
 
 export default function AdminTaxonomyPage() {
   const { skipAdminApi } = useAdminSession()
+  const { params, displayParams, setParam, setParams } = useListingParams<
+    AdminTaxonomyListParams,
+    typeof AdminTaxonomyListParamsSchema
+  >(AdminTaxonomyListParamsSchema)
+
   const {
     data: categoriesData,
     isLoading,
     isError,
     refetch,
-  } = useGetAdminCategoriesQuery(undefined, { skip: skipAdminApi })
+  } = useGetAdminCategoriesQuery(params, { skip: skipAdminApi })
+
   const categories = categoriesData?.items ?? []
+  const totalItems = categoriesData?.total ?? categories.length
+  const currentPage = displayParams.page
+  const pageSize = displayParams.limit
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+
   const [isOpen, setIsOpen] = useState(false)
   const [editing, setEditing] = useState<ApiServiceCategory | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(6)
 
   const handleCopyId = (id: string) => {
     void navigator.clipboard.writeText(id)
@@ -37,22 +50,6 @@ export default function AdminTaxonomyPage() {
     toast.success('Category UUID copied to clipboard', toastColor.success)
     setTimeout(() => setCopiedId(null), 2000)
   }
-
-  const filteredCategories = categories.filter((c) => {
-    if (!searchQuery.trim()) return true
-    const q = searchQuery.toLowerCase().trim()
-    return (
-      c.name.toLowerCase().includes(q) ||
-      c.id.toLowerCase().includes(q) ||
-      (c.description || '').toLowerCase().includes(q)
-    )
-  })
-
-  const totalPages = Math.max(1, Math.ceil(filteredCategories.length / pageSize))
-  const paginatedCategories = filteredCategories.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  )
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 animate-in fade-in duration-300">
@@ -64,16 +61,13 @@ export default function AdminTaxonomyPage() {
           <p className="text-xs text-slate-500">
             {isLoading
               ? 'Loading…'
-              : `${categories.length} platform taxonomy categories for service classification`}
+              : `${totalItems} platform taxonomy categories for service classification`}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <SearchInput
-            value={searchQuery}
-            onChange={(val) => {
-              setSearchQuery(val)
-              setCurrentPage(1)
-            }}
+            value={displayParams.search}
+            onChange={(val) => setParams({ search: val, page: 1 })}
             placeholder="Search categories…"
             className="w-48 sm:w-64 text-xs"
           />
@@ -121,7 +115,7 @@ export default function AdminTaxonomyPage() {
 
         <div className="space-y-4">
           <div className="grid gap-3.5 sm:grid-cols-2">
-            {paginatedCategories.map((category) => (
+            {categories.map((category) => (
               <Card
                 key={category.id}
                 className="rounded-xl border border-slate-200/80 bg-white p-4.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] flex flex-col justify-between"
@@ -179,17 +173,14 @@ export default function AdminTaxonomyPage() {
             ))}
           </div>
 
-          {filteredCategories.length > 0 && (
+          {totalItems > 0 && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
-              totalItems={filteredCategories.length}
+              totalItems={totalItems}
               pageSize={pageSize}
-              setCurrentPage={setCurrentPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size)
-                setCurrentPage(1)
-              }}
+              setCurrentPage={(page) => setParam('page', page)}
+              onPageSizeChange={(size) => setParams({ limit: size, page: 1 })}
               pageSizeOptions={[4, 6, 12, 24]}
             />
           )}

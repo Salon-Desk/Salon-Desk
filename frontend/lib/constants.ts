@@ -2,6 +2,7 @@
 export const ROUTES = {
   hub: '/',
   client: '/client',
+  clientExplore: '/client/explore',
   clientBookings: '/client/bookings',
   clientBook: '/client/book',
   clientProfile: '/client/profile',
