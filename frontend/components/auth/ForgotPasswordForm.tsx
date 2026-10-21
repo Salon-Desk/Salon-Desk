@@ -116,6 +116,7 @@ export const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({
             isLoading={isSubmittingForgot}
             type="submit"
             size="sm"
+            fullWidth="full"
             className="h-11 rounded-xl font-semibold shadow-none"
           />
           <div className="text-center">
@@ -158,6 +159,7 @@ export const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({
           isLoading={isResetting}
           type="submit"
           size="sm"
+          fullWidth="full"
           className="h-11 rounded-xl font-semibold shadow-none"
         />
       </div>

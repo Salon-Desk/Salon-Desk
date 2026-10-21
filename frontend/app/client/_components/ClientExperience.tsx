@@ -655,7 +655,7 @@ export function ClientExperience({
             ) : !catalogError ? (
               <>
                 <CatalogSection
-                  title="Nearby Salons &amp; Studios"
+                  title="Nearby Salons & Studios"
                   eyebrow="LOCAL NEIGHBORHOOD"
                   icon={<MapPin className="h-3 w-3 text-emerald-700" />}
                   tone="emerald"
@@ -720,7 +720,7 @@ export function ClientExperience({
                 </CatalogSection>
 
                 <CatalogSection
-                  title="Trending &amp; Highest Rated"
+                  title="Trending & Highest Rated"
                   eyebrow="COMMUNITY FAVORITES"
                   icon={<Sparkles className="h-3 w-3 text-amber-700" />}
                   tone="amber"

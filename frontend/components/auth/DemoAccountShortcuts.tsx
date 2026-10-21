@@ -63,7 +63,7 @@ export function DemoAccountShortcuts({ onOpenAll }: DemoAccountShortcutsProps) {
         </span>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="flex flex-col gap-1.5">
         {PRIMARY_DEMO_ACCOUNTS.map((account) => {
           const pending = isLoading && activeEmail === account.email
           return (
@@ -75,21 +75,21 @@ export function DemoAccountShortcuts({ onOpenAll }: DemoAccountShortcutsProps) {
                 setActiveEmail(account.email)
                 void signInAs(account)
               }}
-              className={`flex w-full min-w-0 items-center gap-2.5 rounded-xl border px-2.5 py-2 text-left transition-colors disabled:opacity-60 ${account.toneClass}`}
+              className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors disabled:opacity-60 ${account.toneClass}`}
             >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/80 shadow-sm">
                 {account.icon}
               </span>
-              <span className="min-w-0 flex-1">
+              <span className="flex min-w-0 flex-1 flex-col">
                 <span className="flex items-center justify-between gap-2">
                   <span className="truncate text-xs font-bold text-slate-900">{account.label}</span>
                   <span
-                    className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide ${account.badgeClass}`}
+                    className={`shrink-0 rounded-full text-[10px] font-semibold uppercase tracking-wide ${account.badgeClass}`}
                   >
                     {pending ? 'Signing in…' : account.subtitle}
                   </span>
                 </span>
-                <span className="block text-[11px] text-slate-500">{account.email}</span>
+                <span className="truncate text-[11px] text-slate-500">{account.email}</span>
               </span>
             </button>
           )

@@ -83,7 +83,7 @@ export function BookingsPanel({
           type="button"
           onClick={onBrowseCatalog}
           aria-label="Book new service"
-          className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-stone-950 text-sm font-medium text-white transition-colors hover:bg-stone-800 sm:h-auto sm:w-auto sm:px-5 sm:py-2.5"
+          className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-stone-950 text-white transition-colors hover:bg-amber-600 sm:h-auto sm:w-auto sm:gap-2 sm:rounded-full sm:px-5 sm:py-2.5 sm:text-sm sm:font-semibold"
         >
           <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           <span className="hidden sm:inline">Book New Service</span>
@@ -131,18 +131,16 @@ export function BookingsPanel({
 
       {/* Active Holds Section */}
       <section>
-        <div className="mb-5 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-stone-900">
-              Active Authorization Holds
-            </h2>
-            <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-700">
-              {activeHolds.length}
-            </span>
+            <h2 className="text-sm font-bold text-stone-900">Active Authorization Holds</h2>
           </div>
-          <span className="hidden sm:inline text-xs text-stone-400">
-            $0 charged today • Settled at salon checkout
+          <span className="rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+            {activeHolds.length}
+          </span>
+          <span className="ml-auto hidden sm:inline text-xs text-stone-400">
+            $0 charged today · Settled at salon checkout
           </span>
         </div>
 
@@ -170,11 +168,9 @@ export function BookingsPanel({
 
       {/* Past & Settled Appointments Section */}
       <section>
-        <div className="mb-5 flex items-center gap-2.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-stone-900">
-            Past & Settled Appointments
-          </h2>
-          <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-700">
+        <div className="mb-5 flex items-center gap-3">
+          <h2 className="text-sm font-bold text-stone-900">Past & Settled Appointments</h2>
+          <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-600">
             {pastBookings.length}
           </span>
         </div>
@@ -231,13 +227,13 @@ export function BookingsPanel({
             <div className="hidden sm:block rounded-3xl bg-white border border-stone-200/60 overflow-hidden">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-stone-100 bg-stone-50/60 text-[11px] font-medium uppercase tracking-wider text-stone-400">
-                    <th className="px-6 py-4 font-normal">Booking Reference</th>
-                    <th className="px-6 py-4 font-normal">Service & Stylist</th>
-                    <th className="px-6 py-4 font-normal">Time Slot</th>
-                    <th className="px-6 py-4 font-normal">Settlement Outcome</th>
-                    <th className="px-6 py-4 font-normal">Status</th>
-                    <th className="px-6 py-4 font-normal text-right">Receipt</th>
+                  <tr className="border-b border-stone-100 bg-stone-50 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+                    <th className="px-6 py-3.5 font-medium">Booking Ref</th>
+                    <th className="px-6 py-3.5 font-medium">Service & Stylist</th>
+                    <th className="px-6 py-3.5 font-medium">Time Slot</th>
+                    <th className="px-6 py-3.5 font-medium">Settlement</th>
+                    <th className="px-6 py-3.5 font-medium">Status</th>
+                    <th className="px-6 py-3.5 font-medium text-right">Receipt</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 text-stone-700">

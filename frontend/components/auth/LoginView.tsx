@@ -12,23 +12,37 @@ const portalFromParam = (value: string | null): AppPortal => {
   return 'client'
 }
 
+const portalMeta: Record<AppPortal, { title: string; subtitle: string }> = {
+  client: {
+    title: 'Sign in to Client Booking',
+    subtitle: 'Book salon services with zero-risk authorization holds.',
+  },
+  merchant: {
+    title: 'Sign in to Salon Console',
+    subtitle: 'Manage staff, schedules, and PayPal payouts.',
+  },
+  admin: {
+    title: 'Sign in to Platform Admin',
+    subtitle: 'Access salon approvals, commission, and platform controls.',
+  },
+}
+
 export function LoginView() {
   const params = useSearchParams()
   const portal = portalFromParam(params.get('portal'))
+  const { title, subtitle } = portalMeta[portal]
 
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
-      <h1 className="mb-2 font-semibold text-2xl text-slate-900">Sign in</h1>
-      <p className="mb-8 text-slate-600 text-sm">
-        Access your {portal === 'client' ? 'bookings' : portal} portal.
-      </p>
+      <h1 className="mb-1 text-2xl font-bold text-slate-900">{title}</h1>
+      <p className="mb-8 text-sm text-slate-500">{subtitle}</p>
       <SignInForm
         portal={portal}
         onForgotPassword={() => {
           window.location.href = `/forgot-password?portal=${portal}`
         }}
       />
-      <p className="mt-6 text-center text-slate-500 text-sm">
+      <p className="mt-6 text-center text-sm text-slate-500">
         <Link href="/" className="text-amber-600 hover:text-amber-700">
           Back to home
         </Link>

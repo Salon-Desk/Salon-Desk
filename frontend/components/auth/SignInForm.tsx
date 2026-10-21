@@ -141,6 +141,7 @@ export const SignInForm: FC<SignInFormProps> = ({
           isLoading={isLoading}
           type="submit"
           size="sm"
+          fullWidth="full"
           className="h-11 rounded-xl font-semibold shadow-none"
         />
 

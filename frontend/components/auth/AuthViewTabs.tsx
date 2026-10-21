@@ -26,11 +26,11 @@ export function AuthViewTabs({ options, value, onChange }: AuthViewTabsProps) {
             type="button"
             onClick={() => onChange(option.value)}
             className={cn(
-              'flex-1 rounded-lg py-1.5 transition-all',
+              'flex-1 rounded-lg px-2 py-1.5 text-center transition-all',
               active && option.accent
-                ? 'bg-amber-500 text-white shadow-xs'
+                ? 'bg-amber-500 text-white shadow-sm'
                 : active
-                  ? 'bg-white text-slate-900 shadow-xs'
+                  ? 'bg-white text-slate-900 shadow-sm'
                   : option.accent
                     ? 'text-amber-700 hover:text-amber-900'
                     : 'text-slate-600 hover:text-slate-900',

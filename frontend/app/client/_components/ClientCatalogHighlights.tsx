@@ -3,49 +3,50 @@
 import { Calendar, Clock, ShieldCheck, Sparkles } from 'lucide-react'
 import React from 'react'
 
+const HIGHLIGHTS = [
+  {
+    icon: ShieldCheck,
+    iconBg: 'bg-emerald-50 text-emerald-600',
+    title: '$0 Debited Today',
+    subtitle: 'PayPal auth hold guarantee',
+  },
+  {
+    icon: Sparkles,
+    iconBg: 'bg-amber-50 text-amber-600',
+    title: 'Verified Salons',
+    subtitle: 'Licensed studio specialists',
+  },
+  {
+    icon: Calendar,
+    iconBg: 'bg-sky-50 text-sky-600',
+    title: 'Instant Confirm',
+    subtitle: 'Real-time schedule lock',
+  },
+  {
+    icon: Clock,
+    iconBg: 'bg-purple-50 text-purple-600',
+    title: 'Free Cancellation',
+    subtitle: '100% hold release window',
+  },
+]
+
 export function ClientCatalogHighlights() {
   return (
-    <div className="mb-10 sm:mb-14 overflow-hidden rounded-3xl border border-stone-200/80 bg-white/95 shadow-xs backdrop-blur-xl">
-      <div className="grid grid-cols-2 divide-y divide-stone-100 sm:grid-cols-4 sm:divide-y-0 sm:divide-x sm:divide-stone-100">
-        <div className="flex items-center gap-3 p-3.5 sm:p-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 shadow-2xs">
-            <ShieldCheck className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="font-bold text-xs text-stone-900">$0 Debited Today</p>
-            <p className="truncate text-[11px] text-stone-500">PayPal auth hold guarantee</p>
+    <div className="mb-10 sm:mb-14 overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-xs">
+      <div className="grid grid-cols-2 divide-x divide-y divide-stone-100 sm:grid-cols-4 sm:divide-y-0">
+        {HIGHLIGHTS.map((h) => (
+          <div key={h.title} className="flex items-center gap-3 p-4 sm:p-5">
+            <span
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-2xs ${h.iconBg}`}
+            >
+              <h.icon className="h-4.5 w-4.5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-stone-900">{h.title}</p>
+              <p className="truncate text-[11px] leading-snug text-stone-500">{h.subtitle}</p>
+            </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3 p-3.5 sm:p-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 shadow-2xs">
-            <Sparkles className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="font-bold text-xs text-stone-900">Verified Salons</p>
-            <p className="truncate text-[11px] text-stone-500">Licensed studio specialists</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 p-3.5 sm:p-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 shadow-2xs">
-            <Calendar className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="font-bold text-xs text-stone-900">Instant Confirm</p>
-            <p className="truncate text-[11px] text-stone-500">Real-time schedule lock</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 p-3.5 sm:p-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-700 shadow-2xs">
-            <Clock className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="font-bold text-xs text-stone-900">Free Cancellation</p>
-            <p className="truncate text-[11px] text-stone-500">100% hold release window</p>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   )

@@ -151,6 +151,7 @@ export const MerchantSignUpForm: FC = () => {
           isLoading={isLoading}
           type="submit"
           size="sm"
+          fullWidth="full"
           className="mt-1 h-11 rounded-xl font-semibold shadow-none"
         />
       </div>
