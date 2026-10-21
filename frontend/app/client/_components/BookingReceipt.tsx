@@ -39,8 +39,9 @@ export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
       footer={
         <PrimaryButton
           variant="dark"
+          size="sm"
           onClick={onClose}
-          className="w-full rounded-full h-11 text-xs sm:text-sm font-medium"
+          className="h-11 w-full cursor-pointer rounded-full text-xs sm:text-sm font-semibold transition-all hover:bg-stone-800 active:scale-[0.99]"
           title="Close receipt"
           fullWidth
         />

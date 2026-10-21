@@ -66,18 +66,23 @@ export function PayPalReturnView() {
               : 'Hold not completed'}
         </h1>
         <p className="mb-8 text-stone-600 text-sm leading-relaxed">{message}</p>
-        <div className="space-y-2">
+        <div className="flex flex-col items-center gap-3">
           <PrimaryButton
+            variant="dark"
+            size="sm"
+            fullWidth
+            className="h-12 w-full cursor-pointer rounded-full text-sm font-semibold transition-all hover:bg-stone-800 active:scale-[0.99]"
             title={status === 'ok' ? 'View my bookings' : 'Back to catalog'}
             onClick={() => {
               router.push(status === 'ok' ? '/client/bookings' : '/client')
             }}
           />
-          <p className="text-center text-stone-500 text-sm">
-            <Link href="/client" className="text-amber-700 hover:text-amber-800">
-              Continue browsing
-            </Link>
-          </p>
+          <Link
+            href="/client"
+            className="text-xs font-semibold text-stone-500 transition-colors hover:text-amber-800"
+          >
+            Continue browsing services
+          </Link>
         </div>
       </div>
     </main>

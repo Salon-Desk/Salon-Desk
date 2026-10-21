@@ -15,6 +15,7 @@ import {
   formatTimeInZone,
   ymdInTimeZone,
 } from '@/lib/util/timezone'
+import { cn } from '@/lib/utils'
 import {
   useGetCatalogCancellationPolicyQuery,
   useGetCatalogOrganizationQuery,
@@ -164,16 +165,21 @@ export function PayPalHoldCheckout({
   const primaryButton = (
     <PrimaryButton
       variant={wizardStep === 3 ? 'paypal' : 'dark'}
-      size="lg"
-      className="flex-1 rounded-full"
+      size="sm"
+      className={cn(
+        'h-12 flex-1 rounded-full text-sm font-semibold transition-all shadow-sm active:scale-[0.99] cursor-pointer',
+        wizardStep === 3
+          ? 'bg-[#FFC439] hover:bg-[#F4B41A] text-[#003087]'
+          : 'bg-stone-950 hover:bg-stone-800 text-white',
+      )}
       isDisabled={wizardStep < 3 && !canContinue}
       onClick={handlePrimary}
       fullWidth
     >
       <span className="flex items-center justify-center gap-2">
-        {wizardStep === 3 ? <Lock className="h-4 w-4" /> : null}
+        {wizardStep === 3 ? <Lock className="h-4 w-4 shrink-0 text-[#003087]" /> : null}
         <span>{primaryLabel}</span>
-        {wizardStep < 3 ? <ArrowRight className="h-4 w-4" /> : null}
+        {wizardStep < 3 ? <ArrowRight className="h-4 w-4 shrink-0" /> : null}
       </span>
     </PrimaryButton>
   )
@@ -181,13 +187,13 @@ export function PayPalHoldCheckout({
   const backButton = (
     <PrimaryButton
       variant="secondary"
-      size="lg"
-      className="rounded-full"
+      size="sm"
+      className="h-12 shrink-0 rounded-full border border-stone-200 bg-stone-100 px-5 text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-200 hover:text-stone-950 active:scale-[0.99] cursor-pointer"
       onClick={handleBack}
       fullWidth={false}
     >
-      <span className="flex items-center gap-1.5">
-        <ArrowLeft className="h-4 w-4" />
+      <span className="flex items-center justify-center gap-1.5">
+        <ArrowLeft className="h-4 w-4 shrink-0" />
         <span>{wizardStep > 1 ? 'Back' : 'Cancel'}</span>
       </span>
     </PrimaryButton>
@@ -328,7 +334,7 @@ export function PayPalHoldCheckout({
               quote={quote}
               onOpenDetails={() => setIsDetailOpen(true)}
             >
-              <div className="hidden gap-2 pt-1 lg:flex">
+              <div className="hidden items-center gap-2.5 pt-2 lg:flex">
                 {backButton}
                 {primaryButton}
               </div>

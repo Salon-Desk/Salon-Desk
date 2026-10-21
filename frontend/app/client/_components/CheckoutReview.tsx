@@ -24,10 +24,14 @@ function AgreementCheck({
 }) {
   const id = useId()
   return (
-    <label
-      htmlFor={id}
+    <div
+      onClick={(e) => {
+        const target = e.target as HTMLElement
+        if (target.closest('button, a')) return
+        onCheckedChange(!checked)
+      }}
       className={cn(
-        'flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors',
+        'flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors select-none',
         checked
           ? 'border-emerald-300 bg-emerald-50/60'
           : invalid
@@ -40,10 +44,10 @@ function AgreementCheck({
         checked={checked}
         onCheckedChange={(value) => onCheckedChange(value === true)}
         aria-invalid={invalid || undefined}
-        className="mt-0.5 size-5 rounded-md border-stone-300 bg-white data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600 data-[state=checked]:text-white"
+        className="mt-0.5 size-5 cursor-pointer rounded-md border-stone-300 bg-white data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600 data-[state=checked]:text-white"
       />
-      <span className="text-sm leading-relaxed text-stone-700">{children}</span>
-    </label>
+      <div className="text-sm leading-relaxed text-stone-700">{children}</div>
+    </div>
   )
 }
 
@@ -123,10 +127,10 @@ export function CheckoutReview({
           <button
             type="button"
             onClick={onEditStylist}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-50"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-semibold text-stone-700 shadow-2xs transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900 active:scale-[0.97]"
           >
-            <PencilLine className="h-3.5 w-3.5" />
-            Edit
+            <PencilLine className="h-3 w-3 text-stone-400" />
+            <span>Edit</span>
           </button>
         </div>
         <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
@@ -149,10 +153,10 @@ export function CheckoutReview({
           <button
             type="button"
             onClick={onEditSchedule}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-50"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-semibold text-stone-700 shadow-2xs transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900 active:scale-[0.97]"
           >
-            <PencilLine className="h-3.5 w-3.5" />
-            Edit
+            <PencilLine className="h-3 w-3 text-stone-400" />
+            <span>Edit</span>
           </button>
         </div>
       </section>

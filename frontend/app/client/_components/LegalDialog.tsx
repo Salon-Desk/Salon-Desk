@@ -42,7 +42,8 @@ export function LegalDialog({ doc, onClose }: LegalDialogProps) {
       footer={
         <PrimaryButton
           variant="dark"
-          className="rounded-full h-10 px-6 font-semibold"
+          size="sm"
+          className="h-10 cursor-pointer rounded-full px-6 font-semibold transition-all hover:bg-stone-800 active:scale-[0.98]"
           onClick={onClose}
           title="Done reading"
           fullWidth={false}

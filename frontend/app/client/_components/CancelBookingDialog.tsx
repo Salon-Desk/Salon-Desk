@@ -55,7 +55,8 @@ export function CancelBookingDialog({
         <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row w-full sm:w-auto">
           <PrimaryButton
             variant="ghost"
-            className="rounded-full h-10 px-4 text-xs sm:text-sm font-medium"
+            size="sm"
+            className="h-10 cursor-pointer rounded-full px-4 text-xs sm:text-sm font-semibold transition-colors hover:bg-stone-100 text-stone-700"
             onClick={onClose}
             isDisabled={isSubmitting}
             title="Keep appointment"
@@ -63,7 +64,8 @@ export function CancelBookingDialog({
           />
           <PrimaryButton
             variant={isFree ? 'dark' : 'danger'}
-            className="rounded-full h-10 px-4 text-xs sm:text-sm font-semibold"
+            size="sm"
+            className="h-10 cursor-pointer rounded-full px-5 text-xs sm:text-sm font-semibold transition-all active:scale-[0.98]"
             onClick={onConfirm}
             isDisabled={isSubmitting}
             isLoading={isSubmitting}

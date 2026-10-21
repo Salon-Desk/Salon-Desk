@@ -42,7 +42,7 @@ export function StylistPicker({ stylist, staffOptions, isLoading, onSelect }: St
                 aria-pressed={selected}
                 onClick={() => onSelect(staff)}
                 className={cn(
-                  'relative flex items-start gap-3 rounded-3xl border p-4 text-left transition-all active:scale-[0.99]',
+                  'relative flex cursor-pointer items-start gap-3 rounded-3xl border p-4 text-left transition-all active:scale-[0.99]',
                   selected
                     ? 'border-stone-950 bg-white shadow-[0_12px_28px_-16px_rgba(28,25,23,0.45)] ring-1 ring-stone-950'
                     : 'border-stone-200 bg-white hover:border-amber-300 hover:shadow-sm',

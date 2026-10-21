@@ -309,7 +309,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                   const el = document.getElementById('services-section')
                   if (el) el.scrollIntoView({ behavior: 'smooth' })
                 }}
-                className="flex cursor-pointer items-center justify-center gap-2 rounded-full bg-stone-950 px-6 py-3 font-bold text-xs text-white shadow-md transition-all hover:bg-amber-700 hover:shadow-lg active:scale-98"
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-full bg-stone-950 px-6 py-3 font-semibold text-xs text-white shadow-sm transition-all hover:bg-amber-600 hover:shadow-md active:scale-[0.98]"
               >
                 <span>Book Appointment</span>
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -551,14 +551,14 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                             <button
                               type="button"
                               onClick={() => handleOpenDetail(svc)}
-                              className="cursor-pointer rounded-full border border-stone-200 px-3 py-1.5 font-bold text-xs text-stone-700 hover:bg-stone-50"
+                              className="inline-flex h-8 cursor-pointer items-center rounded-full border border-stone-200 px-3.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
                             >
                               Details
                             </button>
                             <button
                               type="button"
                               onClick={() => handleBookService(svc.id)}
-                              className="cursor-pointer rounded-full bg-stone-950 px-4 py-1.5 font-bold text-xs text-white shadow-2xs transition-colors hover:bg-amber-700"
+                              className="inline-flex h-8 cursor-pointer items-center rounded-full bg-stone-950 px-4 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-amber-600 active:scale-[0.98]"
                             >
                               Book Now
                             </button>

@@ -38,13 +38,17 @@ export function ProtocolModal({ service, onClose, onBook }: ProtocolModalProps) 
       footer={
         <PrimaryButton
           type="button"
+          variant="dark"
+          size="sm"
           onClick={() => onBook(service)}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-stone-950 py-3 font-semibold text-white text-xs transition-colors hover:bg-amber-600 sm:text-sm border-0 shadow-none"
+          className="h-11 w-full rounded-full bg-stone-950 font-semibold text-white text-xs sm:text-sm transition-all hover:bg-amber-600 active:scale-[0.99] border-0 shadow-none cursor-pointer"
           fullWidth
         >
-          <Lock className="h-3.5 w-3.5" />
-          Book with {formatUsd(0)} today
-          <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+          <span className="flex items-center justify-center gap-2">
+            <Lock className="h-3.5 w-3.5 text-amber-400" />
+            <span>Book with {formatUsd(0)} today</span>
+            <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+          </span>
         </PrimaryButton>
       }
     >

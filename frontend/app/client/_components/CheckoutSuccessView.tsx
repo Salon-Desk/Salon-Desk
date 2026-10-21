@@ -54,17 +54,17 @@ export function CheckoutSuccessView({
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             <PrimaryButton
               variant="dark"
-              size="lg"
+              size="sm"
               onClick={onViewBookings}
-              className="rounded-full h-12 text-sm font-semibold"
+              className="h-12 w-full cursor-pointer rounded-full text-sm font-semibold transition-all hover:bg-stone-800 active:scale-[0.99]"
               title="View bookings"
               fullWidth
             />
             <PrimaryButton
               variant="secondary"
-              size="lg"
+              size="sm"
               onClick={onExit}
-              className="rounded-full h-12 text-sm font-semibold"
+              className="h-12 w-full cursor-pointer rounded-full border border-stone-200 bg-stone-100 text-sm font-semibold text-stone-800 transition-all hover:bg-stone-200 active:scale-[0.99]"
               title="Keep browsing"
               fullWidth
             />

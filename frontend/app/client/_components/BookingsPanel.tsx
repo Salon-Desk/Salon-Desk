@@ -262,7 +262,7 @@ export function BookingsPanel({
                         <button
                           type="button"
                           onClick={() => onViewReceipt(booking)}
-                          className="rounded-full bg-stone-100 hover:bg-stone-200 text-stone-800 px-3 py-1 font-medium transition-colors cursor-pointer"
+                          className="inline-flex cursor-pointer items-center rounded-full border border-stone-200 bg-stone-100 px-3.5 py-1 text-xs font-semibold text-stone-800 transition-colors hover:bg-stone-200 active:scale-[0.98]"
                         >
                           Receipt
                         </button>
@@ -419,7 +419,7 @@ function ActiveHoldCard({
         <button
           type="button"
           onClick={() => onViewReceipt(booking)}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs sm:text-sm font-medium py-2.5 px-4 transition-colors cursor-pointer"
+          className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs sm:text-sm font-semibold px-4 transition-colors cursor-pointer active:scale-[0.98]"
         >
           <FileText className="h-3.5 w-3.5 text-stone-600" />
           <span>View Receipt</span>
@@ -428,7 +428,7 @@ function ActiveHoldCard({
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs sm:text-sm font-medium py-2.5 px-4 transition-colors cursor-pointer"
+          className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs sm:text-sm font-semibold px-4 transition-colors cursor-pointer active:scale-[0.98]"
         >
           <XCircle className="h-3.5 w-3.5 text-rose-600" />
           {cancelPreview.withinFreeWindow ? (

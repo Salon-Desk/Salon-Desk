@@ -34,7 +34,10 @@ export function BookingStepper({
               type="button"
               disabled={!done}
               onClick={() => onStepClick(s.id)}
-              className="flex min-w-0 items-center gap-2.5 text-left disabled:cursor-default"
+              className={cn(
+                'flex min-w-0 items-center gap-2.5 text-left transition-opacity',
+                done ? 'cursor-pointer hover:opacity-80' : 'cursor-default disabled:opacity-100',
+              )}
             >
               <span
                 className={cn(
