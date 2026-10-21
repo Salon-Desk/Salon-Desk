@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 
-import { OrgOwnerSignupForm } from '@/app/merchant/_components/org-owner-signup-form'
+import { OrgOwnerSignupForm } from '@/app/merchant/_components/OrgOwnerSignupForm'
 
 export default function MerchantOnboardingPage() {
   return (

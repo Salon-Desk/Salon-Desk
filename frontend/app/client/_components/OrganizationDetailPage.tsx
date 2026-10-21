@@ -6,19 +6,15 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  Compass,
   Heart,
   Lock,
   MapPin,
   Search,
   Share2,
-  ShieldCheck,
   Sparkles,
   Star,
   Store,
   User,
-  Wifi,
-  Wine,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -48,6 +44,8 @@ import type { CatalogService } from '@/types/api-org'
 
 import { ClientFooter } from './ClientFooter'
 import { ClientSalonFeedbackSection } from './ClientSalonFeedbackSection'
+import { OrgDetailAboutTab } from './OrgDetailAboutTab'
+import { OrgDetailStaffTab } from './OrgDetailStaffTab'
 import { ServiceDetailModal } from './ServiceDetailModal'
 
 interface OrganizationDetailPageProps {
@@ -577,206 +575,18 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
 
         {/* TAB 2: ABOUT & POLICIES */}
         {activeTab === 'about' && (
-          <section className="space-y-8 pb-16 animate-in fade-in duration-200">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-              <div className="space-y-6 lg:col-span-8">
-                {/* About description */}
-                <div className="rounded-3xl border border-stone-200 bg-white p-6 sm:p-8">
-                  <h2 className="font-serif text-xl font-bold text-stone-950">About {org.name}</h2>
-                  <p className="mt-3 text-sm leading-relaxed text-stone-600 whitespace-pre-line">
-                    {org.description ||
-                      `${org.name} is a premier partner salon specializing in contemporary styling, hair wellness, and bespoke beauty treatments. Our team of certified professionals ensures an exceptional, relaxing experience tailored to your unique preferences.`}
-                  </p>
-                </div>
-
-                {/* Amenities & Comfort */}
-                <div className="rounded-3xl border border-stone-200 bg-white p-6 sm:p-8">
-                  <h3 className="font-bold text-stone-950 text-sm mb-4">
-                    Salon Amenities &amp; Services
-                  </h3>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="flex items-center gap-3 rounded-2xl bg-stone-50 p-3 text-xs text-stone-700">
-                      <Lock className="h-4 w-4 text-amber-700 shrink-0" />
-                      <span>$0 Upfront Debit · PayPal Hold</span>
-                    </div>
-                    <div className="flex items-center gap-3 rounded-2xl bg-stone-50 p-3 text-xs text-stone-700">
-                      <Wifi className="h-4 w-4 text-stone-600 shrink-0" />
-                      <span>Complimentary High-Speed Wi-Fi</span>
-                    </div>
-                    <div className="flex items-center gap-3 rounded-2xl bg-stone-50 p-3 text-xs text-stone-700">
-                      <Wine className="h-4 w-4 text-stone-600 shrink-0" />
-                      <span>Refreshments &amp; Herbal Teas</span>
-                    </div>
-                    <div className="flex items-center gap-3 rounded-2xl bg-stone-50 p-3 text-xs text-stone-700">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                      <span>Sanitized Tools &amp; Eco Products</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Cancellation & No Show Policy */}
-                <div className="rounded-3xl border border-stone-200 bg-white p-6 sm:p-8">
-                  <h3 className="font-bold text-stone-950 text-sm mb-2 flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-amber-700" />
-                    Cancellation &amp; Settlement Policy
-                  </h3>
-                  <p className="text-xs text-stone-600 leading-relaxed mb-4">
-                    Appointments booked with {org.name} are safeguarded by PayPal authorization
-                    holds.
-                  </p>
-                  <ul className="space-y-2 text-xs text-stone-700">
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                      <span>
-                        <strong>Free Cancellation:</strong> You can cancel up to{' '}
-                        <strong>{freeCancelHours} hours</strong> before your appointment time with 0
-                        fees and 100% hold release.
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
-                      <span>
-                        <strong>No-Show Protection:</strong> Uncancelled no-shows incur an agreed
-                        hold capture of {policy?.no_show_fee_percent ?? 50}% to compensate the
-                        specialist.
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-stone-500 shrink-0" />
-                      <span>
-                        <strong>Transparent Settlement:</strong> When your appointment concludes,
-                        the salon marks completed, and your final charge settles automatically.
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Sidebar Location & Contact */}
-              <div className="space-y-4 lg:col-span-4">
-                <div className="rounded-3xl border border-stone-200 bg-white p-6">
-                  <h3 className="font-bold text-stone-950 text-sm mb-3">Location &amp; Hours</h3>
-                  <div className="space-y-3 text-xs text-stone-600">
-                    <div className="flex items-start gap-2.5">
-                      <MapPin className="h-4 w-4 text-stone-400 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-bold text-stone-900">Physical Address</p>
-                        <p className="mt-0.5 text-stone-500">
-                          {org.physical_address || 'Address provided upon booking'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <Compass className="h-4 w-4 text-stone-400 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-bold text-stone-900">Timezone</p>
-                        <p className="mt-0.5 text-stone-500">
-                          {org.timezone || 'Local Salon Time'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+          <OrgDetailAboutTab org={org} policy={policy} freeCancelHours={freeCancelHours} />
         )}
 
         {/* TAB 3: TEAM & SPECIALISTS */}
         {activeTab === 'staff' && (
-          <section className="space-y-6 pb-16 animate-in fade-in duration-200">
-            <div>
-              <h2 className="font-serif text-xl font-bold text-stone-950">Meet the Team</h2>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Licensed stylists and beauty artisans dedicated to your personal care.
-              </p>
-            </div>
-
-            {staffLoading ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-40 rounded-3xl bg-stone-200/60 animate-pulse" />
-                ))}
-              </div>
-            ) : staff.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-stone-200 bg-white p-12 text-center text-xs text-stone-400">
-                Staff directory will be displayed here soon.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {staff.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex flex-col justify-between rounded-3xl border border-stone-200 bg-white p-5 shadow-2xs"
-                  >
-                    <div className="flex items-start gap-4">
-                      {member.picture ? (
-                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-stone-100 shadow-2xs">
-                          <Image
-                            src={member.picture}
-                            alt={member.display_name}
-                            fill
-                            unoptimized={shouldUnoptimizeImage(member.picture)}
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
-                          <User className="h-8 w-8" />
-                        </div>
-                      )}
-
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-stone-950 text-sm truncate">
-                          {member.display_name}
-                        </h3>
-                        <p className="text-xs font-medium text-stone-500">{member.role}</p>
-                        {member.rating_avg > 0 && (
-                          <div className="mt-1 flex items-center gap-1 text-xs font-bold text-amber-700">
-                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                            <span>{member.rating_avg.toFixed(1)}</span>
-                            <span className="font-normal text-stone-400">
-                              ({member.review_count} reviews)
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {member.specialties && member.specialties.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1">
-                        {member.specialties.map((spec) => (
-                          <span
-                            key={spec}
-                            className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[10px] font-semibold text-stone-600"
-                          >
-                            {spec}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="mt-4 border-t border-stone-100 pt-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (services.length > 0) {
-                            handleBookService(services[0].id, member.id)
-                          } else {
-                            setParam('tab', 'services')
-                          }
-                        }}
-                        className="w-full cursor-pointer rounded-full bg-stone-100 py-2 font-bold text-xs text-stone-800 transition-colors hover:bg-stone-200"
-                      >
-                        Book with {member.display_name.split(' ')[0]}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+          <OrgDetailStaffTab
+            staff={staff}
+            staffLoading={staffLoading}
+            services={services}
+            onBookService={handleBookService}
+            onSwitchToServicesTab={() => setParam('tab', 'services')}
+          />
         )}
 
         {/* TAB 4: CLIENT REVIEWS */}

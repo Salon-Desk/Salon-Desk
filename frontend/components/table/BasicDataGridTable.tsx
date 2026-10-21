@@ -629,3 +629,6 @@ export function BasicDataGrid<T>({
     </div>
   )
 }
+
+export { BasicDataGrid as BasicDataGridTable }
+export default BasicDataGrid

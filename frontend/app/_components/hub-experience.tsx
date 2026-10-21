@@ -4,11 +4,11 @@ import { KeyRound, Scissors, ShieldCheck, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 
 import { UserMenu } from '@/components/auth/user-menu'
-import { Logo } from '@/components/brand/logo'
+import { Logo } from '@/components/brand'
 import { ROUTES } from '@/lib/constants'
 
 import { AppCard } from './app-card'
-import { SandboxModal } from './sandbox-modal'
+import { SandboxModal } from './SandboxModal'
 
 export function HubExperience() {
   const [isSandboxModalOpen, setIsSandboxModalOpen] = useState(false)

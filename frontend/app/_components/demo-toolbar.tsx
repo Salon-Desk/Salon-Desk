@@ -7,7 +7,7 @@ import { CopyableValue } from '@/components/ui'
 import { useClipboard } from '@/hooks'
 import { SANDBOX_CREDENTIALS } from '@/lib/constants'
 
-import { SandboxModal } from './sandbox-modal'
+import { SandboxModal } from './SandboxModal'
 
 export function DemoToolbar() {
   const [isModalOpen, setIsModalOpen] = useState(false)

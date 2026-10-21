@@ -5,7 +5,6 @@ import {
   clearAllAuthSessions,
   clearPortalAuthSession,
   getPortalAuthToken,
-  getPortalAuthUser,
   savePortalAuthSession,
 } from '@/lib/authSession'
 import { sharedApi } from '@/store/api/sharedApi'
@@ -34,53 +33,31 @@ export interface UserState {
   isLoading: boolean
 }
 
-function createInitialPortalSession(portal: AppPortal): PortalAuthSession {
-  if (typeof window === 'undefined') {
-    return {
-      user: null,
-      token: null,
-      organizationId: null,
-      isAuthenticated: false,
-      isLoading: false,
-    }
-  }
-  const token = getPortalAuthToken(portal)
-  const user = getPortalAuthUser(portal)
-  const isAuthenticated = Boolean(token)
+function createEmptyPortalSession(): PortalAuthSession {
   return {
-    user,
-    token,
-    organizationId: user?.org_id ?? null,
-    isAuthenticated,
-    isLoading: isAuthenticated,
+    user: null,
+    token: null,
+    organizationId: null,
+    isAuthenticated: false,
+    isLoading: false,
   }
 }
 
-function resolveInitialActiveApp(): AppPortal {
-  if (typeof window === 'undefined') return 'client'
-  const path = window.location.pathname
-  if (path.startsWith('/admin')) return 'admin'
-  if (path.startsWith('/merchant') || path.startsWith('/org')) return 'merchant'
-  return 'client'
-}
-
-const initialActiveApp = resolveInitialActiveApp()
 const initialPortals: Record<AppPortal, PortalAuthSession> = {
-  client: createInitialPortalSession('client'),
-  merchant: createInitialPortalSession('merchant'),
-  admin: createInitialPortalSession('admin'),
+  client: createEmptyPortalSession(),
+  merchant: createEmptyPortalSession(),
+  admin: createEmptyPortalSession(),
 }
-const initialActiveSession = initialPortals[initialActiveApp]
 
 const initialState: UserState = {
-  activeApp: initialActiveApp,
+  activeApp: 'client',
   didLogout: false,
   portals: initialPortals,
-  user: initialActiveSession.user,
-  token: initialActiveSession.token,
-  organizationId: initialActiveSession.organizationId,
-  isAuthenticated: initialActiveSession.isAuthenticated,
-  isLoading: initialActiveSession.isLoading,
+  user: null,
+  token: null,
+  organizationId: null,
+  isAuthenticated: false,
+  isLoading: false,
 }
 
 /**
@@ -143,6 +120,31 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    hydratePortalSession: (
+      state,
+      action: PayloadAction<{
+        portal: AppPortal
+        token: string | null
+        user: User | null
+      }>,
+    ) => {
+      const { portal, token, user } = action.payload
+      const isAuthenticated = Boolean(token)
+      state.portals[portal] = {
+        user,
+        token,
+        organizationId: user?.org_id ?? null,
+        isAuthenticated,
+        isLoading: isAuthenticated,
+      }
+      if (portal === state.activeApp) {
+        state.user = user
+        state.token = token
+        state.organizationId = user?.org_id ?? null
+        state.isAuthenticated = isAuthenticated
+        state.isLoading = isAuthenticated
+      }
+    },
     setAuthData: (
       state,
       action: PayloadAction<{
@@ -333,8 +335,15 @@ const authSlice = createSlice({
   },
 })
 
-export const { setAuthData, setUser, setActiveApp, setLoading, logout, logoutAll } =
-  authSlice.actions
+export const {
+  hydratePortalSession,
+  setAuthData,
+  setUser,
+  setActiveApp,
+  setLoading,
+  logout,
+  logoutAll,
+} = authSlice.actions
 
 export default authSlice.reducer
 

@@ -1,5 +1,4 @@
-export { AdminAuthModal } from './_components/admin-auth-modal'
-export { AdminDashboard } from './_components/admin-dashboard'
+export { AdminAuthModal } from './_components/AdminAuthModal'
 export {
   ADMIN_DEMO_EMAIL,
   ADMIN_DEMO_PASSWORD,

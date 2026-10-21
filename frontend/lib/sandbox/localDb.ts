@@ -21,19 +21,21 @@ export const getItemFromLocalDb = (key: string): string | null => {
 /* --------------------------
    Remove
 --------------------------- */
-export const removeItemFrommLocalDb = (key: string) => {
+export const removeItemFromLocalDb = (key: string) => {
   if (typeof window === 'undefined') {
     return
   }
   localStorage.removeItem(key)
 }
+export const removeItemFrommLocalDb = removeItemFromLocalDb
 
 /* --------------------------
    Clear multiple items
 --------------------------- */
-export const clearItemsFrommLocalDb = (keys: string[]) => {
+export const clearItemsFromLocalDb = (keys: string[]) => {
   if (typeof window === 'undefined') {
     return
   }
   keys.forEach((key) => localStorage.removeItem(key))
 }
+export const clearItemsFrommLocalDb = clearItemsFromLocalDb

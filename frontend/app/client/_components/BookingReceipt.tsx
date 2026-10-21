@@ -2,55 +2,48 @@
 
 import { Calendar, Clock, FileText, Lock, Store, User } from 'lucide-react'
 import Image from 'next/image'
+import React from 'react'
 
-import { HoldStateBadge, Modal } from '@/components/ui'
+import { PrimaryButton } from '@/components/button'
+import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
+import { HoldStateBadge } from '@/components/ui'
 import { formatBookingRef, formatDuration, formatUsd, isPlaceholderValue } from '@/lib/format'
 import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import type { Booking } from '@/types'
+
+import { ReceiptRow } from './ReceiptRow'
 
 interface ReceiptModalProps {
   booking: Booking
   onClose: () => void
 }
 
-function ReceiptRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof User
-  label: string
-  value: string
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
-      <div className="min-w-0">
-        <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">{label}</p>
-        <p className="text-sm font-medium text-stone-900">{value}</p>
-      </div>
-    </div>
-  )
-}
-
 export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
   const salonLine = [booking.salonName, formatBookingRef(booking.id)].filter(Boolean).join(' · ')
 
   return (
-    <Modal
-      onClose={onClose}
-      size="md"
-      icon={<FileText className="h-4 w-4" />}
-      title={booking.serviceName}
-      description={salonLine}
+    <CustomResponsiveDialog
+      open={true}
+      setOpen={(isOpen) => {
+        if (!isOpen) onClose()
+      }}
+      header={
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-slate-500" />
+            <h3 className="font-bold text-base text-stone-900">{booking.serviceName}</h3>
+          </div>
+          {salonLine && <p className="text-stone-500 text-xs">{salonLine}</p>}
+        </div>
+      }
       footer={
-        <button
-          type="button"
+        <PrimaryButton
+          variant="dark"
           onClick={onClose}
-          className="w-full rounded-full bg-stone-950 py-3 text-xs font-medium text-white transition-colors hover:bg-stone-800 sm:text-sm"
-        >
-          Close receipt
-        </button>
+          className="w-full rounded-full h-11 text-xs sm:text-sm font-medium"
+          title="Close receipt"
+          fullWidth
+        />
       }
     >
       <div className="mb-5 flex items-start justify-between gap-3">
@@ -70,7 +63,7 @@ export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
             </div>
           )}
           <div className="min-w-0">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">
+            <p className="font-medium text-[10px] text-stone-400 uppercase tracking-wider">
               Stylist
             </p>
             <p className="truncate font-medium text-stone-950">{booking.stylistName}</p>
@@ -87,7 +80,7 @@ export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
       </div>
 
       {booking.customerNotes ? (
-        <p className="mb-5 flex items-start gap-2 rounded-xl bg-stone-50 px-3.5 py-2.5 text-xs text-stone-600">
+        <p className="mb-5 flex items-start gap-2 rounded-xl bg-stone-50 px-3.5 py-2.5 text-stone-600 text-xs">
           <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
           <span>{booking.customerNotes}</span>
         </p>
@@ -123,7 +116,7 @@ export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
             <span className="font-semibold text-emerald-800">{formatUsd(0)}</span>
           </div>
         )}
-        <p className="mt-2 text-[11px] leading-relaxed text-amber-800/80">
+        <p className="mt-2 text-[11px] text-amber-800/80 leading-relaxed">
           PayPal authorization only. Settlement uses the locked booking-time price and policy.
           Cancel before {booking.freeCancelDeadlineLabel} to release the hold at {formatUsd(0)}.
         </p>
@@ -144,7 +137,7 @@ export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
           ) : null}
         </div>
       ) : null}
-    </Modal>
+    </CustomResponsiveDialog>
   )
 }
 

@@ -8,8 +8,12 @@ import { createSequentialId } from '@/lib/ids'
 import type { MerchantConsoleState } from '@/lib/store/merchant-store'
 import type { Booking, ChangeRequest, SalonService, StaffMember } from '@/types'
 
-import { DEFAULT_SERVICE_FORM, type ServiceFormState } from '../_components/service-modals'
-import { DEFAULT_STAFF_FORM, type StaffFormState } from '../_components/staff-modals'
+import {
+  DEFAULT_SERVICE_FORM,
+  DEFAULT_STAFF_FORM,
+  type ServiceFormState,
+  type StaffFormState,
+} from '../_constants/merchant-forms'
 import { useMerchantSettlement } from '../_hooks/use-merchant-settlement'
 
 export interface MerchantContextValue {

@@ -1,12 +1,24 @@
 'use client'
 
 import { Clock, Lock, User } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import React from 'react'
 
+import { PrimaryButton } from '@/components/button'
 import { ChatConversation, ChatPanelShell } from '@/components/chat/chat-ui'
 import type { AgentServiceRecommendation } from '@/components/chat/useAgentChat'
-import { VoiceAgentView } from '@/components/chat/VoiceAgentView'
-import { Button } from '@/components/ui'
+
+const VoiceAgentView = dynamic(
+  () => import('@/components/chat/VoiceAgentView').then((mod) => mod.VoiceAgentView),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+        Connecting voice agent…
+      </div>
+    ),
+  },
+)
 import type { ConciergeMessage } from '@/hooks/use-ai-concierge'
 import { INITIAL_STAFF } from '@/lib/data/catalog'
 import { DEFAULT_TIME_SLOT, SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
@@ -143,8 +155,8 @@ function ProposalCard({
         </span>
       </div>
 
-      <Button
-        variant="primary"
+      <PrimaryButton
+        variant="dark"
         fullWidth
         onClick={() =>
           onAuthorize({
@@ -153,11 +165,10 @@ function ProposalCard({
             slot,
           })
         }
-        className="w-full h-9 rounded-lg bg-stone-950 hover:bg-stone-800 text-white font-semibold text-xs shadow-xs border-0 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
-      >
-        <Lock className="h-3.5 w-3.5 mr-1.5" />
-        <span>Hold with PayPal ($0 today) →</span>
-      </Button>
+        className="w-full h-9 rounded-lg bg-stone-950 hover:bg-stone-800 text-white font-semibold text-xs shadow-none border-0 cursor-pointer"
+        icon={<Lock className="h-3.5 w-3.5 mr-1" />}
+        title="Hold with PayPal ($0 today) →"
+      />
 
       <div className="mt-2 flex items-center justify-between text-[11px] font-mono text-stone-500 px-0.5">
         <span>${service.holdDeposit} hold authorization</span>

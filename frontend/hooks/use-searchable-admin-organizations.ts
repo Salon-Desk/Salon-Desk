@@ -2,13 +2,13 @@
 
 import { useCallback } from 'react'
 
-import type { StatusFilter } from '@/app/admin/salons/_types'
 import { useSearchablePaginatedList } from '@/hooks/use-searchable-paginated-list'
 import { listingApiParams } from '@/hooks/useListingParams'
 import { AdminSalonsListParamsSchema } from '@/lib/listing-params/admin-salons-list-params'
 import { LISTING_SECTION_PAGE_SIZE } from '@/lib/listing-params/listing-api-limits'
 import { useGetAdminOrganizationsQuery } from '@/store/api/platformApi'
 import type { ApiOrganization } from '@/types/api-org'
+import type { StatusFilter } from '@/types/organization'
 
 export function useSearchableAdminOrganizations(options?: {
   skip?: boolean

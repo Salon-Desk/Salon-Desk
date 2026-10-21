@@ -1,7 +1,7 @@
 import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 
 import { type AppPortal, clearPortalAuthSession, getPortalAuthToken } from './authSession'
-import { NEXT_PUBLIC_BASE_URL } from './secreate'
+import { NEXT_PUBLIC_BASE_URL } from './env'
 
 const isServer = typeof window === 'undefined'
 const configuredApiUrl = (

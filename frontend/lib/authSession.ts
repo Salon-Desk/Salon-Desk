@@ -18,7 +18,7 @@ import {
 } from '@/constant/variables'
 import type { User } from '@/types/user'
 
-import { clearItemsFrommLocalDb, getItemFromLocalDb, setItemLocalDb } from './localDb'
+import { clearItemsFromLocalDb, getItemFromLocalDb, setItemLocalDb } from './localDb'
 
 export type AppPortal = 'client' | 'merchant' | 'admin'
 
@@ -134,14 +134,14 @@ export const clearPortalAuthSession = (portal: AppPortal): void => {
   if (portal === 'client') {
     toClear.push(ACCESS_TOKEN, ACCESS_TOKEN_TYPE, REFRESH_TOKEN, AUTH_USER)
   }
-  clearItemsFrommLocalDb(toClear)
+  clearItemsFromLocalDb(toClear)
 }
 
 /**
  * Clear all auth session tokens and cached user data for all portals
  */
 export const clearAllAuthSessions = (): void => {
-  clearItemsFrommLocalDb(AUTH_KEYS)
+  clearItemsFromLocalDb(AUTH_KEYS)
 }
 
 /**

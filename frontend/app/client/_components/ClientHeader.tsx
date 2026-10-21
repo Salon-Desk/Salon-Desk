@@ -4,7 +4,7 @@ import { Sparkles } from 'lucide-react'
 import Link from 'next/link'
 
 import { UserMenu } from '@/components/auth/user-menu'
-import { Logo } from '@/components/brand/logo'
+import { Logo } from '@/components/brand'
 import { ROUTES } from '@/lib/constants'
 
 export type ClientTab = 'catalog' | 'my-bookings'

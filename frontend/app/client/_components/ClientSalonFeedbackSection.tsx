@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui'
+import { PrimaryButton } from '@/components/button'
 import { toastColor } from '@/constant/toast-color'
 import { buildClientMyBookingsApiParams } from '@/lib/listing-params/client-my-bookings-list-params'
 import { buildClientOrgStaffQueryArg } from '@/lib/listing-params/client-org-staff-list-params'
@@ -390,14 +390,14 @@ export function ClientSalonFeedbackSection({ orgId }: { orgId: string }) {
                 className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-400"
               />
 
-              <Button
+              <PrimaryButton
                 variant="dark"
                 className="rounded-full"
-                disabled={submitting}
+                isDisabled={submitting}
+                isLoading={submitting}
                 onClick={() => void handleSubmit()}
-              >
-                {submitting ? 'Submitting…' : 'Submit feedback'}
-              </Button>
+                title={submitting ? 'Submitting…' : 'Submit feedback'}
+              />
             </div>
           )}
         </div>

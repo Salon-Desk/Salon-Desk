@@ -1,5 +1,6 @@
-export { default as useFormSubmitHandler } from './formHandler'
+export { default as useFormSubmitHandler } from './form-handler'
 export { useAdminSession } from './use-admin-session'
+export { useAgentChat } from './use-agent-chat'
 export { useAiConcierge } from './use-ai-concierge'
 export { useBookingContext } from './use-booking-context'
 export { useClientHydrated } from './use-client-hydrated'

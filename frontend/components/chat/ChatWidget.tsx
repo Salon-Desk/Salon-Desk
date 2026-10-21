@@ -1,13 +1,25 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { ChatConversation, ChatPanelShell } from '@/components/chat/chat-ui'
 import { DraggableChatFab } from '@/components/chat/DraggableChatFab'
 import { useAgentChat } from '@/components/chat/useAgentChat'
-import { VoiceAgentView } from '@/components/chat/VoiceAgentView'
 import { type AssistantPortal, isSupportPortal } from '@/lib/assistant-portal'
+
+const VoiceAgentView = dynamic(
+  () => import('@/components/chat/VoiceAgentView').then((mod) => mod.VoiceAgentView),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+        Connecting voice agent…
+      </div>
+    ),
+  },
+)
 import { anyChatFeatureEnabled, features } from '@/lib/features'
 import type { AppDispatch, RootState } from '@/store'
 import { setChatMinimized, setChatMode, setChatOpen, setChatPortal } from '@/store/agentChatSlice'

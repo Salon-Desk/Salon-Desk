@@ -1,10 +1,6 @@
 'use client'
 
 import { Scissors, Sparkles } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import type { FC } from 'react'
-import { useForm } from 'react-hook-form'
-import { useDispatch } from 'react-redux'
 
 import { ADMIN_DEMO_PERSONAS } from '@/app/admin/_constants/demo-personas'
 import { MERCHANT_DEMO_PERSONAS } from '@/app/merchant/_constants/demo-personas'
@@ -14,126 +10,9 @@ import { AuthViewTabs } from '@/components/auth/auth-view-tabs'
 import { DemoPersonasPanel } from '@/components/auth/demo-personas-panel'
 import { ForgotPasswordForm } from '@/components/auth/forgot-password-form'
 import { SignInForm } from '@/components/auth/sign-in-form'
-import PrimaryButton from '@/components/button/PrimaryButton'
-import FormProvider from '@/components/forms/FormProvider'
-import RHFEmailField from '@/components/forms/RHFEmailField'
-import RHFPasswordField from '@/components/forms/RHFPasswordField'
-import RHFPhoneField from '@/components/forms/RHFPhoneField'
-import RHFTextField from '@/components/forms/RHFTextField'
-import useFormSubmitHandler from '@/hooks/formHandler'
-import { zodResolver } from '@/lib/schema/resolver'
-import { toApiPhoneDigits } from '@/lib/util/phone'
-import type { AppDispatch } from '@/store'
-import { useSignUpMutation } from '@/store/api/sharedApi'
-import { setActiveApp, setAuthData } from '@/store/authSlice'
-import type { ApiResponse } from '@/types/api'
-import type { SignUpRequest, TokenResponse } from '@/types/auth'
 
 import { CLIENT_DEMO_PERSONAS } from '../_constants/demo-personas'
-import {
-  clientSignUpDefaultValues,
-  type ClientSignUpFormData,
-  clientSignUpSchema,
-} from '../_schemas/auth.schema'
-
-const ClientSignUpForm: FC = () => {
-  const router = useRouter()
-  const dispatch = useDispatch<AppDispatch>()
-  const { closeAuthModal } = useAuthModal()
-  const [signUp, { isLoading }] = useSignUpMutation()
-
-  const methods = useForm<ClientSignUpFormData>({
-    resolver: zodResolver(clientSignUpSchema),
-    defaultValues: clientSignUpDefaultValues,
-    mode: 'onBlur',
-  })
-
-  const onCompleteSuccess = (response: ApiResponse<TokenResponse>) => {
-    const data = response.data
-    if (!data?.access_token || !data.user) {
-      throw new Error('Invalid sign-up response')
-    }
-
-    dispatch(
-      setAuthData({
-        user: data.user,
-        access_token: data.access_token,
-        portal: 'client',
-      }),
-    )
-    dispatch(setActiveApp('client'))
-    closeAuthModal()
-    router.push('/client')
-  }
-
-  const submitHandler = useFormSubmitHandler<SignUpRequest, TokenResponse>(
-    (body: SignUpRequest) =>
-      signUp(body)
-        .unwrap()
-        .then((data) => ({ data })),
-    onCompleteSuccess,
-    'Account created. Check your email to verify, then you can book.',
-  )
-
-  const onSubmit = async (data: ClientSignUpFormData) => {
-    await submitHandler({
-      first_name: (data.first_name ?? '').trim(),
-      last_name: (data.last_name ?? '').trim(),
-      email: (data.email ?? '').trim(),
-      password: data.password ?? '',
-      phone: toApiPhoneDigits(data.phone),
-    })
-  }
-
-  return (
-    <FormProvider
-      methods={methods}
-      onSubmit={(e) => {
-        e?.preventDefault()
-        void methods.handleSubmit(onSubmit)(e)
-      }}
-    >
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <RHFTextField
-            name="first_name"
-            label="First Name"
-            placeholder="Jane"
-            leftIcon="user"
-            isRequired
-          />
-          <RHFTextField
-            name="last_name"
-            label="Last Name"
-            placeholder="Doe"
-            leftIcon="user"
-            isRequired
-          />
-        </div>
-        <RHFEmailField name="email" label="Email" placeholder="jane.doe@example.com" isRequired />
-        <RHFPasswordField
-          name="password"
-          label="Password (min 8 chars)"
-          placeholder="••••••••"
-          isRequired
-        />
-        <RHFPhoneField
-          name="phone"
-          label="Phone Number"
-          placeholder="+1 (555) 000-0000"
-          isRequired={false}
-        />
-        <PrimaryButton
-          title={isLoading ? 'Creating Account...' : 'Complete Registration'}
-          isLoading={isLoading}
-          type="submit"
-          size="sm"
-          className="mt-1 h-11 rounded-xl font-semibold shadow-none"
-        />
-      </div>
-    </FormProvider>
-  )
-}
+import { ClientSignUpForm } from './ClientSignUpForm'
 
 export function ClientAuthModal() {
   const { isOpen, view, setView, targetPortal } = useAuthModal()

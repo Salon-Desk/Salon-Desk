@@ -1,6 +1,6 @@
 'use client'
 
-import { MerchantCommissionBilling } from '@/app/merchant/_components/merchant-commission-billing'
+import { MerchantCommissionBilling } from '@/app/merchant/_components/MerchantCommissionBilling'
 
 export default function MerchantBillingPage() {
   return (

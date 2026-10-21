@@ -1,55 +1,15 @@
 'use client'
 
-import { AlertCircle, FileText, Lock, PencilLine, ShieldCheck } from 'lucide-react'
+import { AlertCircle, Lock, PencilLine, ShieldCheck } from 'lucide-react'
 import { type MouseEvent, type ReactNode, useId, useState } from 'react'
 
-import { Button, Modal } from '@/components/ui'
 import { Checkbox } from '@/components/ui/checkbox'
 import { formatUsd } from '@/lib/format'
 import { formatDateInZone, formatTimeInZone, timeZoneAbbr } from '@/lib/util/timezone'
 import { cn } from '@/lib/utils'
 
-import { type LegalSection, PRIVACY_POLICY, TERMS_OF_SERVICE } from '../_constants/checkout-legal'
 import type { CheckoutQuote } from './CheckoutSummary'
-
-type LegalDoc = 'terms' | 'privacy'
-
-const LEGAL_DOCS: Record<LegalDoc, { title: string; sections: LegalSection[] }> = {
-  terms: { title: 'Terms of Service', sections: TERMS_OF_SERVICE },
-  privacy: { title: 'Privacy Policy', sections: PRIVACY_POLICY },
-}
-
-function LegalDialog({ doc, onClose }: { doc: LegalDoc; onClose: () => void }) {
-  const { title, sections } = LEGAL_DOCS[doc]
-  return (
-    <Modal
-      onClose={onClose}
-      size="lg"
-      icon={<FileText className="h-4 w-4" />}
-      title={title}
-      description="SalonDesk client bookings · last updated October 2026"
-      footer={
-        <Button variant="dark" className="rounded-full" onClick={onClose}>
-          Done reading
-        </Button>
-      }
-    >
-      <ol className="space-y-5">
-        {sections.map((section, index) => (
-          <li key={section.heading} className="flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-50 text-[11px] font-bold text-amber-800">
-              {index + 1}
-            </span>
-            <div>
-              <h3 className="text-sm font-semibold text-stone-900">{section.heading}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-stone-600">{section.body}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </Modal>
-  )
-}
+import { LegalDialog, type LegalDoc } from './LegalDialog'
 
 function AgreementCheck({
   checked,

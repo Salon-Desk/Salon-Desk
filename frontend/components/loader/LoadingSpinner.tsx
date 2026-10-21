@@ -13,7 +13,7 @@ interface LoadingSpinnerProps {
   overlay?: boolean
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'md',
   className,
   text = 'Loading, please wait...',

@@ -1,16 +1,6 @@
 'use client'
 
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  Compass,
-  Loader2,
-  MapPin,
-  Search,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react'
+import { ArrowLeft, Compass, Loader2, MapPin, Search, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
@@ -59,7 +49,9 @@ import { CatalogFeaturedSection } from './CatalogFeaturedSection'
 import { CatalogFilters, type ServiceSort } from './CatalogFilters'
 import { CatalogHero } from './CatalogHero'
 import { CatalogSection } from './CatalogSection'
+import { ClientCatalogHighlights } from './ClientCatalogHighlights'
 import { checkoutPath } from './ClientCheckoutPage'
+import { ClientExperienceMobileNav } from './ClientExperienceMobileNav'
 import { ClientFooter } from './ClientFooter'
 import { ClientHeader, type ClientTab } from './ClientHeader'
 import { ClientMyBookingsReviews } from './ClientMyBookingsReviews'
@@ -494,57 +486,7 @@ export function ClientExperience({
               <CatalogHero hero={effectiveHero} isLoading={heroLoading && curationLoading} />
             )}
 
-            {!isExplorePage && (
-              <div className="mb-10 sm:mb-14 overflow-hidden rounded-3xl border border-stone-200/80 bg-white/95 shadow-xs backdrop-blur-xl">
-                <div className="grid grid-cols-2 divide-y divide-stone-100 sm:grid-cols-4 sm:divide-y-0 sm:divide-x sm:divide-stone-100">
-                  <div className="flex items-center gap-3 p-3.5 sm:p-4">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 shadow-2xs">
-                      <ShieldCheck className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs text-stone-900">$0 Debited Today</p>
-                      <p className="truncate text-[11px] text-stone-500">
-                        PayPal auth hold guarantee
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3.5 sm:p-4">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 shadow-2xs">
-                      <Sparkles className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs text-stone-900">Verified Salons</p>
-                      <p className="truncate text-[11px] text-stone-500">
-                        Licensed studio specialists
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3.5 sm:p-4">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 shadow-2xs">
-                      <Calendar className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs text-stone-900">Instant Confirm</p>
-                      <p className="truncate text-[11px] text-stone-500">Real-time schedule lock</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3.5 sm:p-4">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-700 shadow-2xs">
-                      <Clock className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs text-stone-900">Free Cancellation</p>
-                      <p className="truncate text-[11px] text-stone-500">
-                        100% hold release window
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {!isExplorePage && <ClientCatalogHighlights />}
 
             {!isExplorePage && (
               <>
@@ -855,80 +797,14 @@ export function ClientExperience({
 
       <ClientFooter hero={hero} />
 
-      {(() => {
-        const isCatalogActive = activeTab === 'catalog' && !isChatOpen
-        const isAiActive = isChatOpen
-        const isBookingsActive = activeTab === 'my-bookings' && !isChatOpen
-
-        return (
-          <nav
-            aria-label="Mobile quick actions"
-            className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm sm:max-w-md z-30 md:hidden flex items-center justify-between gap-1.5 rounded-full bg-gradient-to-b from-stone-900/95 via-stone-950/98 to-black/98 text-white p-1.5 shadow-[0_20px_45px_-10px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.08),0_6px_24px_rgba(245,158,11,0.08)] backdrop-blur-2xl border border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-8 before:-top-px before:h-[1px] before:bg-gradient-to-r before:from-transparent before:via-amber-400/50 before:to-transparent transition-all duration-300 ease-out ${
-              isInputFocused
-                ? 'opacity-0 translate-y-8 scale-95 pointer-events-none'
-                : 'opacity-100 translate-y-0 scale-100'
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('catalog')
-              }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
-                isCatalogActive
-                  ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
-                  : 'text-stone-400 hover:text-white hover:bg-white/[0.06]'
-              }`}
-            >
-              <Search className="h-3.5 w-3.5" />
-              <span>Catalog</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => dispatch(setChatOpen(!isChatOpen))}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
-                isAiActive
-                  ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
-                  : 'text-stone-400 hover:text-white hover:bg-white/[0.06]'
-              }`}
-            >
-              <Sparkles
-                className={`h-3.5 w-3.5 transition-transform ${isAiActive ? 'text-amber-500 scale-110' : 'text-amber-400'}`}
-              />
-              <span>Ask AI</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('my-bookings')
-              }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
-                isBookingsActive
-                  ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
-                  : 'text-stone-400 hover:text-white hover:bg-white/[0.06]'
-              }`}
-            >
-              <Calendar className="h-3.5 w-3.5" />
-              <span className="flex items-center gap-1.5">
-                Bookings
-                {activeHolds.length > 0 && (
-                  <span
-                    className={`h-4 min-w-4 px-1 rounded-full text-[9px] font-mono font-bold flex items-center justify-center ${
-                      isBookingsActive
-                        ? 'bg-amber-400 text-stone-950 shadow-xs'
-                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    }`}
-                  >
-                    {activeHolds.length}
-                  </span>
-                )}
-              </span>
-            </button>
-          </nav>
-        )
-      })()}
+      <ClientExperienceMobileNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isChatOpen={isChatOpen}
+        onToggleChat={() => dispatch(setChatOpen(!isChatOpen))}
+        isInputFocused={isInputFocused}
+        activeHoldsCount={activeHolds.length}
+      />
 
       {protocolService && (
         <ProtocolModal

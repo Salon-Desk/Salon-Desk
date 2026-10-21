@@ -8,21 +8,7 @@ import {
   useVoiceAssistant,
 } from '@livekit/components-react'
 import { ConnectionState, type RemoteParticipant, RoomEvent } from 'livekit-client'
-import {
-  Building2,
-  CalendarCheck,
-  Clock,
-  Loader2,
-  MapPin,
-  Mic,
-  MicOff,
-  PhoneOff,
-  Send,
-  ShieldCheck,
-  Sparkles,
-  Star,
-} from 'lucide-react'
-import Image from 'next/image'
+import { Loader2, MapPin, Mic, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
@@ -33,15 +19,15 @@ import type {
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
 } from '@/components/chat/useAgentChat'
+import { VoiceControlBar } from '@/components/chat/VoiceControlBar'
+import { VoiceDiscoveredContent } from '@/components/chat/VoiceDiscoveredContent'
 import { VoiceVisualizerOrb } from '@/components/chat/VoiceVisualizerOrb'
 import { toastColor } from '@/constant/toast-color'
 import { VOICE_AGENT_STATUS } from '@/constant/voice-agent'
 import { dispatchAgentUiAction, highlightElement } from '@/hooks/useAgentUiActions'
 import { type AssistantPortal, isSupportPortal, portalChrome } from '@/lib/assistant-portal'
-import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import type { AgentLanguage } from '@/lib/features'
 import type { GeoCoords } from '@/lib/util/geo'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import {
   isAgentGoodbyeTranscript,
   isAgentParticipant,
@@ -392,7 +378,7 @@ export function InnerVoiceAssistantUI({
         console.error('Failed to send typed voice message:', err)
       }
     },
-    [sendChat, isSending, connectionState, draft],
+    [sendChat, isSending, connectionState, draft, setDraft],
   )
 
   const latestTranscript = agentTranscriptions.at(-1)?.text
@@ -563,298 +549,31 @@ export function InnerVoiceAssistantUI({
           </p>
         </div>
 
-        {/* Payment Link Card (When present) */}
-        {paymentLinkData && (
-          <div className="rounded-xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30 p-3.5 text-stone-900 shadow-[0_1px_2px_rgba(6,95,70,0.06)] motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-200">
-            <div className="mb-2 flex items-center gap-1.5 text-emerald-800">
-              <CalendarCheck className="h-4 w-4 shrink-0 text-emerald-600" />
-              <span className="text-[11px] font-semibold">Booking Created</span>
-            </div>
-            <h4 className="text-sm font-semibold text-stone-950">{paymentLinkData.serviceName}</h4>
-            {paymentLinkData.organizationName && (
-              <p className="mt-0.5 text-xs text-stone-500">at {paymentLinkData.organizationName}</p>
-            )}
-            <div className="mt-2 flex items-center justify-between border-t border-emerald-100 pt-2 text-xs">
-              <span className="font-medium text-stone-600">{paymentLinkData.formattedTime}</span>
-              <span className="font-medium text-emerald-800">${paymentLinkData.totalPrice}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                router.push(paymentLinkData.paymentLink)
-                setPaymentLinkData(null)
-              }}
-              className="mt-2.5 w-full rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-            >
-              Complete Payment →
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaymentLinkData(null)}
-              className="mt-1.5 w-full text-[10px] text-stone-500 hover:text-stone-700 cursor-pointer"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-
-        {/* Real Discovered Salons / Organizations Cards (When present) */}
-        {visibleOrgs.length > 0 && (
-          <div className="space-y-2 pt-1 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
-              <span className="flex items-center gap-1.5">
-                <Building2 className="h-3.5 w-3.5 text-amber-600" />
-                Discovered Salons
-              </span>
-              <span className="font-mono text-emerald-700 lowercase">$0 hold guarantee</span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              {visibleOrgs.map((org) => (
-                <div
-                  key={org.id}
-                  className="group relative flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-3 text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] hover:border-amber-300 hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-slate-200/80 bg-amber-50 flex items-center justify-center">
-                      {org.picture ? (
-                        <Image
-                          src={org.picture}
-                          alt={org.name}
-                          fill
-                          unoptimized={shouldUnoptimizeImage(org.picture)}
-                          sizes="44px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <Building2 className="h-5 w-5 text-amber-700" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <h4 className="truncate font-bold text-xs sm:text-sm text-slate-900 group-hover:text-amber-900 transition-colors">
-                          {org.name}
-                        </h4>
-                        <ShieldCheck className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                      </div>
-                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-500">
-                        <span className="flex items-center text-amber-700 font-medium">
-                          <Star className="h-3 w-3 fill-amber-400 text-amber-500 mr-0.5" />
-                          {org.rating || 4.9}
-                        </span>
-                        {org.physicalAddress && (
-                          <span className="truncate max-w-[130px] flex items-center">
-                            <MapPin className="h-3 w-3 mr-0.5 shrink-0" />
-                            {org.physicalAddress}
-                          </span>
-                        )}
-                        {org.distanceKm !== null && org.distanceKm !== undefined && (
-                          <span className="font-mono text-amber-800 font-semibold">
-                            · {org.distanceKm} km
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => void handleSend(`Show services for ${org.name}`)}
-                    className="shrink-0 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/70 px-2.5 py-1 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                  >
-                    Select
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Real Discovered Services Cards (When present) */}
-        {visibleServices.length > 0 && (
-          <div className="space-y-2 pt-1 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                Available Services
-              </span>
-              <span className="text-emerald-700 font-mono lowercase">$0 hold today</span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              {visibleServices.map((rec) => (
-                <div
-                  key={rec.serviceId}
-                  onClick={() => void handleSend(`Book ${rec.name} at ${rec.organizationName}`)}
-                  className="group relative rounded-xl border border-amber-200/90 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/30 p-3 text-slate-900 shadow-xs hover:border-amber-400 hover:shadow-md transition-all cursor-pointer"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-slate-200/80 bg-slate-100">
-                      <Image
-                        src={rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK}
-                        alt={rec.name}
-                        fill
-                        unoptimized={shouldUnoptimizeImage(
-                          rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK,
-                        )}
-                        sizes="56px"
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h4 className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-amber-900 transition-colors line-clamp-1">
-                            {rec.name}
-                          </h4>
-                          <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
-                            {rec.organizationName}
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <span className="font-mono tabular-nums font-extrabold text-xs sm:text-sm text-amber-950">
-                            ${rec.basePrice}
-                          </span>
-                          <span className="block text-[10px] text-emerald-700 font-medium">
-                            $0 hold
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600 pt-1.5 border-t border-amber-100">
-                        <div className="flex items-center gap-2">
-                          {rec.durationMinutes && (
-                            <span className="flex items-center gap-1 font-mono text-[10px] text-slate-500">
-                              <Clock className="h-3 w-3 text-amber-600" />
-                              {rec.durationMinutes} min
-                            </span>
-                          )}
-                          {rec.distanceKm !== null && rec.distanceKm !== undefined && (
-                            <span className="flex items-center gap-0.5 font-mono text-[10px] text-amber-800">
-                              <MapPin className="h-3 w-3 text-amber-600" />
-                              {rec.distanceKm} km
-                            </span>
-                          )}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            void handleSend(`Book ${rec.name} at ${rec.organizationName}`)
-                          }}
-                          className="flex items-center gap-1 rounded-lg bg-stone-950 hover:bg-amber-600 text-white px-2 py-0.5 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                        >
-                          <CalendarCheck className="h-3 w-3" />
-                          <span>Select &amp; Book</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {canShowMoreServices && (
-              <button
-                type="button"
-                disabled={isSending || connectionState !== ConnectionState.Connected}
-                onClick={() => void handleSend('Show me a few more options')}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-amber-300 hover:bg-amber-50/60 cursor-pointer disabled:opacity-40"
-              >
-                Show a few more
-              </button>
-            )}
-          </div>
-        )}
+        <VoiceDiscoveredContent
+          paymentLinkData={paymentLinkData}
+          setPaymentLinkData={setPaymentLinkData}
+          visibleOrgs={visibleOrgs}
+          visibleServices={visibleServices}
+          canShowMoreServices={canShowMoreServices}
+          isSending={isSending}
+          connectionState={connectionState}
+          onSend={handleSend}
+        />
       </div>
 
-      {/* Control Bottom Section */}
-      <div className="border-t border-slate-200/80 bg-white/95 p-3 sm:p-4 backdrop-blur-md">
-        {/* Quick Suggestion Pills */}
-        <div className="mb-2.5 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {chrome.voiceSuggestions.map((suggestion) => (
-            <button
-              key={suggestion}
-              type="button"
-              disabled={isSending || connectionState !== ConnectionState.Connected}
-              onClick={() => void handleSend(suggestion)}
-              className={cn(
-                'shrink-0 cursor-pointer rounded-lg border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-2xs transition-all disabled:opacity-50',
-                chrome.chipHover,
-              )}
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-
-        {/* Action Dock */}
-        <div className="flex items-center gap-2">
-          {/* Microphone Mute Toggle */}
-          <button
-            type="button"
-            onClick={() => void toggleMute()}
-            aria-label={isMuted ? 'Unmute microphone' : 'Mute microphone'}
-            className={cn(
-              'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl shadow-xs transition-all',
-              !isMuted && !micBlocked
-                ? 'border border-slate-800 bg-stone-950 text-white hover:bg-stone-800 ring-2 ring-emerald-400/20'
-                : 'bg-rose-500 text-white ring-2 ring-rose-200 hover:bg-rose-600',
-            )}
-            title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
-          >
-            {!isMuted && !micBlocked ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-          </button>
-
-          {/* Text Input with Send */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              void handleSend()
-            }}
-            className={cn(
-              'flex flex-1 items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/80 p-1 pl-3 shadow-[inset_0_1px_1px_rgba(0,0,0,0.03)] transition-all focus-within:bg-white focus-within:ring-2',
-              chrome.focusWithin,
-            )}
-          >
-            <input
-              type="text"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder={chrome.voicePlaceholder}
-              disabled={connectionState !== ConnectionState.Connected || isSending}
-              className="flex-1 bg-transparent py-1 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={!draft.trim() || isSending || connectionState !== ConnectionState.Connected}
-              aria-label="Send message"
-              className={cn(
-                'flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-white shadow-xs transition-colors disabled:opacity-30',
-                support ? chrome.sendReady : 'bg-stone-950 hover:bg-amber-600',
-              )}
-            >
-              <Send className="h-3.5 w-3.5" />
-            </button>
-          </form>
-
-          {/* End Call Button */}
-          <button
-            type="button"
-            onClick={onEndCall}
-            aria-label="End call"
-            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-rose-200 bg-rose-50/80 text-rose-700 shadow-xs transition-all hover:border-rose-400 hover:bg-rose-100"
-            title="End session"
-          >
-            <PhoneOff className="h-4 w-4" />
-          </button>
-        </div>
-
-        <p className="mt-2 text-center text-[10px] font-mono text-slate-400">
-          Speak naturally or type anytime · $0 authorization hold
-        </p>
-      </div>
+      <VoiceControlBar
+        chrome={chrome}
+        isMuted={isMuted}
+        micBlocked={micBlocked}
+        draft={draft}
+        setDraft={setDraft}
+        toggleMute={toggleMute}
+        onSend={handleSend}
+        onEndCall={onEndCall}
+        connectionState={connectionState}
+        isSending={isSending}
+        support={support}
+      />
     </div>
   )
 }

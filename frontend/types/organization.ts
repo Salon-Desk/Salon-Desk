@@ -1,3 +1,14 @@
+import type { ApiOrgStatus } from './api-org'
+
+export type StatusFilter = 'all' | ApiOrgStatus
+
+export interface SalonCounts {
+  all: number
+  pending: number
+  approved: number
+  suspended: number
+}
+
 export type OrganizationStatus = 'APPROVED' | 'PENDING_REVIEW' | 'SUSPENDED'
 
 export interface Organization {

@@ -15,8 +15,8 @@ import { useGetAdminCategoriesQuery, useGetAdminDashboardQuery } from '@/store/a
 import { logout, userSelector } from '@/store/authSlice'
 import type { PlatformUser } from '@/types'
 
-import { AdminHeader } from './_components/admin-header'
-import { AdminSidebar } from './_components/admin-sidebar'
+import { AdminHeader } from './_components/AdminHeader'
+import { AdminSidebar } from './_components/AdminSidebar'
 import { getAdminTabFromPathname } from './_constants/admin-nav'
 import { AdminProvider, useAdminContext } from './_context/admin-context'
 

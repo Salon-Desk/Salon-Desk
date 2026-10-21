@@ -1,8 +1,10 @@
 'use client'
 
 import { AlertTriangle, ShieldCheck } from 'lucide-react'
+import React from 'react'
 
-import { Button, Modal } from '@/components/ui'
+import { PrimaryButton } from '@/components/button'
+import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import type { CancelOutcomePreview } from '@/lib/booking/cancel-policy'
 import { formatUsd } from '@/lib/format'
 import type { Booking } from '@/types'
@@ -25,51 +27,62 @@ export function CancelBookingDialog({
   const isFree = preview.withinFreeWindow
 
   return (
-    <Modal
-      onClose={onClose}
-      size="md"
-      icon={
-        isFree ? (
-          <ShieldCheck className="h-4 w-4 text-emerald-600" />
-        ) : (
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-        )
-      }
-      title={isFree ? 'Cancel for free?' : 'Late cancellation fee applies'}
-      description={
-        isFree
-          ? 'You are still within the free-cancellation window. PayPal will release your hold with nothing charged.'
-          : 'The free-cancellation deadline has passed. Cancelling now captures the late fee from your PayPal hold; the rest is released.'
+    <CustomResponsiveDialog
+      open={true}
+      setOpen={(isOpen) => {
+        if (!isOpen) onClose()
+      }}
+      header={
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            {isFree ? (
+              <ShieldCheck className="h-5 w-5 text-emerald-600" />
+            ) : (
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+            )}
+            <h3 className="font-bold text-base text-stone-900">
+              {isFree ? 'Cancel for free?' : 'Late cancellation fee applies'}
+            </h3>
+          </div>
+          <p className="text-stone-500 text-xs">
+            {isFree
+              ? 'You are still within the free-cancellation window. PayPal will release your hold with nothing charged.'
+              : 'The free-cancellation deadline has passed. Cancelling now captures the late fee from your PayPal hold; the rest is released.'}
+          </p>
+        </div>
       }
       footer={
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
+        <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row w-full sm:w-auto">
+          <PrimaryButton
             variant="ghost"
-            className="rounded-full"
+            className="rounded-full h-10 px-4 text-xs sm:text-sm font-medium"
             onClick={onClose}
-            disabled={isSubmitting}
-          >
-            Keep appointment
-          </Button>
-          <Button
+            isDisabled={isSubmitting}
+            title="Keep appointment"
+            fullWidth={false}
+          />
+          <PrimaryButton
             variant={isFree ? 'dark' : 'danger'}
-            className="rounded-full"
+            className="rounded-full h-10 px-4 text-xs sm:text-sm font-semibold"
             onClick={onConfirm}
-            disabled={isSubmitting}
-          >
-            {isSubmitting
-              ? 'Cancelling…'
-              : isFree
-                ? 'Confirm cancel ($0 charge)'
-                : `Confirm cancel (${formatUsd(preview.chargeAmount)} fee)`}
-          </Button>
+            isDisabled={isSubmitting}
+            isLoading={isSubmitting}
+            title={
+              isSubmitting
+                ? 'Cancelling…'
+                : isFree
+                  ? 'Confirm cancel ($0 charge)'
+                  : `Confirm cancel (${formatUsd(preview.chargeAmount)} fee)`
+            }
+            fullWidth={false}
+          />
         </div>
       }
     >
       <div className="space-y-4">
         <div className="rounded-2xl border border-stone-200 bg-stone-50/80 px-4 py-3 text-sm">
           <p className="font-medium text-stone-950">{booking.serviceName}</p>
-          <p className="mt-0.5 text-xs text-stone-500">
+          <p className="mt-0.5 text-stone-500 text-xs">
             {booking.appointmentTime}
             {booking.salonName ? ` · ${booking.salonName}` : ''}
           </p>
@@ -94,7 +107,7 @@ export function CancelBookingDialog({
               <span className="font-normal text-stone-500">({preview.noShowPct}%)</span>
             </dd>
           </div>
-          <div className="mt-1 flex justify-between gap-3 border-t border-stone-100 pt-2">
+          <div className="mt-1 flex justify-between gap-3 border-stone-100 border-t pt-2">
             <dt className="font-medium text-stone-800">You pay if you cancel now</dt>
             <dd
               className={isFree ? 'font-semibold text-emerald-700' : 'font-semibold text-amber-800'}
@@ -103,16 +116,7 @@ export function CancelBookingDialog({
             </dd>
           </div>
         </dl>
-
-        {!isFree ? (
-          <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3.5 py-2.5 text-xs leading-relaxed text-amber-900">
-            SalonDesk captures only the locked late-cancellation fee (
-            {formatUsd(preview.lateCancelFee)}
-            ), not the full service price or the no-show fee. Platform commission is calculated on
-            the captured amount only.
-          </p>
-        ) : null}
       </div>
-    </Modal>
+    </CustomResponsiveDialog>
   )
 }

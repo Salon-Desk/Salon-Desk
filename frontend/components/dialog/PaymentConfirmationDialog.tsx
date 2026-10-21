@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import type React from 'react'
 
+import { PrimaryButton } from '@/components/button'
 import { Dialog, DialogOverlay, DialogPortal } from '@/components/ui/dialog'
 import { resolveImageSrc } from '@/lib/util/remoteImage'
 import { cn } from '@/lib/utils'
@@ -48,7 +49,7 @@ function PaymentSuccessHeroFallback() {
   )
 }
 
-const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps> = ({
+export const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps> = ({
   title = 'Payment Successful',
   description = 'Your payment via Stripe has been processed successfully. A confirmation email has been sent to you.',
   open,
@@ -145,19 +146,20 @@ const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps> = ({
             </div>
 
             <div className="relative z-10 flex justify-center px-6 pb-8 pt-5">
-              <button
+              <PrimaryButton
                 type="button"
-                disabled={isLoading}
+                isDisabled={isLoading}
+                isLoading={isLoading}
                 onClick={onConfirm}
                 className={cn(
-                  'w-full max-w-[280px] rounded-full bg-white py-4 text-center text-base font-bold transition',
+                  'w-full max-w-[280px] rounded-full bg-white h-12 text-center text-base font-bold transition shadow-none border-0',
                   'hover:bg-white/95 active:scale-[0.99]',
                   'disabled:pointer-events-none disabled:opacity-60',
                 )}
                 style={{ color: PAYMENT_SUCCESS_CARD_BLUE }}
-              >
-                {isLoading ? 'Please wait…' : confirmLabel}
-              </button>
+                title={isLoading ? 'Please wait…' : confirmLabel}
+                fullWidth
+              />
             </div>
           </div>
         </DialogPrimitive.Content>

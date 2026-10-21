@@ -9,11 +9,17 @@ import { AuthProvider } from '@/components/auth/auth-context'
 import { AuthModalHost } from '@/components/auth/auth-modal-host'
 import { ChatWidget } from '@/components/chat'
 import { portalFromPathname } from '@/lib/assistant-portal'
-import { getPortalAuthToken } from '@/lib/authSession'
+import { getPortalAuthToken, getPortalAuthUser } from '@/lib/authSession'
 import { type AppDispatch, store } from '@/store'
 import { hydrateAdminDemo, readAdminDemoFromStorage } from '@/store/adminDemoSlice'
 import { hydrateFabPositionFromStorage } from '@/store/agentChatSlice'
-import { type AppPortal, fetchAuthData, logout, setActiveApp } from '@/store/authSlice'
+import {
+  type AppPortal,
+  fetchAuthData,
+  hydratePortalSession,
+  logout,
+  setActiveApp,
+} from '@/store/authSlice'
 import { hydrateClientDemo, readClientDemoFromStorage } from '@/store/clientDemoSlice'
 import { hydrateMerchantDemo, readMerchantDemoFromStorage } from '@/store/merchantDemoSlice'
 
@@ -34,7 +40,10 @@ function ClientSessionInit({ children }: { children: React.ReactNode }) {
     // Restore sessions for each of the 3 apps independently if tokens exist
     const portals: AppPortal[] = ['client', 'merchant', 'admin']
     for (const portal of portals) {
-      if (getPortalAuthToken(portal)) {
+      const token = getPortalAuthToken(portal)
+      const user = getPortalAuthUser(portal)
+      if (token) {
+        dispatch(hydratePortalSession({ portal, token, user }))
         void dispatch(fetchAuthData(portal))
       }
     }

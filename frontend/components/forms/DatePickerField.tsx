@@ -133,3 +133,5 @@ export function DatePickerField({
     </FormFieldRoot>
   )
 }
+
+export default DatePickerField

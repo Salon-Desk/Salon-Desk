@@ -2,7 +2,7 @@
 
 import { Lock, Shield, Sparkles } from 'lucide-react'
 
-import { Logo } from '@/components/brand/logo'
+import { Logo } from '@/components/brand'
 import type { CatalogHero } from '@/types/api-org'
 
 interface ClientFooterProps {

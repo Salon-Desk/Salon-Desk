@@ -5,8 +5,9 @@ import type React from 'react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-interface PrimaryButtonProps {
-  title: string
+export interface PrimaryButtonProps {
+  title?: string
+  children?: React.ReactNode
   icon?: React.ReactNode
   href?: string
   onClick?: () => void
@@ -14,23 +15,37 @@ interface PrimaryButtonProps {
   type?: 'submit' | 'reset' | 'button' // optional, default 'button'
   isLoading?: boolean
   isDisabled?: boolean
-  variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'secondary' | 'link'
-  size?: 'default' | 'sm' | 'lg' | 'icon'
-  fullWidth?: boolean // Controls width
+  variant?:
+    | 'default'
+    | 'primary'
+    | 'outline'
+    | 'ghost'
+    | 'destructive'
+    | 'danger'
+    | 'secondary'
+    | 'success'
+    | 'dark'
+    | 'paypal'
+    | 'link'
+  size?: 'default' | 'xs' | 'sm' | 'md' | 'lg' | 'icon' | 'icon-xs' | 'icon-sm' | 'icon-lg'
+  fullWidth?: boolean | 'half' | 'full' | 'auto' // Controls width: true/'full' (w-full), false/'auto' (w-auto), 'half' (w-1/2)
+  style?: React.CSSProperties
 }
 
 const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   title,
+  children,
   icon,
   href,
   onClick,
   className,
+  style,
   type = 'button',
   isLoading = false,
   isDisabled = false,
   variant = 'default',
   size = 'default',
-  fullWidth = true, // mobile-first full width
+  fullWidth = 'half', // default 1/2 width instead of full
 }) => {
   // size -> tailwind classes (can be extended)
   const sizeClassesMap: Record<string, string> = {
@@ -43,9 +58,8 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 
   // default (primary) visual styles
   const defaultVariantClasses = cn(
-    'cursor-pointer bg-primary text-primary-foreground',
+    'cursor-pointer bg-primary text-primary-foreground shadow-none',
     'hover:opacity-95 active:opacity-90',
-    'shadow-[0_20px_25px_-5px_rgba(3,1,105,0.1),0_8px_10px_-6px_rgba(3,1,105,0.1)]',
     'transition-all duration-200 ease-in-out',
     'antialiased',
   )
@@ -64,8 +78,13 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   // base classes from design system; always include so variants + sizes are predictable
   const baseVariantClass = buttonVariants({ variant, size })
 
-  // width behavior
-  const widthClass = fullWidth ? 'w-full' : 'w-auto'
+  // width behavior: default 1/2 ('w-1/2'), full ('w-full'), or auto ('w-auto')
+  const widthClass =
+    fullWidth === true || fullWidth === 'full'
+      ? 'w-full'
+      : fullWidth === false || fullWidth === 'auto'
+        ? 'w-auto'
+        : 'w-1/2'
 
   // build final className for the button element
   const finalClassName = cn(
@@ -82,17 +101,31 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   // disabled state
   const disabled = isLoading || isDisabled
 
-  const content = (
+  const content = children ? (
+    <>
+      {children}
+      {isLoading && <Loader className="ml-1 h-4 w-4 animate-spin" />}
+    </>
+  ) : (
     <span className={cn('inline-flex items-center justify-center gap-2')}>
       {icon && icon}
-      <span>{title}</span>
+      {title ? <span>{title}</span> : null}
       {isLoading && <Loader className="ml-1 h-4 w-4 animate-spin" />}
     </span>
   )
 
+  const label =
+    typeof title === 'string' ? title : typeof children === 'string' ? children : undefined
+
   if (href && !disabled) {
     return (
-      <Link href={href} className={finalClassName} aria-busy={isLoading} aria-label={title}>
+      <Link
+        href={href}
+        className={finalClassName}
+        style={style}
+        aria-busy={isLoading}
+        aria-label={label}
+      >
         {content}
       </Link>
     )
@@ -104,8 +137,10 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       type={type}
       onClick={onClick}
       className={finalClassName}
+      style={style}
       aria-busy={isLoading}
       aria-disabled={disabled}
+      aria-label={label}
     >
       {content}
     </Button>

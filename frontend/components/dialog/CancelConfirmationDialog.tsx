@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import type React from 'react'
 
+import { PrimaryButton } from '@/components/button'
 import { Dialog, DialogOverlay, DialogPortal } from '@/components/ui/dialog'
 import { resolveImageSrc } from '@/lib/util/remoteImage'
 import { cn } from '@/lib/utils'
@@ -48,7 +49,7 @@ function CancelPaymentHeroFallback() {
   )
 }
 
-const CancelConfirmationDialog: React.FC<CancelConfirmationDialogProps> = ({
+export const CancelConfirmationDialog: React.FC<CancelConfirmationDialogProps> = ({
   title = 'Payment cancelled',
   description = 'You cancelled this payment. Nothing was charged. You can complete checkout again whenever you are ready.',
   open,
@@ -143,19 +144,20 @@ const CancelConfirmationDialog: React.FC<CancelConfirmationDialogProps> = ({
             </div>
 
             <div className="relative z-10 flex justify-center px-6 pb-8 pt-5">
-              <button
+              <PrimaryButton
                 type="button"
-                disabled={isLoading}
+                isDisabled={isLoading}
+                isLoading={isLoading}
                 onClick={onConfirm}
                 className={cn(
-                  'w-full max-w-[280px] rounded-full bg-white py-4 text-center text-base font-bold transition',
+                  'w-full max-w-[280px] rounded-full bg-white h-12 text-center text-base font-bold transition shadow-none border-0',
                   'hover:bg-white/95 active:scale-[0.99]',
                   'disabled:pointer-events-none disabled:opacity-60',
                 )}
                 style={{ color: CANCEL_CONFIRMATION_CARD_BLUE }}
-              >
-                {isLoading ? 'Please wait…' : confirmLabel}
-              </button>
+                title={isLoading ? 'Please wait…' : confirmLabel}
+                fullWidth
+              />
             </div>
           </div>
         </DialogPrimitive.Content>
