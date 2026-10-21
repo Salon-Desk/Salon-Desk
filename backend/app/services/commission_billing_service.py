@@ -16,7 +16,7 @@ from app.models.enums import (
 )
 from app.models.ledger import CommissionRecord, OrgCommissionInvoice
 from app.models.payment import PaymentCapture
-from app.services.payment_service import append_ledger
+from app.services.ledger_service import append_ledger
 
 
 def _commission_from_snapshot(gross: Decimal, snapshot: dict) -> Decimal:

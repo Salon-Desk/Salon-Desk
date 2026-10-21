@@ -202,11 +202,11 @@ From `backend/` (explicit localhost URL recommended on the host):
 
 ```bash
 # Without clear (no-op if already seeded)
-uv run python -m app.scripts.seed \
+uv run python -m scripts.seed \
   --database-url 'postgresql+asyncpg://postgres:postgres@localhost:5432/salondesk'
 
 # With clear
-uv run python -m app.scripts.seed --clear \
+uv run python -m scripts.seed --clear \
   --database-url 'postgresql+asyncpg://postgres:postgres@localhost:5432/salondesk'
 ```
 
@@ -288,7 +288,7 @@ Text chat POST /api/v1/chat  (same pipeline + recommendation cards)
 | `POST /api/v1/livekit/token` | Mint room JWT + agent dispatch (`{ language?: "en"\|"am" }`) |
 | `POST /api/v1/chat` | Text chat: reply + citations + service recommendation cards |
 
-Ingest: live DB via [`backend/app/scripts/ingest_knowledge.py`](backend/app/scripts/ingest_knowledge.py) (+ optional [`backend/data/knowledge_en.json`](backend/data/knowledge_en.json) platform FAQ).
+Ingest: live DB via [`backend/scripts/ingest_knowledge.py`](backend/scripts/ingest_knowledge.py) (+ optional [`backend/data/knowledge_en.json`](backend/data/knowledge_en.json) platform FAQ).
 Schema: [`backend/schema_rag.sql`](backend/schema_rag.sql) / ORM `KnowledgeChunk`.
 
 **Design notes:** one RAG pipeline for chat and voice; per-turn inject with timeout; booking intent keeps scheduling focus; room name encodes language (`salondesk-agent-{en|am}-…`); never invent prices or open slots.
@@ -383,15 +383,15 @@ Frontend RTK Query clients: `frontend/store/api/{shared,platform,org,client}Api.
 <!-- VPS -->
 ```bash
 # Demo seed (20 orgs, ~60-100 services):
-docker exec -it salondesk sh -lc 'cd /app/backend && python -m app.scripts.seed --clear'
+docker exec -it salondesk sh -lc 'cd /app/backend && python -m scripts.seed --clear'
 
 # Full catalog seed (~432 orgs, ~9,100 services):
-docker exec -it salondesk sh -lc 'cd /app/backend && python -m app.scripts.seed --clear --all'
+docker exec -it salondesk sh -lc 'cd /app/backend && python -m scripts.seed --clear --all'
 
 # Seed and ingest knowledge (demo):
-docker exec -it salondesk sh -lc 'cd /app/backend && python -m app.scripts.seed --clear && python -m app.scripts.ingest_knowledge'
+docker exec -it salondesk sh -lc 'cd /app/backend && python -m scripts.seed --clear && python -m scripts.ingest_knowledge'
 
 # Seed and ingest knowledge (full):
-docker exec -it salondesk sh -lc 'cd /app/backend && python -m app.scripts.seed --clear --all && python -m app.scripts.ingest_knowledge'
+docker exec -it salondesk sh -lc 'cd /app/backend && python -m scripts.seed --clear --all && python -m scripts.ingest_knowledge'
 ```
 

@@ -26,3 +26,8 @@ class UnauthorizedError(SalonDeskError):
 class ForbiddenError(SalonDeskError):
     def __init__(self, message: str = "Forbidden") -> None:
         super().__init__(message)
+
+
+class ConflictError(SalonDeskError):
+    def __init__(self, message: str = "Resource conflict") -> None:
+        super().__init__(message)

@@ -1,12 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.api.deps import ClientUser, DbSession
 from app.core.exceptions import ForbiddenError, NotFoundError
-from app.models.booking import Booking, BookingService
-from app.models.feedback import ClientFeedback
-from app.models.user import User
+from app.models.booking import BookingService
 from app.schemas.feedback import ClientFeedbackOut, CreateClientFeedbackRequest
 from app.services import feedback_service
 
@@ -56,19 +52,6 @@ async def submit_client_feedback(
             comment=body.comment,
             stylist_id=body.stylist_id,
         )
-        await db.commit()
-        loaded = await db.execute(
-            select(ClientFeedback)
-            .options(
-                selectinload(ClientFeedback.client).selectinload(User.profile),
-                selectinload(ClientFeedback.stylist).selectinload(User.profile),
-                selectinload(ClientFeedback.booking)
-                .selectinload(Booking.booking_services)
-                .selectinload(BookingService.service),
-            )
-            .where(ClientFeedback.id == feedback.id)
-        )
-        feedback = loaded.scalar_one()
     except (ForbiddenError, NotFoundError) as exc:
         code = (
             status.HTTP_403_FORBIDDEN

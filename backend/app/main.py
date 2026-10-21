@@ -195,8 +195,14 @@ def create_app() -> FastAPI:
         )
 
     application.include_router(health.router)
-    application.include_router(demo.router, prefix="/api")
     application.include_router(api_router, prefix=settings.api_v1_prefix)
+    # Expose both /api/v1/demo/reset (via api_router) and /api/demo/reset (legacy proxy)
+    application.add_api_route(
+        "/api/demo/reset",
+        demo.reset_demo,
+        methods=["POST"],
+        include_in_schema=False,
+    )
 
     return application
 

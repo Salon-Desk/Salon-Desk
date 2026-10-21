@@ -27,18 +27,18 @@ SEED_ALL ?= 0
 
 # Seed demo data (20 orgs, 100 services by default; set SEED_ALL=1 or make seed-all for all).
 seed:
-	cd backend && uv run python -m app.scripts.seed $(if $(filter 1 true,$(SEED_ALL)),--all,) --database-url "$(SEED_DATABASE_URL)"
+	cd backend && uv run python -m scripts.seed $(if $(filter 1 true,$(SEED_ALL)),--all,) --database-url "$(SEED_DATABASE_URL)"
 
 # Wipe all tables then seed fresh demo data (20 orgs, 100 services by default).
 seed-clear:
-	cd backend && uv run python -m app.scripts.seed --clear $(if $(filter 1 true,$(SEED_ALL)),--all,) --database-url "$(SEED_DATABASE_URL)"
+	cd backend && uv run python -m scripts.seed --clear $(if $(filter 1 true,$(SEED_ALL)),--all,) --database-url "$(SEED_DATABASE_URL)"
 
 # Seed full dataset (~432 orgs, ~9100 services).
 seed-all:
-	cd backend && uv run python -m app.scripts.seed --all --database-url "$(SEED_DATABASE_URL)"
+	cd backend && uv run python -m scripts.seed --all --database-url "$(SEED_DATABASE_URL)"
 
 seed-clear-all:
-	cd backend && uv run python -m app.scripts.seed --clear --all --database-url "$(SEED_DATABASE_URL)"
+	cd backend && uv run python -m scripts.seed --clear --all --database-url "$(SEED_DATABASE_URL)"
 
 seed-help:
 	@echo "make seed"
@@ -58,12 +58,12 @@ seed-help:
 	@echo "  make seed SEED_DATABASE_URL='postgresql+asyncpg://postgres:postgres@localhost:$(POSTGRES_PORT)/salondesk'"
 	@echo ""
 	@echo "From backend/:"
-	@echo "  uv run python -m app.scripts.seed --database-url '$(SEED_DATABASE_URL)'"
-	@echo "  uv run python -m app.scripts.seed --clear --all --database-url '$(SEED_DATABASE_URL)'"
+	@echo "  uv run python -m scripts.seed --database-url '$(SEED_DATABASE_URL)'"
+	@echo "  uv run python -m scripts.seed --clear --all --database-url '$(SEED_DATABASE_URL)'"
 
 # Index live orgs/services (+ optional FAQ) into pgvector (requires: ollama pull all-minilm)
 ingest-knowledge:
-	cd backend && uv run python -m app.scripts.ingest_knowledge --clear --database-url "$(SEED_DATABASE_URL)"
+	cd backend && uv run python -m scripts.ingest_knowledge --clear --database-url "$(SEED_DATABASE_URL)"
 
 # LiveKit voice worker (separate from uvicorn)
 voice-agent:

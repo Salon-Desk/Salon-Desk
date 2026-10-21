@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.exceptions import ForbiddenError, PolicyViolationException, SalonDeskError
 from app.models.user import User
+from app.services.ledger_service import append_ledger
 from app.services.paypal_rest import PayPalRestClient
 
 logger = logging.getLogger("salondesk.paypal_toolkit")
@@ -75,8 +76,6 @@ class PayPalToolkitRunner:
         )
 
         if db is not None:
-            from app.services.payment_service import append_ledger
-
             await append_ledger(
                 db,
                 event_type="T9_AGENT_ORDER_CREATED",
@@ -126,8 +125,6 @@ class PayPalToolkitRunner:
         res = await self.client.capture_order(order_id=order_id, paypal_request_id=req_id)
 
         if db is not None:
-            from app.services.payment_service import append_ledger
-
             await append_ledger(
                 db,
                 event_type="T9_AGENT_ORDER_CAPTURED",
@@ -174,8 +171,6 @@ class PayPalToolkitRunner:
         )
 
         if db is not None:
-            from app.services.payment_service import append_ledger
-
             await append_ledger(
                 db,
                 event_type="T9_AGENT_REFUND_ISSUED",

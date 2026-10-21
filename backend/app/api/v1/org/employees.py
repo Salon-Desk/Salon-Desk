@@ -1,19 +1,13 @@
 from uuid import UUID
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.api.deps import DbSession, OrgMember, OrgOwner
+from app.core.exceptions import ConflictError, NotFoundError, PolicyViolationException
 from app.core.pagination import paginate_query
-from app.core.security import hash_password
-from app.models.enums import (
-    UserRole,
-    UserStatus,
-)
-from app.models.user import Profile, User
 from app.schemas.common import MessageOut, PageOut
 from app.schemas.user import EmployeeUpdate, UserOut
+from app.services import org_service
 from app.services.storage_service import StorageUnavailableError, storage_service
 
 router = APIRouter(prefix="/organizations", tags=["org"])
@@ -31,38 +25,12 @@ async def list_employees(
     status_filter: str | None = Query(default=None, description="Filter by status"),
     role: str | None = Query(default=None, description="Filter by role"),
 ) -> PageOut[UserOut]:
-    stmt = (
-        select(User)
-        .options(selectinload(User.profile))
-        .where(
-            User.org_id == user.org_id,
-            User.role.in_([UserRole.RECEPTION, UserRole.STYLIST, UserRole.ORG_OWNER]),
-        )
+    stmt = org_service.build_employees_query(
+        org_id=user.org_id,
+        status_filter=status_filter,
+        role=role,
+        q=q,
     )
-    if status_filter:
-        try:
-            target_status = UserStatus(status_filter.lower())
-            stmt = stmt.where(User.status == target_status)
-        except ValueError:
-            pass
-
-    if role:
-        try:
-            target_role = UserRole(role.lower())
-            stmt = stmt.where(User.role == target_role)
-        except ValueError:
-            pass
-
-    if q and q.strip():
-        term = f"%{q.strip()}%"
-        stmt = stmt.outerjoin(Profile, Profile.user_id == User.id).where(
-            User.email.ilike(term)
-            | Profile.first_name.ilike(term)
-            | Profile.last_name.ilike(term)
-            | Profile.phone.ilike(term)
-        )
-
-    stmt = stmt.order_by(User.created_at)
     return await paginate_query(db, stmt, page=page, page_size=page_size, schema=UserOut)
 
 
@@ -83,26 +51,6 @@ async def create_employee(
     user: OrgOwner = None,
     db: DbSession = None,
 ) -> UserOut:
-    if role not in {UserRole.RECEPTION.value, UserRole.STYLIST.value}:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            detail="role must be reception or stylist",
-        )
-    existing = await db.execute(select(User).where(User.email == email.lower()))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status.HTTP_409_CONFLICT, detail="Email already registered")
-
-    employee = User(
-        email=email.lower(),
-        password_hash=hash_password(password),
-        role=UserRole(role),
-        status=UserStatus.ACTIVE,
-        org_id=user.org_id,
-    )
-    db.add(employee)
-    await db.flush()
-
-    # Handle profile picture upload if provided
     picture_url = None
     if file and file.content_type and file.content_type.startswith("image/"):
         data = await file.read()
@@ -120,21 +68,25 @@ async def create_employee(
                 status.HTTP_503_SERVICE_UNAVAILABLE, detail="File storage is unavailable"
             ) from exc
 
-    db.add(
-        Profile(
-            user_id=employee.id,
+    try:
+        employee = await org_service.create_employee(
+            db,
+            org_id=user.org_id,
+            email=email,
+            password=password,
             first_name=first_name,
             last_name=last_name,
+            role=role,
             middle_name=middle_name,
             phone=phone,
-            picture=picture_url,
+            picture_url=picture_url,
         )
-    )
-    await db.flush()
-    result = await db.execute(
-        select(User).options(selectinload(User.profile)).where(User.id == employee.id)
-    )
-    return UserOut.model_validate(result.scalar_one())
+    except ConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, detail=exc.message) from exc
+    except PolicyViolationException as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=exc.message) from exc
+
+    return UserOut.model_validate(employee)
 
 
 @router.patch("/me/employees/{employee_id}", response_model=UserOut)
@@ -144,69 +96,34 @@ async def update_employee(
     user: OrgOwner,
     db: DbSession,
 ) -> UserOut:
-    result = await db.execute(
-        select(User)
-        .options(selectinload(User.profile))
-        .where(User.id == employee_id, User.org_id == user.org_id)
-    )
-    employee = result.scalar_one_or_none()
-    if employee is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Employee not found")
-
-    if body.role is not None:
-        if body.role not in {UserRole.RECEPTION.value, UserRole.STYLIST.value}:
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST,
-                detail="role must be reception or stylist",
-            )
-        if employee.role == UserRole.ORG_OWNER:
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST,
-                detail="Cannot change role of organization owner",
-            )
-        employee.role = UserRole(body.role)
-
-    if employee.profile is None:
-        profile = Profile(
-            user_id=employee.id,
-            first_name=body.first_name or "",
-            last_name=body.last_name or "",
-            middle_name=body.middle_name,
-            phone=body.phone,
-            picture=body.picture,
+    try:
+        employee = await org_service.update_employee(
+            db,
+            org_id=user.org_id,
+            employee_id=employee_id,
+            body=body,
         )
-        db.add(profile)
-    else:
-        if body.first_name is not None:
-            employee.profile.first_name = body.first_name
-        if body.last_name is not None:
-            employee.profile.last_name = body.last_name
-        if body.middle_name is not None:
-            employee.profile.middle_name = body.middle_name
-        if body.phone is not None:
-            employee.profile.phone = body.phone
-        if body.picture is not None:
-            employee.profile.picture = body.picture
+    except NotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
+    except PolicyViolationException as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=exc.message) from exc
 
-    await db.flush()
-    result = await db.execute(
-        select(User).options(selectinload(User.profile)).where(User.id == employee.id)
-    )
-    return UserOut.model_validate(result.scalar_one())
+    return UserOut.model_validate(employee)
 
 
 @router.delete("/me/employees/{employee_id}", response_model=MessageOut)
 async def remove_employee(employee_id: UUID, user: OrgOwner, db: DbSession) -> MessageOut:
-    result = await db.execute(
-        select(User).where(User.id == employee_id, User.org_id == user.org_id)
-    )
-    employee = result.scalar_one_or_none()
-    if employee is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Employee not found")
-    if employee.role == UserRole.ORG_OWNER:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Cannot remove organization owner")
-    employee.status = UserStatus.INACTIVE
-    await db.flush()
+    try:
+        await org_service.deactivate_employee(
+            db,
+            org_id=user.org_id,
+            employee_id=employee_id,
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
+    except PolicyViolationException as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=exc.message) from exc
+
     return MessageOut(detail="Employee deactivated")
 
 
@@ -217,14 +134,6 @@ async def upload_employee_avatar(
     user: OrgOwner = None,
     db: DbSession = None,
 ) -> UserOut:
-    result = await db.execute(
-        select(User)
-        .options(selectinload(User.profile))
-        .where(User.id == employee_id, User.org_id == user.org_id)
-    )
-    employee = result.scalar_one_or_none()
-    if employee is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Employee not found")
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Uploaded file must be an image")
     data = await file.read()
@@ -242,19 +151,14 @@ async def upload_employee_avatar(
             status.HTTP_503_SERVICE_UNAVAILABLE, detail="File storage is unavailable"
         ) from exc
 
-    if employee.profile is None:
-        profile = Profile(
-            user_id=employee.id,
-            first_name="",
-            last_name="",
-            picture=url,
+    try:
+        employee = await org_service.update_employee_avatar(
+            db,
+            org_id=user.org_id,
+            employee_id=employee_id,
+            picture_url=url,
         )
-        db.add(profile)
-    else:
-        employee.profile.picture = url
+    except NotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=exc.message) from exc
 
-    await db.flush()
-    result = await db.execute(
-        select(User).options(selectinload(User.profile)).where(User.id == employee_id)
-    )
-    return UserOut.model_validate(result.scalar_one())
+    return UserOut.model_validate(employee)

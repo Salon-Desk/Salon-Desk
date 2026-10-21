@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.ai.llm.base import BaseLLMService, LLMError
+from app.ai.llm.base import BaseLLMService, LLMError, wrap_user_input
 from app.ai.llm.deepseek_service import DeepSeekLLMService
 from app.ai.llm.groq_service import GroqLLMService
 from app.ai.llm.ollama_service import OllamaLLMService
@@ -21,6 +21,7 @@ __all__ = [
     "LLMError",
     "get_llm_service",
     "get_fallback_llm_service",
+    "wrap_user_input",
     # Back-compat aliases
     "LLMClient",
     "get_llm_client",

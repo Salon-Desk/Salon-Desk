@@ -23,6 +23,21 @@ from app.services import booking_service, payment_service
 
 logger = logging.getLogger("salondesk.ai.chat_booking")
 
+BOOKING_INTENT_PHRASES = (
+    "book",
+    "reserve",
+    "appointment",
+    "schedule",
+    "confirm booking",
+    "hold with paypal",
+    "haircut",
+    "braid",
+    "manicure",
+    "pedicure",
+    "facial",
+    "salon",
+)
+
 _BOOKING_EXTRACT_PROMPT = """You extract booking requests from a user chat message.
 Return ONLY a JSON object with:
 - "action": "book" | "confirm" | "none"
@@ -35,6 +50,14 @@ Rules:
 - "confirm": User wants to confirm an existing pending booking or finalize a hold.
 - "none": User is just asking questions, browsing, or greeting.
 """
+
+_CONFIRM_TERMS = "I authorize a $0 PayPal authorization hold for this booking."
+
+
+def mentions_booking(message: str) -> bool:
+    """Fast gate: only call the extractor when the message looks like a booking."""
+    lowered = message.lower().strip()
+    return any(phrase in lowered for phrase in BOOKING_INTENT_PHRASES)
 
 
 def _extract_json(text: str) -> dict[str, Any] | None:
@@ -67,123 +90,89 @@ def _parse_starts_at(preferred_time: str | None) -> datetime:
     return tomorrow.replace(hour=14, minute=0, second=0, microsecond=0)
 
 
-async def try_handle_chat_booking(
-    db: AsyncSession,
-    llm: BaseLLMService,
-    message: str,
-    history: list[ChatMessage],
-    user: User | None = None,
-) -> tuple[bool, str, dict[str, str | None] | None]:
-    """Check if the user is asking to book or confirm an appointment, and execute if so.
-
-    Returns:
-        (handled, reply_text, confirmed_booking_dict)
-    """
-    lowered = message.lower().strip()
-    # Fast regex gate: only invoke LLM if booking or appointment keywords are present
-    if not any(
-        w in lowered
-        for w in (
-            "book",
-            "reserve",
-            "appointment",
-            "schedule",
-            "confirm booking",
-            "hold with paypal",
-            "haircut",
-            "braid",
-            "manicure",
-            "pedicure",
-            "facial",
-            "salon",
-        )
-    ):
-        return False, "", None
-
+async def _extract_booking_action(llm: BaseLLMService, message: str) -> dict[str, Any] | None:
+    """Ask the LLM for book/confirm slots. None means the turn is not a booking."""
     messages = [
         {"role": "system", "content": _BOOKING_EXTRACT_PROMPT},
         {"role": "user", "content": f"Message: {message}"},
     ]
-
     try:
         raw = await llm.chat(messages, temperature=0.0)
-        parsed = _extract_json(raw) or {}
     except LLMError as exc:
         logger.warning("LLM booking extraction failed: %s", exc)
-        return False, "", None
+        return None
+    parsed = _extract_json(raw) or {}
+    if parsed.get("action") not in ("book", "confirm"):
+        return None
+    return parsed
 
-    action = parsed.get("action")
-    if action not in ("book", "confirm"):
-        return False, "", None
 
-    # Resolve client
+async def _resolve_chat_client(db: AsyncSession, user: User | None) -> User | None:
     client = user
     if client is None or client.role != UserRole.CLIENT:
         res = await db.execute(select(User).where(User.email == "client@example.com").limit(1))
         client = res.scalar_one_or_none()
-
     if client is None:
         client_res = await db.execute(select(User).where(User.role == UserRole.CLIENT).limit(1))
         client = client_res.scalar_one_or_none()
+    return client
 
-    if client is None:
+
+async def _confirm_pending_booking(
+    db: AsyncSession,
+    client: User,
+) -> tuple[bool, str, dict[str, str | None] | None]:
+    b_res = await db.execute(
+        select(Booking)
+        .where(Booking.client_id == client.id, Booking.status == BookingStatus.PENDING)
+        .order_by(Booking.created_at.desc())
+        .limit(1)
+    )
+    pending = b_res.scalar_one_or_none()
+    if pending is None:
         return (
             True,
-            "I need you signed in before I can hold a chair for you.",
+            "You have no pending bookings awaiting confirmation. All your bookings are already confirmed!",
             None,
         )
 
-    # Action: confirm existing booking
-    if action == "confirm":
-        b_res = await db.execute(
-            select(Booking)
-            .where(Booking.client_id == client.id, Booking.status == BookingStatus.PENDING)
-            .order_by(Booking.created_at.desc())
-            .limit(1)
-        )
-        pending = b_res.scalar_one_or_none()
-        if pending is None:
-            return (
-                True,
-                "You have no pending bookings awaiting confirmation. All your bookings are already confirmed!",
-                None,
-            )
+    await payment_service.create_consent(
+        db,
+        booking=pending,
+        client_id=client.id,
+        terms_version="v1",
+        terms_text=_CONFIRM_TERMS,
+        signed_payload=f"booking={pending.id};confirmed_via_chat=true",
+    )
+    hold, _approval = await payment_service.create_hold(
+        db,
+        booking=pending,
+        idempotency_key=f"chat-hold-{pending.id}",
+        currency="USD",
+    )
+    await payment_service.complete_hold(db, hold=hold, paypal_order_token=hold.paypal_order_id)
+    await db.commit()
 
-        terms = "I authorize a $0 PayPal authorization hold for this booking."
-        await payment_service.create_consent(
-            db,
-            booking=pending,
-            client_id=client.id,
-            terms_version="v1",
-            terms_text=terms,
-            signed_payload=f"booking={pending.id};confirmed_via_chat=true",
-        )
-        hold, _approval = await payment_service.create_hold(
-            db,
-            booking=pending,
-            idempotency_key=f"chat-hold-{pending.id}",
-            currency="USD",
-        )
-        await payment_service.complete_hold(db, hold=hold, paypal_order_token=hold.paypal_order_id)
-        await db.commit()
+    time_str = pending.starts_at.strftime("%A, %b %d at %I:%M %p")
+    confirmed_info = {
+        "id": str(pending.id),
+        "service_name": "Appointment",
+        "starts_at": pending.starts_at.isoformat(),
+        "formatted_time": time_str,
+        "total_price": str(pending.total_price),
+        "status": "CONFIRMED",
+    }
+    return (
+        True,
+        (
+            f"You're confirmed for {time_str}. Nothing leaves your card today — "
+            "just a $0 PayPal hold, and you can cancel free up to 24 hours before."
+        ),
+        confirmed_info,
+    )
 
-        time_str = pending.starts_at.strftime("%A, %b %d at %I:%M %p")
-        confirmed_info = {
-            "id": str(pending.id),
-            "service_name": "Appointment",
-            "starts_at": pending.starts_at.isoformat(),
-            "formatted_time": time_str,
-            "total_price": str(pending.total_price),
-            "status": "CONFIRMED",
-        }
-        return (
-            True,
-            f"You're confirmed for {time_str}. Nothing leaves your card today — just a $0 PayPal hold, and you can cancel free up to 24 hours before.",
-            confirmed_info,
-        )
 
-    # Action: book new appointment
-    service_query = parsed.get("service_query") or ""
+async def _resolve_requested_service(db: AsyncSession, service_query: str) -> Service | None:
     parsed_uuid: UUID | None = None
     try:
         parsed_uuid = UUID(service_query.strip())
@@ -208,22 +197,28 @@ async def try_handle_chat_booking(
             )
         )
 
-    srv_res = await db.execute(stmt.limit(1))
-    service = srv_res.scalar_one_or_none()
+    service = (await db.execute(stmt.limit(1))).scalar_one_or_none()
+    if service is not None:
+        return service
 
-    if service is None:
-        # Fallback to any popular active service
-        any_srv = await db.execute(
-            select(Service)
-            .join(Organization, Service.organization_id == Organization.id)
-            .where(
-                Organization.status == OrganizationStatus.APPROVED,
-                Service.status == ServiceStatus.ACTIVE,
-            )
-            .limit(1)
+    fallback = await db.execute(
+        select(Service)
+        .join(Organization, Service.organization_id == Organization.id)
+        .where(
+            Organization.status == OrganizationStatus.APPROVED,
+            Service.status == ServiceStatus.ACTIVE,
         )
-        service = any_srv.scalar_one_or_none()
+        .limit(1)
+    )
+    return fallback.scalar_one_or_none()
 
+
+async def _book_requested_service(
+    db: AsyncSession,
+    client: User,
+    parsed: dict[str, Any],
+) -> tuple[bool, str, dict[str, str | None] | None]:
+    service = await _resolve_requested_service(db, parsed.get("service_query") or "")
     if service is None:
         return (
             True,
@@ -232,8 +227,6 @@ async def try_handle_chat_booking(
         )
 
     starts_at = _parse_starts_at(parsed.get("preferred_time"))
-
-    # Create pending booking with payment link
     try:
         booking = await booking_service.create_booking(
             db,
@@ -256,10 +249,7 @@ async def try_handle_chat_booking(
     org = await db.get(Organization, service.organization_id)
     org_name = org.name if org else "Salon"
     time_str = starts_at.strftime("%A, %b %d at %I:%M %p")
-
-    # Generate payment link
     payment_link = f"/client/book/{service.id}?slot={starts_at.isoformat()}"
-
     booking_info = {
         "id": str(booking.id),
         "service_name": service.name,
@@ -270,10 +260,41 @@ async def try_handle_chat_booking(
         "status": "PENDING",
         "payment_link": payment_link,
     }
-
     return (
         True,
-        f"I've created your appointment for {service.name} at {org_name} on {time_str}. "
-        f"The total is ${booking.total_price}. Please click the payment link to complete your booking with a $0 PayPal authorization hold.",
+        (
+            f"I've created your appointment for {service.name} at {org_name} on {time_str}. "
+            f"The total is ${booking.total_price}. Please click the payment link to complete "
+            "your booking with a $0 PayPal authorization hold."
+        ),
         booking_info,
     )
+
+
+async def try_handle_chat_booking(
+    db: AsyncSession,
+    llm: BaseLLMService,
+    message: str,
+    history: list[ChatMessage],
+    user: User | None = None,
+) -> tuple[bool, str, dict[str, str | None] | None]:
+    """Check if the user is asking to book or confirm an appointment, and execute if so.
+
+    Returns:
+        (handled, reply_text, confirmed_booking_dict)
+    """
+    _ = history
+    if not mentions_booking(message):
+        return False, "", None
+
+    parsed = await _extract_booking_action(llm, message)
+    if parsed is None:
+        return False, "", None
+
+    client = await _resolve_chat_client(db, user)
+    if client is None:
+        return True, "I need you signed in before I can hold a chair for you.", None
+
+    if parsed.get("action") == "confirm":
+        return await _confirm_pending_booking(db, client)
+    return await _book_requested_service(db, client, parsed)

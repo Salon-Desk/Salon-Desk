@@ -8,7 +8,6 @@ PRD alignment:
 
 import logging
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.embeddings import EmbeddingError, get_embedding
@@ -47,6 +46,7 @@ from app.ai.rag import (
     select_recommendations,
     wants_more_recommendations,
 )
+from app.ai.rag.discovery import collect_client_cards
 from app.core.config import Settings, get_settings
 
 __all__ = [
@@ -73,6 +73,8 @@ __all__ = [
     "haversine_km",
     "hydrate_organization_recommendations",
     "hydrate_service_recommendations",
+    "is_salon_hunt",
+    "is_service_request",
     "persona_for_portal",
     "recommendation_limit_for",
     "retrieve_context",
@@ -108,55 +110,6 @@ async def _get_embedding_safely(
     except EmbeddingError as exc:
         logger.warning("RAG embedding failed: %s", exc)
         return None
-
-
-def _is_nearby_query(query: str) -> bool:
-    """Check if query is asking for nearby locations."""
-    return any(
-        h in query.lower() for h in ("near", "closest", "nearby", "location", "close to", "around")
-    )
-
-
-async def _get_organization_recommendations(
-    session: AsyncSession,
-    recommendations: list,
-    query: str,
-    org_id: str | None,
-    user_lat: float | None,
-    user_lng: float | None,
-    rec_limit: int,
-) -> list:
-    """Get organization recommendations from service recommendations or query."""
-    from app.models.organization import Organization
-
-    seen_org_ids = {r.organization_id for r in recommendations}
-
-    if not seen_org_ids or any(w in query.lower() for w in ("salon", "salons", "org", "place")):
-        org_query = (
-            select(Organization.id).where(Organization.status == "approved").limit(rec_limit)
-        )
-        if org_id is not None:
-            org_query = org_query.where(Organization.id == org_id)
-        extra_orgs = await session.execute(org_query)
-        for oid in extra_orgs.scalars().all():
-            seen_org_ids.add(str(oid))
-
-    return await hydrate_organization_recommendations(
-        session, seen_org_ids, user_lat, user_lng, rec_limit
-    )
-
-
-def _filter_organizations_by_recommendations(
-    organizations: list,
-    recommendations: list,
-    rec_limit: int,
-) -> list:
-    """Filter organizations to match recommendations or limit to rec_limit."""
-    if recommendations:
-        rec_org_ids = {card.organization_id for card in recommendations}
-        matched_orgs = [org for org in organizations if org.id in rec_org_ids]
-        return matched_orgs or organizations[:rec_limit]
-    return organizations[:rec_limit]
 
 
 async def retrieve_context(
@@ -212,63 +165,21 @@ async def retrieve_context(
             intent="support" if intent == "booking" else intent,
         )
 
-    is_nearby = _is_nearby_query(query)
-    recommendations = await hydrate_service_recommendations(
+    context_recs, response_recs, response_orgs = await collect_client_cards(
         session,
-        merged,
+        merged=merged,
+        query=query,
+        intent=intent,
+        org_id=org_id,
         user_lat=user_lat,
         user_lng=user_lng,
-        sort_by_distance=(is_nearby and user_lat is not None),
+        rec_limit=rec_limit,
     )
-
-    # Fallback: nearby services if no recommendations
-    if is_nearby and not recommendations and user_lat is not None and user_lng is not None:
-        recommendations = await search_nearby_services(session, user_lat, user_lng, rec_limit)
-
-    # Fallback: keyword search if still no recommendations
-    if not recommendations:
-        recommendations = await search_services_by_keywords(
-            session, query, org_id, user_lat, user_lng, rec_limit
-        )
-
-    # Hydrate organization cards
-    organizations = await _get_organization_recommendations(
-        session, recommendations, query, org_id, user_lat, user_lng, rec_limit
-    )
-
-    # Fill recommendations from organizations if needed
-    recommendations = await fill_recommendations_from_organizations(
-        session, recommendations, organizations, user_lat, user_lng, rec_limit
-    )
-
-    recommendations = select_recommendations(recommendations, query=query, limit=rec_limit)
-    organizations = _filter_organizations_by_recommendations(
-        organizations, recommendations, rec_limit
-    )
-
-    # Respect user intent:
-    # 1. When user requests salons/organizations (e.g. "show salons", "salons near me"),
-    # show organization cards and not service cards.
-    # 2. When user requests services/treatments/booking, show service cards and not organization cards.
-    # 3. For general informational queries (policies, payment methods, feedback, terms), no cards.
-    user_wants_salons = is_salon_hunt(query)
-    user_wants_services = is_service_request(query) or (intent == "booking")
-
-    if user_wants_salons:
-        effective_recs = []
-        effective_orgs = organizations[:rec_limit]
-    elif user_wants_services:
-        effective_recs = recommendations
-        effective_orgs = []
-    else:
-        effective_recs = []
-        effective_orgs = []
-
-    context_text = format_context_text(merged, recommendations)
+    context_text = format_context_text(merged, context_recs)
     return RetrievedContext(
         chunks=merged,
-        recommendations=effective_recs,
-        organizations=effective_orgs,
+        recommendations=response_recs,
+        organizations=response_orgs,
         context_text=context_text,
         detected_language=detected,
         is_greeting=False,

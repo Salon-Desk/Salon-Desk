@@ -32,7 +32,7 @@ if [ "${SKIP_SEED:-0}" = "1" ] || [ "${SKIP_SEED:-}" = "true" ]; then
   echo "Skipping demo seed (SKIP_SEED=${SKIP_SEED})"
 else
   echo "Seeding demo data..."
-  python -m app.scripts.seed
+  python -m scripts.seed
 fi
 
 echo "Starting API..."

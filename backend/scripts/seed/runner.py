@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
-from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -13,44 +12,23 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import get_settings
 from app.core.database_url import resolve_database_url
-from app.models.booking import Booking, BookingService
 from app.models.curation import FeaturedItem, PlatformCurationSetting
 from app.models.enums import (
-    BookingStatus,
-    OrgAccountStatus,
-    OrganizationStatus,
     OrgCancellationPolicyStatus,
-    PaymentHoldStatus,
-    PlatformCommissionType,
-    ServiceStatus,
     UserRole,
 )
-from app.models.ledger import PlatformCommission
-from app.models.organization import Organization, OrgEmployeeShift, OrgSettings, OrgShift
-from app.models.payment import OrgAccount, PaymentHold
-from app.models.policy import Consent, OrgCancellationPolicy
-from app.models.service import Service, ServiceCategory, ServiceGiving
+from app.models.organization import Organization
+from app.models.policy import OrgCancellationPolicy
+from app.models.service import Service
 from app.models.user import User
 from app.services.auth_service import DEFAULT_CANCELLATION_POLICY
-from app.services.ledger_service import build_consent_signature
 
 from .catalog import ORGANIZATION_DEFINITIONS
 from .constants import (
-    AFTERNOON_SHIFT_DATA,
-    AFTERNOON_SHIFT_NAME,
     CANCELLATION_POLICY_NAME,
     CATEGORY_DEFINITIONS,
-    COMMISSION_FRACTION,
-    CONSENT_TERMS,
-    CONSENT_TERMS_VERSION,
-    DEFAULT_COMMISSION_RATE,
     DEFAULT_PASSWORD,
-    DEFAULT_WORKING_HOURS,
-    FALLBACK_SERVICE_CATEGORY,
-    MORNING_SHIFT_DATA,
-    MORNING_SHIFT_NAME,
     PLATFORM_ADMIN_EMAIL,
-    PLATFORM_STAFF_EMAIL,
 )
 from .helpers import CoverAllocator, already_seeded, build_user, clear_database, ensure_schema
 from .images import AVATAR_IMAGES
@@ -59,44 +37,10 @@ logger = logging.getLogger("seed")
 
 
 async def seed_platform(session: AsyncSession) -> dict:
-    admin = build_user(
-        email=PLATFORM_ADMIN_EMAIL,
-        role=UserRole.PLATFORM_ADMIN,
-        first_name="Platform",
-        last_name="Admin",
-        phone="+10000000001",
-        picture=AVATAR_IMAGES[0],
-    )
-    staff = build_user(
-        email=PLATFORM_STAFF_EMAIL,
-        role=UserRole.PLATFORM_STAFF,
-        first_name="Platform",
-        last_name="Staff",
-        phone="+10000000002",
-        picture=AVATAR_IMAGES[1],
-    )
-    session.add_all([admin, staff])
-    await session.flush()
+    from .factories import create_categories_and_commissions, create_platform_users
 
-    categories = [
-        ServiceCategory(name=name, description=description)
-        for name, description in CATEGORY_DEFINITIONS
-    ]
-    session.add_all(categories)
-    await session.flush()
-
-    commissions = [
-        PlatformCommission(
-            service_category_id=category.id,
-            name=f"{category.name} default",
-            type=PlatformCommissionType.PERCENTAGE,
-            percentage=DEFAULT_COMMISSION_RATE,
-            flat=None,
-        )
-        for category in categories
-    ]
-    session.add_all(commissions)
-    await session.flush()
+    admin, staff = await create_platform_users(session)
+    categories, commissions = await create_categories_and_commissions(session, CATEGORY_DEFINITIONS)
 
     logger.info("Seeded platform admin/staff, %s categories, commissions", len(categories))
     return {
@@ -114,6 +58,12 @@ async def seed_organizations(
     limit_orgs: int | None = None,
     limit_services: int | None = None,
 ) -> list[dict]:
+    from .factories import (
+        create_organization_employees,
+        create_organization_services,
+        create_organization_with_settings,
+    )
+
     org_data_list = []
     categories = platform["categories"]
     covers = CoverAllocator()
@@ -139,93 +89,17 @@ async def seed_organizations(
         session.add(owner)
         await session.flush()
 
-        org = Organization(
-            owner_id=owner.id,
-            name=org_def["name"],
-            description=org_def["description"],
-            picture=org_def["picture"],
-            status=OrganizationStatus.APPROVED,
-        )
-        session.add(org)
-        await session.flush()
-
-        owner.org_id = org.id
-
-        session.add(
-            OrgSettings(
-                org_id=org.id,
-                timezone=org_def["timezone"],
-                physical_address=org_def["address"],
-                lat=org_def["lat"],
-                lng=org_def["lng"],
-                working_hours=deepcopy(DEFAULT_WORKING_HOURS),
-            )
-        )
-
         policy = OrgCancellationPolicy(
-            org_id=org.id,
             name=CANCELLATION_POLICY_NAME,
             status=OrgCancellationPolicyStatus.ACTIVE,
             data=DEFAULT_CANCELLATION_POLICY,
         )
-        session.add(policy)
 
-        session.add(
-            OrgAccount(
-                org_id=org.id,
-                merchant_id=org_def["merchant_id"],
-                merchant_email=org_def["merchant_email"],
-                display_name=f"{org.name} PayPal Account",
-                currency=org_def["currency"],
-                status=OrgAccountStatus.APPROVED,
-                approved_at=datetime.now(UTC),
-                approved_by=platform["admin"].id,
-            )
-        )
-
-        reception = build_user(
-            email=org_def["reception_email"],
-            role=UserRole.RECEPTION,
-            first_name=org_def["reception_name"][0],
-            last_name=org_def["reception_name"][1],
-            phone=org_def["reception_phone"],
-            picture=org_def["reception_picture"],
-            org_id=org.id,
-        )
-        session.add(reception)
-
-        stylist_objs = []
-        for stylist_email, stylist_name, stylist_phone, stylist_picture in org_def["stylists"]:
-            stylist = build_user(
-                email=stylist_email,
-                role=UserRole.STYLIST,
-                first_name=stylist_name[0],
-                last_name=stylist_name[1],
-                phone=stylist_phone,
-                picture=stylist_picture,
-                org_id=org.id,
-            )
-            session.add(stylist)
-            stylist_objs.append(stylist)
-
+        org = await create_organization_with_settings(session, org_def, owner, policy)
+        policy.org_id = org.id
         await session.flush()
 
-        morning = OrgShift(
-            org_id=org.id, name=MORNING_SHIFT_NAME, data=deepcopy(MORNING_SHIFT_DATA)
-        )
-        afternoon = OrgShift(
-            org_id=org.id, name=AFTERNOON_SHIFT_NAME, data=deepcopy(AFTERNOON_SHIFT_DATA)
-        )
-        session.add_all([morning, afternoon])
-        await session.flush()
-
-        session.add_all(
-            [
-                OrgEmployeeShift(user_id=stylist_objs[0].id, org_shift_id=morning.id),
-                OrgEmployeeShift(user_id=stylist_objs[1].id, org_shift_id=afternoon.id),
-                OrgEmployeeShift(user_id=reception.id, org_shift_id=morning.id),
-            ]
-        )
+        reception, stylist_objs = await create_organization_employees(session, org, org_def, policy)
 
         services_to_seed = org_def["services"]
         if services_per_org is not None:
@@ -239,34 +113,11 @@ async def seed_organizations(
             else:
                 services_to_seed = services_to_seed[: min(services_per_org, remaining)]
 
-        services = []
-        for category_name, name, description, price, duration, image_url in services_to_seed:
-            category = categories.get(category_name) or categories[FALLBACK_SERVICE_CATEGORY]
-            cover = covers.allocate(image_url)
-            service = Service(
-                service_category_id=category.id,
-                organization_id=org.id,
-                name=name,
-                description=description,
-                images={
-                    "cover": cover,
-                    "additional": [cover, covers.secondary(cover)],
-                },
-                base_price=price,
-                duration_minutes=duration,
-                status=ServiceStatus.ACTIVE,
-                cancellation_policy_id=policy.id,
-                simultaneous_capacity=1,
-            )
-            session.add(service)
-            services.append(service)
+        services = await create_organization_services(
+            session, org, org_def, policy, stylist_objs, categories, covers, services_to_seed
+        )
 
         total_services_count += len(services)
-        await session.flush()
-
-        for service in services:
-            session.add(ServiceGiving(service_id=service.id, user_id=stylist_objs[0].id))
-            session.add(ServiceGiving(service_id=service.id, user_id=stylist_objs[1].id))
 
         org_data_list.append(
             {
@@ -294,87 +145,10 @@ async def _add_authorized_booking(
     customer_notes: str | None,
     currency: str,
 ) -> None:
-    policy_snapshot = {
-        "name": "Default",
-        **DEFAULT_CANCELLATION_POLICY,
-    }
-    no_show_pct = Decimal(str(DEFAULT_CANCELLATION_POLICY.get("no_show_fee_percent", 50)))
-    late_pct = Decimal(
-        str(
-            DEFAULT_CANCELLATION_POLICY.get("late_cancel_fee_percent")
-            or DEFAULT_CANCELLATION_POLICY.get("no_show_fee_percent", 50)
-        )
-    )
-    agreed_no_show = (service.base_price * no_show_pct / Decimal("100")).quantize(Decimal("0.01"))
-    agreed_late_cancel = (service.base_price * late_pct / Decimal("100")).quantize(Decimal("0.01"))
-    commission_rule = {
-        "type": "percentage",
-        "percentage": str(DEFAULT_COMMISSION_RATE),
-        "flat": None,
-        "amount": str(round(service.base_price * COMMISSION_FRACTION, 2)),
-    }
-    booking = Booking(
-        org_id=org.id,
-        client_id=client.id,
-        stylist_id=stylist.id,
-        starts_at=starts_at,
-        ends_at=starts_at + timedelta(minutes=service.duration_minutes),
-        status=BookingStatus.CONFIRMED,
-        total_price=service.base_price,
-        agreed_hold_amount=(
-            service.base_price + Decimal(str(commission_rule.get("amount") or "0"))
-        ).quantize(Decimal("0.01")),
-        agreed_no_show_fee=agreed_no_show,
-        agreed_late_cancel_fee=agreed_late_cancel,
-        free_cancel_deadline_at=starts_at
-        - timedelta(hours=int(DEFAULT_CANCELLATION_POLICY.get("free_cancel_hours", 24))),
-        policy_snapshot_json=policy_snapshot,
-        commission_snapshot=commission_rule,
-        customer_notes=customer_notes,
-    )
-    session.add(booking)
-    await session.flush()
-    session.add(
-        BookingService(
-            booking_id=booking.id,
-            service_id=service.id,
-            base_price=service.base_price,
-            service_policy_snapshot_json=policy_snapshot,
-            commission_rule_snapshot_json={
-                "type": "percentage",
-                "percentage": str(DEFAULT_COMMISSION_RATE),
-                "flat": None,
-            },
-        )
-    )
+    from .factories import create_booking_with_hold
 
-    terms_hash, signature = build_consent_signature(CONSENT_TERMS)
-    session.add(
-        Consent(
-            booking_id=booking.id,
-            client_id=client.id,
-            terms_version=CONSENT_TERMS_VERSION,
-            terms_text_hash=terms_hash,
-            signature_b64=signature,
-            signed_payload=f"booking={booking.id};accepted=true",
-        )
-    )
-    auth_id = f"SEED-AUTH-{booking.id}"
-    session.add(
-        PaymentHold(
-            booking_id=booking.id,
-            org_id=org.id,
-            paypal_order_id=f"SEED-ORDER-{booking.id}",
-            parent_authorization_id=auth_id,
-            latest_authorization_id=auth_id,
-            amount=booking.agreed_hold_amount,
-            captured_amount=Decimal("0.00"),
-            currency=currency,
-            status=PaymentHoldStatus.AUTHORIZED,
-            honor_expires_at=datetime.now(UTC) + timedelta(days=3),
-            reauthorization_count=0,
-            idempotency_key=f"seed-hold-{booking.id}",
-        )
+    await create_booking_with_hold(
+        session, org, client, stylist, service, starts_at, customer_notes, currency
     )
 
 

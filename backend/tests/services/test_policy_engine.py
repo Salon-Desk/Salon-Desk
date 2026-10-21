@@ -1,13 +1,18 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
 
-from app.core.exceptions import PolicyViolationException
+from app.core.exceptions import ForbiddenError, PolicyViolationException
+from app.models.enums import BookingStatus, PaymentHoldStatus, UserRole
 from app.services.policy_engine import (
     agreed_late_cancel_fee,
     agreed_no_show_fee,
+    assert_can_settle,
     assert_deposit_within_ceiling,
+    assert_valid_booking_transition,
+    assert_valid_hold_transition,
     can_self_cancel,
     free_cancel_deadline_at,
     is_within_free_cancel_window,
@@ -74,3 +79,58 @@ def test_is_within_free_cancel_window() -> None:
     assert is_within_free_cancel_window(free_cancel_deadline_at=deadline) is True
     past = datetime.now(UTC) - timedelta(hours=1)
     assert is_within_free_cancel_window(free_cancel_deadline_at=past) is False
+
+
+def test_booking_transitions() -> None:
+    # Valid transitions
+    assert_valid_booking_transition(BookingStatus.PENDING, BookingStatus.CONFIRMED)
+    assert_valid_booking_transition(BookingStatus.PENDING, BookingStatus.CANCELLED)
+    assert_valid_booking_transition(BookingStatus.CONFIRMED, BookingStatus.COMPLETED)
+    assert_valid_booking_transition(BookingStatus.CONFIRMED, BookingStatus.CANCELLED)
+    assert_valid_booking_transition(BookingStatus.CONFIRMED, BookingStatus.NO_SHOW)
+
+    # Invalid transitions
+    with pytest.raises(PolicyViolationException):
+        assert_valid_booking_transition(BookingStatus.COMPLETED, BookingStatus.CANCELLED)
+    with pytest.raises(PolicyViolationException):
+        assert_valid_booking_transition(BookingStatus.CANCELLED, BookingStatus.CONFIRMED)
+    with pytest.raises(PolicyViolationException):
+        assert_valid_booking_transition(BookingStatus.PENDING, BookingStatus.COMPLETED)
+
+
+def test_hold_transitions() -> None:
+    # Valid transitions
+    assert_valid_hold_transition(PaymentHoldStatus.PENDING, PaymentHoldStatus.AUTHORIZED)
+    assert_valid_hold_transition(PaymentHoldStatus.AUTHORIZED, PaymentHoldStatus.CAPTURED)
+    assert_valid_hold_transition(PaymentHoldStatus.AUTHORIZED, PaymentHoldStatus.REAUTHORIZED)
+    assert_valid_hold_transition(PaymentHoldStatus.AUTHORIZED, PaymentHoldStatus.VOIDED)
+    assert_valid_hold_transition(PaymentHoldStatus.AUTHORIZED, PaymentHoldStatus.EXPIRED)
+
+    # Invalid transitions
+    with pytest.raises(PolicyViolationException):
+        assert_valid_hold_transition(PaymentHoldStatus.CAPTURED, PaymentHoldStatus.VOIDED)
+    with pytest.raises(PolicyViolationException):
+        assert_valid_hold_transition(PaymentHoldStatus.VOIDED, PaymentHoldStatus.AUTHORIZED)
+
+
+def test_can_settle_permissions() -> None:
+    org_id = uuid4()
+    other_org_id = uuid4()
+
+    # Admin can settle across any org
+    assert_can_settle(UserRole.PLATFORM_ADMIN, None, org_id)
+    assert_can_settle(UserRole.PLATFORM_STAFF, org_id, other_org_id)
+
+    # Org owner/reception can settle for their org
+    assert_can_settle(UserRole.ORG_OWNER, org_id, org_id)
+    assert_can_settle(UserRole.RECEPTION, org_id, org_id)
+
+    # Org owner/reception cannot settle for another org
+    with pytest.raises(ForbiddenError):
+        assert_can_settle(UserRole.ORG_OWNER, org_id, other_org_id)
+
+    # Stylist or client cannot settle
+    with pytest.raises(ForbiddenError):
+        assert_can_settle(UserRole.STYLIST, org_id, org_id)
+    with pytest.raises(ForbiddenError):
+        assert_can_settle(UserRole.CLIENT, org_id, org_id)

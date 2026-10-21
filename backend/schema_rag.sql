@@ -46,3 +46,5 @@ CREATE INDEX IF NOT EXISTS ix_knowledge_chunk_org_id ON knowledge_chunk (org_id)
 CREATE INDEX IF NOT EXISTS ix_knowledge_chunk_language ON knowledge_chunk (language);
 CREATE INDEX IF NOT EXISTS ix_knowledge_chunk_active_lang
     ON knowledge_chunk (is_active, language);
+CREATE INDEX IF NOT EXISTS ix_knowledge_chunk_embedding_hnsw
+    ON knowledge_chunk USING hnsw (embedding vector_cosine_ops);

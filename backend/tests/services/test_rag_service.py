@@ -1,8 +1,7 @@
 from decimal import Decimal
 from uuid import uuid4
 
-from app.services.livekit_tokens import build_room_name, parse_language_from_room_name
-from app.services.rag_service import (
+from app.ai.rag_service import (
     DEFAULT_RECOMMENDATION_LIMIT,
     EXPANDED_RECOMMENDATION_LIMIT,
     RetrievedChunk,
@@ -18,6 +17,7 @@ from app.services.rag_service import (
     select_recommendations,
     wants_more_recommendations,
 )
+from app.services.livekit_tokens import build_room_name, parse_language_from_room_name
 
 
 def test_detect_language_english() -> None:
