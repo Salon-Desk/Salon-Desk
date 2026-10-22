@@ -7,7 +7,7 @@ export function isRemoteImageSrc(src?: string | null): boolean {
   return /^(https?:|data:|blob:)/.test(src)
 }
 
-export function shouldUnoptimizeImage(src?: string | null): boolean {
+export function shouldUnoptimizedImage(src?: string | null): boolean {
   if (!src) {
     return false
   }

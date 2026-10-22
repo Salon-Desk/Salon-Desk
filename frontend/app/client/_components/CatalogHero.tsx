@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { Skeleton } from '@/components/ui/skeleton'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import type { CatalogHero as CatalogHeroData } from '@/types/api-org'
 
 interface CatalogHeroProps {
@@ -43,7 +43,7 @@ export function CatalogHero({ hero, isLoading }: CatalogHeroProps) {
           alt={hero.image_alt || hero.organization_name || 'Salon'}
           fill
           priority
-          unoptimized={shouldUnoptimizeImage(hero.image_url)}
+          unoptimized={shouldUnoptimizedImage(hero.image_url)}
           className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           sizes="(max-width: 1024px) 100vw, 45vw"
         />

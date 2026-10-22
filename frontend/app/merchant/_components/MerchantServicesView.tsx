@@ -20,7 +20,7 @@ import {
   type MerchantServicesListParams,
   MerchantServicesListParamsSchema,
 } from '@/lib/listing-params/merchant-services-list-params'
-import { resolveImageSrc, shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { resolveImageSrc, shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import { useGetCatalogCategoriesQuery } from '@/store/api/clientApi'
 import { useGetMyServicesQuery, useUpdateMyServiceMutation } from '@/store/api/orgApi'
 import type { ApiOrgService } from '@/types/api-org'
@@ -323,7 +323,7 @@ export function MerchantServicesView() {
                           alt={service.name}
                           fill
                           className="object-cover"
-                          unoptimized={shouldUnoptimizeImage(service.images.cover as string)}
+                          unoptimized={shouldUnoptimizedImage(service.images.cover as string)}
                         />
                       </div>
                     ) : null}

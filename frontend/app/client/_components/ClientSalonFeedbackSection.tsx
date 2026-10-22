@@ -10,7 +10,7 @@ import { PrimaryButton } from '@/components/button'
 import { toastColor } from '@/constant/toast-color'
 import { buildClientMyBookingsApiParams } from '@/lib/listing-params/client-my-bookings-list-params'
 import { buildClientOrgStaffQueryArg } from '@/lib/listing-params/client-org-staff-list-params'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import {
   useGetCatalogOrganizationQuery,
   useGetCatalogOrgFeedbackQuery,
@@ -195,7 +195,7 @@ export function ClientSalonFeedbackSection({ orgId }: { orgId: string }) {
                 alt=""
                 width={64}
                 height={64}
-                unoptimized={shouldUnoptimizeImage(org.picture)}
+                unoptimized={shouldUnoptimizedImage(org.picture)}
                 className="h-16 w-16 rounded-2xl object-cover"
               />
             ) : (
@@ -234,7 +234,7 @@ export function ClientSalonFeedbackSection({ orgId }: { orgId: string }) {
                     alt=""
                     width={40}
                     height={40}
-                    unoptimized={shouldUnoptimizeImage(member.picture)}
+                    unoptimized={shouldUnoptimizedImage(member.picture)}
                     className="h-10 w-10 rounded-xl object-cover"
                   />
                 ) : null}

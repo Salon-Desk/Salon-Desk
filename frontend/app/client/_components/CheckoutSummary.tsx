@@ -15,7 +15,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { formatDuration, formatUsd } from '@/lib/format'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import { formatDateInZone, formatTimeInZone, timeZoneAbbr } from '@/lib/util/timezone'
 import { cn } from '@/lib/utils'
 import type { SalonService } from '@/types'
@@ -134,7 +134,7 @@ export function CheckoutSummary({
           src={coverSrc}
           alt=""
           fill
-          unoptimized={shouldUnoptimizeImage(coverSrc)}
+          unoptimized={shouldUnoptimizedImage(coverSrc)}
           className="object-cover"
           sizes="(min-width: 1024px) 380px, 100vw"
         />

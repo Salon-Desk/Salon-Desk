@@ -11,7 +11,7 @@ import type {
   AgentServiceRecommendation,
 } from '@/components/chat/useAgentChat'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 
 export interface PaymentLinkData {
   bookingId: string
@@ -106,7 +106,7 @@ export function VoiceDiscoveredContent({
                         src={org.picture}
                         alt={org.name}
                         fill
-                        unoptimized={shouldUnoptimizeImage(org.picture)}
+                        unoptimized={shouldUnoptimizedImage(org.picture)}
                         sizes="44px"
                         className="object-cover"
                       />
@@ -172,7 +172,7 @@ export function VoiceDiscoveredContent({
                       src={rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK}
                       alt={rec.name}
                       fill
-                      unoptimized={shouldUnoptimizeImage(
+                      unoptimized={shouldUnoptimizedImage(
                         rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK,
                       )}
                       sizes="48px"

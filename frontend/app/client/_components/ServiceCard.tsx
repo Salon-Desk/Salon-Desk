@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { serviceImage } from '@/lib/data/service-content'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import type { SalonService } from '@/types'
 
 interface ServiceCardProps {
@@ -46,7 +46,7 @@ export function ServiceCard({
             fill
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-104"
             referrerPolicy="no-referrer"
-            unoptimized={shouldUnoptimizeImage(coverSrc)}
+            unoptimized={shouldUnoptimizedImage(coverSrc)}
             sizes="(max-width: 640px) 100vw, 180px"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-stone-950/40 via-transparent to-transparent" />
@@ -174,7 +174,7 @@ export function ServiceCard({
           fill
           className="object-cover transition-transform duration-700 ease-out group-hover:scale-104"
           referrerPolicy="no-referrer"
-          unoptimized={shouldUnoptimizeImage(coverSrc)}
+          unoptimized={shouldUnoptimizedImage(coverSrc)}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950/40 via-transparent to-transparent" />

@@ -33,7 +33,7 @@ import {
   ClientOrgDetailListParamsSchema,
 } from '@/lib/listing-params/client-org-detail-list-params'
 import { buildClientOrgStaffQueryArg } from '@/lib/listing-params/client-org-staff-list-params'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import {
   useGetCatalogCancellationPolicyQuery,
   useGetCatalogOrganizationQuery,
@@ -220,7 +220,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
           alt={org.name}
           fill
           priority
-          unoptimized={shouldUnoptimizeImage(coverPhoto)}
+          unoptimized={shouldUnoptimizedImage(coverPhoto)}
           className="object-cover"
           sizes="100vw"
         />
@@ -239,7 +239,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                     src={org.picture}
                     alt={org.name}
                     fill
-                    unoptimized={shouldUnoptimizeImage(org.picture)}
+                    unoptimized={shouldUnoptimizedImage(org.picture)}
                     className="object-cover"
                   />
                 ) : (
@@ -503,7 +503,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                           src={imageSrc}
                           alt={svc.name}
                           fill
-                          unoptimized={shouldUnoptimizeImage(imageSrc)}
+                          unoptimized={shouldUnoptimizedImage(imageSrc)}
                           className="object-cover transition-transform duration-500 group-hover:scale-104"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-transparent to-transparent" />

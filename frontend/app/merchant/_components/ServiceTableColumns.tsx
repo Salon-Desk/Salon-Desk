@@ -5,7 +5,7 @@ import { StatusBadge } from '@/components/badge/StatusBadge'
 import { IconButton } from '@/components/ui'
 import PrimaryButton from '@/components/ui/primary-button'
 import { formatUsd } from '@/lib/format'
-import { resolveImageSrc, shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { resolveImageSrc, shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import type { ApiOrgService } from '@/types/api-org'
 import type { ColumnDefinition } from '@/types/table'
 
@@ -44,7 +44,7 @@ export function getServiceTableColumns({
                   alt={service.name}
                   fill
                   className="object-cover"
-                  unoptimized={shouldUnoptimizeImage(coverSrc)}
+                  unoptimized={shouldUnoptimizedImage(coverSrc)}
                 />
               </div>
             ) : (

@@ -8,7 +8,7 @@ import type { DropzoneInputProps, DropzoneRootProps } from 'react-dropzone'
 import { formControlUploadButtonClassName } from '@/components/forms/form-field-parts'
 import PrimaryButton from '@/components/ui/primary-button'
 import { Spinner } from '@/components/ui/spinner'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import { getPublicAbsoluteURL } from '@/lib/utils'
 
 import {
@@ -84,7 +84,7 @@ export function UploadDropzone({
               alt="file"
               width={36}
               height={36}
-              unoptimized={shouldUnoptimizeImage(emptyStateIconSrc)}
+              unoptimized={shouldUnoptimizedImage(emptyStateIconSrc)}
             />
             <div className={emptyStateCopyClassName}>
               {boxTitle && <p className={boxTitleClassName}>{boxTitle}</p>}

@@ -15,7 +15,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import { serviceImage } from '@/lib/data/service-content'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import type { SalonService } from '@/types'
 import type { FeaturedOrganization, FeaturedService } from '@/types/api-org'
 
@@ -110,7 +110,7 @@ export function CatalogFeaturedSection({
                         src={org.picture}
                         alt={org.name}
                         fill
-                        unoptimized={shouldUnoptimizeImage(org.picture)}
+                        unoptimized={shouldUnoptimizedImage(org.picture)}
                         className="object-cover transition-transform duration-500 group-hover:scale-104"
                       />
                     ) : (
@@ -225,7 +225,7 @@ export function CatalogFeaturedSection({
                       src={coverSrc}
                       alt={svc.name}
                       fill
-                      unoptimized={shouldUnoptimizeImage(coverSrc)}
+                      unoptimized={shouldUnoptimizedImage(coverSrc)}
                       className="object-cover transition-transform duration-500 group-hover:scale-104"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 via-transparent to-transparent" />
