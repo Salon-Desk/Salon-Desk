@@ -116,6 +116,14 @@ export function ClientExperience({
   const categoryPicker = useSearchableCatalogCategories({ skip: !isExplorePage })
   const orgPicker = useSearchableCatalogOrganizations({
     selectedOrgId: filterOrgId ?? displayParams.orgId,
+    ...(displayParams.sortBy === 'distance' && userCoords
+      ? {
+          lat: userCoords.lat,
+          lng: userCoords.lng,
+          sort: 'distance',
+          max_distance_km: NEARBY_RADIUS_KM,
+        }
+      : {}),
   })
   const categories = categoryPicker.items
   const organizations = orgPicker.items

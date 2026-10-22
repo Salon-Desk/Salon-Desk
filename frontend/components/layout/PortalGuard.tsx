@@ -95,6 +95,7 @@ export function PortalGuard({ portal, children, allowAnonymous = false }: Portal
             size="lg"
             fullWidth
             onClick={() => openAuthModal('sign-in', portal)}
+            className="h-12"
           >
             <Lock className="h-4 w-4" />
             Sign in
@@ -103,7 +104,7 @@ export function PortalGuard({ portal, children, allowAnonymous = false }: Portal
             variant="secondary"
             size="lg"
             fullWidth
-            className="mt-2"
+            className="mt-2 h-12"
             onClick={() => openAuthModal('demo-personas', portal)}
             title="Demo personas"
           />

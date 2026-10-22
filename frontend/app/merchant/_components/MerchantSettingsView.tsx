@@ -6,7 +6,8 @@ import { useState } from 'react'
 
 import { ChangePasswordForm } from '@/app/merchant/_components/ChangePasswordForm'
 import { MerchantFinanceSettings } from '@/app/merchant/_components/MerchantFinanceSettings'
-import { MerchantOrgSettingsPanel } from '@/app/merchant/_components/MerchantOrgSettingsPanel'
+import { MerchantGeneralSettingsPanel } from '@/app/merchant/_components/MerchantGeneralSettingsPanel'
+import { MerchantLocationHoursPanel } from '@/app/merchant/_components/MerchantLocationHoursPanel'
 import { type SettingsTab, SettingsTabs } from '@/app/merchant/_components/SettingsTabs'
 import { Card } from '@/components/ui'
 
@@ -36,7 +37,7 @@ export function MerchantSettingsView() {
       {activeTab === 'general' && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <MerchantOrgSettingsPanel />
+            <MerchantGeneralSettingsPanel />
           </div>
 
           <div className="space-y-4 lg:col-span-5">
@@ -68,6 +69,8 @@ export function MerchantSettingsView() {
           </div>
         </div>
       )}
+
+      {activeTab === 'hours-location' && <MerchantLocationHoursPanel />}
 
       {activeTab === 'paypal' && <MerchantFinanceSettings mode="paypal" />}
 

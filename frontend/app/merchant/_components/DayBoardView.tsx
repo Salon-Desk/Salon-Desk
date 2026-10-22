@@ -1,7 +1,7 @@
 'use client'
 
 import { format } from 'date-fns'
-import { CalendarClock } from 'lucide-react'
+import { CalendarClock, Moon } from 'lucide-react'
 
 import { EmptyState } from '@/components/ui'
 import {
@@ -14,6 +14,8 @@ import {
   hourLabels,
   layoutBlockStyle,
 } from '@/lib/util/calendar'
+import { useGetMyOrgSettingsQuery } from '@/store/api/orgApi'
+import type { DayKey, WorkingHoursMap } from '@/types/api-org'
 
 import { BookingBlock } from './BookingBlock'
 
@@ -25,10 +27,18 @@ interface DayBoardViewProps {
   onSelect: (event: CalendarEvent) => void
 }
 
+const WEEKDAY_KEYS: DayKey[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+
 export function DayBoardView({ day, events, stylistId, stylistName, onSelect }: DayBoardViewProps) {
+  const { data: settings } = useGetMyOrgSettingsQuery()
   const dayEvents = filterEventsForDay(events, day, stylistId)
   const hours = hourLabels()
   const gridHeight = (CALENDAR_DAY_END_HOUR - CALENDAR_DAY_START_HOUR) * CALENDAR_HOUR_HEIGHT_PX
+
+  const weekdayKey = WEEKDAY_KEYS[day.getDay()] || 'mon'
+  const workingHours = settings?.working_hours as WorkingHoursMap | undefined
+  const dayWindows = workingHours?.[weekdayKey] || []
+  const isClosed = settings && dayWindows.length === 0
 
   if (!stylistId || stylistId === 'ALL') {
     return (
@@ -43,7 +53,7 @@ export function DayBoardView({ day, events, stylistId, stylistName, onSelect }: 
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
         <div>
           <h2 className="text-sm font-bold text-slate-900">{format(day, 'EEEE, MMM d')}</h2>
           <p className="text-xs text-slate-500">
@@ -51,6 +61,13 @@ export function DayBoardView({ day, events, stylistId, stylistName, onSelect }: 
             {dayEvents.length === 1 ? '' : 's'}
           </p>
         </div>
+
+        {isClosed && (
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+            <Moon className="h-3.5 w-3.5 text-slate-400" />
+            <span>Salon Closed on this day</span>
+          </div>
+        )}
       </div>
 
       <div className="relative flex max-h-[min(70vh,720px)] overflow-y-auto">

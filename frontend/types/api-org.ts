@@ -13,6 +13,10 @@ export interface ApiOrganization {
   created_at: string
 }
 
+export type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+export type TimeInterval = [string, string]
+export type WorkingHoursMap = Record<DayKey, TimeInterval[]>
+
 export interface ApiOrgSettings {
   id: string
   org_id: string
@@ -20,7 +24,7 @@ export interface ApiOrgSettings {
   physical_address: string
   lat?: string | number | null
   lng?: string | number | null
-  working_hours: Record<string, unknown>
+  working_hours: WorkingHoursMap
 }
 
 export interface ApiOrgService {
@@ -94,6 +98,8 @@ export interface CatalogOrganization {
   timezone?: string | null
   rating_avg?: number
   review_count?: number
+  working_hours?: WorkingHoursMap | null
+  distance_km?: number | null
 }
 
 export interface CatalogHero {
@@ -305,6 +311,17 @@ export interface ApiOrgShift {
   org_id: string
   name: string
   data: Record<string, unknown>
+}
+
+export interface ApiOrgEmployeeShift {
+  id: string
+  user_id: string
+  org_shift_id: string
+  created_at: string
+  employee_name?: string | null
+  employee_email?: string | null
+  shift_name?: string | null
+  shift_data?: Record<string, unknown> | null
 }
 
 export interface HeroSettings {

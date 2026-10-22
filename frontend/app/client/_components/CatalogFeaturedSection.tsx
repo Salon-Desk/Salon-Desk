@@ -141,7 +141,15 @@ export function CatalogFeaturedSection({
                     {org.physical_address && (
                       <p className="mt-1 flex items-center gap-1 text-xs text-stone-500 line-clamp-1">
                         <MapPin className="h-3.5 w-3.5 shrink-0 text-amber-600" />
-                        {org.physical_address}
+                        <span className="truncate">{org.physical_address}</span>
+                        {typeof org.distance_km === 'number' && (
+                          <span className="shrink-0 font-semibold text-amber-800">
+                            •{' '}
+                            {org.distance_km < 1
+                              ? `${Math.round(org.distance_km * 1000)}m away`
+                              : `${org.distance_km.toFixed(1)} km away`}
+                          </span>
+                        )}
                       </p>
                     )}
                     {org.description && (

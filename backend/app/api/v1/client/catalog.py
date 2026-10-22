@@ -36,8 +36,27 @@ async def list_organizations(
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
     q: str | None = Query(default=None, description="Search query"),
+    sort: str = Query(default="name", pattern="^(name|distance|rating)$"),
+    lat: float | None = Query(default=None, ge=-90, le=90),
+    lng: float | None = Query(default=None, ge=-180, le=180),
+    max_distance_km: float | None = Query(default=None, gt=0, le=500),
 ) -> PageOut[CatalogOrganizationOut]:
-    return await catalog_service.list_organizations(db, page=page, page_size=page_size, q=q)
+    wants_distance = sort == "distance" or max_distance_km is not None
+    if wants_distance and (lat is None or lng is None):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail="lat and lng are required for nearby / distance sorting",
+        )
+    return await catalog_service.list_organizations(
+        db,
+        page=page,
+        page_size=page_size,
+        q=q,
+        sort=sort,
+        lat=lat,
+        lng=lng,
+        max_distance_km=max_distance_km,
+    )
 
 
 @router.get("/organizations/{org_id}", response_model=CatalogOrganizationOut)

@@ -10,6 +10,10 @@ export type ClientCatalogOrganizationsListParams = {
   search: string
   page: number
   limit: number
+  lat: number
+  lng: number
+  sort: string
+  max_distance_km: number
 }
 
 export const ClientCatalogOrganizationsListParamsSchema = {
@@ -24,6 +28,22 @@ export const ClientCatalogOrganizationsListParamsSchema = {
   limit: {
     default: LISTING_SECTION_PAGE_SIZE,
     apiKey: 'page_size',
+  },
+  lat: {
+    default: 0,
+    omitDefaultForApi: true,
+  },
+  lng: {
+    default: 0,
+    omitDefaultForApi: true,
+  },
+  sort: {
+    default: '',
+    omitEmptyForApi: true,
+  },
+  max_distance_km: {
+    default: 0,
+    omitDefaultForApi: true,
   },
 } satisfies ListingParamSchema<ClientCatalogOrganizationsListParams>
 

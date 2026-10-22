@@ -108,6 +108,7 @@ async def create_booking(
         service=primary,
         starts_at=starts_at,
         ends_at=ends_at,
+        stylist_id=stylist_id,
     )
     if not available:
         raise ForbiddenError("Selected time slot is not available")

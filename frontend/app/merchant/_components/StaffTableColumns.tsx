@@ -1,4 +1,4 @@
-import { CheckCircle2, Copy, Edit2, Trash2, UserRound } from 'lucide-react'
+import { CheckCircle2, Clock, Copy, Edit2, Trash2, UserRound } from 'lucide-react'
 
 import { StatusBadge } from '@/components/badge/StatusBadge'
 import { IconButton } from '@/components/ui'
@@ -17,6 +17,7 @@ interface StaffTableColumnsProps {
   copiedId: string | null
   onEdit: (member: User) => void
   onDelete: (member: User) => void
+  onManageShifts?: (member: User) => void
 }
 
 export function getStaffTableColumns({
@@ -24,6 +25,7 @@ export function getStaffTableColumns({
   copiedId,
   onEdit,
   onDelete,
+  onManageShifts,
 }: StaffTableColumnsProps): ColumnDefinition<User>[] {
   return [
     {
@@ -146,6 +148,17 @@ export function getStaffTableColumns({
         const isOwner = member.role === 'org_owner'
         return (
           <div className="flex items-center justify-end gap-1.5">
+            {onManageShifts && (
+              <IconButton
+                aria-label="Manage work hours and shifts"
+                onClick={() => onManageShifts(member)}
+                className="h-8 w-8 rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 active:scale-95"
+                title="Manage shifts"
+              >
+                <Clock className="h-3.5 w-3.5 text-amber-600" />
+              </IconButton>
+            )}
+
             <IconButton
               aria-label="Edit team member"
               onClick={() => onEdit(member)}

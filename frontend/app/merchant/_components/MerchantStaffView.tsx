@@ -3,6 +3,7 @@
 import {
   Calendar,
   CheckCircle2,
+  Clock,
   Copy,
   Edit2,
   Filter,
@@ -46,11 +47,16 @@ import {
   staffPicture,
 } from '@/lib/util/staff-display'
 import { cn } from '@/lib/utils'
-import { useDeleteMyEmployeeMutation, useGetMyEmployeesQuery } from '@/store/api/orgApi'
+import {
+  useDeleteMyEmployeeMutation,
+  useGetMyEmployeeShiftsQuery,
+  useGetMyEmployeesQuery,
+} from '@/store/api/orgApi'
 import type { User } from '@/types/user'
 
 import { EditEmployeeModal } from './EditEmployeeModal'
 import { EmployeeFormModal } from './EmployeeFormModal'
+import { StaffShiftsModal } from './StaffShiftsModal'
 import { getStaffTableColumns } from './StaffTableColumns'
 
 export function MerchantStaffView() {
@@ -76,7 +82,10 @@ export function MerchantStaffView() {
   const totalItems = employeesData?.total ?? employees.length
   const [deleteEmployee, { isLoading: isDeleting }] = useDeleteMyEmployeeMutation()
 
+  const { data: employeeShifts = [] } = useGetMyEmployeeShiftsQuery()
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isShiftsOpen, setIsShiftsOpen] = useState(false)
+  const [selectedStaffForShift, setSelectedStaffForShift] = useState<string | null>(null)
   const [editingEmployee, setEditingEmployee] = useState<User | null>(null)
   const [deleting, setDeleting] = useState<User | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -144,6 +153,10 @@ export function MerchantStaffView() {
         copiedId,
         onEdit: (m) => setEditingEmployee(m),
         onDelete: (m) => setDeleting(m),
+        onManageShifts: (m) => {
+          setSelectedStaffForShift(m.id)
+          setIsShiftsOpen(true)
+        },
       }),
     [copiedId],
   )
@@ -190,6 +203,19 @@ export function MerchantStaffView() {
             >
               <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin text-amber-600' : ''}`} />
             </IconButton>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedStaffForShift(null)
+                setIsShiftsOpen(true)
+              }}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-amber-300/80 bg-amber-50/70 px-3.5 text-xs font-bold text-amber-900 shadow-2xs transition-all hover:bg-amber-100/90 hover:text-amber-950 active:scale-[0.98] cursor-pointer"
+              title="Manage staff shifts and schedules"
+            >
+              <Clock className="h-4 w-4 text-amber-600" />
+              <span className="hidden sm:inline">Shifts &amp; Schedules</span>
+            </button>
 
             <div data-agent-action="add-staff">
               <PrimaryButton
@@ -531,6 +557,30 @@ export function MerchantStaffView() {
                         )}
                       </div>
                     </div>
+
+                    {/* Shift assignment badges */}
+                    {(() => {
+                      const memberShifts = employeeShifts.filter((es) => es.user_id === member.id)
+                      return (
+                        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                          {memberShifts.length > 0 ? (
+                            memberShifts.map((s) => (
+                              <span
+                                key={s.id}
+                                className="inline-flex items-center gap-1 rounded-lg border border-amber-200/90 bg-amber-50/70 px-2 py-0.5 text-[10.5px] font-semibold text-amber-900 shadow-2xs"
+                              >
+                                <Clock className="h-2.5 w-2.5 text-amber-600" />
+                                <span>{s.shift_name || 'Shift'}</span>
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">
+                              Default salon hours
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
 
                   {/* Footer Actions */}
@@ -552,6 +602,18 @@ export function MerchantStaffView() {
                     </div>
 
                     <div className="flex items-center gap-1.5">
+                      <IconButton
+                        aria-label="Manage work hours and shifts"
+                        onClick={() => {
+                          setSelectedStaffForShift(member.id)
+                          setIsShiftsOpen(true)
+                        }}
+                        className="h-8 w-8 rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 active:scale-95"
+                        title="Manage employee shifts"
+                      >
+                        <Clock className="h-3.5 w-3.5 text-amber-600" />
+                      </IconButton>
+
                       <IconButton
                         aria-label="Edit team member"
                         onClick={() => setEditingEmployee(member)}
@@ -632,6 +694,16 @@ export function MerchantStaffView() {
         employee={editingEmployee}
         open={!!editingEmployee}
         onClose={() => setEditingEmployee(null)}
+      />
+
+      {/* Staff Shifts & Scheduling Modal */}
+      <StaffShiftsModal
+        open={isShiftsOpen}
+        onClose={() => {
+          setIsShiftsOpen(false)
+          setSelectedStaffForShift(null)
+        }}
+        initialEmployeeId={selectedStaffForShift}
       />
 
       {/* Delete Confirmation */}

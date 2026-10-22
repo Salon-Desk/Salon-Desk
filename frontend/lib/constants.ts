@@ -13,6 +13,7 @@ export const ROUTES = {
   merchantStaff: '/merchant/staff',
   merchantServices: '/merchant/services',
   merchantSettings: '/merchant/settings',
+  merchantSettingsHours: '/merchant/settings?tab=hours-location',
   merchantSettingsPaypal: '/merchant/settings/paypal',
   merchantSettingsPolicies: '/merchant/settings/policies',
   merchantSettingsBilling: '/merchant/billing',

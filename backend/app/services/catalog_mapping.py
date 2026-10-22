@@ -11,6 +11,7 @@ def organization_to_out(
     settings: OrgSettings | None,
     rating_avg: float,
     review_count: int,
+    distance_km: float | None = None,
 ) -> CatalogOrganizationOut:
     return CatalogOrganizationOut(
         id=org.id,
@@ -23,6 +24,8 @@ def organization_to_out(
         timezone=settings.timezone if settings else None,
         rating_avg=rating_avg,
         review_count=review_count,
+        working_hours=settings.working_hours if settings else None,
+        distance_km=distance_km,
     )
 
 

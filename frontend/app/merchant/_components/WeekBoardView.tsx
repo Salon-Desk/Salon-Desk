@@ -6,6 +6,8 @@ import { CalendarRange } from 'lucide-react'
 import { EmptyState } from '@/components/ui'
 import { type CalendarEvent, filterEventsForDay, weekDays } from '@/lib/util/calendar'
 import { cn } from '@/lib/utils'
+import { useGetMyOrgSettingsQuery } from '@/store/api/orgApi'
+import type { DayKey, WorkingHoursMap } from '@/types/api-org'
 
 import { BookingBlock } from './BookingBlock'
 
@@ -18,6 +20,8 @@ interface WeekBoardViewProps {
   onSelectDay?: (day: Date) => void
 }
 
+const WEEKDAY_KEYS: DayKey[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+
 export function WeekBoardView({
   anchor,
   events,
@@ -26,6 +30,9 @@ export function WeekBoardView({
   onSelect,
   onSelectDay,
 }: WeekBoardViewProps) {
+  const { data: settings } = useGetMyOrgSettingsQuery()
+  const workingHours = settings?.working_hours as WorkingHoursMap | undefined
+
   if (!stylistId || stylistId === 'ALL') {
     return (
       <EmptyState
@@ -51,8 +58,15 @@ export function WeekBoardView({
           {days.map((day) => {
             const dayEvents = filterEventsForDay(events, day, stylistId)
             const today = isToday(day)
+            const weekdayKey = WEEKDAY_KEYS[day.getDay()] || 'mon'
+            const dayWindows = workingHours?.[weekdayKey] || []
+            const isClosed = settings && dayWindows.length === 0
+
             return (
-              <div key={day.toISOString()} className="min-h-[420px] bg-white">
+              <div
+                key={day.toISOString()}
+                className={cn('min-h-[420px] bg-white', isClosed && 'bg-slate-50/50')}
+              >
                 <button
                   type="button"
                   onClick={() => onSelectDay?.(day)}
@@ -61,9 +75,16 @@ export function WeekBoardView({
                     today && 'bg-amber-50/50',
                   )}
                 >
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    {format(day, 'EEE')}
-                  </span>
+                  <div className="flex w-full items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {format(day, 'EEE')}
+                    </span>
+                    {isClosed && (
+                      <span className="rounded-full bg-slate-200/80 px-1.5 py-0.2 text-[9px] font-semibold text-slate-600">
+                        Closed
+                      </span>
+                    )}
+                  </div>
                   <span
                     className={cn(
                       'flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold',

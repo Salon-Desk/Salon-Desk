@@ -4,6 +4,7 @@ import {
   type ApiChangeRequest,
   type ApiOrgAccount,
   type ApiOrganization,
+  type ApiOrgEmployeeShift,
   type ApiOrgService,
   type ApiOrgSettings,
   type ApiOrgShift,
@@ -14,6 +15,7 @@ import {
   type OrgCommissionInvoice,
   type PayCommissionInvoiceRequest,
   type UpdateOrgServiceRequest,
+  type WorkingHoursMap,
 } from '@/types/api-org'
 import type { MessageOut, OrgOwnerSignUpRequest, OrgOwnerSignUpResponse } from '@/types/auth'
 import type { UpdateEmployeeRequest } from '@/types/user'
@@ -72,9 +74,9 @@ export const orgApi = baseApi.injectEndpoints({
       {
         timezone?: string
         physical_address?: string
-        lat?: number
-        lng?: number
-        working_hours?: Record<string, unknown>
+        lat?: number | null
+        lng?: number | null
+        working_hours?: WorkingHoursMap | Record<string, unknown>
       }
     >({
       query: (data) => ({
@@ -287,11 +289,27 @@ export const orgApi = baseApi.injectEndpoints({
       invalidatesTags: ['organizations'],
     }),
 
-    assignEmployeeShift: builder.mutation<unknown, { user_id: string; org_shift_id: string }>({
+    getMyEmployeeShifts: builder.query<ApiOrgEmployeeShift[], void>({
+      query: () => ({ url: '/api/v1/organizations/me/employee-shifts', method: 'GET' }),
+      providesTags: ['organizations', 'user'],
+    }),
+
+    assignEmployeeShift: builder.mutation<
+      ApiOrgEmployeeShift,
+      { user_id: string; org_shift_id: string }
+    >({
       query: (data) => ({
         url: '/api/v1/organizations/me/employee-shifts',
         method: 'POST',
         data,
+      }),
+      invalidatesTags: ['organizations', 'user'],
+    }),
+
+    deleteEmployeeShift: builder.mutation<MessageOut, string>({
+      query: (assignmentId) => ({
+        url: `/api/v1/organizations/me/employee-shifts/${assignmentId}`,
+        method: 'DELETE',
       }),
       invalidatesTags: ['organizations', 'user'],
     }),
@@ -395,7 +413,9 @@ export const {
   useCreateMyShiftMutation,
   useUpdateMyShiftMutation,
   useDeleteMyShiftMutation,
+  useGetMyEmployeeShiftsQuery,
   useAssignEmployeeShiftMutation,
+  useDeleteEmployeeShiftMutation,
   useMarkBookingShowMutation,
   useMarkBookingNoShowMutation,
   useGetSettlementBookingQuery,

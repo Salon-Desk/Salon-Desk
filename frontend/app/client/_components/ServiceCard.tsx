@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, Clock, Info, Lock, Sparkles, Star } from 'lucide-react'
+import { ArrowRight, Clock, Info, Lock, MapPin, Sparkles, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -90,7 +90,10 @@ export function ServiceCard({
               {distanceLabel && (
                 <>
                   <span className="text-stone-300">•</span>
-                  <span className="text-[11px] text-stone-400">{distanceLabel}</span>
+                  <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-amber-700">
+                    <MapPin className="h-3 w-3 text-amber-600" />
+                    <span>{distanceLabel}</span>
+                  </span>
                 </>
               )}
             </div>
@@ -217,8 +220,9 @@ export function ServiceCard({
             <span>{service.durationMin}m</span>
           </span>
           {distanceLabel ? (
-            <span className="inline-flex items-center rounded-full bg-stone-950/60 px-2.5 py-0.5 text-[11px] font-medium text-white backdrop-blur-md">
-              {distanceLabel}
+            <span className="inline-flex items-center gap-1 rounded-full bg-stone-950/60 px-2.5 py-0.5 text-[11px] font-medium text-white backdrop-blur-md">
+              <MapPin className="h-3 w-3 text-amber-400" />
+              <span>{distanceLabel}</span>
             </span>
           ) : null}
         </div>

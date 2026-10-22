@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import DbSession, OrgMember, OrgOwner
 from app.models.organization import (
@@ -142,6 +143,37 @@ async def delete_shift(shift_id: UUID, user: OrgOwner, db: DbSession) -> Message
     return MessageOut(detail="Shift deleted")
 
 
+@router.get("/me/employee-shifts", response_model=list[OrgEmployeeShiftOut])
+async def list_employee_shifts(user: OrgMember, db: DbSession) -> list[OrgEmployeeShiftOut]:
+    stmt = (
+        select(OrgEmployeeShift, User, OrgShift)
+        .join(User, User.id == OrgEmployeeShift.user_id)
+        .join(OrgShift, OrgShift.id == OrgEmployeeShift.org_shift_id)
+        .options(selectinload(User.profile))
+        .where(OrgShift.org_id == user.org_id)
+        .order_by(OrgEmployeeShift.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    items: list[OrgEmployeeShiftOut] = []
+    for es, emp, shift in result.all():
+        name = None
+        if hasattr(emp, "profile") and emp.profile:
+            name = f"{emp.profile.first_name} {emp.profile.last_name}".strip()
+        items.append(
+            OrgEmployeeShiftOut(
+                id=es.id,
+                user_id=es.user_id,
+                org_shift_id=es.org_shift_id,
+                created_at=es.created_at,
+                employee_name=name or emp.email,
+                employee_email=emp.email,
+                shift_name=shift.name,
+                shift_data=shift.data,
+            )
+        )
+    return items
+
+
 @router.post(
     "/me/employee-shifts",
     response_model=OrgEmployeeShiftOut,
@@ -150,13 +182,63 @@ async def delete_shift(shift_id: UUID, user: OrgOwner, db: DbSession) -> Message
 async def assign_employee_shift(
     body: OrgEmployeeShiftCreate, user: OrgOwner, db: DbSession
 ) -> OrgEmployeeShiftOut:
-    emp = await db.get(User, body.user_id)
+    stmt = select(User).options(selectinload(User.profile)).where(User.id == body.user_id)
+    emp = (await db.execute(stmt)).scalar_one_or_none()
     shift = await db.get(OrgShift, body.org_shift_id)
     if emp is None or emp.org_id != user.org_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Employee not found")
     if shift is None or shift.org_id != user.org_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Shift not found")
+
+    existing_stmt = select(OrgEmployeeShift).where(
+        OrgEmployeeShift.user_id == body.user_id,
+        OrgEmployeeShift.org_shift_id == body.org_shift_id,
+    )
+    existing = (await db.execute(existing_stmt)).scalar_one_or_none()
+    emp_name = (
+        f"{emp.profile.first_name} {emp.profile.last_name}".strip()
+        if hasattr(emp, "profile") and emp.profile
+        else emp.email
+    )
+
+    if existing:
+        return OrgEmployeeShiftOut(
+            id=existing.id,
+            user_id=existing.user_id,
+            org_shift_id=existing.org_shift_id,
+            created_at=existing.created_at,
+            employee_name=emp_name,
+            employee_email=emp.email,
+            shift_name=shift.name,
+            shift_data=shift.data,
+        )
+
     row = OrgEmployeeShift(user_id=body.user_id, org_shift_id=body.org_shift_id)
     db.add(row)
     await db.flush()
-    return OrgEmployeeShiftOut.model_validate(row)
+    return OrgEmployeeShiftOut(
+        id=row.id,
+        user_id=row.user_id,
+        org_shift_id=row.org_shift_id,
+        created_at=row.created_at,
+        employee_name=emp_name,
+        employee_email=emp.email,
+        shift_name=shift.name,
+        shift_data=shift.data,
+    )
+
+
+@router.delete("/me/employee-shifts/{assignment_id}", response_model=MessageOut)
+async def delete_employee_shift(assignment_id: UUID, user: OrgOwner, db: DbSession) -> MessageOut:
+    stmt = (
+        select(OrgEmployeeShift)
+        .join(OrgShift, OrgShift.id == OrgEmployeeShift.org_shift_id)
+        .where(OrgEmployeeShift.id == assignment_id, OrgShift.org_id == user.org_id)
+    )
+    result = await db.execute(stmt)
+    assignment = result.scalar_one_or_none()
+    if assignment is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Shift assignment not found")
+    await db.delete(assignment)
+    await db.flush()
+    return MessageOut(detail="Shift assignment removed")
