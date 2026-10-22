@@ -14,6 +14,7 @@ interface BookingBlockProps {
   event: CalendarEvent
   onSelect: (event: CalendarEvent) => void
   compact?: boolean
+  showStylist?: boolean
   absolute?: { top: number; height: number }
   className?: string
 }
@@ -37,6 +38,7 @@ export function BookingBlock({
   event,
   onSelect,
   compact = false,
+  showStylist = false,
   absolute,
   className,
 }: BookingBlockProps) {
@@ -101,6 +103,13 @@ export function BookingBlock({
           </div>
         ) : null}
       </div>
+      {showStylist && compact && booking.stylistName ? (
+        <div className="mt-1 flex items-center gap-1">
+          <span className="max-w-full truncate rounded bg-slate-100/90 px-1.5 py-0.2 text-[9px] font-semibold text-slate-700 border border-slate-200/60">
+            {booking.stylistName}
+          </span>
+        </div>
+      ) : null}
       {!compact ? (
         <div className="mt-2 truncate text-[11px] text-slate-500">
           {booking.stylistName}

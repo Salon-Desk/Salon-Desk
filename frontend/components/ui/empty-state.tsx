@@ -30,7 +30,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'text-center',
+        'text-center w-full',
         isEditorial
           ? 'rounded-3xl border border-stone-200/40 bg-stone-100/50 p-10 sm:p-14'
           : 'mx-auto max-w-md rounded-xl border border-slate-200/80 bg-white p-8 shadow-[0_1px_2px_rgba(0,0,0,0.02)]',

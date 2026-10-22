@@ -44,6 +44,12 @@ export interface Booking {
   honorPeriodEndsInHours?: number
   reauthorizationCount?: number
   reauthorizedAt?: string
+  /** Organization timezone (e.g., 'America/New_York') */
+  organizationTimezone?: string | null
+  /** ISO datetime of appointment start time in UTC */
+  startsAt?: string | null
+  /** ISO datetime of appointment end time in UTC */
+  endsAt?: string | null
 }
 
 export type LedgerAction =

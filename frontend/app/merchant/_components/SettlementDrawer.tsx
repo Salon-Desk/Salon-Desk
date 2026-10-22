@@ -78,6 +78,31 @@ export function SettlementDrawer({
   const isVoided = booking.status === 'VOIDED'
   const isSettled = isCaptured || isNoShowCaptured || isVoided
 
+  // Check if the appointment time has passed in the organization's timezone
+  const canSettle = (() => {
+    if (!booking.startsAt) return false
+    try {
+      const appointmentTime = new Date(booking.startsAt)
+      const now = new Date()
+      // If organization timezone is available, convert the appointment time to that timezone
+      // and compare with current time in that timezone
+      if (booking.organizationTimezone) {
+        const appointmentTimeInTz = new Date(
+          appointmentTime.toLocaleString('en-US', { timeZone: booking.organizationTimezone }),
+        )
+        const nowInTz = new Date(
+          now.toLocaleString('en-US', { timeZone: booking.organizationTimezone }),
+        )
+        return nowInTz >= appointmentTimeInTz
+      }
+      // Fallback: compare UTC times directly
+      return now >= appointmentTime
+    } catch {
+      // If date parsing fails, allow settlement
+      return true
+    }
+  })()
+
   const clientInitials =
     booking.clientName
       ?.split(' ')
@@ -101,7 +126,7 @@ export function SettlementDrawer({
               <Scissors className="h-4.5 w-4.5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 text-base">Appointment Settlement</h3>
+              <h3 className="font-bold text-slate-900 text-base">Appointment Payment</h3>
               <p className="font-mono text-xs text-slate-500">Ref #{booking.id.slice(0, 8)}</p>
             </div>
           </div>
@@ -115,12 +140,12 @@ export function SettlementDrawer({
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-semibold text-slate-900">
-                    {isCaptured && 'Settlement Complete — Full Ticket Captured'}
-                    {isNoShowCaptured && 'Settlement Complete — No-Show Fee Captured'}
-                    {isVoided && 'Appointment Cancelled — Escrow Voided'}
+                    {isCaptured && 'Payment Complete — Full Amount Charged'}
+                    {isNoShowCaptured && 'Payment Complete — No-Show Fee Charged'}
+                    {isVoided && 'Appointment Cancelled — Payment Released'}
                   </div>
                   <div className="text-[11px] text-slate-500">
-                    No pending actions required on this ticket.
+                    No further action needed for this appointment.
                   </div>
                 </div>
               </div>
@@ -135,11 +160,21 @@ export function SettlementDrawer({
             </div>
           ) : (
             <div className="w-full space-y-2">
+              {!canSettle && (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-[11px] text-amber-800">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>
+                    Payment actions available after appointment time
+                    {booking.appointmentTime ? ` (${booking.appointmentTime})` : ''}
+                  </span>
+                </div>
+              )}
+
               {/* Primary Action Button */}
               <PrimaryButton
                 variant="success"
                 fullWidth
-                isDisabled={isSettlementProcessing}
+                isDisabled={isSettlementProcessing || !canSettle}
                 onClick={() => setPendingConfirmation('SHOW')}
                 className="h-10 justify-between rounded-xl px-4 text-xs font-bold shadow-none"
               >
@@ -156,7 +191,7 @@ export function SettlementDrawer({
               <div className="grid grid-cols-2 gap-2">
                 <PrimaryButton
                   variant="secondary"
-                  isDisabled={isSettlementProcessing}
+                  isDisabled={isSettlementProcessing || !canSettle}
                   onClick={() => setPendingConfirmation('NO_SHOW')}
                   className="rounded-xl text-xs font-medium h-9 px-3 justify-center text-rose-700 border-rose-200/80 hover:bg-rose-50/80"
                   icon={<AlertTriangle className="h-3.5 w-3.5 mr-1.5 text-rose-600" />}
@@ -166,7 +201,7 @@ export function SettlementDrawer({
 
                 <PrimaryButton
                   variant="secondary"
-                  isDisabled={isSettlementProcessing}
+                  isDisabled={isSettlementProcessing || !canSettle}
                   onClick={() => setPendingConfirmation('VOID')}
                   className="rounded-xl text-xs font-medium h-9 px-3 justify-center text-slate-600 hover:text-slate-900"
                   icon={<XCircle className="h-3.5 w-3.5 mr-1.5 text-slate-400" />}
@@ -191,8 +226,8 @@ export function SettlementDrawer({
                     <RefreshCw className="h-3 w-3" />
                     <span>
                       {booking.status === 'REAUTHORIZED' || (booking.reauthorizationCount ?? 0) >= 1
-                        ? 'Authorization extended (Max 1 reauthorization)'
-                        : 'Extend PayPal honor window (Reauthorize 72h)'}
+                        ? 'Payment reservation extended (Maximum 1 extension)'
+                        : 'Extend payment reservation by 72 hours'}
                     </span>
                   </button>
                 </div>
@@ -202,10 +237,10 @@ export function SettlementDrawer({
         }
       >
         <div className="space-y-4">
-          {/* Status & Escrow Pill Card */}
+          {/* Status & Booking Reference Card */}
           <div className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-gradient-to-r from-slate-50/80 via-white to-slate-50/60 p-3.5">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-600">Escrow Status:</span>
+              <span className="text-xs font-semibold text-slate-600">Payment Status:</span>
               <HoldStateBadge status={booking.status} />
             </div>
             <div className="flex items-center gap-1 font-mono text-xs font-medium text-slate-500">
@@ -275,37 +310,39 @@ export function SettlementDrawer({
             </div>
           </div>
 
-          {/* Financial & Hold Policy Card */}
+          {/* Payment & Cancellation Policy Card */}
           <div className="space-y-3.5 rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50/40 via-white to-amber-50/20 p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Settlement Financials
+                Payment Details
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-800">
                 <Check className="h-2.5 w-2.5" />
-                $0 Upfront Debit
+                $0 Charged Upfront
               </span>
             </div>
 
             {/* Large Price Highlight */}
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div className="rounded-xl border border-slate-100 bg-white p-3">
-                <span className="text-[11px] text-slate-500 block mb-1">Ticket Total</span>
+                <span className="text-[11px] text-slate-500 block mb-1">Service Price</span>
                 <div className="text-xl font-bold font-mono text-slate-900 tabular-nums">
                   {formatUsd(booking.servicePrice)}
                 </div>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">Full service price</span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  Full appointment cost
+                </span>
               </div>
 
               <div className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-3">
                 <span className="text-[11px] text-amber-900 font-medium block mb-1">
-                  Escrow Hold
+                  Reserved Amount
                 </span>
                 <div className="text-xl font-bold font-mono text-amber-900 tabular-nums">
                   {formatUsd(booking.holdAmount)}
                 </div>
                 <span className="text-[10px] text-amber-700 mt-0.5 block">
-                  Authorized hold amount
+                  PayPal hold on client card
                 </span>
               </div>
             </div>
@@ -313,20 +350,20 @@ export function SettlementDrawer({
             {/* Policy details list */}
             <div className="space-y-1.5 pt-1 text-xs">
               <div className="flex items-center justify-between text-slate-600">
-                <span>No-Show Penalty Fee</span>
+                <span>No-Show / Late Cancel Fee</span>
                 <span className="font-mono font-semibold text-rose-700">
                   {formatUsd(booking.noShowFee)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-slate-600">
-                <span>Free Cancellation Deadline</span>
+                <span>Free Cancellation Until</span>
                 <span className="font-medium text-slate-800">
                   {booking.freeCancelDeadlineLabel || booking.authExpiresAt || 'Standard Policy'}
                 </span>
               </div>
               {booking.honorExpiresLabel && (
                 <div className="flex items-center justify-between text-slate-600">
-                  <span>PayPal Honor Window</span>
+                  <span>Hold Valid Until</span>
                   <span className="font-medium text-slate-800">{booking.honorExpiresLabel}</span>
                 </div>
               )}
@@ -341,7 +378,7 @@ export function SettlementDrawer({
             </div>
           )}
 
-          {/* Collapsible Technical Details (Clean & Out of the Way) */}
+          {/* Collapsible Payment Reference Details */}
           <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white">
             <button
               type="button"
@@ -350,7 +387,7 @@ export function SettlementDrawer({
             >
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-3.5 w-3.5 text-slate-400" />
-                <span>Technical &amp; PayPal Verification Keys</span>
+                <span>Payment Reference Information</span>
               </div>
               <ChevronDown
                 className={cn(
@@ -363,7 +400,7 @@ export function SettlementDrawer({
             {showTechnicalDetails && (
               <div className="border-t border-slate-100 p-3.5 space-y-2 font-mono text-[11px] bg-slate-50/50 animate-in fade-in duration-150">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">PayPal Auth ID:</span>
+                  <span className="text-slate-500">PayPal Authorization ID:</span>
                   <div className="flex items-center gap-1.5 font-bold text-slate-900">
                     <span className="truncate max-w-[170px]">
                       {booking.paypalAuthId || 'AUTH_HOLD_PENDING'}
@@ -385,7 +422,7 @@ export function SettlementDrawer({
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Idempotency Key:</span>
+                  <span className="text-slate-500">Payment Reference Key:</span>
                   <span className="text-slate-700 truncate max-w-[170px]">
                     {booking.idempotencyKey || 'ACTIVE'}
                   </span>
@@ -393,7 +430,7 @@ export function SettlementDrawer({
 
                 {booking.consentHash && (
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Consent Hash:</span>
+                    <span className="text-slate-500">Digital Signature:</span>
                     <span className="text-slate-500 text-[10px] truncate max-w-[170px]">
                       {booking.consentHash}
                     </span>
@@ -436,10 +473,10 @@ export function SettlementDrawer({
               </div>
               <div>
                 <h3 className="font-bold text-slate-900 text-base">
-                  {pendingConfirmation === 'SHOW' && 'Confirm Full Ticket Capture'}
-                  {pendingConfirmation === 'NO_SHOW' && 'Confirm No-Show Penalty Fee'}
-                  {pendingConfirmation === 'VOID' && 'Confirm Cancellation & Full Release'}
-                  {pendingConfirmation === 'REAUTH' && 'Extend PayPal Honor Window'}
+                  {pendingConfirmation === 'SHOW' && 'Confirm Full Payment Capture'}
+                  {pendingConfirmation === 'NO_SHOW' && 'Confirm No-Show Fee'}
+                  {pendingConfirmation === 'VOID' && 'Confirm Cancellation & Release Payment'}
+                  {pendingConfirmation === 'REAUTH' && 'Extend Payment Reservation'}
                 </h3>
                 <p className="font-mono text-xs text-slate-500">
                   Booking Ref #{booking.id.slice(0, 8)}
@@ -528,7 +565,7 @@ export function SettlementDrawer({
                   icon={
                     !isSettlementProcessing ? <RefreshCw className="h-3.5 w-3.5 mr-1" /> : undefined
                   }
-                  title={isSettlementProcessing ? 'Extending…' : 'Confirm 72h Extension'}
+                  title={isSettlementProcessing ? 'Extending…' : 'Confirm Extension'}
                   fullWidth={false}
                 />
               )}
@@ -547,23 +584,23 @@ export function SettlementDrawer({
               )}
             >
               <div className="font-semibold text-xs flex items-center justify-between">
-                <span>Action Breakdown</span>
+                <span>Payment Action</span>
                 <span className="font-mono text-[11px] font-bold">
                   {pendingConfirmation === 'SHOW' && `Capture ${formatUsd(booking.servicePrice)}`}
                   {pendingConfirmation === 'NO_SHOW' && `Capture ${formatUsd(booking.noShowFee)}`}
                   {pendingConfirmation === 'VOID' && 'Release $0.00'}
-                  {pendingConfirmation === 'REAUTH' && 'Reauthorize Hold'}
+                  {pendingConfirmation === 'REAUTH' && 'Extend Hold'}
                 </span>
               </div>
               <p className="text-[11px] leading-relaxed opacity-90">
                 {pendingConfirmation === 'SHOW' &&
-                  `This captures ${formatUsd(booking.servicePrice)} from the client's PayPal authorization hold directly into your merchant account.`}
+                  `This will charge ${formatUsd(booking.servicePrice)} from the client's reserved payment and deposit it to your PayPal merchant account.`}
                 {pendingConfirmation === 'NO_SHOW' &&
-                  `This captures the ${formatUsd(booking.noShowFee)} penalty fee and voids the rest of the escrow hold.`}
+                  `This will charge the ${formatUsd(booking.noShowFee)} no-show fee and release the remaining reserved amount.`}
                 {pendingConfirmation === 'VOID' &&
-                  'This releases 100% of the authorization hold. The client will be charged $0.00.'}
+                  'This will release the full reserved amount. The client will not be charged anything.'}
                 {pendingConfirmation === 'REAUTH' &&
-                  'This reauthorizes the existing PayPal escrow authorization to extend the honor window by another 72 hours.'}
+                  'This will extend the payment reservation window by 72 hours so the hold does not expire.'}
               </p>
             </div>
 
@@ -579,7 +616,7 @@ export function SettlementDrawer({
                 <span className="font-medium text-slate-800">{booking.serviceName}</span>
               </div>
               <div className="flex items-center justify-between text-slate-600">
-                <span>Escrow Hold:</span>
+                <span>Reserved Amount:</span>
                 <span className="font-mono font-semibold text-amber-900">
                   {formatUsd(booking.holdAmount)}
                 </span>

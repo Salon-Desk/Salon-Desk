@@ -1,6 +1,16 @@
 'use client'
 
-import { addDays, addWeeks, format, subDays, subWeeks } from 'date-fns'
+import {
+  addDays,
+  addWeeks,
+  differenceInCalendarDays,
+  format,
+  isToday,
+  isTomorrow,
+  isYesterday,
+  subDays,
+  subWeeks,
+} from 'date-fns'
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 
@@ -10,13 +20,23 @@ import type { CalendarViewMode } from '@/lib/util/calendar'
 import { cn } from '@/lib/utils'
 import type { User } from '@/types/user'
 
-import { ALL_STAFF_VALUE, StaffPicker } from './StaffPicker'
+import { StaffPicker } from './StaffPicker'
 
 const VIEWS: { id: CalendarViewMode; label: string }[] = [
   { id: 'agenda', label: 'Agenda' },
   { id: 'day', label: 'Day' },
   { id: 'week', label: 'Week' },
 ]
+
+function getRelativeDayLabel(date: Date): string | null {
+  if (isToday(date)) return 'Today'
+  if (isYesterday(date)) return 'Yesterday'
+  if (isTomorrow(date)) return 'Tomorrow'
+  const diff = differenceInCalendarDays(date, new Date())
+  if (diff > 0 && diff <= 7) return `In ${diff} days`
+  if (diff < 0 && diff >= -7) return `${Math.abs(diff)} days ago`
+  return null
+}
 
 interface CalendarToolbarProps {
   view: CalendarViewMode
@@ -25,7 +45,7 @@ interface CalendarToolbarProps {
   onAnchorChange: (date: Date) => void
   employees: User[]
   staffId: string
-  onStaffChange: (id: string) => void
+  onStaffChange: (id: string, employee?: User) => void
   bookingCount: number
   onRefresh?: () => void
   isRefreshing?: boolean
@@ -44,6 +64,9 @@ export function CalendarToolbar({
   isRefreshing,
 }: CalendarToolbarProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
+
+  const isCurrentDayToday = isToday(anchor)
+  const relativeLabel = getRelativeDayLabel(anchor)
 
   const goPrev = () => {
     onAnchorChange(view === 'week' ? subWeeks(anchor, 1) : subDays(anchor, 1))
@@ -74,16 +97,11 @@ export function CalendarToolbar({
               <button
                 key={v.id}
                 type="button"
-                onClick={() => {
-                  onViewChange(v.id)
-                  if (v.id !== 'agenda' && staffId === ALL_STAFF_VALUE && employees[0]) {
-                    onStaffChange(employees[0].id)
-                  }
-                }}
+                onClick={() => onViewChange(v.id)}
                 className={cn(
-                  'rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer',
+                  'cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
                   view === v.id
-                    ? 'bg-slate-900 font-semibold text-white'
+                    ? 'bg-slate-900 font-semibold text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900',
                 )}
               >
@@ -96,7 +114,7 @@ export function CalendarToolbar({
             employees={employees}
             value={staffId}
             onChange={onStaffChange}
-            allowAll={view === 'agenda'}
+            allowAll={true}
           />
         </div>
       </div>
@@ -106,7 +124,7 @@ export function CalendarToolbar({
           <button
             type="button"
             onClick={goPrev}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
             aria-label="Previous"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -114,14 +132,28 @@ export function CalendarToolbar({
           <button
             type="button"
             onClick={goToday}
-            className="h-9 rounded-lg px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100"
+            className={cn(
+              'flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-all',
+              !isCurrentDayToday
+                ? 'border border-amber-600 bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm shadow-amber-500/25 hover:from-amber-600 hover:to-amber-700 hover:scale-[1.02] active:scale-[0.98]'
+                : 'border border-slate-200/80 bg-slate-100 text-slate-700 hover:bg-slate-200/80',
+            )}
+            title={!isCurrentDayToday ? 'Return to Today' : 'Currently viewing Today'}
           >
-            Today
+            {!isCurrentDayToday ? (
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-200 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+              </span>
+            ) : (
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            )}
+            <span>Today</span>
           </button>
           <button
             type="button"
             onClick={goNext}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
             aria-label="Next"
           >
             <ChevronRight className="h-4 w-4" />
@@ -146,13 +178,25 @@ export function CalendarToolbar({
           <PopoverTrigger asChild>
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-50"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200/60 bg-slate-50/60 px-2.5 py-1.5 text-sm font-bold text-slate-900 transition-colors hover:border-amber-300 hover:bg-amber-50/30"
             >
-              <CalendarIcon className="h-3.5 w-3.5 text-amber-600" />
-              {title}
+              <CalendarIcon className="h-4 w-4 text-amber-600" />
+              <span>{title}</span>
+              {relativeLabel && (
+                <span
+                  className={cn(
+                    'rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight',
+                    isCurrentDayToday
+                      ? 'border border-amber-300/80 bg-amber-100 text-amber-900'
+                      : 'border border-slate-200 bg-white text-slate-600',
+                  )}
+                >
+                  {relativeLabel}
+                </span>
+              )}
             </button>
           </PopoverTrigger>
-          <PopoverContent align="center" className="w-auto p-2">
+          <PopoverContent align="center" className="w-80 p-2">
             <Calendar
               mode="single"
               selected={anchor}
