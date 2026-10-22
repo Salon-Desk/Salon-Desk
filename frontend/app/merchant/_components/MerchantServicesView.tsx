@@ -1,18 +1,16 @@
 'use client'
 
-import { Clock, Edit2, LayoutGrid, List, Loader2, Plus, Scissors } from 'lucide-react'
-import Image from 'next/image'
+import { LayoutGrid, List, Loader2, Plus, Scissors, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
-import { Badge, Card, EmptyState, IconButton, SearchInput, SegmentedControl } from '@/components/ui'
+import { EmptyState, SegmentedControl } from '@/components/ui'
 import { Pagination } from '@/components/ui/pagination'
 import PrimaryButton from '@/components/ui/primary-button'
 import { toastColor } from '@/constant/toast-color'
+import { useListingParams } from '@/hooks/use-listing-params'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
-import { useListingParams } from '@/hooks/useListingParams'
-import { formatUsd } from '@/lib/format'
 import { buildClientCatalogCategoriesApiParams } from '@/lib/listing-params/client-catalog-categories-list-params'
 import {
   buildMerchantServicesCategoryCountsApiParams,
@@ -20,11 +18,11 @@ import {
   type MerchantServicesListParams,
   MerchantServicesListParamsSchema,
 } from '@/lib/listing-params/merchant-services-list-params'
-import { resolveImageSrc, shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import { useGetCatalogCategoriesQuery } from '@/store/api/clientApi'
 import { useGetMyServicesQuery, useUpdateMyServiceMutation } from '@/store/api/orgApi'
 import type { ApiOrgService } from '@/types/api-org'
 
+import { MerchantServiceCard } from './MerchantServiceCard'
 import { OrgServiceFormModal } from './OrgServiceFormModal'
 import { getServiceTableColumns } from './ServiceTableColumns'
 
@@ -101,21 +99,13 @@ export function MerchantServicesView() {
   }
 
   const serviceColumns = useMemo(
-    () =>
-      getServiceTableColumns({
-        categoryNameById,
-        onEdit: (s) => {
-          setEditing(s)
-          setIsFormOpen(true)
-        },
-        onDeactivate: (s) => void handleDeactivate(s),
-        isDeactivating: deactivating,
-      }),
-    [categoryNameById, deactivating],
+    () => getServiceTableColumns({ categoryNameById }),
+    [categoryNameById],
   )
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 animate-in fade-in duration-300 sm:space-y-5">
+      {/* Top Header Card */}
       <div className="relative flex flex-col justify-between gap-3 overflow-hidden rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white via-white to-sky-50/60 p-4 sm:flex-row sm:items-center sm:p-5">
         <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-sky-300/20 blur-3xl" />
         <div className="relative">
@@ -154,20 +144,8 @@ export function MerchantServicesView() {
         </div>
       </div>
 
-      {/* Search and Category Filter Tabs */}
+      {/* Category Filter Tabs Bar */}
       <div className="flex flex-col gap-2 rounded-2xl border border-slate-200/70 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-        {viewMode === 'grid' ? (
-          <SearchInput
-            value={displayParams.search}
-            onChange={(q) => setParams({ search: q, page: 1 })}
-            placeholder="Search by service name or description…"
-            shortcut="⌘K"
-            className="w-full sm:max-w-xs text-xs"
-          />
-        ) : (
-          <div className="hidden sm:block" />
-        )}
-
         <div className="flex items-center gap-1 overflow-x-auto rounded-xl bg-slate-50/80 p-1 no-scrollbar">
           {categoryFilters.map((id) => {
             const label = id === 'ALL' ? 'All Services' : categoryNameById.get(id) || 'Category'
@@ -183,7 +161,7 @@ export function MerchantServicesView() {
                 }}
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-slate-900 text-white'
+                    ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
@@ -199,8 +177,14 @@ export function MerchantServicesView() {
             )
           })}
         </div>
+
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="font-semibold text-slate-900">{totalItems}</span>
+          <span>{totalItems === 1 ? 'service available' : 'services available'}</span>
+        </div>
       </div>
 
+      {/* Loading state */}
       {isLoading ? (
         <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
           <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
@@ -208,6 +192,7 @@ export function MerchantServicesView() {
         </div>
       ) : null}
 
+      {/* Error state */}
       {isError ? (
         <div className="rounded-xl border border-rose-200/80 bg-rose-50 p-6 text-center text-sm text-rose-700">
           <p>Could not load services.</p>
@@ -222,45 +207,30 @@ export function MerchantServicesView() {
         </div>
       ) : null}
 
-      {!isLoading && !isError && paginatedServices.length === 0 ? (
+      {/* Empty State when no services in whole catalog */}
+      {!isLoading && !isError && allServices.length === 0 ? (
         <EmptyState
           icon={Scissors}
-          title="No services found"
-          description={
-            settledSearch
-              ? `No services match "${settledSearch}". Clear your search query or switch categories.`
-              : 'You have not added any services in this category yet.'
-          }
+          title="No services added yet"
+          description="Create your first salon service to configure your booking catalog and pricing."
           action={
-            settledSearch ? (
-              <PrimaryButton
-                title="Clear filter"
-                size="sm"
-                fullWidth={false}
-                className="h-8 rounded-lg px-3.5 text-xs"
-                onClick={() => {
-                  setParams(merchantServicesListDefaults)
-                }}
-              />
-            ) : (
-              <PrimaryButton
-                title="Create service"
-                size="sm"
-                fullWidth={false}
-                icon={<Plus className="h-3.5 w-3.5" />}
-                className="h-8 rounded-lg px-3.5 text-xs"
-                onClick={() => {
-                  setEditing(null)
-                  setIsFormOpen(true)
-                }}
-              />
-            )
+            <PrimaryButton
+              title="Create service"
+              size="sm"
+              fullWidth={false}
+              icon={<Plus className="h-3.5 w-3.5" />}
+              className="h-8 rounded-lg px-3.5 text-xs"
+              onClick={() => {
+                setEditing(null)
+                setIsFormOpen(true)
+              }}
+            />
           }
         />
       ) : null}
 
-      {/* Table View */}
-      {!isLoading && !isError && paginatedServices.length > 0 && viewMode === 'table' ? (
+      {/* Table View: uses BasicDataGridTable's dedicated search section and action column */}
+      {!isLoading && !isError && allServices.length > 0 && viewMode === 'table' ? (
         <BasicDataGridTable
           data={paginatedServices}
           columns={serviceColumns}
@@ -274,12 +244,18 @@ export function MerchantServicesView() {
           onPageChange={(page) => setParam('page', page)}
           onItemPerPageChange={(size) => setParams({ limit: size, page: 1 })}
           showPagination={true}
-          showSearch
+          showSearch={true}
           searchPlaceholder="Search services by name or description…"
           initialSearchValue={displayParams.search}
           onSearch={(search) => setParams({ search, page: 1 })}
           showItemsPerPage={true}
-          showColumnSelector
+          showColumnSelector={true}
+          showActions={true}
+          onEdit={(service) => {
+            setEditing(service)
+            setIsFormOpen(true)
+          }}
+          onDelete={(service) => void handleDeactivate(service)}
           tableClassName="border-sky-100/80"
           headerClassName="bg-sky-50/45"
           customButtons={[
@@ -299,97 +275,99 @@ export function MerchantServicesView() {
         />
       ) : null}
 
-      {/* Grid View */}
-      {!isLoading && !isError && paginatedServices.length > 0 && viewMode === 'grid' ? (
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {paginatedServices.map((service) => {
-              const isActive = service.status === 'active'
+      {/* Grid / Cards View */}
+      {!isLoading && !isError && allServices.length > 0 && viewMode === 'grid' ? (
+        <div className="space-y-4">
+          {/* Grid Toolbar with Search and Actions */}
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="w-full lg:mr-1 lg:max-w-xl lg:flex-1">
+              <div className="relative w-full">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748B]"
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  placeholder="Search services by name or description…"
+                  value={displayParams.search}
+                  onChange={(e) => setParams({ search: e.target.value, page: 1 })}
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 py-0 pl-10 pr-4 text-[13px] text-slate-900 placeholder:text-slate-400 transition-all focus-visible:border-amber-500 focus-visible:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20"
+                />
+              </div>
+            </div>
 
-              return (
-                <Card
-                  key={service.id}
-                  className="flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 transition-colors hover:border-sky-200 hover:bg-sky-50/20"
-                >
-                  <div className="space-y-2.5">
-                    {/* Cover Image */}
-                    {service.images &&
-                    typeof service.images === 'object' &&
-                    'cover' in service.images &&
-                    service.images.cover ? (
-                      <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-slate-100">
-                        <Image
-                          src={resolveImageSrc(service.images.cover as string)}
-                          alt={service.name}
-                          fill
-                          className="object-cover"
-                          unoptimized={shouldUnoptimizedImage(service.images.cover as string)}
-                        />
-                      </div>
-                    ) : null}
-
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-bold text-base text-slate-900 tracking-tight">
-                          {service.name}
-                        </h3>
-                        <p className="text-xs font-medium text-amber-800">
-                          {categoryNameById.get(service.service_category_id) || 'General Service'}
-                        </p>
-                      </div>
-                      <Badge tone={isActive ? 'emerald' : 'slate'} size="sm">
-                        {service.status || 'Active'}
-                      </Badge>
-                    </div>
-
-                    <p className="line-clamp-2 text-xs text-slate-500 leading-relaxed">
-                      {service.description ||
-                        'Professional salon service with zero-debit deposit protection.'}
-                    </p>
-
-                    <div className="flex items-center justify-between border-t border-slate-100 pt-2.5">
-                      <div className="text-base font-extrabold text-slate-900 font-mono">
-                        {formatUsd(Number(service.base_price))}
-                      </div>
-                      <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-mono font-medium text-slate-600 border border-slate-200/70">
-                        <Clock className="h-3 w-3 text-slate-400" />
-                        {service.duration_minutes}m duration
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-3">
-                    <span className="font-mono text-[11px] text-slate-400">
-                      ID: {service.id.slice(0, 8)}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <IconButton
-                        aria-label="Edit service"
-                        onClick={() => {
-                          setEditing(service)
-                          setIsFormOpen(true)
-                        }}
-                        className="rounded-xl border-slate-200 hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </IconButton>
-                      {service.status !== 'inactive' ? (
-                        <PrimaryButton
-                          title="Deactivate"
-                          variant="ghost"
-                          size="sm"
-                          fullWidth={false}
-                          isDisabled={deactivating}
-                          className="h-7.5 rounded-lg px-2.5 text-xs text-slate-500 hover:text-rose-700"
-                          onClick={() => void handleDeactivate(service)}
-                        />
-                      ) : null}
-                    </div>
-                  </div>
-                </Card>
-              )
-            })}
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <span className="mr-auto text-[11px] font-medium text-slate-500 lg:mr-1">
+                {totalItems} {totalItems === 1 ? 'record' : 'records'}
+              </span>
+              <PrimaryButton
+                key="add-service-grid"
+                title="Add service"
+                size="sm"
+                fullWidth={false}
+                icon={<Plus className="h-3.5 w-3.5" />}
+                className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
+                onClick={() => {
+                  setEditing(null)
+                  setIsFormOpen(true)
+                }}
+              />
+            </div>
           </div>
+
+          {/* Cards or Empty State */}
+          {paginatedServices.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {paginatedServices.map((service) => (
+                <MerchantServiceCard
+                  key={service.id}
+                  service={service}
+                  categoryName={categoryNameById.get(service.service_category_id)}
+                  onEdit={(s) => {
+                    setEditing(s)
+                    setIsFormOpen(true)
+                  }}
+                  onDeactivate={(s) => void handleDeactivate(s)}
+                  isDeactivating={deactivating}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Scissors}
+              title="No services found"
+              description={
+                settledSearch
+                  ? `No services match "${settledSearch}". Clear your search query or switch categories.`
+                  : 'You have not added any services in this category yet.'
+              }
+              action={
+                settledSearch ? (
+                  <PrimaryButton
+                    title="Clear filter"
+                    size="sm"
+                    fullWidth={false}
+                    className="h-8 rounded-lg px-3.5 text-xs"
+                    onClick={() => {
+                      setParams(merchantServicesListDefaults)
+                    }}
+                  />
+                ) : (
+                  <PrimaryButton
+                    title="Create service"
+                    size="sm"
+                    fullWidth={false}
+                    icon={<Plus className="h-3.5 w-3.5" />}
+                    className="h-8 rounded-lg px-3.5 text-xs"
+                    onClick={() => {
+                      setEditing(null)
+                      setIsFormOpen(true)
+                    }}
+                  />
+                )
+              }
+            />
+          )}
 
           {paginatedServices.length > 0 && (
             <Pagination

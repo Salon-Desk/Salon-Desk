@@ -2,7 +2,7 @@ import {
   listingApiParams,
   listingDefaultsFromSchema,
   type ListingParamSchema,
-} from '@/hooks/useListingParams'
+} from '@/hooks/use-listing-params'
 
 import { LISTING_SECTION_PAGE_SIZE } from './listing-api-limits'
 
