@@ -289,7 +289,13 @@ def build_voice_tools(
             on_payment_link=on_payment_link,
         )
     )
-    tools.extend(build_auth_tools(session_factory, on_auth_success=on_auth_success))
+    tools.extend(
+        build_auth_tools(
+            session_factory,
+            on_auth_success=on_auth_success,
+            on_ui_action=on_ui_action,
+        )
+    )
     return tools
 
 

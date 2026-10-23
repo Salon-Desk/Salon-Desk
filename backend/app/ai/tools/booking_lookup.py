@@ -90,4 +90,51 @@ def build_lookup_tools(
             }
             return service_details_response(service_data, org_data)
 
-    return [get_organization_details, get_service_details]
+    @function_tool()
+    async def get_salon_stylists(
+        service_query: str | None = None,
+        org_query: str | None = None,
+    ) -> str:
+        """Get the list of available stylists/staff for a salon or service.
+
+        Use this when a client chooses a service and time, so you can ask them which
+        stylist they prefer or offer 'Any available stylist'.
+        """
+        import json
+
+        from .booking_helpers import get_organization_stylists
+
+        async with session_factory() as db:
+            org = None
+            if org_query:
+                org = await resolve_organization(db, org_query)
+            elif service_query:
+                service = await resolve_service(db, service_query)
+                if service:
+                    org = service.organization
+
+            if not org:
+                return json.dumps(
+                    {
+                        "status": "error",
+                        "message": "Please specify the salon or service to look up stylists for.",
+                        "stylists": ["Any available stylist"],
+                    }
+                )
+
+            staff_list = await get_organization_stylists(db, org.id)
+            stylist_names = [s.get("display_name") for s in staff_list if s.get("display_name")]
+            options = stylist_names + ["Any available stylist"]
+            return json.dumps(
+                {
+                    "status": "success",
+                    "organization_name": org.name,
+                    "stylists": options,
+                    "message": (
+                        f"Available stylists at {org.name}: {', '.join(stylist_names) if stylist_names else 'No individual stylists listed'}. "
+                        "You can also choose 'Any available stylist'."
+                    ),
+                }
+            )
+
+    return [get_organization_details, get_service_details, get_salon_stylists]

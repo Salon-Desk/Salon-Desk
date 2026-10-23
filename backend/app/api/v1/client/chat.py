@@ -1,6 +1,8 @@
 """AI chat: client booking concierge, or merchant/admin system help."""
 
-from fastapi import APIRouter, HTTPException, status
+import re
+
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.ai.chat_auth import try_handle_chat_auth
 from app.ai.chat_booking import try_handle_chat_booking
@@ -19,15 +21,29 @@ from app.ai.rag_service import (
 )
 from app.ai.support_actions import resolve_portal_navigation
 from app.api.deps import DbSession, OptionalUser
+from app.core.config import get_settings
 from app.schemas.chat import ChatRequest, ChatResponse
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+
+def _trusted_origin(request: Request) -> str | None:
+    origin = (request.headers.get("origin") or "").rstrip("/")
+    if not origin:
+        return None
+    settings = get_settings()
+    if origin in settings.cors_origins:
+        return origin
+    if settings.cors_origin_regex and re.fullmatch(settings.cors_origin_regex, origin):
+        return origin
+    return None
 
 
 @router.post("", response_model=ChatResponse)
 async def chat(
     body: ChatRequest,
     db: DbSession,
+    request: Request,
     user: OptionalUser = None,
 ) -> ChatResponse:
     llm = get_fallback_llm_service()
@@ -36,9 +52,12 @@ async def chat(
 
     # Booking auth / hold confirmation only for the client concierge
     if not is_support_portal(portal):
-        auth_handled, auth_reply, auth_token, user_info = await try_handle_chat_auth(
-            db, llm, body.message, body.history
-        )
+        auth_res = await try_handle_chat_auth(db, llm, body.message, body.history)
+        auth_handled = auth_res[0]
+        auth_reply = auth_res[1]
+        auth_token = auth_res[2]
+        user_info = auth_res[3]
+        auth_ui_action = auth_res[4] if len(auth_res) > 4 else None
         if auth_handled:
             return chat_response(
                 llm,
@@ -47,19 +66,38 @@ async def chat(
                 intent="auth",
                 auth_token=auth_token,
                 user=user_info,
+                ui_action=auth_ui_action,
             )
 
         booking_handled, booking_reply, confirmed_info = await try_handle_chat_booking(
-            db, llm, body.message, body.history, user=user
+            db,
+            llm,
+            body.message,
+            body.history,
+            user=user,
+            frontend_base=_trusted_origin(request),
         )
         if booking_handled:
+            auth_token = confirmed_info.pop("auth_token", None) if confirmed_info else None
+            user_info = confirmed_info.pop("user", None) if confirmed_info else None
+            booking_ui_act_dict = confirmed_info.pop("ui_action", None) if confirmed_info else None
+            needs_auth = confirmed_info.pop("needs_auth", False) if confirmed_info else False
+            ui_act = None
+            if booking_ui_act_dict:
+                from app.ai.support_actions import AgentUiAction
+
+                ui_act = AgentUiAction(**booking_ui_act_dict)
+
             return chat_response(
                 llm,
                 reply=booking_reply,
                 detected_language=language,
                 intent="booking",
-                confirmed_booking=confirmed_info,
+                confirmed_booking=confirmed_info if confirmed_info and not needs_auth else None,
                 payment_link=confirmed_info.get("payment_link") if confirmed_info else None,
+                auth_token=auth_token,
+                user=user_info,
+                ui_action=ui_act,
             )
 
         from app.ai.tools.paypal_tools import handle_paypal_agent_chat

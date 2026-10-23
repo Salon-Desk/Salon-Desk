@@ -82,6 +82,7 @@ export function InnerVoiceAssistantUI({
     bookingId: string
     serviceName: string
     organizationName: string
+    stylistName?: string
     formattedTime: string
     totalPrice: string
     paymentLink: string
@@ -146,6 +147,7 @@ export function InnerVoiceAssistantUI({
         bookingId: string
         serviceName: string
         organizationName: string
+        stylistName?: string
         formattedTime: string
         totalPrice: string
         paymentLink: string
@@ -211,6 +213,7 @@ export function InnerVoiceAssistantUI({
                 serviceId: parsed.service_id,
                 serviceName: parsed.service_name,
                 organizationName: parsed.organization_name,
+                stylistName: parsed.stylist_name,
                 startsAt: parsed.starts_at,
                 formattedTime: parsed.formatted_time,
                 totalPrice: parsed.total_price,

@@ -10,6 +10,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.llm import BaseLLMService, LLMError
+from app.ai.support_actions import AgentUiAction
 from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.schemas.ai import ChatMessage
 from app.schemas.auth import SignUpRequest
@@ -55,11 +56,11 @@ async def try_handle_chat_auth(
     llm: BaseLLMService,
     message: str,
     history: list[ChatMessage],
-) -> tuple[bool, str, str | None, dict[str, str | None] | None]:
+) -> tuple[bool, str, str | None, dict[str, str | None] | None, AgentUiAction | None]:
     """
     Attempt to handle login or signup within chat.
     Returns:
-        (handled: bool, reply: str, auth_token: str | None, user_info: dict | None)
+        (handled: bool, reply: str, auth_token: str | None, user_info: dict | None, ui_action: AgentUiAction | None)
     """
     lowered = message.lower()
     auth_keywords = (
@@ -81,7 +82,7 @@ async def try_handle_chat_auth(
         has_auth_context = any(k in last_turn for k in auth_keywords)
 
     if not has_auth_context:
-        return False, "", None, None
+        return False, "", None, None, None
 
     prompt_messages = [
         {"role": "system", "content": _AUTH_EXTRACT_SYSTEM},
@@ -95,10 +96,10 @@ async def try_handle_chat_auth(
         parsed = _extract_json(raw)
     except LLMError as exc:
         logger.warning("Auth extraction LLM failed: %s", exc)
-        return False, "", None, None
+        return False, "", None, None, None
 
     if not parsed or parsed.get("action") not in ("login", "signup"):
-        return False, "", None, None
+        return False, "", None, None, None
 
     action = parsed.get("action")
     email = (parsed.get("email") or "").strip().lower()
@@ -109,14 +110,12 @@ async def try_handle_chat_auth(
 
     if action == "login":
         if not email or not password:
-            if not email:
-                return (
-                    True,
-                    "Sure — what's the email and password you use for SalonDesk?",
-                    None,
-                    None,
-                )
-            return True, f"And the password for {email}?", None, None
+            reply = (
+                "I've opened the sign-in modal for you so you can log in securely. "
+                "Once signed in, you can continue our conversation right here!"
+            )
+            ui_action = AgentUiAction(action="open_auth_modal", target="sign-in", label="Sign In")
+            return True, reply, None, None, ui_action
 
         try:
             user = await auth_service.authenticate(db, email, password)
@@ -134,33 +133,33 @@ async def try_handle_chat_auth(
                 "org_id": str(user.org_id) if user.org_id else None,
             }
             reply = f"You're in. Welcome back, {u_first or user.email}."
-            return True, reply, token, user_info
+            return True, reply, token, user_info, None
         except (UnauthorizedError, ForbiddenError) as exc:
             return (
                 True,
                 f"I couldn't sign you in — {exc.message}. Want to try again?",
                 None,
                 None,
+                AgentUiAction(action="open_auth_modal", target="sign-in", label="Sign In"),
             )
         except Exception as exc:
             logger.error("Login handling error in chat: %s", exc)
-            return True, "I can't sign you in right now. Mind trying again in a moment?", None, None
-
-    elif action == "signup":
-        if not first_name or not last_name or not email or not password:
-            missing = []
-            if not first_name or not last_name:
-                missing.append("your first and last name")
-            if not email:
-                missing.append("your email address")
-            if not password:
-                missing.append("a secure password")
             return (
                 True,
-                f"I can set that up — I just need {', '.join(missing)}.",
+                "I can't sign you in right now. Mind trying again in a moment?",
+                None,
                 None,
                 None,
             )
+
+    elif action == "signup":
+        if not first_name or not last_name or not email or not password:
+            reply = (
+                "I've opened the registration modal for you so you can create your account securely. "
+                "Once registered, you can continue our conversation right here!"
+            )
+            ui_action = AgentUiAction(action="open_auth_modal", target="sign-up", label="Sign Up")
+            return True, reply, None, None, ui_action
 
         try:
             signup_req = SignUpRequest(
@@ -183,13 +182,14 @@ async def try_handle_chat_auth(
                 "org_id": None,
             }
             reply = f"You're all set, {first_name} — you're signed in."
-            return True, reply, token, user_info
+            return True, reply, token, user_info, None
         except ForbiddenError as exc:
             return (
                 True,
                 f"I couldn't create that account — {exc.message}. Want to log in instead?",
                 None,
                 None,
+                AgentUiAction(action="open_auth_modal", target="sign-in", label="Sign In"),
             )
         except Exception as exc:
             logger.error("Signup handling error in chat: %s", exc)
@@ -198,6 +198,7 @@ async def try_handle_chat_auth(
                 "I couldn't create the account just now. Double-check the details and we can try again.",
                 None,
                 None,
+                AgentUiAction(action="open_auth_modal", target="sign-up", label="Sign Up"),
             )
 
-    return False, "", None, None
+    return False, "", None, None, None

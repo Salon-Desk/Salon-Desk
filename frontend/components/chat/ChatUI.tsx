@@ -38,11 +38,11 @@ export interface ChatMessageItem {
   } | null
 }
 
-export { ConfirmedBookingCard, OrganizationCard, ServiceCard } from './ChatCards'
+export { AuthPromptCard, ConfirmedBookingCard, OrganizationCard, ServiceCard } from './ChatCards'
 export { ChatPanelShell, type ChatPanelShellProps, ConciergeAvatar } from './ChatPanelShell'
 export { RichText } from './RichText'
 
-import { ConfirmedBookingCard, OrganizationCard, ServiceCard } from './ChatCards'
+import { AuthPromptCard, ConfirmedBookingCard, OrganizationCard, ServiceCard } from './ChatCards'
 import { ConciergeAvatar } from './ChatPanelShell'
 import { RichText } from './RichText'
 
@@ -257,46 +257,70 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
               )}
 
               {/* Navigation or UI Actions */}
-              {!isUser && (msg.navigation || msg.uiAction) && (
-                <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
-                  <div className="flex flex-col gap-1.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-2.5 text-xs text-stone-800 shadow-2xs backdrop-blur-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-bold text-amber-950">
-                        <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                        <span>
-                          {msg.uiAction?.label || msg.navigation?.label || 'Action Executed'}
+              {!isUser &&
+                (msg.navigation ||
+                  (msg.uiAction &&
+                    !['open_auth_modal', 'open_sign_in', 'open_sign_up'].includes(
+                      msg.uiAction.action,
+                    ))) && (
+                  <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
+                    <div className="flex flex-col gap-1.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-2.5 text-xs text-stone-800 shadow-2xs backdrop-blur-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 font-bold text-amber-950">
+                          <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                          <span>
+                            {msg.uiAction?.label || msg.navigation?.label || 'Action Executed'}
+                          </span>
                         </span>
-                      </span>
-                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
-                        Executed
-                      </span>
+                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                          Executed
+                        </span>
+                      </div>
+                      {msg.uiAction?.details && (
+                        <p className="text-[11px] text-stone-600 leading-relaxed">
+                          {msg.uiAction.details}
+                        </p>
+                      )}
+                      {(msg.navigation?.target || msg.uiAction?.target) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const target = msg.uiAction?.target || msg.navigation?.target
+                            if (target && typeof window !== 'undefined') {
+                              window.location.href = target
+                            }
+                            if (msg.uiAction?.selector) {
+                              highlightElement(msg.uiAction.selector)
+                            }
+                          }}
+                          className="mt-0.5 inline-flex w-fit items-center gap-1 rounded-lg border border-amber-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-900 shadow-2xs transition-colors hover:bg-amber-50 cursor-pointer"
+                        >
+                          <span>Open Screen</span>
+                          <ArrowUpRight className="h-3 w-3" />
+                        </button>
+                      )}
                     </div>
-                    {msg.uiAction?.details && (
-                      <p className="text-[11px] text-stone-600 leading-relaxed">
-                        {msg.uiAction.details}
-                      </p>
-                    )}
-                    {(msg.navigation?.target || msg.uiAction?.target) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const target = msg.uiAction?.target || msg.navigation?.target
-                          if (target && typeof window !== 'undefined') {
-                            window.location.href = target
-                          }
-                          if (msg.uiAction?.selector) {
-                            highlightElement(msg.uiAction.selector)
-                          }
-                        }}
-                        className="mt-0.5 inline-flex w-fit items-center gap-1 rounded-lg border border-amber-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-900 shadow-2xs transition-colors hover:bg-amber-50 cursor-pointer"
-                      >
-                        <span>Open Screen</span>
-                        <ArrowUpRight className="h-3 w-3" />
-                      </button>
-                    )}
                   </div>
-                </div>
-              )}
+                )}
+
+              {/* Auth Prompt Card */}
+              {!support &&
+                !isUser &&
+                msg.uiAction &&
+                ['open_auth_modal', 'open_sign_in', 'open_sign_up'].includes(
+                  msg.uiAction.action,
+                ) && (
+                  <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
+                    <AuthPromptCard
+                      defaultView={
+                        msg.uiAction.target === 'sign-up' || msg.uiAction.action === 'open_sign_up'
+                          ? 'sign-up'
+                          : 'sign-in'
+                      }
+                      onContinue={() => sendPrompt('Please continue with my booking')}
+                    />
+                  </div>
+                )}
 
               {/* Confirmed Booking Card */}
               {!support && !isUser && msg.confirmedBooking && (
