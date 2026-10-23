@@ -23,7 +23,7 @@ import { AppointmentsKpiCards } from './AppointmentsKpiCards'
 import { AppointmentsPageHeader } from './AppointmentsPageHeader'
 import { getBookingTableColumns } from './BookingTableColumns'
 import { ConsentModal } from './ConsentModal'
-import { SettlementDrawer } from './SettlementDrawer'
+import { SettlementDialog } from './SettlementDialog'
 
 type AppointmentFilter = MerchantAppointmentsListParams['holdStatus']
 
@@ -195,7 +195,7 @@ export function MerchantAppointmentsView() {
 
       {/* Drawers & Modals */}
       {selectedBooking ? (
-        <SettlementDrawer
+        <SettlementDialog
           booking={selectedBooking}
           isSettlementProcessing={isSettlementProcessing}
           onClose={() => setSelectedBooking(null)}

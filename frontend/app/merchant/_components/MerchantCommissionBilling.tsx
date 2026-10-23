@@ -20,8 +20,12 @@ import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
 import { EmptyState } from '@/components/ui'
 import PrimaryButton from '@/components/ui/primary-button'
 import { toastColor } from '@/constant/toast-color'
-import { useDebounce } from '@/hooks/use-debounce'
+import { useListingParams } from '@/hooks/useListingParams'
 import { formatUsd } from '@/lib/format'
+import {
+  type MerchantBillingListParams,
+  MerchantBillingListParamsSchema,
+} from '@/lib/listing-params/merchant-billing-list-params'
 import { cn } from '@/lib/utils'
 import {
   useGetMyCommissionInvoicesQuery,
@@ -35,13 +39,16 @@ import { MerchantCommissionRecordDetailsModal } from './MerchantCommissionRecord
 import { getMerchantCommissionTableColumns } from './MerchantCommissionTableColumns'
 import { getMerchantInvoiceTableColumns } from './MerchantInvoiceTableColumns'
 
-type BillingTab = 'records' | 'invoices'
-
 export function MerchantCommissionBilling() {
-  const [activeTab, setActiveTab] = useState<BillingTab>('records')
-  const [recordStatusFilter, setRecordStatusFilter] = useState<string>('ALL')
-  const [searchTerm, setSearchTerm] = useState('')
-  const debouncedSearch = useDebounce(searchTerm, 300)
+  const { params, displayParams, setParam, setParams } = useListingParams<
+    MerchantBillingListParams,
+    typeof MerchantBillingListParamsSchema
+  >(MerchantBillingListParamsSchema)
+
+  const activeTab = displayParams.tab
+  const recordStatusFilter = displayParams.status
+  const searchTerm = displayParams.search
+  const debouncedSearch = typeof params.q === 'string' ? params.q : ''
 
   const [inspectingRecord, setInspectingRecord] = useState<CommissionRecord | null>(null)
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null)
@@ -171,10 +178,13 @@ export function MerchantCommissionBilling() {
         records={records}
         invoices={invoices}
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={(tab) => setParam('tab', tab)}
         onFilterRecordsStatus={(status) => {
-          setRecordStatusFilter(status)
-          setActiveTab('records')
+          setParams({
+            status: status as MerchantBillingListParams['status'],
+            tab: 'records',
+            page: 1,
+          })
         }}
       />
 
@@ -201,7 +211,7 @@ export function MerchantCommissionBilling() {
         <div className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100/80 p-1 text-xs">
           <button
             type="button"
-            onClick={() => setActiveTab('records')}
+            onClick={() => setParam('tab', 'records')}
             className={cn(
               'inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 font-semibold transition-all cursor-pointer',
               activeTab === 'records'
@@ -225,7 +235,7 @@ export function MerchantCommissionBilling() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('invoices')}
+            onClick={() => setParam('tab', 'invoices')}
             className={cn(
               'inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 font-semibold transition-all cursor-pointer',
               activeTab === 'invoices'
@@ -292,14 +302,14 @@ export function MerchantCommissionBilling() {
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => setParam('search', e.target.value)}
                 placeholder="Search by booking or capture ID…"
                 className="w-full rounded-lg border border-slate-200 bg-slate-50/70 py-1.5 pl-8 pr-3 text-xs text-slate-800 placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
               />
               {searchTerm && (
                 <button
                   type="button"
-                  onClick={() => setSearchTerm('')}
+                  onClick={() => setParam('search', '')}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
                 >
                   ✕
@@ -317,7 +327,7 @@ export function MerchantCommissionBilling() {
                   <button
                     key={st}
                     type="button"
-                    onClick={() => setRecordStatusFilter(st)}
+                    onClick={() => setParams({ status: st, page: 1 })}
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer shrink-0',
                       isActive
@@ -359,8 +369,7 @@ export function MerchantCommissionBilling() {
               <button
                 type="button"
                 onClick={() => {
-                  setSearchTerm('')
-                  setRecordStatusFilter('ALL')
+                  setParams({ search: '', status: 'ALL', page: 1 })
                 }}
                 className="mt-3 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
               >
@@ -440,7 +449,7 @@ export function MerchantCommissionBilling() {
                 <div className="mt-6 flex justify-center">
                   <button
                     type="button"
-                    onClick={() => setActiveTab('records')}
+                    onClick={() => setParam('tab', 'records')}
                     className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 cursor-pointer"
                   >
                     <span>View Accrued Ledger Transactions</span>

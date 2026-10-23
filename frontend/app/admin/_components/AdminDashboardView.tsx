@@ -8,7 +8,6 @@ import {
   Clock,
   CreditCard,
   Layers,
-  Loader2,
   Percent,
   Receipt,
   RefreshCw,
@@ -24,6 +23,7 @@ import { toast } from 'sonner'
 
 import { StatCard } from '@/components/card'
 import { LineTrendChart } from '@/components/chart/LineTrendChart'
+import { LoadingSpinner } from '@/components/loader/LoadingSpinner'
 import { Card, EmptyState } from '@/components/ui'
 import { AdminQueryState } from '@/components/ui/query-state-view'
 import { toastColor } from '@/constant/toast-color'
@@ -69,9 +69,8 @@ export function AdminDashboardView() {
 
   if (skipAdminApi) {
     return (
-      <div className="flex items-center justify-center gap-2 py-24 text-slate-500 text-sm">
-        <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
-        Checking session…
+      <div className="flex items-center justify-center py-24">
+        <LoadingSpinner size="md" text="Checking session…" />
       </div>
     )
   }

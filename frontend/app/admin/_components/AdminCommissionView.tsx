@@ -5,7 +5,7 @@ import React, { useMemo, useState } from 'react'
 
 import { StatCard } from '@/components/card'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
-import { Card, EmptyState, SearchInput } from '@/components/ui'
+import { EmptyState } from '@/components/ui'
 import PrimaryButton from '@/components/ui/primary-button'
 import { AdminQueryState } from '@/components/ui/query-state-view'
 import { useAdminSession } from '@/hooks/use-admin-session'
@@ -52,7 +52,6 @@ export function AdminCommissionView() {
 
   const currentPage = displayParams.page
   const pageSize = displayParams.limit
-  const settledSearch = typeof params.q === 'string' ? params.q : ''
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>()
@@ -73,17 +72,7 @@ export function AdminCommissionView() {
     [commissions],
   )
 
-  const columns = useMemo(
-    () =>
-      getCommissionTableColumns({
-        categoryNameById,
-        onEdit: (c) => {
-          setEditing(c)
-          setIsOpen(true)
-        },
-      }),
-    [categoryNameById],
-  )
+  const columns = useMemo(() => getCommissionTableColumns({ categoryNameById }), [categoryNameById])
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 pb-12 animate-in fade-in duration-300 sm:space-y-6">
@@ -209,63 +198,46 @@ export function AdminCommissionView() {
         ) : null}
 
         {commissions.length > 0 ? (
-          <Card
-            padding="none"
-            className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
-          >
-            <div className="flex flex-col justify-between gap-3 border-slate-100 border-b p-4 sm:flex-row sm:items-center">
-              <div>
-                <h2 className="font-bold text-slate-900 text-sm">
-                  Categorization Take-Rate Matrix
-                </h2>
-                <p className="text-slate-500 text-xs">
-                  Automated settlement split applied when bookings are captured via PayPal Orders v2
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <SearchInput
-                  value={displayParams.search}
-                  onChange={(val) => setParams({ search: val, page: 1 })}
-                  placeholder="Search rules…"
-                  className="w-48 text-xs sm:w-60"
-                />
-                <span className="shrink-0 rounded-lg border border-slate-200/70 bg-slate-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-slate-600">
-                  {totalItems} rules
-                </span>
-              </div>
-            </div>
-
-            {settledSearch.trim() && (
-              <div className="flex items-center justify-between border-b border-amber-200/60 bg-amber-50/50 px-4 py-2 text-xs text-amber-900">
-                <span>
-                  Filtering by: &ldquo;<strong>{settledSearch}</strong>&rdquo;
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setParams({ search: '', page: 1 })}
-                  className="cursor-pointer font-bold text-amber-800 hover:text-amber-950 hover:underline active:scale-[0.98]"
-                >
-                  Clear search
-                </button>
-              </div>
-            )}
-
-            <BasicDataGridTable
-              data={commissions}
-              columns={columns}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              itemsPerPage={pageSize}
-              onPageChange={(page: number) => setParam('page', page)}
-              onItemPerPageChange={(size: number) => setParams({ limit: size, page: 1 })}
-              showPagination={totalItems > 0}
-              showSearch={false}
-              showItemsPerPage={true}
-              tableClassName="border-slate-200/80"
-              headerClassName="bg-slate-50/70"
-            />
-          </Card>
+          <BasicDataGridTable
+            data={commissions}
+            columns={columns}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={pageSize}
+            onPageChange={(page: number) => setParam('page', page)}
+            onItemPerPageChange={(size: number) => setParams({ limit: size, page: 1 })}
+            showPagination={totalItems > 0}
+            showSearch={true}
+            searchPlaceholder="Search rules by category, name, or fee type…"
+            initialSearchValue={displayParams.search}
+            onSearch={(val) => setParams({ search: val, page: 1 })}
+            showItemsPerPage={true}
+            showColumnSelector={true}
+            showActions={true}
+            onEdit={(c) => {
+              setEditing(c)
+              setIsOpen(true)
+            }}
+            refetch={() => void refetch()}
+            isFetching={isLoading}
+            customButtons={[
+              <PrimaryButton
+                key="add-rule"
+                title="Add Commission Rule"
+                size="sm"
+                fullWidth={false}
+                icon={<Plus className="h-3.5 w-3.5" />}
+                className="h-9 rounded-xl px-4 text-xs font-bold shadow-xs transition-all active:scale-[0.98]"
+                onClick={() => {
+                  setEditing(null)
+                  setIsOpen(true)
+                }}
+              />,
+            ]}
+            tableClassName="border-slate-200/80"
+            headerClassName="bg-slate-50/70"
+          />
         ) : null}
       </AdminQueryState>
 

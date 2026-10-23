@@ -1,12 +1,22 @@
 'use client'
 
-import { CheckCircle2, Clock, MessageSquareQuote, RefreshCw, Sparkles, Star } from 'lucide-react'
+import {
+  Check,
+  CheckCircle2,
+  Clock,
+  MessageSquareQuote,
+  RefreshCw,
+  Sparkles,
+  Star,
+  X,
+} from 'lucide-react'
 import React, { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { StatCard } from '@/components/card'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
-import { Card, EmptyState, SearchInput } from '@/components/ui'
+import { EmptyState } from '@/components/ui'
+import { Button } from '@/components/ui/button'
 import { AdminQueryState } from '@/components/ui/query-state-view'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
@@ -127,16 +137,7 @@ export function AdminReviewsView() {
     }
   }
 
-  const columns = useMemo(
-    () =>
-      getReviewTableColumns({
-        onViewDetail: (item) => setSelectedReview(item),
-        onApprove: handleApprove,
-        onReject: handleReject,
-        isProcessingId: processingId,
-      }),
-    [processingId],
-  )
+  const columns = useMemo(() => getReviewTableColumns(), [])
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 pb-12 animate-in fade-in duration-300">
@@ -216,8 +217,8 @@ export function AdminReviewsView() {
         />
       </div>
 
-      {/* Filter Bar & Search */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+      {/* Moderation Status Tabs */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
           {(Object.keys(FILTER_LABELS) as AdminReviewsListParams['status'][]).map((key) => {
             const isActive = displayParams.status === key
@@ -237,40 +238,79 @@ export function AdminReviewsView() {
             )
           })}
         </div>
-        <SearchInput
-          value={displayParams.search}
-          onChange={(val) => setParams({ search: val, page: 1 })}
-          placeholder="Search by client, salon, stylist, or comment…"
-          className="w-full sm:max-w-xs text-xs"
-        />
+        <span className="text-xs font-medium text-slate-500">
+          Showing <strong className="font-bold text-slate-900">{totalItems}</strong> reviews
+        </span>
       </div>
 
       <AdminQueryState isLoading={isLoading} isError={isError} onRetry={() => void refetch()}>
-        {items.length === 0 ? (
+        {items.length === 0 && !displayParams.search ? (
           <EmptyState
             icon={MessageSquareQuote}
             title="No reviews in this queue"
             description="Client submissions appear here after completed appointments."
           />
         ) : (
-          <Card
-            padding="none"
-            className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs"
-          >
-            <BasicDataGridTable
-              data={items}
-              columns={columns}
-              currentPage={page}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              itemsPerPage={pageSize}
-              onPageChange={(p: number) => setParam('page', p)}
-              onItemPerPageChange={(limit: number) => setParams({ limit, page: 1 })}
-              showPagination={totalItems > 0}
-              showSearch={false}
-              showItemsPerPage={true}
-            />
-          </Card>
+          <BasicDataGridTable
+            data={items}
+            columns={columns}
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={pageSize}
+            onPageChange={(p: number) => setParam('page', p)}
+            onItemPerPageChange={(limit: number) => setParams({ limit, page: 1 })}
+            showPagination={totalItems > 0}
+            showSearch={true}
+            searchPlaceholder="Search by client, salon, stylist, or comment…"
+            initialSearchValue={displayParams.search}
+            onSearch={(val) => setParams({ search: val, page: 1 })}
+            showItemsPerPage={true}
+            showColumnSelector={true}
+            showActions={true}
+            onView={(item) => setSelectedReview(item)}
+            renderRowActions={(item) => {
+              const isBusy = processingId === item.id
+              const isPending = item.status === 'pending'
+              if (!isPending) {
+                return (
+                  <span className="font-mono text-[11px] text-slate-400 pl-1 self-center">
+                    Resolved
+                  </span>
+                )
+              }
+              return (
+                <>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    disabled={isBusy}
+                    className="h-7 w-7 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 transition-all duration-200 cursor-pointer"
+                    onClick={() => void handleApprove(item)}
+                    title="Approve review"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span className="sr-only">Approve</span>
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    disabled={isBusy}
+                    className="h-7 w-7 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-all duration-200 cursor-pointer"
+                    onClick={() => void handleReject(item)}
+                    title="Reject review"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    <span className="sr-only">Reject</span>
+                  </Button>
+                </>
+              )
+            }}
+            refetch={() => void handleRefresh()}
+            isFetching={isLoading || isRefreshing}
+            tableClassName="border-slate-100"
+            headerClassName="bg-slate-50/80 text-slate-700"
+          />
         )}
       </AdminQueryState>
 

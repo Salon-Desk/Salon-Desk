@@ -17,13 +17,12 @@ import { useState } from 'react'
 
 import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
-import { CustomDrawer } from '@/components/drawer/CustomDrawer'
 import { HoldStateBadge } from '@/components/ui'
 import { formatUsd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { Booking } from '@/types'
 
-interface SettlementDrawerProps {
+interface SettlementDialogProps {
   booking: Booking
   isSettlementProcessing: boolean
   onClose: () => void
@@ -35,7 +34,7 @@ interface SettlementDrawerProps {
 
 type ActionConfirmation = 'SHOW' | 'NO_SHOW' | 'VOID' | 'REAUTH' | null
 
-export function SettlementDrawer({
+export function SettlementDialog({
   booking,
   isSettlementProcessing,
   onClose,
@@ -43,7 +42,7 @@ export function SettlementDrawer({
   onMarkNoShow,
   onCancelAndVoid,
   onReauthorizeHold,
-}: SettlementDrawerProps) {
+}: SettlementDialogProps) {
   const [pendingConfirmation, setPendingConfirmation] = useState<ActionConfirmation>(null)
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false)
@@ -113,13 +112,13 @@ export function SettlementDrawer({
 
   return (
     <>
-      {/* 1. Main Appointment Settlement Details Drawer */}
-      <CustomDrawer
+      {/* 1. Main Appointment Settlement Details Dialog/Drawer */}
+      <CustomResponsiveDialog
         open={true}
-        onOpenChange={(open) => {
+        setOpen={(open) => {
           if (!open) onClose()
         }}
-        direction="right"
+        classNameContent="fixed right-0 top-0 h-full w-full max-w-md sm:max-w-lg border-l"
         header={
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-200/60">
@@ -440,7 +439,7 @@ export function SettlementDrawer({
             )}
           </div>
         </div>
-      </CustomDrawer>
+      </CustomResponsiveDialog>
 
       {/* 2. Focused Confirmation Modal in CustomResponsiveDialog */}
       {pendingConfirmation ? (

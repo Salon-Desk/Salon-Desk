@@ -36,23 +36,31 @@ Use ESLint + Prettier (`eslint.config.*`, Prettier config in repo). Match existi
 
 ## Core Architectural Rules & Standards (MANDATORY)
 
-Every agent and developer working in `frontend/` MUST adhere to these six architectural rules:
+Every agent and developer working in `frontend/` MUST adhere to these seven architectural rules:
 
 ### Rule 1: Tables — Exclusively `BasicDataGridTable`
 
 - **Component**: `@/components/table/BasicDataGridTable` (`components/table/BasicDataGridTable.tsx`).
 - **Standard**: Every tabular list across all portals (merchant staff, merchant services, merchant invoices, admin salons, admin commissions, admin taxonomy, admin reviews, admin billing) MUST use `BasicDataGridTable`.
-- **Column Definitions**: Define pure column arrays typed with `ColumnDefinition<T>[]` from `@/types/table`. Keep column definitions in separate files (e.g., `StaffTableColumns.tsx`, `SalonTableColumns.tsx`).
+- **Column Definitions**: Define pure column arrays typed with `ColumnDefinition<T>[]` from `@/types/table`. Keep column definitions in separate files (e.g., `StaffTableColumns.tsx`, `SalonTableColumns.tsx`). Do NOT define columns inline in view components.
+- **Built-in Actions**: Use the table's built-in action props instead of creating custom action columns:
+  - `onView`, `onEdit`, `onDelete`, `onSuspend`, `onApprove`, `onReject` for standard CRUD actions
+  - `renderRowActions` for custom row-level action rendering
+  - `customButtons` for table-level action buttons (e.g., "Add Service")
+  - Set `showActions={true}` to enable the actions column
 - **Pagination & Controls**: Pass `currentPage`, `totalPages`, `totalItems`, `itemsPerPage`, `onPageChange`, `onItemPerPageChange`, `showPagination`, and `showSearch`.
 - **Prohibited**:
   - Raw `<table>`, `<tbody>`, `<tr>`, `<td>` grids in views.
   - Competing table wrappers (such as legacy `components/ui/data-table.tsx` — removed and banned).
   - Non-standard pagination components.
+  - Defining columns inline in view components (must be in separate files).
+  - Creating custom action columns when built-in action props are available.
 
 ### Rule 2: Filterable Lists — Exclusively `useListingParams`
 
 - **Hook**: `@/hooks/useListingParams` (`hooks/useListingParams.ts`).
 - **Standard**: Every searchable, filterable, or paginated table/view MUST manage its query parameters via `useListingParams` backed by a Zod schema.
+- **Schema Pattern**: Define listing schemas in `lib/listing-params/` using `listingDefaultsFromSchema` and `ListingParamSchema` from `@/hooks/useListingParams`. Each schema file should define defaults for page, limit, search, sort, and domain-specific filters (e.g., `admin-commission-list-params.ts`).
 - **URL Synchronization**: Page numbers, search queries, sort directions, and domain filters synchronize automatically with Next.js router query parameters (`useSearchParams`).
 - **Prohibited**:
   - Ad-hoc `useState` for pagination (`page`, `pageSize`) or filter fields.
@@ -73,12 +81,12 @@ Every agent and developer working in `frontend/` MUST adhere to these six archit
 
 ### Rule 4: Forms — `useFormHandler` + Zod + `FormProvider` + `RHF*`
 
-- **Hook**: `@/hooks/formHandler` (`hooks/formHandler.ts`).
+- **Hook**: `@/hooks/formHandler` (`hooks/formHandler.ts`). Use `useFormSubmitHandler` for forms with Zod schema and RTK Query mutations.
 - **Standard**: Every form must follow the standard form architecture:
-  1. Define a strict Zod schema (Zod v4).
-  2. Initialize via `useFormHandler({ schema, defaultValues, onSubmit })`.
+  1. Define a strict Zod schema (Zod v4) in a separate schema file (e.g., `lib/schema/auth.ts` or feature's `_schemas/` folder). Reuse common validators from `@/lib/schema/common` (`fieldValidators`, `refineInternationalPhone`).
+  2. Initialize via `useFormHandler({ schema, defaultValues, onSubmit })` or `useFormSubmitHandler` for RTK Query integration.
   3. Wrap the form in `FormProvider`.
-  4. Use standardized `RHF*` field components from `@/components/forms` (`RHFTextField`, `RHFSelectField`, `RHFNumberField`, `RHFTextareaField`, `DatePickerField`).
+  4. Use standardized `RHF*` field components from `@/components/forms` (`RHFTextField`, `RHFSelectField`, `RHFNumberField`, `RHFTextareaField`, `DatePickerField`, `DateRangePicker`).
   5. Connect to RTK Query mutations with unified toast/error handling.
 - **Prohibited**:
   - Uncontrolled or raw `<form>` with ad-hoc `useState` validation.
@@ -95,7 +103,16 @@ Every agent and developer working in `frontend/` MUST adhere to these six archit
 
 - **Stat Cards**: Use `@/components/card` (`StatCard`).
 - **Badges**: Use `@/components/badge` (`StatusBadge`, `HoldStateBadge`, `OrganizationStatusBadge`, `ChangeRequestStatusBadge`).
-- **Buttons**: Use `@/components/button` (`PrimaryButton`, `RefreshButton`).
+- **Buttons**: Use `@/components/button` (`PrimaryButton`, `RefreshButton`). Every button MUST use these reusable components—no raw `<button>` elements or ad-hoc button styles.
+
+### Rule 7: State Components — EmptyState & ErrorState
+
+- **EmptyState**: Use `@/components/empty/EmptyState` for empty data states in tables, lists, and views.
+- **ErrorState**: Use `@/components/empty/ErrorState` for error states.
+- **Standard**: These components provide consistent UX for empty/error states across all portals. They accept icon, title, description, and optional action props.
+- **Prohibited**:
+  - Custom empty state JSX (e.g., inline "No data found" text).
+  - Ad-hoc error message rendering without using ErrorState.
 
 ---
 
@@ -217,6 +234,51 @@ Client drawer UI: `app/client/_components/ConciergeDrawer.tsx`.
 - Zod v4 APIs (`lib/schema/common.ts`).
 - Avoid unstable values like `new Date()` during Client Component prerender; use fixed seeds or `useEffect` / event handlers.
 
+## Schema patterns
+
+### Form schemas
+
+- **Location**: Define in `lib/schema/` for shared schemas or `app/<feature>/_schemas/` for feature-specific schemas.
+
+- **Pattern**: Import `z` and common validators from `@/lib/schema/common` (`fieldValidators`, `refineInternationalPhone`).
+
+- **Example**:
+
+  ```typescript
+  import { z } from 'zod'
+  import { fieldValidators, refineInternationalPhone } from '@/lib/schema/common'
+
+  export const authSchema = z.object({
+    email: fieldValidators.email,
+    password: fieldValidators.password,
+    phone: refineInternationalPhone(),
+  })
+  ```
+
+### Listing schemas
+
+- **Location**: Define in `lib/listing-params/` for domain-specific listing parameters.
+
+- **Pattern**: Import `listingDefaultsFromSchema` and `ListingParamSchema` from `@/hooks/useListingParams`.
+
+- **Example**:
+
+  ```typescript
+  import { listingDefaultsFromSchema, type ListingParamSchema } from '@/hooks/useListingParams'
+  import { z } from 'zod'
+
+  export const AdminCommissionListParamsSchema = z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().default(20),
+    search: z.string().optional(),
+    status: z.enum(['all', 'active', 'inactive']).default('all'),
+  }) satisfies ListingParamSchema
+
+  export const adminCommissionListDefaults = listingDefaultsFromSchema(
+    AdminCommissionListParamsSchema,
+  )
+  ```
+
 ## Global reusable components
 
 | Area       | Path                 | Use                                                       |
@@ -230,5 +292,6 @@ Client drawer UI: `app/client/_components/ConciergeDrawer.tsx`.
 | Layout     | `components/layout/` | `ConsoleShell`, `PortalSwitcher`, `AuthGate`              |
 | Auth       | `components/auth/`   | Modals, sign-in forms, auth views                         |
 | Loaders    | `components/loader/` | `LoadingSpinner`, skeleton loaders                        |
+| State      | `components/empty/`  | `EmptyState`, `ErrorState`                                |
 | AI & Chat  | `components/chat/`   | Voice orb, global chat, concierge UI                      |
 | Primitives | `components/ui/`     | Base Radix primitives & utility controls                  |

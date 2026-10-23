@@ -26,7 +26,7 @@ import { useSettlementActions } from '../_hooks/use-settlement-actions'
 import { AgendaView } from './AgendaView'
 import { CalendarToolbar } from './CalendarToolbar'
 import { DayBoardView } from './DayBoardView'
-import { SettlementDrawer } from './SettlementDrawer'
+import { SettlementDialog } from './SettlementDialog'
 import { ALL_STAFF_VALUE } from './StaffPicker'
 import { WeekBoardView } from './WeekBoardView'
 
@@ -184,7 +184,7 @@ export function MerchantCalendarView() {
       ) : null}
 
       {selectedBooking ? (
-        <SettlementDrawer
+        <SettlementDialog
           booking={selectedBooking}
           isSettlementProcessing={isSettlementProcessing}
           onClose={() => setSelectedBooking(null)}

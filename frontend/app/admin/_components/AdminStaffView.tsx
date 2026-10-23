@@ -1,40 +1,45 @@
 'use client'
 
-import { Plus, RefreshCw, Shield, ShieldCheck, Sparkles, Trash2, Users } from 'lucide-react'
+import { Plus, RefreshCw, Shield, ShieldCheck, Sparkles, Users } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { StatusBadge } from '@/components/badge'
 import { StatCard } from '@/components/card'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
-import { Card, EmptyState, SearchInput } from '@/components/ui'
+import { EmptyState } from '@/components/ui'
+import PrimaryButton from '@/components/ui/primary-button'
 import { AdminQueryState } from '@/components/ui/query-state-view'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
-import { useDebounce } from '@/hooks/use-debounce'
+import { useListingParams } from '@/hooks/useListingParams'
+import {
+  type AdminStaffListParams,
+  AdminStaffListParamsSchema,
+} from '@/lib/listing-params/admin-staff-list-params'
 import { useDeleteAdminStaffMutation, useGetAdminStaffQuery } from '@/store/api/platformApi'
 import type { ColumnDefinition } from '@/types/table'
 import type { User } from '@/types/user'
 
 import { AdminStaffFormModal } from './AdminStaffFormModal'
 
-type StaffRoleFilter = 'all' | 'platform_admin' | 'platform_staff'
-
 export function AdminStaffView() {
   const { skipAdminApi } = useAdminSession()
+  const { params, displayParams, setParam, setParams } = useListingParams<
+    AdminStaffListParams,
+    typeof AdminStaffListParamsSchema
+  >(AdminStaffListParamsSchema)
+
   const {
     data: staffList,
     isLoading,
     isError,
     refetch,
-  } = useGetAdminStaffQuery(undefined, { skip: skipAdminApi })
-  const [deleteStaff, { isLoading: isDeleting }] = useDeleteAdminStaffMutation()
+  } = useGetAdminStaffQuery(params, { skip: skipAdminApi })
+  const { data: allStaffData } = useGetAdminStaffQuery(undefined, { skip: skipAdminApi })
+  const [deleteStaff] = useDeleteAdminStaffMutation()
 
   const [isOpen, setIsOpen] = useState(false)
-  const [roleFilter, setRoleFilter] = useState<StaffRoleFilter>('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const debouncedSearch = useDebounce(searchQuery, 300)
-  const [actioningId, setActioningId] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleRefresh = async () => {
@@ -48,30 +53,31 @@ export function AdminStaffView() {
   }
 
   const staff = useMemo(() => staffList ?? [], [staffList])
+  const allStaff = useMemo(() => allStaffData ?? staffList ?? [], [allStaffData, staffList])
 
   const stats = useMemo(() => {
     let admins = 0
     let support = 0
     let active = 0
 
-    staff.forEach((s) => {
+    allStaff.forEach((s) => {
       if (s.role === 'platform_admin') admins += 1
       if (s.role === 'platform_staff') support += 1
       if (s.status === 'ACTIVE' || s.status === 'active') active += 1
     })
 
-    return { total: staff.length, admins, support, active }
-  }, [staff])
+    return { total: allStaff.length, admins, support, active }
+  }, [allStaff])
 
   const filteredStaff = useMemo(() => {
     let result = staff
 
-    if (roleFilter !== 'all') {
-      result = result.filter((s) => s.role === roleFilter)
+    if (displayParams.role !== 'all') {
+      result = result.filter((s) => s.role === displayParams.role)
     }
 
-    if (debouncedSearch.trim()) {
-      const q = debouncedSearch.trim().toLowerCase()
+    if (displayParams.search.trim()) {
+      const q = displayParams.search.trim().toLowerCase()
       result = result.filter((s) => {
         const name = `${s.profile?.first_name || ''} ${s.profile?.last_name || ''}`.toLowerCase()
         const email = (s.email || '').toLowerCase()
@@ -80,11 +86,24 @@ export function AdminStaffView() {
     }
 
     return result
-  }, [staff, roleFilter, debouncedSearch])
+  }, [staff, displayParams.role, displayParams.search])
+
+  const totalPages = Math.max(1, Math.ceil(filteredStaff.length / displayParams.limit))
+  const paginatedStaff = useMemo(() => {
+    const start = (displayParams.page - 1) * displayParams.limit
+    return filteredStaff.slice(start, start + displayParams.limit)
+  }, [filteredStaff, displayParams.page, displayParams.limit])
 
   const handleDeactivate = async (member: User) => {
+    if (member.role === 'platform_admin') {
+      toast.error('Platform administrators cannot be removed', toastColor.error)
+      return
+    }
+    if (member.status?.toUpperCase() === 'INACTIVE') {
+      toast.info('Staff account is already inactive', toastColor.info)
+      return
+    }
     if (!window.confirm(`Deactivate access for ${member.email}?`)) return
-    setActioningId(member.id)
     try {
       await deleteStaff(member.id).unwrap()
       toast.success(`Platform account for ${member.email} deactivated`, toastColor.success)
@@ -92,8 +111,6 @@ export function AdminStaffView() {
     } catch (err) {
       const message = (err as { data?: { detail?: string } })?.data?.detail || 'Deactivation failed'
       toast.error(String(message), toastColor.error)
-    } finally {
-      setActioningId(null)
     }
   }
 
@@ -177,34 +194,8 @@ export function AdminStaffView() {
           </span>
         ),
       },
-      {
-        id: 'actions',
-        header: 'Actions',
-        headerClassName: 'text-right',
-        cellClassName: 'text-right',
-        cell: (member) => {
-          const isBusy = actioningId === member.id && isDeleting
-          const isInactive = member.status?.toUpperCase() === 'INACTIVE'
-          if (member.role === 'platform_admin' || isInactive) {
-            return <span className="font-mono text-[11px] text-slate-400">Protected</span>
-          }
-
-          return (
-            <button
-              type="button"
-              disabled={isBusy}
-              onClick={() => void handleDeactivate(member)}
-              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-800 transition-all hover:bg-rose-100 active:scale-[0.98] disabled:opacity-50"
-              title="Deactivate staff account"
-            >
-              <Trash2 className="h-3 w-3" />
-              <span>Deactivate</span>
-            </button>
-          )
-        },
-      },
     ],
-    [actioningId, isDeleting],
+    [],
   )
 
   return (
@@ -294,71 +285,104 @@ export function AdminStaffView() {
         />
       </div>
 
-      {/* Table Card */}
-      <Card
-        padding="none"
-        className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs"
-      >
-        {/* Filter Bar & Search */}
-        <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 p-3.5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-            {[
-              { id: 'all' as const, label: 'All Staff', count: stats.total },
-              { id: 'platform_admin' as const, label: 'Super Admins', count: stats.admins },
-              { id: 'platform_staff' as const, label: 'Support Agents', count: stats.support },
-            ].map((tab) => {
-              const isActive = roleFilter === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setRoleFilter(tab.id)}
-                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer active:scale-[0.98] ${
-                    isActive
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+      {/* Role Filter Tabs */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          {[
+            { id: 'all' as const, label: 'All Staff', count: stats.total },
+            { id: 'platform_admin' as const, label: 'Super Admins', count: stats.admins },
+            { id: 'platform_staff' as const, label: 'Support Agents', count: stats.support },
+          ].map((tab) => {
+            const isActive = displayParams.role === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setParams({ role: tab.id, page: 1 })
+                }}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer active:scale-[0.98] ${
+                  isActive
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
+                    isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-200/70 text-slate-600'
                   }`}
                 >
-                  <span>{tab.label}</span>
-                  <span
-                    className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
-                      isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-200/70 text-slate-600'
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="w-full sm:w-72">
-            <SearchInput
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search by name or email…"
-              className="w-full text-xs"
-            />
-          </div>
+                  {tab.count}
+                </span>
+              </button>
+            )
+          })}
         </div>
+        <span className="text-xs font-medium text-slate-500">
+          Showing <strong className="font-bold text-slate-900">{filteredStaff.length}</strong>{' '}
+          {filteredStaff.length === 1 ? 'member' : 'members'}
+        </span>
+      </div>
 
-        <AdminQueryState isLoading={isLoading} isError={isError} onRetry={() => void refetch()}>
-          {filteredStaff.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title="No staff accounts found"
-              description="Invite support agents and super administrators to manage the platform."
-            />
-          ) : (
-            <BasicDataGridTable
-              data={filteredStaff}
-              columns={columns}
-              showPagination={false}
-              showSearch={false}
-            />
-          )}
-        </AdminQueryState>
-      </Card>
+      <AdminQueryState isLoading={isLoading} isError={isError} onRetry={() => void refetch()}>
+        {staff.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="No staff accounts found"
+            description="Invite support agents and super administrators to manage the platform."
+            action={
+              <PrimaryButton
+                title="Invite first member"
+                size="sm"
+                fullWidth={false}
+                icon={<Plus className="h-4 w-4" />}
+                className="h-9.5 rounded-xl px-4 text-xs font-bold"
+                onClick={() => setIsOpen(true)}
+              />
+            }
+          />
+        ) : (
+          <BasicDataGridTable
+            data={paginatedStaff}
+            columns={columns}
+            currentPage={displayParams.page}
+            totalPages={totalPages}
+            totalItems={filteredStaff.length}
+            itemsPerPage={displayParams.limit}
+            onPageChange={(p) => setParam('page', p)}
+            onItemPerPageChange={(size) => {
+              setParams({ limit: size, page: 1 })
+            }}
+            showPagination={filteredStaff.length > 0}
+            showSearch={true}
+            searchPlaceholder="Search staff by name or email…"
+            initialSearchValue={displayParams.search}
+            onSearch={(val) => {
+              setParams({ search: val, page: 1 })
+            }}
+            showItemsPerPage={true}
+            showColumnSelector={true}
+            showActions={true}
+            onDelete={(member) => void handleDeactivate(member)}
+            refetch={() => void handleRefresh()}
+            isFetching={isLoading || isRefreshing}
+            customButtons={[
+              <PrimaryButton
+                key="invite-staff"
+                title="Invite Staff Member"
+                size="sm"
+                fullWidth={false}
+                icon={<Plus className="h-3.5 w-3.5" />}
+                className="h-9 rounded-xl px-4 text-xs font-bold shadow-xs transition-all active:scale-[0.98]"
+                onClick={() => setIsOpen(true)}
+              />,
+            ]}
+            tableClassName="border-slate-200/80"
+            headerClassName="bg-slate-50/70"
+          />
+        )}
+      </AdminQueryState>
 
       <AdminStaffFormModal
         open={isOpen}

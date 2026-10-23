@@ -23,9 +23,10 @@ async def list_commission_invoices(
     page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
     status: str | None = Query(default=None, description="Filter by status"),
     org_id: UUID | None = Query(default=None, description="Filter by organization"),
+    q: str | None = Query(default=None, description="Search query"),
 ) -> PageOut[OrgCommissionInvoiceOut]:
     _ = user
-    rows = await commission_billing_service.list_all_invoices(db, status=status, org_id=org_id)
+    rows = await commission_billing_service.list_all_invoices(db, status=status, org_id=org_id, q=q)
     items = [OrgCommissionInvoiceOut.model_validate(r) for r in rows]
     return paginate_items(items, page=page, page_size=page_size)
 

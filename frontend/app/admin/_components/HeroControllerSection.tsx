@@ -8,7 +8,6 @@ import {
   Image as ImageIcon,
   Info,
   Link2,
-  Loader2,
   RefreshCw,
   Save,
   Sparkles,
@@ -21,6 +20,7 @@ import Image from 'next/image'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { LoadingSpinner } from '@/components/loader/LoadingSpinner'
 import { Card, SearchableSelect } from '@/components/ui'
 import PrimaryButton from '@/components/ui/primary-button'
 import { toastColor } from '@/constant/toast-color'
@@ -366,10 +366,7 @@ export function HeroControllerSection({
             >
               {isUploading ? (
                 <div className="flex flex-col items-center py-4">
-                  <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
-                  <p className="mt-2 font-bold text-slate-800 text-xs">
-                    Uploading hero image to storage…
-                  </p>
+                  <LoadingSpinner size="lg" text="Uploading hero image to storage…" />
                   <p className="text-[11px] text-slate-400">Processing file</p>
                 </div>
               ) : heroForm.image_url ? (

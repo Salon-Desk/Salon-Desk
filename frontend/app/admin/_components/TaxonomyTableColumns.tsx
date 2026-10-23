@@ -1,23 +1,20 @@
 'use client'
 
-import { CheckCircle2, Copy, Edit2, Layers } from 'lucide-react'
+import { CheckCircle2, Copy, Layers } from 'lucide-react'
 import React from 'react'
 
 import { StatusBadge } from '@/components/badge'
-import { IconButton } from '@/components/ui'
 import type { ApiServiceCategory } from '@/types/api-org'
 import type { ColumnDefinition } from '@/types/table'
 
 interface TaxonomyColumnOptions {
   copiedId: string | null
   onCopyId: (id: string) => void
-  onEdit: (category: ApiServiceCategory) => void
 }
 
 export function getTaxonomyTableColumns({
   copiedId,
   onCopyId,
-  onEdit,
 }: TaxonomyColumnOptions): ColumnDefinition<ApiServiceCategory>[] {
   return [
     {
@@ -72,22 +69,6 @@ export function getTaxonomyTableColumns({
         <StatusBadge tone="emerald" size="sm">
           Active
         </StatusBadge>
-      ),
-    },
-    {
-      id: 'actions',
-      header: 'Action',
-      headerClassName: 'text-right',
-      cellClassName: 'text-right',
-      cell: (category) => (
-        <IconButton
-          aria-label="Edit category"
-          onClick={() => onEdit(category)}
-          className="h-8 w-8 rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 active:scale-95"
-          title="Edit category"
-        >
-          <Edit2 className="h-3.5 w-3.5" />
-        </IconButton>
       ),
     },
   ]

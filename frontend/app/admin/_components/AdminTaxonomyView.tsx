@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 
 import { StatCard } from '@/components/card'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
-import { Card, EmptyState, SearchInput } from '@/components/ui'
+import { EmptyState } from '@/components/ui'
 import PrimaryButton from '@/components/ui/primary-button'
 import { AdminQueryState } from '@/components/ui/query-state-view'
 import { toastColor } from '@/constant/toast-color'
@@ -41,7 +41,6 @@ export function AdminTaxonomyView() {
   const currentPage = displayParams.page
   const pageSize = displayParams.limit
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-  const settledSearch = typeof displayParams.search === 'string' ? displayParams.search : ''
 
   const [isOpen, setIsOpen] = useState(false)
   const [editing, setEditing] = useState<ApiServiceCategory | null>(null)
@@ -59,10 +58,6 @@ export function AdminTaxonomyView() {
       getTaxonomyTableColumns({
         copiedId,
         onCopyId: handleCopyId,
-        onEdit: (cat) => {
-          setEditing(cat)
-          setIsOpen(true)
-        },
       }),
     [copiedId],
   )
@@ -191,63 +186,46 @@ export function AdminTaxonomyView() {
         ) : null}
 
         {categories.length > 0 ? (
-          <Card
-            padding="none"
-            className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
-          >
-            <div className="flex flex-col justify-between gap-3 border-slate-100 border-b p-4 sm:flex-row sm:items-center">
-              <div>
-                <h2 className="font-bold text-slate-900 text-sm">
-                  Standardized Service Classifications
-                </h2>
-                <p className="text-slate-500 text-xs">
-                  Universal service categories available across all merchant salons
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <SearchInput
-                  value={displayParams.search}
-                  onChange={(val) => setParams({ search: val, page: 1 })}
-                  placeholder="Search categories…"
-                  className="w-48 text-xs sm:w-60"
-                />
-                <span className="shrink-0 rounded-lg border border-slate-200/70 bg-slate-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-slate-600">
-                  {totalItems} categories
-                </span>
-              </div>
-            </div>
-
-            {settledSearch.trim() && (
-              <div className="flex items-center justify-between border-b border-amber-200/60 bg-amber-50/50 px-4 py-2 text-xs text-amber-900">
-                <span>
-                  Filtering by: &ldquo;<strong>{settledSearch}</strong>&rdquo;
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setParams({ search: '', page: 1 })}
-                  className="cursor-pointer font-bold text-amber-800 hover:text-amber-950 hover:underline active:scale-[0.98]"
-                >
-                  Clear search
-                </button>
-              </div>
-            )}
-
-            <BasicDataGridTable
-              data={categories}
-              columns={columns}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              itemsPerPage={pageSize}
-              onPageChange={(page: number) => setParam('page', page)}
-              onItemPerPageChange={(size: number) => setParams({ limit: size, page: 1 })}
-              showPagination={totalItems > 0}
-              showSearch={false}
-              showItemsPerPage={true}
-              tableClassName="border-slate-200/80"
-              headerClassName="bg-slate-50/70"
-            />
-          </Card>
+          <BasicDataGridTable
+            data={categories}
+            columns={columns}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={pageSize}
+            onPageChange={(page: number) => setParam('page', page)}
+            onItemPerPageChange={(size: number) => setParams({ limit: size, page: 1 })}
+            showPagination={totalItems > 0}
+            showSearch={true}
+            searchPlaceholder="Search categories by name, code, or description…"
+            initialSearchValue={displayParams.search}
+            onSearch={(val) => setParams({ search: val, page: 1 })}
+            showItemsPerPage={true}
+            showColumnSelector={true}
+            showActions={true}
+            onEdit={(cat) => {
+              setEditing(cat)
+              setIsOpen(true)
+            }}
+            refetch={() => void refetch()}
+            isFetching={isLoading}
+            customButtons={[
+              <PrimaryButton
+                key="add-category"
+                title="Add Category"
+                size="sm"
+                fullWidth={false}
+                icon={<Plus className="h-3.5 w-3.5" />}
+                className="h-9 rounded-xl px-4 text-xs font-bold shadow-xs transition-all active:scale-[0.98]"
+                onClick={() => {
+                  setEditing(null)
+                  setIsOpen(true)
+                }}
+              />,
+            ]}
+            tableClassName="border-slate-200/80"
+            headerClassName="bg-slate-50/70"
+          />
         ) : null}
       </AdminQueryState>
 

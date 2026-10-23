@@ -1,11 +1,12 @@
 'use client'
 
-import { Building2, LayoutGrid, List } from 'lucide-react'
+import { Building2, LayoutGrid, List, PauseCircle, Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
 import { EmptyState, SegmentedControl } from '@/components/ui'
+import { Button } from '@/components/ui/button'
 import { Pagination } from '@/components/ui/pagination'
 import PrimaryButton from '@/components/ui/primary-button'
 import { AdminQueryState } from '@/components/ui/query-state-view'
@@ -142,16 +143,10 @@ export function AdminSalonsView() {
   const salonColumns = useMemo(
     () =>
       getSalonTableColumns({
-        onApprove: (org) => void handleApprove(org),
-        onSuspend: (org) => void handleSuspend(org),
-        onViewDetail: (org) => setSelectedOrg(org),
         onCopy: handleCopy,
         copiedKey,
-        actioningOrgId,
-        approving,
-        suspending,
       }),
-    [copiedKey, actioningOrgId, approving, suspending],
+    [copiedKey],
   )
 
   return (
@@ -180,8 +175,9 @@ export function AdminSalonsView() {
         searchQuery={displayParams.search}
         debouncedSearch={settledSearch}
         totalMatching={totalItems}
+        showSearch={viewMode === 'cards'}
         onFilterChange={(status) => setParams({ status, page: 1 })}
-        onSearchChange={(search) => setParam('search', search)}
+        onSearchChange={(search) => setParams({ search, page: 1 })}
         onResetFilters={handleResetFilters}
       />
 
@@ -206,8 +202,46 @@ export function AdminSalonsView() {
             onPageChange={(page) => setParam('page', page)}
             onItemPerPageChange={(size) => setParams({ limit: size, page: 1 })}
             showPagination={totalItems > 0}
-            showSearch={false}
+            showSearch={true}
+            searchPlaceholder="Search salon name, description, UUID…"
+            initialSearchValue={displayParams.search}
+            onSearch={(search) => setParams({ search, page: 1 })}
             showItemsPerPage={true}
+            showColumnSelector={true}
+            showActions={true}
+            onView={(org) => setSelectedOrg(org)}
+            renderRowActions={(org) => {
+              const isActioning = actioningOrgId === org.id
+              const isApproved = org.status === 'approved'
+
+              return !isApproved ? (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 transition-all duration-200 cursor-pointer"
+                  disabled={isActioning && approving}
+                  onClick={() => void handleApprove(org)}
+                  title="Approve salon"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span className="sr-only">Approve</span>
+                </Button>
+              ) : (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-all duration-200 cursor-pointer"
+                  disabled={isActioning && suspending}
+                  onClick={() => void handleSuspend(org)}
+                  title="Suspend salon"
+                >
+                  <PauseCircle className="h-3.5 w-3.5" />
+                  <span className="sr-only">Suspend</span>
+                </Button>
+              )
+            }}
+            tableClassName="border-slate-200/80"
+            headerClassName="bg-slate-50/70"
           />
         ) : (
           <div className="space-y-3.5">
