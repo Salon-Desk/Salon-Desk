@@ -19,6 +19,18 @@ router = APIRouter(prefix="/admin", tags=["platform"])
 # --- Platform staff ---
 
 
+@router.get("/staff", response_model=list[UserOut])
+async def list_staff(user: PlatformAdminOnly, db: DbSession) -> list[UserOut]:
+    _ = user
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.profile))
+        .where(User.role.in_([UserRole.PLATFORM_ADMIN, UserRole.PLATFORM_STAFF]))
+        .order_by(User.created_at.desc())
+    )
+    return [UserOut.model_validate(u) for u in result.scalars().all()]
+
+
 @router.post("/staff", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def register_staff(body: StaffCreate, user: PlatformAdminOnly, db: DbSession) -> UserOut:
     _ = user

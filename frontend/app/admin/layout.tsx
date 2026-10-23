@@ -11,7 +11,11 @@ import { Toast } from '@/components/ui'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { buildAdminCategoriesNavApiParams } from '@/lib/listing-params/admin-taxonomy-list-params'
 import type { AppDispatch } from '@/store'
-import { useGetAdminCategoriesQuery, useGetAdminDashboardQuery } from '@/store/api/platformApi'
+import {
+  useGetAdminCategoriesQuery,
+  useGetAdminDashboardQuery,
+  useGetAdminStaffQuery,
+} from '@/store/api/platformApi'
 import { logout, userSelector } from '@/store/authSlice'
 import type { PlatformUser } from '@/types'
 
@@ -31,6 +35,7 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
   const { data: categoriesData } = useGetAdminCategoriesQuery(buildAdminCategoriesNavApiParams(), {
     skip: skipAdminApi,
   })
+  const { data: staffData } = useGetAdminStaffQuery(undefined, { skip: skipAdminApi })
   const categories = categoriesData?.items ?? []
   const { message } = useAdminContext()
 
@@ -59,7 +64,7 @@ function AdminLayoutInner({ children }: { children: ReactNode }) {
               onCloseMobile={() => setIsMobileSidebarOpen(false)}
               organizationCount={dashboard?.total_organizations ?? 0}
               categoryCount={categories.length}
-              staffCount={0}
+              staffCount={staffData?.length ?? 0}
               pendingCrCount={dashboard?.pending_change_requests ?? 0}
               pendingReviewCount={dashboard?.pending_client_feedback ?? 0}
               pendingSalonCount={dashboard?.pending_organizations ?? 0}

@@ -1,6 +1,4 @@
-'use client'
-
-import { Check, Star, X } from 'lucide-react'
+import { Check, Eye, Star, X } from 'lucide-react'
 import React from 'react'
 
 import { StatusBadge } from '@/components/badge'
@@ -9,12 +7,14 @@ import type { ClientFeedbackItem } from '@/types/api-feedback'
 import type { ColumnDefinition } from '@/types/table'
 
 interface ReviewColumnOptions {
+  onViewDetail: (item: ClientFeedbackItem) => void
   onApprove: (item: ClientFeedbackItem) => void
   onReject: (item: ClientFeedbackItem) => void
   isProcessingId: string | null
 }
 
 export function getReviewTableColumns({
+  onViewDetail,
   onApprove,
   onReject,
   isProcessingId,
@@ -95,35 +95,48 @@ export function getReviewTableColumns({
       headerClassName: 'text-right',
       cellClassName: 'text-right',
       cell: (item) => {
-        if (item.status !== 'pending') {
-          return <span className="font-mono text-[11px] text-slate-400">Resolved</span>
-        }
         const isBusy = isProcessingId === item.id
+        const isPending = item.status === 'pending'
 
         return (
           <div className="flex items-center justify-end gap-1.5">
-            <PrimaryButton
-              title="Approve"
-              variant="success"
-              size="sm"
-              fullWidth={false}
-              icon={<Check className="h-3 w-3" />}
-              className="h-8 rounded-lg px-2.5 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
-              isLoading={isBusy}
-              isDisabled={isBusy}
-              onClick={() => onApprove(item)}
-            />
-            <PrimaryButton
-              title="Reject"
-              variant="danger"
-              size="sm"
-              fullWidth={false}
-              icon={<X className="h-3 w-3" />}
-              className="h-8 rounded-lg px-2.5 text-xs font-semibold transition-all active:scale-[0.98]"
-              isLoading={isBusy}
-              isDisabled={isBusy}
-              onClick={() => onReject(item)}
-            />
+            <button
+              type="button"
+              onClick={() => onViewDetail(item)}
+              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98]"
+              title="View full review"
+            >
+              <Eye className="h-3.5 w-3.5 text-slate-500" />
+              <span>Detail</span>
+            </button>
+            {isPending ? (
+              <>
+                <PrimaryButton
+                  title="Approve"
+                  variant="success"
+                  size="sm"
+                  fullWidth={false}
+                  icon={<Check className="h-3 w-3" />}
+                  className="h-8 rounded-lg px-2.5 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
+                  isLoading={isBusy}
+                  isDisabled={isBusy}
+                  onClick={() => onApprove(item)}
+                />
+                <PrimaryButton
+                  title="Reject"
+                  variant="danger"
+                  size="sm"
+                  fullWidth={false}
+                  icon={<X className="h-3 w-3" />}
+                  className="h-8 rounded-lg px-2.5 text-xs font-semibold transition-all active:scale-[0.98]"
+                  isLoading={isBusy}
+                  isDisabled={isBusy}
+                  onClick={() => onReject(item)}
+                />
+              </>
+            ) : (
+              <span className="font-mono text-[11px] text-slate-400 pl-1">Resolved</span>
+            )}
           </div>
         )
       },

@@ -1,5 +1,6 @@
 'use client'
 
+import { Eye } from 'lucide-react'
 import React from 'react'
 
 import { StatusBadge } from '@/components/badge'
@@ -26,6 +27,7 @@ function invoiceTone(status: string): 'slate' | 'amber' | 'emerald' | 'rose' | '
 
 interface InvoiceColumnOptions {
   orgNameById: Map<string, string>
+  onViewDetail: (inv: OrgCommissionInvoice) => void
   onIssue: (inv: OrgCommissionInvoice) => void
   onVoid: (inv: OrgCommissionInvoice) => void
   issuing: boolean
@@ -34,6 +36,7 @@ interface InvoiceColumnOptions {
 
 export function getAdminInvoiceTableColumns({
   orgNameById,
+  onViewDetail,
   onIssue,
   onVoid,
   issuing,
@@ -44,7 +47,7 @@ export function getAdminInvoiceTableColumns({
       id: 'org',
       header: 'Organization',
       cell: (inv) => (
-        <span className="font-medium text-slate-900 text-xs">
+        <span className="font-semibold text-slate-900 text-xs">
           {orgNameById.get(inv.org_id) || inv.org_id.slice(0, 8)}
         </span>
       ),
@@ -90,12 +93,21 @@ export function getAdminInvoiceTableColumns({
       cellClassName: 'text-right',
       cell: (inv) => (
         <div className="flex items-center justify-end space-x-2">
+          <button
+            type="button"
+            onClick={() => onViewDetail(inv)}
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98]"
+            title="View invoice breakdown"
+          >
+            <Eye className="h-3.5 w-3.5 text-slate-500" />
+            <span>Detail</span>
+          </button>
           {inv.status?.toUpperCase() === 'DRAFT' ? (
             <button
               type="button"
               disabled={issuing}
               onClick={() => onIssue(inv)}
-              className="cursor-pointer rounded-md px-2 py-1 font-semibold text-sky-700 text-xs transition-all hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98] disabled:opacity-50"
+              className="cursor-pointer rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 font-semibold text-sky-800 text-xs transition-all hover:bg-sky-100 active:scale-[0.98] disabled:opacity-50"
             >
               Issue
             </button>
@@ -105,7 +117,7 @@ export function getAdminInvoiceTableColumns({
               type="button"
               disabled={voiding}
               onClick={() => onVoid(inv)}
-              className="cursor-pointer rounded-md px-2 py-1 font-semibold text-rose-700 text-xs transition-all hover:bg-rose-50 hover:text-rose-900 active:scale-[0.98] disabled:opacity-50"
+              className="cursor-pointer rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 font-semibold text-rose-800 text-xs transition-all hover:bg-rose-100 active:scale-[0.98] disabled:opacity-50"
             >
               Void
             </button>

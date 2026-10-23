@@ -1,11 +1,14 @@
 'use client'
 
-import { Clock, Sliders } from 'lucide-react'
-import { useMemo } from 'react'
+import { CheckCircle2, Clock, RefreshCw, Sliders, Sparkles, XCircle } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
+import { StatCard } from '@/components/card'
 import { Badge, Card, EmptyState, SearchInput } from '@/components/ui'
 import { Pagination } from '@/components/ui/pagination'
 import { AdminQueryState } from '@/components/ui/query-state-view'
+import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import { useListingParams } from '@/hooks/useListingParams'
@@ -32,6 +35,7 @@ export function AdminRequestsView() {
     AdminRequestsListParams,
     typeof AdminRequestsListParamsSchema
   >(AdminRequestsListParamsSchema)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useAgentUiActions({
     onFilterPolicyRequests: () => {
@@ -50,6 +54,16 @@ export function AdminRequestsView() {
   } = useGetAdminChangeRequestsQuery(params, {
     skip: skipAdminApi,
   })
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await refetch()
+      toast.success('Governance queue updated', toastColor.info)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   const paginatedRequests = requestsData?.items ?? []
   const totalItems = requestsData?.total ?? paginatedRequests.length
@@ -94,18 +108,85 @@ export function AdminRequestsView() {
   )
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 animate-in fade-in duration-300">
-      <div>
-        <h1 className="font-extrabold text-xl text-slate-900 tracking-tight sm:text-2xl">
-          Change Request Governance
-        </h1>
-        <p className="text-xs text-slate-500">
-          Review, approve, and audit merchant policy amendments and PayPal payout configuration
-          changes.
-        </p>
+    <div className="mx-auto w-full max-w-6xl space-y-6 pb-12 animate-in fade-in duration-300">
+      {/* Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-amber-50/25 to-amber-100/20 p-6 shadow-xs backdrop-blur-md sm:p-8">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
+        <div className="pointer-events-none absolute -left-12 -bottom-12 h-44 w-44 rounded-full bg-amber-200/20 blur-3xl" />
+
+        <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-center">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-900 shadow-2xs">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+              </span>
+              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+              <span>Merchant Governance · Policy &amp; Payout Amendments</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-extrabold text-slate-900 text-2xl tracking-tight sm:text-3xl">
+                Change Request Governance
+              </h1>
+              <span className="rounded-full bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white shadow-2xs">
+                {counts.PENDING} Actionable
+              </span>
+            </div>
+
+            <p className="max-w-2xl text-xs text-slate-600 sm:text-sm leading-relaxed">
+              Review, approve, and audit salon merchant policy updates (free cancellation windows,
+              no-show penalties) and PayPal payout configuration changes.
+            </p>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-xs backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={() => void handleRefresh()}
+              disabled={isRefreshing}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 font-semibold text-slate-700 text-xs shadow-2xs transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.94] disabled:opacity-50"
+              title="Refresh requests"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 text-slate-500 ${isRefreshing ? 'animate-spin text-amber-600' : ''}`}
+              />
+              <span>Sync</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+      {/* 3 KPI Summary Cards */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        <StatCard
+          label="Pending Review"
+          value={String(counts.PENDING)}
+          footnote="Requires platform administrator decision"
+          icon={Clock}
+          tone={counts.PENDING > 0 ? 'amber' : 'slate'}
+          className="hover:border-amber-200 hover:shadow-xs transition-all"
+        />
+        <StatCard
+          label="Approved Policies"
+          value={String(counts.APPROVED)}
+          footnote="Merged into active salon policies"
+          icon={CheckCircle2}
+          tone="emerald"
+          className="hover:border-emerald-200 hover:shadow-xs transition-all"
+        />
+        <StatCard
+          label="Rejected Amendments"
+          value={String(counts.REJECTED)}
+          footnote="Declined compliance changes"
+          icon={XCircle}
+          tone="rose"
+          className="hover:border-rose-200 hover:shadow-xs transition-all"
+        />
+      </div>
+
+      {/* Filter Bar & Search */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs">
         <SearchInput
           value={displayParams.search}
           onChange={(val) => setParams({ search: val, page: 1 })}
@@ -123,7 +204,7 @@ export function AdminRequestsView() {
                 key={key}
                 type="button"
                 onClick={() => setParams({ status: key, page: 1 })}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer active:scale-[0.98] ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold capitalize transition-all cursor-pointer active:scale-[0.98] ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'

@@ -28,6 +28,8 @@ export const ROUTES = {
   adminCommission: '/admin/commission',
   adminTaxonomy: '/admin/taxonomy',
   adminStaff: '/admin/staff',
+  adminReviews: '/admin/reviews',
+  adminCuration: '/admin/curation',
   adminProfile: '/admin/profile',
   book: '/client/book',
   org: '/org',

@@ -1,4 +1,4 @@
-import { CheckCircle2, Copy, PauseCircle, Sparkles } from 'lucide-react'
+import { CheckCircle2, Copy, Eye, PauseCircle, Sparkles } from 'lucide-react'
 
 import { StatusBadge } from '@/components/badge/StatusBadge'
 import PrimaryButton from '@/components/ui/primary-button'
@@ -11,6 +11,7 @@ import { SalonAvatar } from './SalonAvatar'
 interface SalonTableColumnsProps {
   onApprove: (org: ApiOrganization) => void
   onSuspend: (org: ApiOrganization) => void
+  onViewDetail: (org: ApiOrganization) => void
   onCopy: (text: string, label: string) => void
   copiedKey: string | null
   actioningOrgId: string | null
@@ -21,6 +22,7 @@ interface SalonTableColumnsProps {
 export function getSalonTableColumns({
   onApprove,
   onSuspend,
+  onViewDetail,
   onCopy,
   copiedKey,
   actioningOrgId,
@@ -104,6 +106,15 @@ export function getSalonTableColumns({
 
         return (
           <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => onViewDetail(org)}
+              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98]"
+              title="View salon details"
+            >
+              <Eye className="h-3.5 w-3.5 text-slate-500" />
+              <span>Detail</span>
+            </button>
             {!isApproved ? (
               <PrimaryButton
                 title={isActioning && approving ? 'Approving…' : 'Approve'}

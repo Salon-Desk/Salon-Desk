@@ -204,6 +204,14 @@ export const platformApi = baseApi.injectEndpoints({
       invalidatesTags: ['admin'],
     }),
 
+    getAdminStaff: builder.query<User[], void>({
+      query: () => ({
+        url: '/api/v1/admin/staff',
+        method: 'GET',
+      }),
+      providesTags: ['admin', 'user'],
+    }),
+
     createAdminStaff: builder.mutation<User, CreateStaffRequest>({
       query: (data) => ({
         url: '/api/v1/admin/staff',
@@ -382,6 +390,7 @@ export const {
   useGetAdminCommissionsQuery,
   useCreateAdminCommissionMutation,
   useUpdateAdminCommissionMutation,
+  useGetAdminStaffQuery,
   useCreateAdminStaffMutation,
   useDeleteAdminStaffMutation,
   useGetAdminCommissionInvoicesQuery,

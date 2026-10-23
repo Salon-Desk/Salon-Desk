@@ -28,6 +28,7 @@ import type { ApiOrganization } from '@/types/api-org'
 import type { SalonCounts } from '@/types/organization'
 
 import { SalonCard } from './SalonCard'
+import { SalonDetailsModal } from './SalonDetailsModal'
 import { SalonFilterBar } from './SalonFilterBar'
 import { SalonHeader } from './SalonHeader'
 import { SalonKpiGrid } from './SalonKpiGrid'
@@ -43,6 +44,7 @@ export function AdminSalonsView() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [actioningOrgId, setActioningOrgId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
+  const [selectedOrg, setSelectedOrg] = useState<ApiOrganization | null>(null)
 
   useAgentUiActions({
     onAction: (payload) => {
@@ -142,6 +144,7 @@ export function AdminSalonsView() {
       getSalonTableColumns({
         onApprove: (org) => void handleApprove(org),
         onSuspend: (org) => void handleSuspend(org),
+        onViewDetail: (org) => setSelectedOrg(org),
         onCopy: handleCopy,
         copiedKey,
         actioningOrgId,
@@ -218,6 +221,7 @@ export function AdminSalonsView() {
                 copiedKey={copiedKey}
                 onApprove={handleApprove}
                 onSuspend={handleSuspend}
+                onViewDetail={(item) => setSelectedOrg(item)}
                 onCopy={handleCopy}
               />
             ))}
@@ -263,6 +267,18 @@ export function AdminSalonsView() {
           />
         )}
       </AdminQueryState>
+
+      <SalonDetailsModal
+        org={selectedOrg}
+        open={Boolean(selectedOrg)}
+        onClose={() => setSelectedOrg(null)}
+        onApprove={(org) => void handleApprove(org)}
+        onSuspend={(org) => void handleSuspend(org)}
+        onCopy={handleCopy}
+        copiedKey={copiedKey}
+        approving={approving}
+        suspending={suspending}
+      />
     </div>
   )
 }
