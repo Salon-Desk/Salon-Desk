@@ -321,6 +321,45 @@ async def test_chat_booking_handler():
     mock_db.execute.return_value = srv_res
     mock_db.get.return_value = mock_org
 
+    # 0. When neither time nor stylist is specified, asks for preferred date and time
+    mock_llm.chat.return_value = json.dumps(
+        {
+            "action": "book",
+            "service_query": "Balayage",
+            "preferred_time": None,
+            "stylist_query": None,
+            "notes": None,
+        }
+    )
+    with patch(
+        "app.ai.chat_booking.get_organization_stylists",
+        new_callable=AsyncMock,
+        return_value=[{"display_name": "Sarah", "id": "00000000-0000-0000-0000-000000000099"}],
+    ):
+        handled, reply, confirmed = await try_handle_chat_booking(
+            mock_db,
+            mock_llm,
+            message="Book Balayage at Selam Salon",
+            history=[],
+            user=mock_client,
+        )
+        assert handled is True
+        assert confirmed is not None
+        assert confirmed.get("needs_time") is True
+        assert confirmed.get("needs_stylist") is True
+        assert "date and time" in reply.lower()
+        assert "stylists" in confirmed
+
+    # 1. When time is specified but stylist is not
+    mock_llm.chat.return_value = json.dumps(
+        {
+            "action": "book",
+            "service_query": "Balayage",
+            "preferred_time": "2026-10-20T14:00:00Z",
+            "stylist_query": None,
+            "notes": "Test chat booking",
+        }
+    )
     with patch(
         "app.ai.chat_booking.get_organization_stylists",
         new_callable=AsyncMock,

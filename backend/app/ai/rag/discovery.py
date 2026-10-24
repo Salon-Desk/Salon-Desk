@@ -13,7 +13,12 @@ from app.ai.rag.hydration import (
     search_nearby_services,
     search_services_by_keywords,
 )
-from app.ai.rag.recommendations import is_salon_hunt, is_service_request, select_recommendations
+from app.ai.rag.recommendations import (
+    is_salon_hunt,
+    is_service_request,
+    select_recommendations,
+    wants_more_recommendations,
+)
 
 _NEARBY_HINTS = ("near", "closest", "nearby", "location", "close to", "around")
 _ORG_HINTS = ("salon", "salons", "org", "place")
@@ -159,7 +164,7 @@ async def collect_client_cards(
     organizations = _filter_organizations(organizations, recommendations, rec_limit)
 
     user_wants_salons = is_salon_hunt(query)
-    user_wants_services = is_service_request(query) or intent == "booking"
+    user_wants_services = is_service_request(query) or wants_more_recommendations(query)
     user_wants_stylists = is_stylist_request(query)
 
     response_stylists: list[StylistRecommendation] = []
@@ -177,8 +182,6 @@ async def collect_client_cards(
         return recommendations, [], [], response_stylists
     if user_wants_salons:
         return recommendations, [], organizations[:rec_limit], []
-    if recommendations:
+    if user_wants_services and recommendations:
         return recommendations, recommendations, [], []
-    if organizations:
-        return recommendations, [], organizations[:rec_limit], []
     return recommendations, [], [], []

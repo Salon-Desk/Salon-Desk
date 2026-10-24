@@ -83,6 +83,7 @@ async def chat(
             booking_ui_act_dict = confirmed_info.pop("ui_action", None) if confirmed_info else None
             needs_auth = confirmed_info.pop("needs_auth", False) if confirmed_info else False
             needs_stylist = confirmed_info.pop("needs_stylist", False) if confirmed_info else False
+            needs_time = confirmed_info.pop("needs_time", False) if confirmed_info else False
             stylists = confirmed_info.pop("stylists", None) if confirmed_info else None
             raw_recs = confirmed_info.pop("recommendations", None) if confirmed_info else None
 
@@ -109,7 +110,11 @@ async def chat(
                 intent="booking",
                 confirmed_booking=(
                     confirmed_info
-                    if confirmed_info and not needs_auth and not needs_stylist and not raw_recs
+                    if confirmed_info
+                    and not needs_auth
+                    and not needs_stylist
+                    and not needs_time
+                    and not raw_recs
                     else None
                 ),
                 payment_link=confirmed_info.get("payment_link") if confirmed_info else None,

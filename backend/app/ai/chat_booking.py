@@ -28,26 +28,85 @@ logger = logging.getLogger("salondesk.ai.chat_booking")
 
 BOOKING_INTENT_PHRASES = (
     "book",
+    "booking",
     "reserve",
+    "reservation",
     "appointment",
     "schedule",
-    "confirm booking",
+    "confirm",
+    "confirming",
+    "confirmation",
+    "lock in",
+    "lock that in",
     "hold with paypal",
     "haircut",
+    "hair cut",
+    "fade",
     "braid",
+    "braids",
     "manicure",
     "pedicure",
     "facial",
+    "massage",
+    "swedish massage",
+    "deep tissue",
+    "spa",
+    "waxing",
+    "balayage",
+    "color",
+    "treatment",
     "salon",
     "stylist",
+)
+
+ASSISTANT_BOOKING_PROMPTS = (
+    "stylist",
+    "appointment",
+    "reserve",
+    "reservation",
+    "slot",
+    "date and time",
+    "what date",
+    "what time",
+    "when would you like",
+    "lock that in",
+    "lock in",
+    "book with",
+    "would you like to book",
+    "confirm",
+    "booking",
+    "opening tomorrow",
+    "great choice!",
+)
+
+USER_BOOKING_CONTINUATIONS = (
+    "yes",
+    "yes please",
+    "sure",
+    "ok",
+    "okay",
+    "please",
+    "tomorrow",
+    "today",
+    "morning",
+    "afternoon",
+    "evening",
+    "pm",
+    "am",
+    "lock it in",
+    "lock that in",
+    "sounds good",
+    "go ahead",
+    "do it",
+    "perfect",
 )
 
 _BOOKING_EXTRACT_PROMPT = """You extract booking requests from a user chat message and recent conversation.
 Return ONLY a JSON object with:
 - "action": "book" | "confirm" | "none"
-- "service_query": string or null (e.g. "Haircut", "Fade", "Balayage", "Braids", "Manicure")
-- "preferred_time": string or null (ISO datetime or human string like "tomorrow at 2pm", "Friday at 10am")
-- "stylist_query": string or null (e.g. "Sarah", "Alex", "any", "anyone", "any available stylist", "no preference", or null if not yet mentioned)
+- "service_query": string or null (e.g. "Haircut", "Fade", "Balayage", "Braids", "Manicure", "Swedish Massage")
+- "preferred_time": string or null (ISO 8601 formatted datetime string like "2026-10-25T14:00:00Z" calculated relative to Current Date/Time, or null if the user has NOT specified a date or time yet)
+- "stylist_query": string or null (e.g. "Sarah", "Alex", "Yared Desta", "any", "anyone", "any available stylist", "no preference", or null if not yet mentioned)
 - "client_email": string or null (e.g. "user@example.com" if mentioned in the message or recent conversation, otherwise null)
 - "notes": string or null
 
@@ -55,9 +114,12 @@ Rules:
 - "book": User wants to book or is continuing a booking (e.g. picking a time, choosing a stylist, confirming service).
 - "confirm": User explicitly wants to confirm an existing pending booking or finalize a hold.
 - "none": User is just asking questions, browsing, or greeting.
-- If the user specifies or selects a stylist (e.g. 'with Sarah', 'Sarah is fine', 'any stylist', 'anyone', 'any available'), capture it in "stylist_query".
-- If the user previously mentioned service and time, and is now replying with a stylist (or "any"), keep the service_query and preferred_time from context.
+- ALWAYS carry over service_query, stylist_query, and preferred_time from recent conversation if they were already identified in previous turns.
+- If the user provides a time (e.g. 'tomorrow at 2 pm'), set "preferred_time" to its ISO 8601 datetime based on Current Date/Time, while keeping the service_query and stylist_query from context.
+- If the user specifies or selects a stylist (e.g. 'with Yared Desta', 'Yared Desta', 'any stylist'), capture it in "stylist_query", while keeping service_query and preferred_time from context.
+- If the user replies with 'yes', 'yes please', 'sounds good', 'lock it in', 'confirm', or agrees to book, keep action="book" (or "confirm" if pending), and preserve the service_query, preferred_time, and stylist_query from context.
 - If the user has NOT specified any preference for a stylist yet, set "stylist_query" to null.
+- If the user has NOT specified a date or time yet, set "preferred_time" to null. DO NOT assume or invent a date or time.
 - If the user provided or answers with their email address, capture it in "client_email".
 """
 
@@ -69,12 +131,23 @@ def mentions_booking(message: str, history: list[ChatMessage] | None = None) -> 
     lowered = message.lower().strip()
     if any(phrase in lowered for phrase in BOOKING_INTENT_PHRASES):
         return True
+
     if history and len(history) > 0:
-        last_turns = [m for m in history if m.role == "assistant"]
-        if last_turns:
-            last_content = last_turns[-1].content.lower()
-            if any(w in last_content for w in ("stylist", "appointment", "reserve", "slot")):
+        recent_assistant_turns = [m for m in history[-4:] if m.role == "assistant"]
+        assistant_was_booking = any(
+            any(hint in turn.content.lower() for hint in ASSISTANT_BOOKING_PROMPTS)
+            for turn in recent_assistant_turns
+        )
+        if assistant_was_booking:
+            if any(term in lowered for term in USER_BOOKING_CONTINUATIONS):
                 return True
+            if re.search(r"\b\d{1,2}(?::\d{2})?\s*(?:am|pm)?\b", lowered):
+                return True
+            if "@" in lowered:
+                return True
+            if len(lowered.split()) <= 4:
+                return True
+
     return False
 
 
@@ -95,17 +168,49 @@ def _extract_json(text: str) -> dict[str, Any] | None:
         return None
 
 
-def _parse_starts_at(preferred_time: str | None) -> datetime:
-    if preferred_time:
-        try:
-            dt = datetime.fromisoformat(preferred_time.replace("Z", "+00:00"))
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=UTC)
-            return dt
-        except ValueError:
-            pass
-    tomorrow = datetime.now(UTC) + timedelta(days=1)
-    return tomorrow.replace(hour=14, minute=0, second=0, microsecond=0)
+def _parse_starts_at(preferred_time: str | None) -> datetime | None:
+    if not preferred_time or not preferred_time.strip():
+        return None
+    cleaned = preferred_time.strip()
+    try:
+        dt = datetime.fromisoformat(cleaned.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=UTC)
+        return dt
+    except ValueError:
+        pass
+
+    try:
+        from dateutil import parser
+
+        dt = parser.parse(cleaned)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=UTC)
+        return dt
+    except Exception:
+        pass
+
+    low = cleaned.lower()
+    now = datetime.now(UTC)
+    base_day = now
+    if "tomorrow" in low:
+        base_day = now + timedelta(days=1)
+    elif "today" in low:
+        base_day = now
+
+    time_match = re.search(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", low)
+    if time_match:
+        h = int(time_match.group(1))
+        m = int(time_match.group(2) or 0)
+        meridiem = time_match.group(3)
+        if meridiem == "pm" and h < 12:
+            h += 12
+        elif meridiem == "am" and h == 12:
+            h = 0
+        hour, minute = h, m
+        return base_day.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+    return None
 
 
 async def _extract_booking_action(
@@ -119,10 +224,11 @@ async def _extract_booking_action(
         for m in history[-6:]:
             context_lines.append(f"{m.role.capitalize()}: {m.content}")
     context_str = "\n".join(context_lines)
+    now_str = datetime.now(UTC).strftime("%A, %Y-%m-%d %H:%M UTC")
     user_prompt = (
-        f"Recent Conversation:\n{context_str}\n\nLatest User Message: {message}"
+        f"Current Date/Time: {now_str}\n\nRecent Conversation:\n{context_str}\n\nLatest User Message: {message}"
         if context_str
-        else f"Latest User Message: {message}"
+        else f"Current Date/Time: {now_str}\n\nLatest User Message: {message}"
     )
     messages = [
         {"role": "system", "content": _BOOKING_EXTRACT_PROMPT},
@@ -309,11 +415,53 @@ async def _book_requested_service(
     starts_at = _parse_starts_at(parsed.get("preferred_time"))
     org = await db.get(Organization, service.organization_id)
     org_name = org.name if org else "Salon"
-    time_str = starts_at.strftime("%A, %b %d at %I:%M %p")
-
     stylist_query = parsed.get("stylist_query")
+
+    stylists = await get_organization_stylists(db, service.organization_id)
+    stylist_cards = [
+        {
+            "id": "any",
+            "name": "Any available stylist",
+            "organization_name": org_name,
+            "role": "Fastest appointment",
+            "is_any": True,
+        }
+    ]
+    for s in stylists:
+        if s.get("display_name"):
+            stylist_cards.append(
+                {
+                    "id": str(s["id"]),
+                    "name": s["display_name"],
+                    "organization_name": org_name,
+                    "role": s.get("role") or "Stylist",
+                    "picture": s.get("picture"),
+                    "bio": ", ".join(s.get("specialties", [])) if s.get("specialties") else None,
+                    "rating": float(s.get("rating_avg", 0.0)) if s.get("rating_avg") else None,
+                    "is_any": False,
+                }
+            )
+
+    # 1. Missing time and missing stylist (e.g. user selected service card)
+    if starts_at is None and not stylist_query:
+        reply = (
+            f"Great choice! For {service.name} at {org_name}, what date and time would you like to come in? "
+            "You can also pick your preferred stylist below, or choose 'Any available stylist'."
+        )
+        return True, reply, {"stylists": stylist_cards, "needs_time": True, "needs_stylist": True}
+
+    # 2. Missing time, but stylist is chosen
+    if starts_at is None and stylist_query:
+        _s_id, resolved_stylist = await resolve_stylist(db, service.organization_id, stylist_query)
+        reply = (
+            f"Great! What date and time would you like to book {service.name} with {resolved_stylist} at {org_name}? "
+            "(e.g. tomorrow at 2 PM, Friday at 10 AM, or any time that works for you)"
+        )
+        return True, reply, {"needs_time": True}
+
+    # 3. Time is specified, but stylist is not chosen
+    time_str = starts_at.strftime("%A, %b %d at %I:%M %p")
     if not stylist_query:
-        stylists = await get_organization_stylists(db, service.organization_id)
         stylist_names = [s.get("display_name") for s in stylists if s.get("display_name")]
         if stylist_names:
             stylist_options = ", ".join(stylist_names)
@@ -327,31 +475,6 @@ async def _book_requested_service(
                 f"Great choice! For {service.name} at {org_name} on {time_str}, "
                 "would you like to request a specific stylist, or book with any available stylist?"
             )
-        stylist_cards = [
-            {
-                "id": "any",
-                "name": "Any available stylist",
-                "organization_name": org_name,
-                "role": "Fastest appointment",
-                "is_any": True,
-            }
-        ]
-        for s in stylists:
-            if s.get("display_name"):
-                stylist_cards.append(
-                    {
-                        "id": str(s["id"]),
-                        "name": s["display_name"],
-                        "organization_name": org_name,
-                        "role": s.get("role") or "Stylist",
-                        "picture": s.get("picture"),
-                        "bio": ", ".join(s.get("specialties", []))
-                        if s.get("specialties")
-                        else None,
-                        "rating": float(s.get("rating_avg", 0.0)) if s.get("rating_avg") else None,
-                        "is_any": False,
-                    }
-                )
         return True, reply, {"stylists": stylist_cards, "needs_stylist": True}
 
     stylist_id, resolved_stylist = await resolve_stylist(db, service.organization_id, stylist_query)
