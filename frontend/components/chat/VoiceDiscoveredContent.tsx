@@ -23,7 +23,9 @@ import type {
 } from '@/components/chat/useAgentChat'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
+import { formatUsd } from '@/lib/format'
 import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
+import { cn } from '@/lib/utils'
 
 export interface PaymentLinkData {
   bookingId: string
@@ -426,7 +428,7 @@ export function VoiceDiscoveredContent({
                         src={st.picture}
                         alt={st.name}
                         fill
-                        unoptimized={shouldUnoptimizeImage(st.picture)}
+                        unoptimized={shouldUnoptimizedImage(st.picture)}
                         sizes="44px"
                         className="object-cover"
                       />
