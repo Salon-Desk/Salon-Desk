@@ -26,7 +26,7 @@ import type {
 import { Checkbox } from '@/components/ui/checkbox'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import { formatUsd } from '@/lib/format'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import { cn } from '@/lib/utils'
 import type { RootState } from '@/store'
 
@@ -54,7 +54,7 @@ export function StylistCard({
             src={stylist.picture}
             alt={stylist.name}
             fill
-            unoptimized={shouldUnoptimizeImage(stylist.picture)}
+            unoptimized={shouldUnoptimizedImage(stylist.picture)}
             sizes="44px"
             className="object-cover"
           />
