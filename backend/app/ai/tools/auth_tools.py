@@ -19,12 +19,43 @@ logger = logging.getLogger("salondesk.ai.auth_tools")
 def build_auth_tools(
     session_factory: async_sessionmaker[AsyncSession],
     on_auth_success: Callable[[dict[str, Any]], Any] | None = None,
+    on_ui_action: Callable[[dict[str, Any]], Any] | None = None,
 ):
     """Return LiveKit ``@function_tool`` callables for voice/chat login and sign-up."""
     try:
         from livekit.agents import function_tool
     except ImportError as exc:  # pragma: no cover
         raise RuntimeError("livekit-agents is required for voice tools") from exc
+
+    @function_tool()
+    async def open_login_modal(view: str = "sign-in") -> str:
+        """Open the secure sign-in or sign-up modal on the user's screen.
+        Call this when the user needs or asks to log in or create an account.
+        NEVER ask the user for their password over voice — call this tool instead.
+        view must be 'sign-in' or 'sign-up'.
+        """
+        modal_view = (
+            "sign-up"
+            if (view or "").lower().strip() in ("sign-up", "signup", "register", "create account")
+            else "sign-in"
+        )
+        label = "Create Account" if modal_view == "sign-up" else "Sign In"
+        payload = {
+            "type": "ui_action",
+            "action": "open_auth_modal",
+            "target": modal_view,
+            "label": label,
+        }
+        if on_ui_action:
+            try:
+                res = on_ui_action(payload)
+                if hasattr(res, "__await__"):
+                    await res
+            except Exception as exc:
+                logger.warning("on_ui_action callback failed: %s", exc)
+        return (
+            f"Opened the {label} modal on the user's screen so they can securely enter credentials."
+        )
 
     @function_tool()
     async def user_login(email: str, password: str) -> str:
@@ -184,4 +215,4 @@ def build_auth_tools(
                     }
                 )
 
-    return [user_login, user_signup]
+    return [open_login_modal, user_login, user_signup]

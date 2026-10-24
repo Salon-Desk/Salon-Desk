@@ -38,28 +38,18 @@ def parse_starts_at(preferred_time: str | None) -> datetime:
 
 
 async def resolve_client(db: AsyncSession, client_email: str | None = None) -> User | None:
-    """Resolve a client by email, with fallbacks to demo/default client."""
+    """Resolve a client by email. Returns None if client_email is missing or not registered."""
     if client_email:
         res = await db.execute(
-            select(User).where(User.email == client_email.strip().lower()).limit(1)
+            select(User)
+            .where(
+                User.email == client_email.strip().lower(),
+                User.role == UserRole.CLIENT,
+            )
+            .limit(1)
         )
-        client = res.scalar_one_or_none()
-        if client:
-            return client
-
-    # Default to demo client
-    res = await db.execute(
-        select(User)
-        .where(User.email == "client@example.com", User.role == UserRole.CLIENT)
-        .limit(1)
-    )
-    client = res.scalar_one_or_none()
-    if client:
-        return client
-
-    # Fallback to any active client
-    res = await db.execute(select(User).where(User.role == UserRole.CLIENT).limit(1))
-    return res.scalar_one_or_none()
+        return res.scalar_one_or_none()
+    return None
 
 
 async def resolve_service(db: AsyncSession, service_query: str | None = None) -> Service | None:
@@ -130,11 +120,58 @@ async def resolve_organization(
     return res.scalar_one_or_none()
 
 
+async def get_organization_stylists(db: AsyncSession, org_id: UUID) -> list[dict]:
+    """Get active stylists/staff for an organization."""
+    try:
+        from app.services import feedback_service
+
+        return await feedback_service.list_catalog_staff(db, org_id)
+    except Exception as exc:
+        logger.warning("Could not list stylists for org %s: %s", org_id, exc)
+        return []
+
+
+async def resolve_stylist(
+    db: AsyncSession,
+    org_id: UUID,
+    stylist_query: str | None = None,
+) -> tuple[UUID | None, str]:
+    """Resolve stylist by name or return (None, 'Any available stylist')."""
+    if not stylist_query:
+        return None, "Any available stylist"
+    cleaned = stylist_query.strip().lower()
+    if cleaned in (
+        "any",
+        "anyone",
+        "any stylist",
+        "any available",
+        "any available stylist",
+        "no preference",
+        "none",
+    ):
+        return None, "Any available stylist"
+
+    staff_list = await get_organization_stylists(db, org_id)
+    for staff in staff_list:
+        display = staff.get("display_name", "").lower()
+        if cleaned in display or display in cleaned:
+            return staff["id"], staff["display_name"]
+    try:
+        parsed_id = UUID(stylist_query.strip())
+        for staff in staff_list:
+            if staff["id"] == parsed_id:
+                return staff["id"], staff["display_name"]
+    except ValueError:
+        pass
+    return None, "Any available stylist"
+
+
 def build_booking_payload(
     booking: Booking,
     service: Service,
     org: Organization | None,
     starts_at: datetime,
+    stylist_name: str | None = None,
 ) -> dict[str, Any]:
     """Build a standardized booking payload for callbacks."""
     formatted_time = starts_at.strftime("%A, %b %d at %I:%M %p")
@@ -147,6 +184,7 @@ def build_booking_payload(
         "service_name": service.name,
         "organization_name": org_name,
         "organization_id": str(service.organization_id),
+        "stylist_name": stylist_name or "Any available stylist",
         "starts_at": starts_at.isoformat(),
         "formatted_time": formatted_time,
         "total_price": str(booking.total_price),

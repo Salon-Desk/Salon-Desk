@@ -43,14 +43,34 @@ export interface AgentOrganizationRecommendation {
   distanceKm?: number | null
 }
 
+export interface AgentStylistRecommendation {
+  id: string
+  name: string
+  organizationName?: string | null
+  role?: string | null
+  picture?: string | null
+  bio?: string | null
+  rating?: number | null
+  isAny?: boolean
+}
+
 export interface AgentConfirmedBooking {
   id: string
   serviceName: string
   organizationName?: string | null
+  stylistName?: string | null
   startsAt: string
   formattedTime?: string | null
+  servicePrice?: number | null
+  platformFee?: number | null
+  holdAmount?: number | null
   totalPrice: number
+  freeCancelDeadline?: string | null
+  freeCancelLabel?: string | null
+  lateCancelFee?: number | null
+  noShowFee?: number | null
   status: string
+  paymentLink?: string | null
 }
 
 export interface AgentChatMessage {
@@ -60,6 +80,7 @@ export interface AgentChatMessage {
   time: string
   recommendations?: AgentServiceRecommendation[]
   organizations?: AgentOrganizationRecommendation[]
+  stylists?: AgentStylistRecommendation[]
   confirmedBooking?: AgentConfirmedBooking | null
   navigation?: {
     target: string
@@ -187,36 +208,90 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
               distanceKm: o.distance_km,
             }))
 
+        const stylists: AgentStylistRecommendation[] = support
+          ? []
+          : (data.stylists ?? []).map((s) => ({
+              id: s.id,
+              name: s.name,
+              organizationName: s.organization_name,
+              role: s.role,
+              picture: s.picture,
+              bio: s.bio,
+              rating: s.rating,
+              isAny: Boolean(s.is_any),
+            }))
+
+        type RawConfirmedBooking = {
+          id: string
+          service_id?: string
+          service_name: string
+          organization_name?: string | null
+          stylist_name?: string | null
+          starts_at: string
+          formatted_time?: string | null
+          service_price?: string | number | null
+          platform_fee?: string | number | null
+          hold_amount?: string | number | null
+          total_price: string | number
+          free_cancel_deadline?: string | null
+          free_cancel_label?: string | null
+          late_cancel_fee?: string | number | null
+          no_show_fee?: string | number | null
+          status: string
+          payment_link?: string | null
+        }
+        const cb = data.confirmed_booking as RawConfirmedBooking | undefined
         const confirmedBooking: AgentConfirmedBooking | null =
-          !support && data.confirmed_booking
+          !support && cb
             ? {
-                id: data.confirmed_booking.id,
-                serviceName: data.confirmed_booking.service_name,
-                organizationName: data.confirmed_booking.organization_name,
-                startsAt: data.confirmed_booking.starts_at,
-                formattedTime: data.confirmed_booking.formatted_time,
-                totalPrice: Number(data.confirmed_booking.total_price),
-                status: data.confirmed_booking.status,
+                id: cb.id,
+                serviceName: cb.service_name,
+                organizationName: cb.organization_name,
+                stylistName: cb.stylist_name,
+                startsAt: cb.starts_at,
+                formattedTime: cb.formatted_time,
+                servicePrice:
+                  cb.service_price != null ? Number(cb.service_price) : Number(cb.total_price),
+                platformFee: cb.platform_fee != null ? Number(cb.platform_fee) : 0,
+                holdAmount:
+                  cb.hold_amount != null ? Number(cb.hold_amount) : Number(cb.total_price),
+                totalPrice: Number(cb.total_price),
+                freeCancelDeadline: cb.free_cancel_deadline,
+                freeCancelLabel: cb.free_cancel_label,
+                lateCancelFee: cb.late_cancel_fee != null ? Number(cb.late_cancel_fee) : null,
+                noShowFee: cb.no_show_fee != null ? Number(cb.no_show_fee) : null,
+                status: cb.status,
+                paymentLink: data.payment_link || cb.payment_link,
               }
             : null
 
         // Handle payment link
         if (!support && data.payment_link) {
           toast.success(
-            'Booking created! Click the payment link to complete your reservation.',
+            'Booking created! Review policy and complete your PayPal hold.',
             toastColor.success,
           )
           // Store payment link for display
           window.dispatchEvent(
             new CustomEvent('salondesk:payment_link', {
               detail: {
-                bookingId: data.confirmed_booking?.id,
-                serviceId: data.confirmed_booking?.service_name,
-                serviceName: data.confirmed_booking?.service_name,
-                organizationName: data.confirmed_booking?.organization_name,
-                startsAt: data.confirmed_booking?.starts_at,
-                formattedTime: data.confirmed_booking?.formatted_time,
-                totalPrice: data.confirmed_booking?.total_price,
+                bookingId: cb?.id,
+                serviceId: cb?.service_id || cb?.service_name,
+                serviceName: cb?.service_name,
+                organizationName: cb?.organization_name,
+                stylistName: cb?.stylist_name,
+                startsAt: cb?.starts_at,
+                formattedTime: cb?.formatted_time,
+                servicePrice:
+                  cb?.service_price != null ? Number(cb?.service_price) : Number(cb?.total_price),
+                platformFee: cb?.platform_fee != null ? Number(cb?.platform_fee) : 0,
+                holdAmount:
+                  cb?.hold_amount != null ? Number(cb?.hold_amount) : Number(cb?.total_price),
+                totalPrice: cb?.total_price,
+                freeCancelDeadline: cb?.free_cancel_deadline,
+                freeCancelLabel: cb?.free_cancel_label,
+                lateCancelFee: cb?.late_cancel_fee != null ? Number(cb?.late_cancel_fee) : null,
+                noShowFee: cb?.no_show_fee != null ? Number(cb?.no_show_fee) : null,
                 paymentLink: data.payment_link,
               },
             }),
@@ -245,11 +320,28 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         if (data.ui_action) {
           if (
             data.ui_action.target &&
+            data.ui_action.target.startsWith('/') &&
             typeof window !== 'undefined' &&
             window.location.pathname !== data.ui_action.target
           ) {
             router.push(data.ui_action.target)
           }
+
+          if (
+            ['open_auth_modal', 'open_sign_in', 'open_sign_up'].includes(data.ui_action.action) &&
+            typeof window !== 'undefined'
+          ) {
+            const view =
+              data.ui_action.target === 'sign-up' || data.ui_action.action === 'open_sign_up'
+                ? 'sign-up'
+                : 'sign-in'
+            window.dispatchEvent(
+              new CustomEvent('salondesk:open_auth_modal', {
+                detail: { view, portal },
+              }),
+            )
+          }
+
           dispatchAgentUiAction({
             type: 'ui_action',
             portal,
@@ -272,6 +364,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
             time: formatClockTime(),
             recommendations: recommendations.length > 0 ? recommendations : undefined,
             organizations: organizations.length > 0 ? organizations : undefined,
+            stylists: stylists.length > 0 ? stylists : undefined,
             confirmedBooking,
             navigation: data.navigation,
             uiAction: data.ui_action,

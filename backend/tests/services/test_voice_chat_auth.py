@@ -36,7 +36,9 @@ async def test_auth_tools_login_success():
         patch("app.services.auth_service.authenticate", return_value=mock_user),
         patch("app.services.auth_service.issue_token", return_value="fake-jwt-token"),
     ):
-        login_tool, _signup_tool = build_auth_tools(session_factory, on_auth_success=on_auth)
+        modal_tool, login_tool, _signup_tool = build_auth_tools(
+            session_factory, on_auth_success=on_auth
+        )
         res = await login_tool(email="test@example.com", password="SecretPassword123!")
         data = json.loads(res)
         assert data["status"] == "success"
@@ -56,7 +58,7 @@ async def test_auth_tools_login_failure():
         "app.services.auth_service.authenticate",
         side_effect=UnauthorizedError("Invalid email or password"),
     ):
-        login_tool, _ = build_auth_tools(session_factory)
+        _modal_tool, login_tool, _ = build_auth_tools(session_factory)
         res = await login_tool(email="wrong@example.com", password="WrongPassword")
         data = json.loads(res)
         assert data["status"] == "error"
@@ -86,18 +88,39 @@ async def test_auth_tools_signup_success():
         patch("app.services.auth_service.signup_client", return_value=mock_user),
         patch("app.services.auth_service.issue_token", return_value="signup-jwt-token"),
     ):
-        _, signup_tool = build_auth_tools(session_factory, on_auth_success=on_auth)
+        _modal_tool, _, signup_tool = build_auth_tools(session_factory, on_auth_success=on_auth)
         res = await signup_tool(
             first_name="Alice",
             last_name="Smith",
             email="newuser@example.com",
             password="StrongPassword123!",
         )
+
         data = json.loads(res)
         assert data["status"] == "success"
         assert "Alice" in data["message"]
         assert len(published_payloads) == 1
         assert published_payloads[0]["access_token"] == "signup-jwt-token"
+
+
+@pytest.mark.asyncio
+async def test_auth_tools_open_login_modal():
+    published_actions = []
+
+    def on_ui(action):
+        published_actions.append(action)
+
+    session_factory = MagicMock()
+    modal_tool, _, _ = build_auth_tools(session_factory, on_ui_action=on_ui)
+    res = await modal_tool(view="sign-in")
+    assert "Sign In" in res
+    assert len(published_actions) == 1
+    assert published_actions[0]["action"] == "open_auth_modal"
+    assert published_actions[0]["target"] == "sign-in"
+
+    res_signup = await modal_tool(view="sign-up")
+    assert "Create Account" in res_signup
+    assert published_actions[1]["target"] == "sign-up"
 
 
 @pytest.mark.asyncio
@@ -125,7 +148,7 @@ async def test_chat_auth_handler_login():
         patch("app.services.auth_service.authenticate", return_value=mock_user),
         patch("app.services.auth_service.issue_token", return_value="chat-jwt-token"),
     ):
-        handled, reply, token, user_info = await try_handle_chat_auth(
+        handled, reply, token, user_info, ui_action = await try_handle_chat_auth(
             mock_db,
             mock_llm,
             message="Please log me in with user@test.com and password Password123!",
@@ -135,6 +158,31 @@ async def test_chat_auth_handler_login():
         assert token == "chat-jwt-token"
         assert user_info["email"] == "user@test.com"
         assert "Bob" in reply
+
+
+@pytest.mark.asyncio
+async def test_chat_auth_opens_modal_without_password():
+    mock_llm = AsyncMock()
+    mock_llm.chat.return_value = json.dumps(
+        {
+            "action": "login",
+            "email": None,
+            "password": None,
+        }
+    )
+    mock_db = AsyncMock()
+    handled, reply, token, user_info, ui_action = await try_handle_chat_auth(
+        mock_db,
+        mock_llm,
+        message="I want to sign in",
+        history=[],
+    )
+    assert handled is True
+    assert token is None
+    assert ui_action is not None
+    assert ui_action.action == "open_auth_modal"
+    assert ui_action.target == "sign-in"
+    assert "sign-in modal" in reply
 
 
 @pytest.mark.asyncio
@@ -152,7 +200,7 @@ async def test_chat_endpoint_with_auth():
 
     with patch(
         "app.api.v1.client.chat.try_handle_chat_auth",
-        return_value=(True, "Welcome Carol!", "jwt-token-123", mock_user_info),
+        return_value=(True, "Welcome Carol!", "jwt-token-123", mock_user_info, None),
     ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -224,7 +272,9 @@ async def test_booking_tools_book_and_confirm():
         tools = build_booking_tools(session_factory, on_booking_success=on_booking)
         assert len(tools) >= 1
         book_tool = tools[0]
-        res = await book_tool(service_query="Signature Fade", notes="Book via agent")
+        res = await book_tool(
+            service_query="Signature Fade", client_email="jane@example.com", notes="Book via agent"
+        )
         data = json.loads(res)
         assert data["status"] == "success"
         assert data["status_code"] == "CONFIRMED"
@@ -237,11 +287,13 @@ async def test_booking_tools_book_and_confirm():
 @pytest.mark.asyncio
 async def test_chat_booking_handler():
     mock_llm = AsyncMock()
+    # 1. When stylist is not yet specified, ask user for stylist
     mock_llm.chat.return_value = json.dumps(
         {
             "action": "book",
             "service_query": "Balayage",
             "preferred_time": "2026-10-20T14:00:00Z",
+            "stylist_query": None,
             "notes": "Test chat booking",
         }
     )
@@ -269,10 +321,49 @@ async def test_chat_booking_handler():
     mock_db.execute.return_value = srv_res
     mock_db.get.return_value = mock_org
 
+    # 0. When neither time nor stylist is specified, asks for preferred date and time
+    mock_llm.chat.return_value = json.dumps(
+        {
+            "action": "book",
+            "service_query": "Balayage",
+            "preferred_time": None,
+            "stylist_query": None,
+            "notes": None,
+        }
+    )
     with patch(
-        "app.services.booking_service.create_booking",
+        "app.ai.chat_booking.get_organization_stylists",
         new_callable=AsyncMock,
-        return_value=mock_booking,
+        return_value=[{"display_name": "Sarah", "id": "00000000-0000-0000-0000-000000000099"}],
+    ):
+        handled, reply, confirmed = await try_handle_chat_booking(
+            mock_db,
+            mock_llm,
+            message="Book Balayage at Selam Salon",
+            history=[],
+            user=mock_client,
+        )
+        assert handled is True
+        assert confirmed is not None
+        assert confirmed.get("needs_time") is True
+        assert confirmed.get("needs_stylist") is True
+        assert "date and time" in reply.lower()
+        assert "stylists" in confirmed
+
+    # 1. When time is specified but stylist is not
+    mock_llm.chat.return_value = json.dumps(
+        {
+            "action": "book",
+            "service_query": "Balayage",
+            "preferred_time": "2026-10-20T14:00:00Z",
+            "stylist_query": None,
+            "notes": "Test chat booking",
+        }
+    )
+    with patch(
+        "app.ai.chat_booking.get_organization_stylists",
+        new_callable=AsyncMock,
+        return_value=[{"display_name": "Sarah", "id": "00000000-0000-0000-0000-000000000099"}],
     ):
         handled, reply, confirmed = await try_handle_chat_booking(
             mock_db,
@@ -282,12 +373,65 @@ async def test_chat_booking_handler():
             user=mock_client,
         )
         assert handled is True
+        assert confirmed is not None and "stylists" in confirmed
+        assert any(s["name"] == "Sarah" for s in confirmed["stylists"])
+        assert any(s["is_any"] is True for s in confirmed["stylists"])
+        assert "stylist" in reply.lower()
+        assert "Sarah" in reply
+
+    # 2. When stylist is specified, booking is created and PayPal hold link is returned
+    mock_llm.chat.return_value = json.dumps(
+        {
+            "action": "book",
+            "service_query": "Balayage",
+            "preferred_time": "2026-10-20T14:00:00Z",
+            "stylist_query": "Sarah",
+            "notes": "Test chat booking",
+        }
+    )
+
+    mock_hold = MagicMock()
+    mock_hold.id = "00000000-0000-0000-0000-000000000088"
+
+    with (
+        patch(
+            "app.services.booking_service.create_booking",
+            new_callable=AsyncMock,
+            return_value=mock_booking,
+        ),
+        patch(
+            "app.services.payment_service.create_consent",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "app.services.payment_service.create_hold",
+            new_callable=AsyncMock,
+            return_value=(mock_hold, "https://www.sandbox.paypal.com/checkoutnow?token=test-token"),
+        ),
+        patch(
+            "app.ai.chat_booking.resolve_stylist",
+            new_callable=AsyncMock,
+            return_value=("00000000-0000-0000-0000-000000000099", "Sarah"),
+        ),
+    ):
+        handled, reply, confirmed = await try_handle_chat_booking(
+            mock_db,
+            mock_llm,
+            message="Please book Balayage tomorrow at 2pm with Sarah",
+            history=[],
+            user=mock_client,
+        )
+        assert handled is True
         assert confirmed is not None
         assert confirmed["status"] == "PENDING"
         assert confirmed["service_name"] == "Balayage Highlight"
-        assert confirmed["payment_link"].startswith("/client/book/")
+        assert confirmed["stylist_name"] == "Sarah"
+        assert (
+            confirmed["payment_link"]
+            == "https://www.sandbox.paypal.com/checkoutnow?token=test-token"
+        )
         assert "Balayage Highlight" in reply
-        assert "payment link" in reply.lower()
+        assert "PayPal" in reply
 
 
 @pytest.mark.asyncio
@@ -303,7 +447,10 @@ async def test_chat_endpoint_with_booking_and_org_cards():
     }
 
     with (
-        patch("app.api.v1.client.chat.try_handle_chat_auth", return_value=(False, "", None, None)),
+        patch(
+            "app.api.v1.client.chat.try_handle_chat_auth",
+            return_value=(False, "", None, None, None),
+        ),
         patch(
             "app.api.v1.client.chat.try_handle_chat_booking",
             return_value=(True, "Booking confirmed!", mock_booking_info),

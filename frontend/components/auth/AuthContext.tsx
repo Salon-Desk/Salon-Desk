@@ -32,6 +32,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsOpen(false)
   }, [])
 
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handleOpenAuth = (event: Event) => {
+      const customEvent = event as CustomEvent<{ view?: AuthModalView; portal?: AppPortal }>
+      const detail = customEvent.detail
+      openAuthModal(detail?.view ?? 'sign-in', detail?.portal ?? 'client')
+    }
+    window.addEventListener('salondesk:open_auth_modal', handleOpenAuth)
+    return () => {
+      window.removeEventListener('salondesk:open_auth_modal', handleOpenAuth)
+    }
+  }, [openAuthModal])
+
   return (
     <AuthContext.Provider
       value={{

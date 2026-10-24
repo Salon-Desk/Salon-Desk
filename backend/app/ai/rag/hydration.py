@@ -2,6 +2,7 @@
 
 import logging
 import re
+from uuid import UUID
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -216,6 +217,44 @@ async def search_nearby_services(
     return recommendations
 
 
+_GENERIC_SERVICE_TOKENS = frozenset(
+    {
+        "service",
+        "services",
+        "show",
+        "list",
+        "what",
+        "have",
+        "available",
+        "offer",
+        "offers",
+        "offering",
+        "offerings",
+        "treatment",
+        "treatments",
+        "menu",
+        "see",
+        "all",
+        "the",
+        "you",
+        "can",
+        "get",
+        "any",
+        "tell",
+        "about",
+        "give",
+        "options",
+        "for",
+        "and",
+        "with",
+        "want",
+        "need",
+        "please",
+        "some",
+    }
+)
+
+
 async def search_services_by_keywords(
     session: AsyncSession,
     query: str,
@@ -225,7 +264,11 @@ async def search_services_by_keywords(
     limit: int,
 ) -> list[ServiceRecommendation]:
     """Fallback: search services by keyword matching."""
-    tokens = [t for t in re.split(r"\W+", query.lower()) if len(t) >= 3][:5]
+    tokens = [
+        t
+        for t in re.split(r"\W+", (query or "").lower())
+        if len(t) >= 3 and t not in _GENERIC_SERVICE_TOKENS
+    ][:5]
 
     stmt = (
         select(Service, OrgSettings)
@@ -242,7 +285,11 @@ async def search_services_by_keywords(
     )
 
     if org_id is not None:
-        stmt = stmt.where(Service.organization_id == org_id)
+        try:
+            parsed_org = UUID(str(org_id))
+            stmt = stmt.where(Service.organization_id == parsed_org)
+        except (ValueError, AttributeError):
+            stmt = stmt.where(Service.organization_id == org_id)
 
     if tokens:
         clauses = [Service.name.ilike(f"%{t}%") for t in tokens]

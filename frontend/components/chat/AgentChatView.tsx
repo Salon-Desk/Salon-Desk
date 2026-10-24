@@ -3,7 +3,11 @@
 import React from 'react'
 
 import { ChatConversation } from '@/components/chat/chat-ui'
-import type { AgentChatMessage, AgentServiceRecommendation } from '@/components/chat/useAgentChat'
+import type {
+  AgentChatMessage,
+  AgentServiceRecommendation,
+  AgentStylistRecommendation,
+} from '@/components/chat/useAgentChat'
 
 export interface AgentChatViewProps {
   messages: AgentChatMessage[]
@@ -14,6 +18,7 @@ export interface AgentChatViewProps {
   onPromptChange: (value: string) => void
   onSend: (prompt?: string) => void
   onSelectService?: (service: AgentServiceRecommendation) => void
+  onSelectStylist?: (stylist: AgentStylistRecommendation) => void
   onTryVoice?: () => void
   className?: string
 }
@@ -26,6 +31,7 @@ export function AgentChatView({
   onPromptChange,
   onSend,
   onSelectService,
+  onSelectStylist,
   onTryVoice,
   className,
 }: AgentChatViewProps) {
@@ -37,6 +43,7 @@ export function AgentChatView({
       onPromptChange={onPromptChange}
       onSend={onSend}
       onSelectService={onSelectService}
+      onSelectStylist={onSelectStylist}
       onTryVoice={onTryVoice}
       className={className}
     />
