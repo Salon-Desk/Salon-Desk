@@ -8,16 +8,14 @@ import json
 import logging
 from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.agent.prompts import build_voice_instructions, greeting_for, is_farewell
 from app.ai.portal import is_support_portal, normalize_portal
 from app.ai.rag_service import build_voice_rag_instruction, detect_intent, retrieve_context
 from app.ai.tools import build_voice_tools
 from app.core.config import get_settings
-from app.services.livekit_tokens import parse_language_from_room_name, parse_portal_from_room_name
 
-from .constants import _NOISE_RE
 from .location import (
     LocationTracker,
     build_location_context,
@@ -32,84 +30,15 @@ from .messaging import (
     publish_payment_link,
     publish_ui_action,
 )
+from .session import (
+    build_session_factory,
+    is_garbage_transcript,
+    openai_compatible_llm,
+    resolve_language,
+    resolve_portal,
+)
 
 logger = logging.getLogger("salondesk.voice")
-
-
-def is_garbage_transcript(text: str) -> bool:
-    """Check if transcript is noise/garbage."""
-    cleaned = (text or "").strip()
-    if len(cleaned) < 2:
-        return True
-    return bool(_NOISE_RE.match(cleaned.replace(" ", "")))
-
-
-def resolve_language(room_name: str, metadata: str | None) -> str:
-    """Resolve language from room metadata or room name."""
-    if metadata:
-        try:
-            data = json.loads(metadata)
-            lang = data.get("language")
-            if lang in {"en", "am"}:
-                return lang
-        except json.JSONDecodeError:
-            pass
-    return parse_language_from_room_name(room_name)
-
-
-def resolve_portal(room_name: str, metadata: str | None) -> str:
-    """Resolve assistant portal from room metadata or room name."""
-    if metadata:
-        try:
-            data = json.loads(metadata)
-            portal = data.get("portal")
-            if portal in {"client", "merchant", "admin"}:
-                return portal
-        except json.JSONDecodeError:
-            pass
-    return parse_portal_from_room_name(room_name)
-
-
-def openai_compatible_llm():
-    """Create OpenAI-compatible LLM instance based on settings."""
-    from livekit.plugins import openai as lk_openai
-
-    settings = get_settings()
-    provider = settings.active_voice_llm_provider
-
-    if provider == "openai":
-        return lk_openai.LLM(
-            model=settings.openai_model,
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
-        )
-
-    if provider == "ollama":
-        return lk_openai.LLM(
-            model=settings.ollama_model,
-            api_key=settings.ollama_api_key or "ollama",
-            base_url=settings.ollama_base_url,
-        )
-
-    if provider == "deepseek":
-        return lk_openai.LLM(
-            model=settings.deepseek_model,
-            api_key=settings.deepseek_api_key or settings.deepgram_api_key,
-            base_url=settings.deepseek_base_url,
-        )
-
-    return lk_openai.LLM(
-        model=settings.groq_model,
-        api_key=settings.groq_api_key,
-        base_url=settings.groq_base_url,
-    )
-
-
-def build_session_factory():
-    """Build async database session factory."""
-    settings = get_settings()
-    engine = create_async_engine(settings.database_url, pool_pre_ping=True)
-    return async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False, autoflush=False)
 
 
 def prewarm(proc: Any) -> None:

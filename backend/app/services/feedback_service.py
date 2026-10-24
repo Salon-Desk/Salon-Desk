@@ -251,7 +251,8 @@ async def moderate_feedback(
     feedback.moderated_by = moderator_id
     feedback.moderation_notes = notes
     feedback.moderated_at = datetime.now(UTC)
-    await db.flush()
+    await db.commit()
+    await db.refresh(feedback)
     return feedback
 
 
@@ -305,8 +306,19 @@ async def create_client_feedback(
         status=FeedbackModerationStatus.PENDING,
     )
     db.add(row)
-    await db.flush()
-    return row
+    await db.commit()
+    loaded = await db.execute(
+        select(ClientFeedback)
+        .options(
+            selectinload(ClientFeedback.client).selectinload(User.profile),
+            selectinload(ClientFeedback.stylist).selectinload(User.profile),
+            selectinload(ClientFeedback.booking)
+            .selectinload(Booking.booking_services)
+            .selectinload(BookingService.service),
+        )
+        .where(ClientFeedback.id == row.id)
+    )
+    return loaded.scalar_one()
 
 
 def feedback_to_out(

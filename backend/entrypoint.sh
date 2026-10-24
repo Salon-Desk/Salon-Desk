@@ -13,5 +13,14 @@ else
   python -m scripts.seed
 fi
 
+echo "Ingesting semantic knowledge embeddings (falls back gracefully if Ollama is warming up)..."
+if [ "${INGEST_CLEAR:-0}" = "1" ]; then
+  python -m scripts.ingest_knowledge --clear || true
+elif [ "${INGEST_FORCE:-0}" = "1" ]; then
+  python -m scripts.ingest_knowledge --force || true
+else
+  python -m scripts.ingest_knowledge || true
+fi
+
 echo "Starting application..."
 exec "$@"

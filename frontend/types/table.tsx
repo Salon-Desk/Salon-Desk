@@ -9,6 +9,8 @@ export type ColumnDefinition<T> = {
   cell?: (row: T) => ReactNode
   sortable?: boolean
   filterable?: boolean
+  headerClassName?: string
+  cellClassName?: string
 }
 
 export type DataGridProps<T> = {

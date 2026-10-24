@@ -32,6 +32,73 @@ Monorepo backend and shared agent rules: **[../AGENTS.md](../AGENTS.md)**. Human
 
 Use ESLint + Prettier (`eslint.config.*`, Prettier config in repo). Match existing 2-space indent and project formatter settings.
 
+---
+
+## Core Architectural Rules & Standards (MANDATORY)
+
+Every agent and developer working in `frontend/` MUST adhere to these six architectural rules:
+
+### Rule 1: Tables — Exclusively `BasicDataGridTable`
+
+- **Component**: `@/components/table/BasicDataGridTable` (`components/table/BasicDataGridTable.tsx`).
+- **Standard**: Every tabular list across all portals (merchant staff, merchant services, merchant invoices, admin salons, admin commissions, admin taxonomy, admin reviews, admin billing) MUST use `BasicDataGridTable`.
+- **Column Definitions**: Define pure column arrays typed with `ColumnDefinition<T>[]` from `@/types/table`. Keep column definitions in separate files (e.g., `StaffTableColumns.tsx`, `SalonTableColumns.tsx`).
+- **Pagination & Controls**: Pass `currentPage`, `totalPages`, `totalItems`, `itemsPerPage`, `onPageChange`, `onItemPerPageChange`, `showPagination`, and `showSearch`.
+- **Prohibited**:
+  - Raw `<table>`, `<tbody>`, `<tr>`, `<td>` grids in views.
+  - Competing table wrappers (such as legacy `components/ui/data-table.tsx` — removed and banned).
+  - Non-standard pagination components.
+
+### Rule 2: Filterable Lists — Exclusively `useListingParams`
+
+- **Hook**: `@/hooks/useListingParams` (`hooks/useListingParams.ts`).
+- **Standard**: Every searchable, filterable, or paginated table/view MUST manage its query parameters via `useListingParams` backed by a Zod schema.
+- **URL Synchronization**: Page numbers, search queries, sort directions, and domain filters synchronize automatically with Next.js router query parameters (`useSearchParams`).
+- **Prohibited**:
+  - Ad-hoc `useState` for pagination (`page`, `pageSize`) or filter fields.
+  - Custom debounce loops that bypass `useListingParams`.
+
+### Rule 3: Dialogs & Modals — Exclusively `CustomResponsiveDialog`
+
+- **Component**: `@/components/dialog/CustomResponsiveDialog` (`components/dialog/CustomResponsiveDialog.tsx`).
+- **Standard**: Every modal, drawer, or sheet dialog across client, merchant, and admin portals MUST use `CustomResponsiveDialog`. It provides adaptive desktop dialog and mobile drawer rendering with full accessibility (`DialogTitle`, `DialogDescription`).
+- **Confirmation Dialogs**: For specific actions, use specialized domain confirmation dialogs from `@/components/dialog`:
+  - `DeleteConfirmationDialog`
+  - `CancelConfirmationDialog`
+  - `PaymentConfirmationDialog`
+- **Prohibited**:
+  - Competing modal wrappers (`components/ui/modal.tsx`, `components/ui/confirm-dialog.tsx` — deleted and banned).
+  - Standalone drawer wrappers (`components/drawer/CustomDrawer.tsx` — deleted and banned).
+  - Direct uncontrolled Radix/shadcn `Dialog` or `Drawer` implementations in feature views.
+
+### Rule 4: Forms — `useFormHandler` + Zod + `FormProvider` + `RHF*`
+
+- **Hook**: `@/hooks/formHandler` (`hooks/formHandler.ts`).
+- **Standard**: Every form must follow the standard form architecture:
+  1. Define a strict Zod schema (Zod v4).
+  2. Initialize via `useFormHandler({ schema, defaultValues, onSubmit })`.
+  3. Wrap the form in `FormProvider`.
+  4. Use standardized `RHF*` field components from `@/components/forms` (`RHFTextField`, `RHFSelectField`, `RHFNumberField`, `RHFTextareaField`, `DatePickerField`).
+  5. Connect to RTK Query mutations with unified toast/error handling.
+- **Prohibited**:
+  - Uncontrolled or raw `<form>` with ad-hoc `useState` validation.
+  - Manual error rendering when `RHF*` components provide built-in validation messages.
+
+### Rule 5: Component Structure, Naming & Thin Pages
+
+- **Strict 1 Component Per File**: Every `.tsx` file MUST contain strictly ONE primary React component. Multi-component files are forbidden. Sub-components, cards, header panels, or dialog views must be extracted into their own dedicated files.
+- **PascalCase File Naming**: Every React component file MUST be named in `PascalCase.tsx` (e.g. `AdminSalonsView.tsx`, `MerchantStaffView.tsx`, `CancelBookingDialog.tsx`).
+- **Thin Route Pages (< 30 LOC)**: Every route `page.tsx` file MUST be a thin shell under 30 lines of code. It only sets metadata/auth guards and delegates immediately to a dedicated view component (e.g. `app/admin/salons/page.tsx` simply renders `<AdminSalonsView />`).
+- **Domain Barrels**: Shared components belong in domain-specific barrels (`@/components/table`, `@/components/dialog`, `@/components/card`, `@/components/badge`, `@/components/button`, `@/components/auth`, `@/components/forms`, `@/components/loader`).
+
+### Rule 6: UI & Design Tokens
+
+- **Stat Cards**: Use `@/components/card` (`StatCard`).
+- **Badges**: Use `@/components/badge` (`StatusBadge`, `HoldStateBadge`, `OrganizationStatusBadge`, `ChangeRequestStatusBadge`).
+- **Buttons**: Use `@/components/button` (`PrimaryButton`, `RefreshButton`).
+
+---
+
 ## Repository layout
 
 ```
@@ -41,19 +108,25 @@ app/
   (auth)/login|forgot-password|reset-password
   _components/                             Hub (landing) feature UI
   client/                                  Client portal routes + _components/
-  merchant/                                Org console (onboarding, settings, …)
-  admin/                                   Platform admin
+  merchant/                                Org console (onboarding, settings, …) + _components/
+  admin/                                   Platform admin + _components/
   book/                                    Redirect → /client/book
   api/                                     Route handlers (demo AI concierge, demo reset)
 components/
-  ui/                                      Shared primitives (SalonDesk + shadcn)
-  forms/                                   RHF* fields, pickers
+  badge/                                   StatusBadge, HoldStateBadge, domain badges
+  button/                                  PrimaryButton, RefreshButton
+  card/                                    StatCard, PanelCard
+  dialog/                                  CustomResponsiveDialog, confirmation dialogs
+  table/                                   BasicDataGridTable, Pagination, TableActionLink
+  forms/                                   RHF* fields, DatePickerField, dropzones
   layout/                                  Console shell, portal switcher, auth gate
-  auth/                                    Sign-in, modal host, profile editor
+  auth/                                    Sign-in, modal host, views, profile editor
   ai-concierge/                            Shared concierge UI (drawer, voice orb)
-  chat/                                    Global chat widget + use-agent-chat (RTK)
+  chat/                                    Global chat widget + useAgentChat (RTK)
+  loader/                                  LoadingSpinner, Skeletons
+  ui/                                      Base Radix primitives & utility controls
 constant/                                  Validation messages, toast colors, …
-hooks/                                     Shared hooks (portal stores, concierge, booking draft)
+hooks/                                     useListingParams, formHandler, portal stores
 lib/
   store/                                   Demo seed fns + types only (Redux owns runtime state)
   sandbox/                                 demo-reset, local DB helpers for sandbox
@@ -66,8 +139,7 @@ store/
   authSlice.ts, bookingDraftSlice.ts
   clientDemoSlice.ts, merchantDemoSlice.ts, adminDemoSlice.ts
   api/sharedApi.ts, platformApi.ts, orgApi.ts, clientApi.ts
-  slice/                                   Back-compat re-exports of RTK endpoints
-types/                                     Shared TypeScript domain types
+types/                                     Shared TypeScript domain types (table.tsx, etc.)
 public/                                    Static assets
 ```
 
@@ -108,53 +180,28 @@ JWT lives in **localStorage**; edge `middleware.ts` does not enforce auth (use `
 - **Client** (`ConciergeDrawer`): booking concierge — recommendations, auth, holds.
 - **Merchant / admin** (global `ChatWidget` in `Providers.tsx` via `portalFromPathname`): system help only — no booking cards; backend skips booking tools and uses guide RAG (`org_guide` / `admin_guide`).
 
-Client drawer UI: `app/client/_components/ConciergeDrawer.tsx` (export alias `ConciergeDrawer`; legacy name `AiConcierge`).
+Client drawer UI: `app/client/_components/ConciergeDrawer.tsx`.
 
 ## UI conventions
 
-- **New UI**: prefer `components/ui` + `cn` from `@/lib/utils`. Add shadcn via `pnpm dlx shadcn@latest add …` (`components.json`).
-- **Forms**: `FormProvider` + `components/forms` `RHF*` fields.
+- **Primitives**: prefer domain modules (`@/components/table`, `@/components/dialog`, `@/components/card`, `@/components/badge`, `@/components/button`) + `cn` from `@/lib/utils`.
+- **Forms**: `useFormHandler` + `FormProvider` + `components/forms` `RHF*` fields.
 - **Global vs feature**: reuse `components/*` when used in 2+ features; hoist hooks to `hooks/`, types to `types/`.
 - **Feature isolation**: each portal under `app/<feature>/` with underscore-prefixed internal folders.
-- **Pages stay thin**: `page.tsx` composes feature entry components only.
+- **Pages stay thin**: `page.tsx` strictly < 30 LOC; composes feature entry components only.
 - **Copy**: plain English in components; validation strings in `constant/validation-messages.ts`.
-
-### Client `_components/` naming
-
-Files under `app/client/_components/` use **PascalCase** filenames aligned with primary exports, e.g.:
-
-| File                                                                | Primary export(s)                               |
-| ------------------------------------------------------------------- | ----------------------------------------------- |
-| `ClientExperience.tsx`                                              | `ClientExperience`                              |
-| `ClientBookPage.tsx`                                                | `ClientBookPage`                                |
-| `SplitBookingAuth.tsx`                                              | `SplitBookingAuth`                              |
-| `ClientCheckoutPage.tsx`                                            | `ClientCheckoutPage` (booking → consent → hold) |
-| `PayPalHoldCheckout.tsx`                                            | `PayPalHoldCheckout` (full-page checkout UI)    |
-| `CheckoutSchedule.tsx`, `CheckoutReview.tsx`, `CheckoutSummary.tsx` | Checkout steps + preview                        |
-| `BookingReceipt.tsx`                                                | `BookingReceipt` (alias `ReceiptModal`)         |
-| `ConciergeDrawer.tsx`                                               | `AiConcierge` (alias `ConciergeDrawer`)         |
-| `ServiceCard.tsx`, `CatalogFilters.tsx`, …                          | Same as filename                                |
-
-Public barrel: `app/client/index.ts`.
-
-## App shell
-
-- `app/layout.tsx`: fonts, metadata, `Providers`.
-- `app/Providers.tsx`: Redux `Provider`, demo slice hydrate, `AuthProvider`, `AuthModalHost`, optional global `ChatWidget` (hidden on client routes that host their own concierge).
-- Portal chrome: `components/layout` (`ConsoleShell`, `AuthGate`, `PortalSwitcher`).
-- Hub: `app/page.tsx` + `app/_components/`.
 
 ## Feature layout standard (`app/<feature>/`)
 
 | Folder         | Purpose                                            |
 | -------------- | -------------------------------------------------- |
-| `_components/` | Feature-internal React UI                          |
+| `_components/` | Feature-internal React UI (PascalCase.tsx)         |
 | `_constants/`  | Feature defaults, demo personas                    |
 | `_hooks/`      | Feature-only hooks (hoist shared ones to `hooks/`) |
 | `_schemas/`    | Feature Zod schemas (reuse `@/lib/schema/common`)  |
 | `_context/`    | Feature React context (merchant/admin)             |
 | `index.ts`     | Public barrel                                      |
-| `page.tsx`     | Thin route entry                                   |
+| `page.tsx`     | Thin route entry (< 30 LOC)                        |
 
 ### Hoisting rules
 
@@ -166,16 +213,22 @@ Public barrel: `app/client/index.ts`.
 ## TypeScript & quality
 
 - Strict mode; shared domain models in `types/`.
-- ESLint + Prettier; run `pnpm typecheck` before considering frontend work done.
+- ESLint + Prettier; run `pnpm validate` before considering frontend work done.
 - Zod v4 APIs (`lib/schema/common.ts`).
 - Avoid unstable values like `new Date()` during Client Component prerender; use fixed seeds or `useEffect` / event handlers.
 
 ## Global reusable components
 
-| Area       | Path                                           | Use                       |
-| ---------- | ---------------------------------------------- | ------------------------- |
-| Primitives | `components/ui/`                               | Buttons, inputs, dialogs  |
-| Forms      | `components/forms/`                            | RHF*, pickers             |
-| Layout     | `components/layout/`                           | Console shell, portal nav |
-| Auth       | `components/auth/`                             | Modals, sign-in forms     |
-| AI         | `components/ai-concierge/`, `components/chat/` | Voice orb, global chat    |
+| Area       | Path                 | Use                                                       |
+| ---------- | -------------------- | --------------------------------------------------------- |
+| Tables     | `components/table/`  | `BasicDataGridTable`, `Pagination`, `TableActionLink`     |
+| Dialogs    | `components/dialog/` | `CustomResponsiveDialog`, confirmation dialogs            |
+| Cards      | `components/card/`   | `StatCard`, `PanelCard`                                   |
+| Badges     | `components/badge/`  | `StatusBadge`, `HoldStateBadge`, domain status badges     |
+| Buttons    | `components/button/` | `PrimaryButton`, `RefreshButton`                          |
+| Forms      | `components/forms/`  | `RHFTextField`, `RHFSelectField`, `DatePickerField`, etc. |
+| Layout     | `components/layout/` | `ConsoleShell`, `PortalSwitcher`, `AuthGate`              |
+| Auth       | `components/auth/`   | Modals, sign-in forms, auth views                         |
+| Loaders    | `components/loader/` | `LoadingSpinner`, skeleton loaders                        |
+| AI & Chat  | `components/chat/`   | Voice orb, global chat, concierge UI                      |
+| Primitives | `components/ui/`     | Base Radix primitives & utility controls                  |

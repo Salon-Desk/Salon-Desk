@@ -1,9 +1,9 @@
-import type { StatusFilter } from '@/app/admin/salons/_types'
 import {
   listingApiParams,
   listingDefaultsFromSchema,
   type ListingParamSchema,
 } from '@/hooks/useListingParams'
+import type { StatusFilter } from '@/types/organization'
 
 import { LISTING_SECTION_PAGE_SIZE } from './listing-api-limits'
 

@@ -1,8 +1,7 @@
 from decimal import Decimal
 from uuid import uuid4
 
-from app.services.livekit_tokens import build_room_name, parse_language_from_room_name
-from app.services.rag_service import (
+from app.ai.rag_service import (
     DEFAULT_RECOMMENDATION_LIMIT,
     EXPANDED_RECOMMENDATION_LIMIT,
     RetrievedChunk,
@@ -18,6 +17,7 @@ from app.services.rag_service import (
     select_recommendations,
     wants_more_recommendations,
 )
+from app.services.livekit_tokens import build_room_name, parse_language_from_room_name
 
 
 def test_detect_language_english() -> None:
@@ -211,7 +211,11 @@ def test_is_salon_hunt_and_service_request() -> None:
 
     assert is_salon_hunt("Which salons or spas are near Bole?") is True
     assert is_salon_hunt("I want a haircut and beard trim") is False
+    assert is_salon_hunt("Show services for Luxe Salon") is False
+    assert is_salon_hunt("What services do you offer?") is False
     assert is_service_request("Show me available haircut services") is True
+    assert is_service_request("Show services for Luxe Salon") is True
+    assert is_service_request("What services do you offer?") is True
     assert is_service_request("How does the platform hold $0 authorization?") is False
 
 

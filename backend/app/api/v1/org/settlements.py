@@ -4,20 +4,18 @@ from fastapi import APIRouter, HTTPException, status
 
 from app.api.deps import DbSession, OrgMember
 from app.core.exceptions import ForbiddenError, NotFoundError, PolicyViolationException
-from app.models.enums import PaymentCaptureType, UserRole
+from app.models.enums import PaymentCaptureType
 from app.schemas.booking import BookingOut, booking_to_out
 from app.schemas.payment import PaymentCaptureOut, PaymentHoldOut
 from app.services import booking_service
 from app.services.payment_service import capture_hold, reauthorize_hold
+from app.services.policy_engine import assert_can_settle
 
 router = APIRouter(prefix="/settlements", tags=["org-settlements"])
 
 
 def _assert_org_booking(user, booking) -> None:
-    if user.org_id != booking.org_id:
-        raise ForbiddenError("Booking belongs to another organization")
-    if user.role not in {UserRole.ORG_OWNER, UserRole.RECEPTION}:
-        raise ForbiddenError("Insufficient permissions")
+    assert_can_settle(user.role, user.org_id, booking.org_id)
 
 
 def _http_for(exc: Exception) -> int:

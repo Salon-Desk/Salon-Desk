@@ -33,7 +33,7 @@ export const RefreshButton: React.FC<RefreshButtonProps> = ({
       size={size}
       className={cn(
         sizeClasses[size],
-        'p-0 transition-all roun duration-300 ease-in-out hover:scale-105 hover:border-primary hover:bg-primary/5',
+        'p-0 shadow-none transition-all duration-300 ease-in-out hover:scale-105 hover:border-primary hover:bg-primary/5',
         isLoading && 'cursor-wait opacity-70',
         className,
       )}

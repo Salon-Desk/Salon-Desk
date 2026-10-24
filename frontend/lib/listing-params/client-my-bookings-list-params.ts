@@ -10,6 +10,14 @@ export type ClientMyBookingsListParams = {
   page: number
   limit: number
   status: 'all' | string
+  q: string
+  sort:
+    | 'starts_at_asc'
+    | 'starts_at_desc'
+    | 'created_at_asc'
+    | 'created_at_desc'
+    | 'total_price_asc'
+    | 'total_price_desc'
 }
 
 export const ClientMyBookingsListParamsSchema = {
@@ -26,6 +34,17 @@ export const ClientMyBookingsListParamsSchema = {
     default: 'all' as const,
     urlKey: 'bkStatus',
     omitWhen: 'all',
+  },
+  q: {
+    default: '' as const,
+    urlKey: 'bkQ',
+    omitWhen: '',
+    omitEmptyForApi: true,
+  },
+  sort: {
+    default: 'starts_at_desc' as const,
+    urlKey: 'bkSort',
+    omitDefaultForApi: true,
   },
 } satisfies ListingParamSchema<ClientMyBookingsListParams>
 

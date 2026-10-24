@@ -153,3 +153,14 @@ class CatalogHeroOut(BaseModel):
     physical_address: str | None = None
     salon_count: int = 0
     service_count: int = 0
+
+
+class CatalogCancellationPolicyOut(BaseModel):
+    """Public booking-time policy preview (same fields locked into booking snapshots)."""
+
+    org_id: UUID
+    name: str
+    free_cancel_hours: float = 24
+    no_show_fee_percent: float = 50
+    late_cancel_fee_percent: float | None = None
+    data: dict = {}

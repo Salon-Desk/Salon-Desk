@@ -59,18 +59,18 @@ export const renderPageNumbers = (
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3 shadow-xs sm:px-5 md:flex-row',
+        'flex flex-col items-center justify-between gap-4 rounded-2xl border border-slate-200/70 bg-white px-4 py-3 sm:px-5 md:flex-row',
         options?.className,
       )}
     >
       {/* ✅ LEFT: STATISTICS */}
       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-        <span className="text-xs text-muted-foreground sm:text-[14px] lg:text-[16px]">Showing</span>
-        <span className="text-base font-extrabold text-foreground sm:text-lg lg:text-xl">
+        <span className="text-xs text-slate-500 sm:text-[14px] lg:text-[16px]">Showing</span>
+        <span className="text-base font-extrabold text-slate-900 sm:text-lg lg:text-xl">
           {startItem}-{endItem}
         </span>
-        <span className="text-xs text-muted-foreground sm:text-[14px] lg:text-[16px]">of</span>
-        <span className="text-base font-extrabold text-foreground sm:text-lg lg:text-xl">
+        <span className="text-xs text-slate-500 sm:text-[14px] lg:text-[16px]">of</span>
+        <span className="text-base font-extrabold text-slate-900 sm:text-lg lg:text-xl">
           {totalItems}
         </span>
 
@@ -102,7 +102,7 @@ export const renderPageNumbers = (
           onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
           disabled={safeCurrentPage <= 1}
           aria-label="Previous page"
-          className="shrink-0 cursor-pointer rounded-full border border-border p-2 transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 sm:p-3"
+          className="shrink-0 cursor-pointer rounded-xl border border-slate-200 bg-white p-2 transition-colors hover:border-amber-300 hover:bg-amber-50/50 disabled:cursor-not-allowed disabled:opacity-50 sm:p-3"
         >
           <ChevronLeft className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
         </button>
@@ -114,7 +114,7 @@ export const renderPageNumbers = (
               <button
                 type="button"
                 onClick={() => setCurrentPage(1)}
-                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-sm text-foreground transition-colors hover:bg-muted sm:h-10 sm:w-10"
+                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-sm text-slate-700 transition-colors hover:border-amber-300 hover:bg-amber-50/50 sm:h-10 sm:w-10"
               >
                 1
               </button>
@@ -130,10 +130,10 @@ export const renderPageNumbers = (
               key={page}
               onClick={() => setCurrentPage(page)}
               className={cn(
-                'flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border text-sm transition-all sm:h-10 sm:w-10',
+                'flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border text-sm transition-all sm:h-10 sm:w-10',
                 page === safeCurrentPage
-                  ? 'border-primary bg-primary font-semibold text-primary-foreground gold-glow'
-                  : 'border-border text-foreground hover:bg-muted',
+                  ? 'border-amber-500 bg-amber-500 font-semibold text-white'
+                  : 'border-slate-200 text-slate-700 hover:border-amber-300 hover:bg-amber-50/50',
               )}
             >
               {page}
@@ -149,10 +149,10 @@ export const renderPageNumbers = (
                 type="button"
                 onClick={() => setCurrentPage(safeTotalPages)}
                 className={cn(
-                  'flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border text-sm transition-all sm:h-10 sm:w-10',
+                  'flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border text-sm transition-all sm:h-10 sm:w-10',
                   safeCurrentPage === safeTotalPages
-                    ? 'border-primary bg-primary font-semibold text-primary-foreground gold-glow'
-                    : 'border-border text-foreground hover:bg-muted',
+                    ? 'border-amber-500 bg-amber-500 font-semibold text-white'
+                    : 'border-slate-200 text-slate-700 hover:border-amber-300 hover:bg-amber-50/50',
                 )}
               >
                 {safeTotalPages}
@@ -167,7 +167,7 @@ export const renderPageNumbers = (
           onClick={() => setCurrentPage(Math.min(safeTotalPages, safeCurrentPage + 1))}
           disabled={safeCurrentPage >= safeTotalPages || safeTotalPages === 0}
           aria-label="Next page"
-          className="shrink-0 cursor-pointer rounded-full border border-border p-2 transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 sm:p-3"
+          className="shrink-0 cursor-pointer rounded-xl border border-slate-200 bg-white p-2 transition-colors hover:border-amber-300 hover:bg-amber-50/50 disabled:cursor-not-allowed disabled:opacity-50 sm:p-3"
         >
           <ChevronRight className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
         </button>

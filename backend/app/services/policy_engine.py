@@ -2,8 +2,88 @@
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from uuid import UUID
 
-from app.core.exceptions import PolicyViolationException
+from app.core.exceptions import ForbiddenError, PolicyViolationException
+from app.models.enums import BookingStatus, PaymentHoldStatus, UserRole
+
+VALID_BOOKING_TRANSITIONS: dict[BookingStatus, set[BookingStatus]] = {
+    BookingStatus.PENDING: {BookingStatus.CONFIRMED, BookingStatus.CANCELLED},
+    BookingStatus.CONFIRMED: {
+        BookingStatus.COMPLETED,
+        BookingStatus.CANCELLED,
+        BookingStatus.NO_SHOW,
+    },
+    BookingStatus.COMPLETED: set(),
+    BookingStatus.CANCELLED: set(),
+    BookingStatus.NO_SHOW: set(),
+}
+
+VALID_HOLD_TRANSITIONS: dict[PaymentHoldStatus, set[PaymentHoldStatus]] = {
+    PaymentHoldStatus.PENDING: {
+        PaymentHoldStatus.AUTHORIZED,
+        PaymentHoldStatus.VOIDED,
+        PaymentHoldStatus.EXPIRED,
+    },
+    PaymentHoldStatus.AUTHORIZED: {
+        PaymentHoldStatus.REAUTHORIZED,
+        PaymentHoldStatus.CAPTURED,
+        PaymentHoldStatus.PARTIALLY_CAPTURED,
+        PaymentHoldStatus.VOIDED,
+        PaymentHoldStatus.EXPIRED,
+    },
+    PaymentHoldStatus.REAUTHORIZED: {
+        PaymentHoldStatus.REAUTHORIZED,
+        PaymentHoldStatus.CAPTURED,
+        PaymentHoldStatus.PARTIALLY_CAPTURED,
+        PaymentHoldStatus.VOIDED,
+        PaymentHoldStatus.EXPIRED,
+    },
+    PaymentHoldStatus.PARTIALLY_CAPTURED: {
+        PaymentHoldStatus.CAPTURED,
+        PaymentHoldStatus.VOIDED,
+    },
+    PaymentHoldStatus.CAPTURED: set(),
+    PaymentHoldStatus.VOIDED: set(),
+    PaymentHoldStatus.EXPIRED: set(),
+}
+
+
+def assert_valid_booking_transition(
+    current: BookingStatus | str, target: BookingStatus | str
+) -> None:
+    curr = BookingStatus(current) if isinstance(current, str) else current
+    tgt = BookingStatus(target) if isinstance(target, str) else target
+    allowed = VALID_BOOKING_TRANSITIONS.get(curr, set())
+    if tgt not in allowed:
+        raise PolicyViolationException(
+            f"Invalid booking transition from {curr.value} to {tgt.value}"
+        )
+
+
+def assert_valid_hold_transition(
+    current: PaymentHoldStatus | str, target: PaymentHoldStatus | str
+) -> None:
+    curr = PaymentHoldStatus(current) if isinstance(current, str) else current
+    tgt = PaymentHoldStatus(target) if isinstance(target, str) else target
+    allowed = VALID_HOLD_TRANSITIONS.get(curr, set())
+    if tgt not in allowed:
+        raise PolicyViolationException(f"Invalid hold transition from {curr.value} to {tgt.value}")
+
+
+def assert_can_settle(
+    user_role: UserRole | str,
+    org_id: UUID | None,
+    target_org_id: UUID,
+) -> None:
+    role = UserRole(user_role) if isinstance(user_role, str) else user_role
+    if role in {UserRole.PLATFORM_ADMIN, UserRole.PLATFORM_STAFF}:
+        return
+    if role not in {UserRole.ORG_OWNER, UserRole.RECEPTION}:
+        raise ForbiddenError("Insufficient permissions to settle booking")
+    if org_id != target_org_id:
+        raise ForbiddenError("Booking belongs to another organization")
+
 
 # Hard caps for deposits (fraction of service price)
 MAX_DEPOSIT_FRACTION = Decimal("0.50")

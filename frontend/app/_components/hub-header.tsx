@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 
-import { Logo } from '@/components/brand/logo'
+import { Logo } from '@/components/brand'
+import { PrimaryButton } from '@/components/button'
 import { PORTAL_NAV } from '@/components/layout'
-import { Button } from '@/components/ui'
 
 interface HubHeaderProps {
   onOpenSandboxModal?: () => void
@@ -28,9 +28,12 @@ export function HubHeader({ onOpenSandboxModal }: HubHeaderProps) {
           ))}
         </nav>
 
-        <Button variant="secondary" onClick={onOpenSandboxModal}>
-          Sandbox Keys
-        </Button>
+        <PrimaryButton
+          variant="secondary"
+          onClick={onOpenSandboxModal}
+          title="Sandbox Keys"
+          fullWidth={false}
+        />
       </div>
     </header>
   )

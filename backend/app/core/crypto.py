@@ -1,5 +1,7 @@
 import hashlib
+import logging
 from base64 import b64decode, b64encode
+from functools import lru_cache
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -8,6 +10,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 def sha256_hex(data: str | bytes) -> str:
@@ -21,11 +25,16 @@ def chain_hash(previous_hash: str, payload: str) -> str:
     return sha256_hex(f"{previous_hash}:{payload}")
 
 
+@lru_cache(maxsize=1)
 def _load_or_create_private_key() -> Ed25519PrivateKey:
     settings = get_settings()
     if settings.ed25519_private_key:
         raw = b64decode(settings.ed25519_private_key)
         return Ed25519PrivateKey.from_private_bytes(raw)
+    logger.warning(
+        "ED25519_PRIVATE_KEY is not configured in settings; using a cached singleton key. "
+        "Set ED25519_PRIVATE_KEY in production to persist signatures across restarts."
+    )
     return Ed25519PrivateKey.generate()
 
 

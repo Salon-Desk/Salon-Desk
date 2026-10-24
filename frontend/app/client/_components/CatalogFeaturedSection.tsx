@@ -66,13 +66,13 @@ export function CatalogFeaturedSection({
         </div>
 
         {activeOrgs.length > 0 && activeSvcs.length > 0 && (
-          <div className="inline-flex rounded-full bg-stone-100 p-1 self-start sm:self-auto">
+          <div className="inline-flex shrink-0 rounded-full bg-stone-100 p-1">
             <button
               type="button"
               onClick={() => setActiveTab('salons')}
-              className={`cursor-pointer rounded-full px-3.5 py-1 text-xs font-semibold transition-all ${
+              className={`cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
                 activeTab === 'salons'
-                  ? 'bg-stone-950 text-white shadow-xs'
+                  ? 'bg-stone-950 text-white shadow-sm'
                   : 'text-stone-600 hover:text-stone-950'
               }`}
             >
@@ -81,9 +81,9 @@ export function CatalogFeaturedSection({
             <button
               type="button"
               onClick={() => setActiveTab('services')}
-              className={`cursor-pointer rounded-full px-3.5 py-1 text-xs font-semibold transition-all ${
+              className={`cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
                 activeTab === 'services'
-                  ? 'bg-stone-950 text-white shadow-xs'
+                  ? 'bg-stone-950 text-white shadow-sm'
                   : 'text-stone-600 hover:text-stone-950'
               }`}
             >
@@ -152,18 +152,18 @@ export function CatalogFeaturedSection({
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
+                <div className="mt-4 flex items-center justify-between border-t border-stone-100 pt-3">
                   <Link
                     href={`/client/org/${org.id}`}
-                    className="inline-flex items-center gap-1 font-bold text-xs text-stone-700 hover:text-amber-800 transition-colors"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-stone-600 transition-colors hover:text-amber-800"
                   >
                     <span>Visit Salon</span>
-                    <ArrowUpRight className="h-3.5 w-3.5 text-stone-400" />
+                    <ArrowUpRight className="h-3.5 w-3.5" />
                   </Link>
                   <button
                     type="button"
                     onClick={() => onSelectOrganization(org.id)}
-                    className="cursor-pointer rounded-full bg-stone-950 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-600"
+                    className="cursor-pointer rounded-full bg-stone-950 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-600"
                   >
                     View Treatments
                   </button>

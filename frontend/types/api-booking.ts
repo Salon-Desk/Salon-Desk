@@ -177,6 +177,17 @@ export interface ClientChatResponse {
     service_count?: number
     distance_km?: number | null
   }>
+  stylists?: Array<{
+    id: string
+    name: string
+    organization_id?: string | null
+    organization_name?: string | null
+    role?: string | null
+    picture?: string | null
+    bio?: string | null
+    rating?: number | null
+    is_any?: boolean
+  }>
   confirmed_booking?: {
     id: string
     service_name: string

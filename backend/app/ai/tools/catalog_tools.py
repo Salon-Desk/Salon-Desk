@@ -287,9 +287,16 @@ def build_voice_tools(
             session_factory,
             on_booking_success=on_booking_success,
             on_payment_link=on_payment_link,
+            on_discovery_results=on_discovery_results,
         )
     )
-    tools.extend(build_auth_tools(session_factory, on_auth_success=on_auth_success))
+    tools.extend(
+        build_auth_tools(
+            session_factory,
+            on_auth_success=on_auth_success,
+            on_ui_action=on_ui_action,
+        )
+    )
     return tools
 
 

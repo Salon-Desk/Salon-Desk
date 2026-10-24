@@ -137,6 +137,10 @@ export function BasicDataGrid<T>({
   showItemsPerPage = false,
   isLoading = false,
   className,
+  tableClassName,
+  headerClassName,
+  rowClassName,
+  cellClassName,
 }: DataGridProps<T>) {
   const [itemsPerPageState, setItemsPerPageState] = useState(itemsPerPage)
   const randomNum = useRef(Math.floor(Math.random() * 1000) + 1)
@@ -426,25 +430,18 @@ export function BasicDataGrid<T>({
   })
 
   return (
-    <div
-      className={cn(
-        'mx-auto w-full space-y-6 rounded-2xl bg-background px-3 pb-4 pt-2 lg:px-4 xl:pb-5',
-        className,
-      )}
-    >
+    <div className={cn('mx-auto w-full space-y-4 bg-transparent', className)}>
       {title && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-gradient-to-r from-white to-slate-50/80 px-4 py-3 sm:px-5">
           <div className="relative">
-            <h2 className="text-2xl font-serif font-bold text-foreground tracking-tight">
-              {title}
-            </h2>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{title}</h2>
             <div className="luxury-line w-12 mt-1"></div>
           </div>
         </div>
       )}
 
-      <div className="flex flex-col gap-0 lg:flex-row lg:items-center lg:justify-between">
-        <div className="w-full lg:max-w-xl lg:flex-1 mr-1">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="w-full lg:mr-1 lg:max-w-xl lg:flex-1">
           {showSearch && (
             <div className="relative w-full">
               <Search
@@ -456,13 +453,16 @@ export function BasicDataGrid<T>({
                 placeholder={searchPlaceholder}
                 value={searchQuery}
                 onChange={handleSearch}
-                className="h-9 w-full rounded-md border border-[#E5E7EB] bg-white py-0 pl-10 pr-4 text-[13px] text-[#111827] placeholder:text-[#64748B] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 py-0 pl-10 pr-4 text-[13px] text-slate-900 placeholder:text-slate-400 transition-all focus-visible:border-amber-500 focus-visible:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20"
               />
             </div>
           )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          <span className="mr-auto text-[11px] font-medium text-slate-500 lg:mr-1">
+            {resolvedTotalItems} {resolvedTotalItems === 1 ? 'record' : 'records'}
+          </span>
           {refetch && <RefreshButton onClick={() => refetch()} isLoading={isFetching} size="sm" />}
           {showColumnSelector && (
             <DropdownMenu>
@@ -551,18 +551,23 @@ export function BasicDataGrid<T>({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl bg-card shadow-none ring-1 ring-border/35">
+      <div
+        className={cn(
+          'overflow-x-auto rounded-2xl border border-slate-200/70 bg-white',
+          tableClassName,
+        )}
+      >
         <Table>
-          <TableHeader className="border-b border-border bg-muted/45">
+          <TableHeader className={cn('border-b border-slate-200 bg-slate-50/90', headerClassName)}>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
-                className="border-b border-border/80 hover:bg-transparent"
+                className="border-b border-slate-200 hover:bg-transparent"
               >
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="h-11 px-4 py-4 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                    className="h-12 whitespace-nowrap px-4 py-3 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500"
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
@@ -586,12 +591,21 @@ export function BasicDataGrid<T>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className={`border-b-0 transition-colors duration-150 hover:bg-accent/35 ${
-                    index % 2 === 0 ? 'bg-transparent' : 'bg-muted/22'
-                  }`}
+                  className={cn(
+                    `border-b border-slate-100 transition-colors duration-150 hover:bg-amber-50/35 ${
+                      index % 2 === 0 ? 'bg-white' : 'bg-slate-50/45'
+                    }`,
+                    rowClassName,
+                  )}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-3 px-4">
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        'whitespace-nowrap px-4 py-3.5 text-sm text-slate-700',
+                        cellClassName,
+                      )}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -621,7 +635,7 @@ export function BasicDataGrid<T>({
             itemsPerPageState,
             handlePageChange,
             {
-              className: 'rounded-t-none border-t border-border shadow-none',
+              className: 'rounded-2xl border border-slate-200/70 bg-white',
             },
           )}
         </div>
@@ -629,3 +643,6 @@ export function BasicDataGrid<T>({
     </div>
   )
 }
+
+export { BasicDataGrid as BasicDataGridTable }
+export default BasicDataGrid

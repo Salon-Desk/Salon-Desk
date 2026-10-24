@@ -17,6 +17,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useId, useState } from 'react'
 
+import { PrimaryButton } from '@/components/button'
+import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import { serviceImage } from '@/lib/data/service-content'
 import { formatDuration, formatUsd } from '@/lib/format'
 import { buildClientOrgStaffQueryArg } from '@/lib/listing-params/client-org-staff-list-params'
@@ -124,20 +126,16 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6"
+    <CustomResponsiveDialog
+      open={isOpen}
+      setOpen={(open) => {
+        if (!open) onClose()
+      }}
+      classNameContent="max-w-2xl p-0 overflow-hidden rounded-3xl"
+      classNameBody="p-0 max-h-[85vh] overflow-y-auto"
+      hideFooterBorder={true}
     >
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        className="fixed inset-0 bg-stone-950/70 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
-      />
-
-      {/* Modal Dialog Card */}
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="relative flex w-full flex-col overflow-hidden bg-white">
         {/* Cover Photo Header */}
         <div className="relative h-48 w-full shrink-0 overflow-hidden bg-stone-100 sm:h-56">
           <Image
@@ -447,24 +445,31 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <PrimaryButton
               type="button"
+              variant="outline"
+              size="sm"
               onClick={onClose}
-              className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-2 font-bold text-xs text-stone-700 hover:bg-stone-50"
-            >
-              Close
-            </button>
-            <button
+              className="h-10 cursor-pointer rounded-full border border-stone-200 bg-white px-4 font-semibold text-xs text-stone-700 hover:bg-stone-50 active:scale-[0.98]"
+              fullWidth={false}
+              title="Close"
+            />
+            <PrimaryButton
               type="button"
+              variant="dark"
+              size="sm"
               onClick={handleBookClick}
-              className="flex cursor-pointer items-center gap-1.5 rounded-full bg-stone-950 px-5 py-2 font-bold text-xs text-white shadow-md transition-all hover:bg-amber-700 hover:shadow-lg active:scale-98"
+              className="h-10 cursor-pointer rounded-full bg-stone-950 px-5 font-semibold text-xs text-white shadow-none transition-all hover:bg-amber-600 active:scale-[0.98] border-0"
+              fullWidth={false}
             >
-              <span>Book Appointment</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
+              <span className="flex items-center gap-1.5">
+                <span>Book Appointment</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </span>
+            </PrimaryButton>
           </div>
         </div>
       </div>
-    </div>
+    </CustomResponsiveDialog>
   )
 }

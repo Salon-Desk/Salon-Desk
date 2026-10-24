@@ -2,7 +2,7 @@
 
 import { Sparkles } from 'lucide-react'
 
-import { Logo } from '@/components/brand/logo'
+import { Logo } from '@/components/brand'
 
 export function HubHero() {
   return (

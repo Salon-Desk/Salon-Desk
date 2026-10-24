@@ -59,12 +59,33 @@ async def my_bookings(
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
     status: str | None = Query(default=None, description="Filter by status"),
+    q: str | None = Query(
+        default=None, description="Search query (service name, salon name, stylist name)"
+    ),
+    sort: str = Query(
+        default="starts_at_desc",
+        description="Sort order: starts_at_asc, starts_at_desc, created_at_asc, created_at_desc, total_price_asc, total_price_desc",
+    ),
 ) -> PageOut[BookingOut]:
-    rows = await booking_service.list_client_bookings(db, user.id)
+    rows = await booking_service.list_client_bookings(db, user.id, sort=sort)
     items = [booking_to_out(b) for b in rows]
+
+    # Filter by status
     if status:
         sf = status.upper()
         items = [b for b in items if b.status.upper() == sf]
+
+    # Filter by search query
+    if q:
+        query_lower = q.lower()
+        items = [
+            b
+            for b in items
+            if (b.service_name and query_lower in b.service_name.lower())
+            or (b.organization_name and query_lower in b.organization_name.lower())
+            or (b.stylist_name and query_lower in b.stylist_name.lower())
+        ]
+
     return paginate_items(items, page=page, page_size=page_size)
 
 

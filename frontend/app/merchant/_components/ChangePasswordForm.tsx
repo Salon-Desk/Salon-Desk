@@ -3,10 +3,10 @@
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import PrimaryButton from '@/components/button/PrimaryButton'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFTextField from '@/components/forms/RHFTextField'
 import { Card } from '@/components/ui'
+import PrimaryButton from '@/components/ui/primary-button'
 import { toastColor } from '@/constant/toast-color'
 import { useChangePasswordMutation } from '@/store/api/sharedApi'
 
@@ -55,10 +55,7 @@ export function ChangePasswordForm() {
   }
 
   return (
-    <Card
-      padding="lg"
-      className="rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
-    >
+    <Card padding="lg" className="rounded-xl border border-slate-200/70 bg-white shadow-none">
       <h2 className="font-bold text-slate-900 text-sm">Change Password</h2>
       <p className="mt-1 text-xs text-slate-500">
         Update your account password. Make sure to use a strong password.

@@ -25,7 +25,7 @@ interface DeleteConfirmationDialogProps {
   confirmTone?: 'destructive' | 'primary'
 }
 
-const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
+export const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
   title = 'Delete Confirmation',
   description = 'Are you sure you want to delete this item?',
   open,

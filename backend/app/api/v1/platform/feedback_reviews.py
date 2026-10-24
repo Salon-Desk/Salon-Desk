@@ -71,7 +71,6 @@ async def approve_client_feedback(
             approve=True,
             notes=body.moderation_notes,
         )
-        await db.commit()
     except (ForbiddenError, NotFoundError) as exc:
         code = (
             status.HTTP_403_FORBIDDEN
@@ -99,7 +98,6 @@ async def reject_client_feedback(
             approve=False,
             notes=body.moderation_notes,
         )
-        await db.commit()
     except (ForbiddenError, NotFoundError) as exc:
         code = (
             status.HTTP_403_FORBIDDEN

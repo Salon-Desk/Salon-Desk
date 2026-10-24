@@ -77,7 +77,7 @@ function MonthCalendar({ selectedDay, todayYmd, onSelectDay }: MonthCalendarProp
             aria-label="Previous month"
             disabled={!canPrev}
             onClick={() => setMonth((m) => addMonths(m, -1))}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-30 enabled:cursor-pointer"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -86,7 +86,7 @@ function MonthCalendar({ selectedDay, todayYmd, onSelectDay }: MonthCalendarProp
             aria-label="Next month"
             disabled={!canNext}
             onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-30 enabled:cursor-pointer"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -118,10 +118,13 @@ function MonthCalendar({ selectedDay, todayYmd, onSelectDay }: MonthCalendarProp
               className={cn(
                 'relative flex aspect-square w-full items-center justify-center rounded-xl text-sm font-medium transition-all sm:rounded-2xl',
                 !inMonth && 'text-stone-300',
-                inMonth && !disabled && !isSelected && 'text-stone-800 hover:bg-amber-50',
+                inMonth &&
+                  !disabled &&
+                  !isSelected &&
+                  'text-stone-800 hover:bg-amber-50 cursor-pointer active:scale-95',
                 disabled && 'cursor-not-allowed text-stone-300 line-through decoration-stone-200',
                 isSelected &&
-                  'bg-stone-950 font-semibold text-white shadow-md shadow-stone-950/20 ring-2 ring-amber-300/60 ring-offset-2',
+                  'bg-stone-950 font-semibold text-white shadow-md shadow-stone-950/20 ring-2 ring-amber-300/60 ring-offset-2 cursor-pointer',
               )}
             >
               {format(day, 'd')}
@@ -320,7 +323,7 @@ export function CheckoutSchedule({
                             aria-pressed={selected}
                             onClick={() => onSelectStartsAt(slot.starts_at)}
                             className={cn(
-                              'relative whitespace-nowrap rounded-xl border px-2 py-2.5 text-center text-xs font-semibold tabular-nums transition-all active:scale-[0.97]',
+                              'relative cursor-pointer whitespace-nowrap rounded-xl border px-2 py-2.5 text-center text-xs font-semibold tabular-nums transition-all active:scale-[0.97]',
                               selected
                                 ? 'border-stone-950 bg-stone-950 text-white shadow-md shadow-stone-950/15'
                                 : 'border-stone-200 bg-white text-stone-700 hover:border-amber-300 hover:bg-amber-50',

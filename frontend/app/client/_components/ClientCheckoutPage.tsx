@@ -42,7 +42,15 @@ export function checkoutPath(serviceId: string, opts: { slot?: string | null; st
 
 function findStylist(id: string | null | undefined, staff: StaffMember[]): StaffMember {
   if (!id || id === ANY_AVAILABLE_STYLIST.id) return ANY_AVAILABLE_STYLIST
-  return staff.find((s) => s.id === id) ?? ANY_AVAILABLE_STYLIST
+  const query = id.trim().toLowerCase()
+  return (
+    staff.find(
+      (s) =>
+        s.id.toLowerCase() === query ||
+        s.name.toLowerCase() === query ||
+        s.name.toLowerCase().includes(query),
+    ) ?? ANY_AVAILABLE_STYLIST
+  )
 }
 
 export interface ClientCheckoutPageProps {

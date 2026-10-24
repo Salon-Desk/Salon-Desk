@@ -3,36 +3,39 @@
 PRD: AI recommendations must use actual organization/service/pricing data.
 
 Usage (from backend/):
-  uv run python -m app.scripts.ingest_knowledge --clear
-  uv run python -m app.scripts.ingest_knowledge --database-url 'postgresql+asyncpg://…'
+  uv run python -m scripts.ingest_knowledge --clear
+  uv run python -m scripts.ingest_knowledge --database-url 'postgresql+asyncpg://…'
 """
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import logging
-import uuid
 from pathlib import Path
 
-from sqlalchemy import delete, select, text
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import selectinload
 
+from app.ai.embeddings import get_embeddings_batch
 from app.core.config import get_settings
 from app.core.database import Base
 from app.core.database_url import resolve_database_url
-from app.models.enums import (
-    KnowledgeEntityType,
-    OrganizationStatus,
-    ServiceStatus,
-)
+from app.models.enums import KnowledgeEntityType
 from app.models.knowledge import KnowledgeChunk
-from app.models.organization import Organization, OrgSettings
-from app.models.policy import OrgCancellationPolicy
-from app.models.service import Service, ServiceCategory
-from app.services.embeddings import get_embeddings_batch
+
+from .knowledge_documents import (
+    category_documents,
+    load_approved_organizations,
+    organization_documents,
+    platform_policy_documents,
+    policy_documents,
+    review_documents,
+    service_documents,
+    staff_documents,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger("ingest_knowledge")
@@ -40,9 +43,10 @@ logger = logging.getLogger("ingest_knowledge")
 # scripts/ingest_knowledge.py → backend/
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_FAQ = BACKEND_ROOT / "data" / "knowledge_en.json"
+DEFAULT_SCHEMA_RAG = BACKEND_ROOT / "schema_rag.sql"
 
 
-async def ensure_rag_schema(engine) -> None:
+async def ensure_rag_schema(engine, schema_file: Path = DEFAULT_SCHEMA_RAG) -> None:
     async with engine.begin() as conn:
         try:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
@@ -58,6 +62,21 @@ async def ensure_rag_schema(engine) -> None:
         import app.models  # noqa: F401
 
         await conn.run_sync(Base.metadata.create_all)
+
+        # Apply schema_rag.sql DDL & HNSW indexes if present.
+        if schema_file.is_file():
+            sql_text = schema_file.read_text(encoding="utf-8")
+            try:
+                raw_conn = await conn.get_raw_connection()
+                if hasattr(raw_conn, "driver_connection") and hasattr(
+                    raw_conn.driver_connection, "execute"
+                ):
+                    await raw_conn.driver_connection.execute(sql_text)
+                else:
+                    await conn.exec_driver_sql(sql_text)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Applied %s with notice: %s", schema_file.name, exc)
+
         # Postgres enums are not altered by create_all — add guide types if missing.
         for value in ("org_guide", "admin_guide"):
             await conn.execute(
@@ -75,39 +94,13 @@ async def ensure_rag_schema(engine) -> None:
     logger.info("RAG schema ready")
 
 
-def _service_document(service: Service, settings: OrgSettings | None) -> tuple[str, str, dict]:
-    org = service.organization
-    category = service.category
-    address = settings.physical_address if settings else None
-    title = f"{service.name} — {org.name if org else 'Salon'}"
-    parts = [
-        service.name,
-        org.name if org else "",
-        category.name if category else "",
-        service.description or "",
-        f"price {service.base_price}",
-        f"{service.duration_minutes} minutes",
-        address or "",
-    ]
-    content = " | ".join(p for p in parts if p)
-    meta = {
-        "service_id": str(service.id),
-        "organization_id": str(service.organization_id),
-        "organization_name": org.name if org else None,
-        "category_name": category.name if category else None,
-        "base_price": str(service.base_price),
-        "duration_minutes": service.duration_minutes,
-        "physical_address": address,
-    }
-    return title, content, meta
-
-
 async def _embed_and_save_chunks(
     session: AsyncSession,
     items: list[dict],
     language: str,
     label: str = "items",
     batch_size: int = 50,
+    schema_hash: str | None = None,
 ) -> int:
     if not items:
         return 0
@@ -115,6 +108,9 @@ async def _embed_and_save_chunks(
     logger.info("Computing batch embeddings for %d %s...", len(items), label)
     embeddings = await get_embeddings_batch(contents, batch_size=batch_size)
     for it, emb in zip(items, embeddings, strict=True):
+        meta = dict(it.get("metadata_json") or {})
+        if schema_hash:
+            meta["schema_hash"] = schema_hash
         session.add(
             KnowledgeChunk(
                 entity_type=it["entity_type"],
@@ -124,7 +120,7 @@ async def _embed_and_save_chunks(
                 content=it["content"],
                 language=language,
                 embedding=emb,
-                metadata_json=it["metadata_json"],
+                metadata_json=meta,
                 is_active=True,
             )
         )
@@ -135,251 +131,24 @@ async def sync_from_platform(
     session: AsyncSession,
     *,
     language: str,
+    schema_hash: str | None = None,
 ) -> int:
     """Index approved orgs + active services (+ categories, active policies)."""
     count = 0
 
-    cat_result = await session.execute(select(ServiceCategory))
-    cat_items = []
-    for cat in cat_result.scalars().all():
-        title = cat.name
-        content = f"Service category: {cat.name}. {cat.description or ''}".strip()
-        cat_items.append(
-            {
-                "entity_type": KnowledgeEntityType.CATEGORY,
-                "entity_id": cat.id,
-                "org_id": None,
-                "title": title,
-                "content": content,
-                "metadata_json": {"category_id": str(cat.id)},
-            }
+    async def _save(items: list[dict], label: str) -> int:
+        return await _embed_and_save_chunks(
+            session, items, language, label, schema_hash=schema_hash
         )
-    count += await _embed_and_save_chunks(session, cat_items, language, "categories")
 
-    org_result = await session.execute(
-        select(Organization).where(Organization.status == OrganizationStatus.APPROVED)
-    )
-    orgs = list(org_result.scalars().all())
-    settings_map: dict[uuid.UUID, OrgSettings] = {}
-    if orgs:
-        s_result = await session.execute(
-            select(OrgSettings).where(OrgSettings.org_id.in_([o.id for o in orgs]))
-        )
-        settings_map = {s.org_id: s for s in s_result.scalars().all()}
-
-    org_items = []
-    for org in orgs:
-        settings = settings_map.get(org.id)
-        title = org.name
-        content = " | ".join(
-            p
-            for p in [
-                org.name,
-                org.description or "",
-                settings.physical_address if settings else "",
-                settings.timezone if settings else "",
-            ]
-            if p
-        )
-        org_items.append(
-            {
-                "entity_type": KnowledgeEntityType.ORGANIZATION,
-                "entity_id": org.id,
-                "org_id": org.id,
-                "title": title,
-                "content": content,
-                "metadata_json": {
-                    "organization_id": str(org.id),
-                    "physical_address": settings.physical_address if settings else None,
-                    "timezone": settings.timezone if settings else None,
-                    "lat": str(settings.lat) if settings and settings.lat is not None else None,
-                    "lng": str(settings.lng) if settings and settings.lng is not None else None,
-                },
-            }
-        )
-    count += await _embed_and_save_chunks(session, org_items, language, "organizations")
-
-    svc_result = await session.execute(
-        select(Service)
-        .options(
-            selectinload(Service.organization),
-            selectinload(Service.category),
-        )
-        .where(Service.status == ServiceStatus.ACTIVE)
-    )
-    svc_items = []
-    for service in svc_result.scalars().all():
-        org = service.organization
-        if org is None or org.status != OrganizationStatus.APPROVED:
-            continue
-        title, content, meta = _service_document(service, settings_map.get(service.organization_id))
-        svc_items.append(
-            {
-                "entity_type": KnowledgeEntityType.SERVICE,
-                "entity_id": service.id,
-                "org_id": service.organization_id,
-                "title": title,
-                "content": content,
-                "metadata_json": meta,
-            }
-        )
-    count += await _embed_and_save_chunks(session, svc_items, language, "services")
-
-    # Active cancellation policies (org-scoped help)
-    from app.models.enums import OrgCancellationPolicyStatus
-
-    pol_result = await session.execute(
-        select(OrgCancellationPolicy).where(
-            OrgCancellationPolicy.status == OrgCancellationPolicyStatus.ACTIVE
-        )
-    )
-    pol_items = []
-    for policy in pol_result.scalars().all():
-        data = policy.data or {}
-        free_hours = data.get("free_cancel_hours", 24)
-        late_fee = data.get("late_cancel_fee_percent", 25)
-        no_show_fee = data.get("no_show_fee_percent", 50)
-        readable_desc = (
-            f"Cancellation and No-Show Policy ({policy.name}): "
-            f"Free cancellation is allowed up to {free_hours} hours prior to the appointment with 100% hold release ($0 charged). "
-            f"Late cancellation after the {free_hours}-hour deadline incurs an agreed {late_fee}% fee of the service price. "
-            f"No-show without notice incurs an agreed {no_show_fee}% fee of the service price. "
-            f"All fee captures settle directly into the salon's verified PayPal merchant account."
-        )
-        pol_items.append(
-            {
-                "entity_type": KnowledgeEntityType.POLICY,
-                "entity_id": policy.id,
-                "org_id": policy.org_id,
-                "title": f"Cancellation Policy — {policy.name}",
-                "content": readable_desc,
-                "metadata_json": {"policy_id": str(policy.id), "data": policy.data},
-            }
-        )
-    count += await _embed_and_save_chunks(session, pol_items, language, "cancellation policies")
-
-    # Platform legal & payment policies (Privacy, Terms, PayPal Hold, Booking Consent)
-    platform_policy_items = [
-        {
-            "entity_type": KnowledgeEntityType.PLATFORM,
-            "entity_id": None,
-            "org_id": None,
-            "title": "SalonDesk Privacy Policy & Data Protection",
-            "content": (
-                "Privacy Policy: SalonDesk prioritizes data security and user privacy. "
-                "Payment credentials, card numbers, and banking details are processed exclusively through PayPal's "
-                "PCI-DSS compliant infrastructure and are never stored on SalonDesk servers. "
-                "Client personal information (name, phone number, email) is collected solely for booking coordination "
-                "and appointment reminders with the booked salon. We do not sell personal data to third parties. "
-                "Users may request data access or account deletion at any time in their profile settings."
-            ),
-            "metadata_json": {"topic": "privacy_policy", "category": "legal"},
-        },
-        {
-            "entity_type": KnowledgeEntityType.PLATFORM,
-            "entity_id": None,
-            "org_id": None,
-            "title": "SalonDesk Terms of Service & Agreement",
-            "content": (
-                "Terms of Service & Platform Agreement: Governs all use of the SalonDesk booking platform. "
-                "Clients agree to provide accurate contact information and attend confirmed bookings on time. "
-                "Salons agree to honor scheduled services at stated prices and comply with cancellation terms. "
-                "SalonDesk provides the booking and software management infrastructure and does not directly employ "
-                "stylists or provide salon services. Service disputes or rescheduling requests are handled between the client and salon."
-            ),
-            "metadata_json": {"topic": "terms_of_service", "category": "legal"},
-        },
-        {
-            "entity_type": KnowledgeEntityType.PLATFORM,
-            "entity_id": None,
-            "org_id": None,
-            "title": "PayPal Authorization Hold Policy & Lifecycle",
-            "content": (
-                "PayPal Authorization Hold Policy: All client bookings place a $0 upfront authorization hold on the client's "
-                "selected PayPal payment method. Funds are not deducted upfront. The authorization reserves the required amount. "
-                "Upon service completion, the salon captures 100% of the service price directly into its verified PayPal merchant account. "
-                "If the client cancels before the free cancellation deadline, 100% of the hold is voided and released ($0 charged). "
-                "In case of a late cancellation or no-show, the agreed penalty fee is captured and the remaining hold is released. "
-                "Holds older than 3 days undergo automatic re-authorization to maintain the payment honor window."
-            ),
-            "metadata_json": {"topic": "paypal_hold", "category": "payments"},
-        },
-        {
-            "entity_type": KnowledgeEntityType.PLATFORM,
-            "entity_id": None,
-            "org_id": None,
-            "title": "Client Booking Consent Agreement",
-            "content": (
-                "Client Booking Consent & Authorization Terms: During checkout, clients explicitly agree to: "
-                "'I authorize a PayPal hold for this booking under the salon cancellation policy.' "
-                "This agreement is cryptographically signed and stored with a timestamp and a snapshot of the salon's "
-                "active cancellation policy, ensuring transparent and legally enforceable hold authorization."
-            ),
-            "metadata_json": {"topic": "consent_terms", "category": "legal"},
-        },
-    ]
-    count += await _embed_and_save_chunks(
-        session, platform_policy_items, language, "core platform policies"
-    )
-
-    # Staff members and ratings
-    from app.models.enums import FeedbackModerationStatus, UserRole, UserStatus
-    from app.models.feedback import ClientFeedback
-    from app.models.user import User
-
-    staff_result = await session.execute(
-        select(User)
-        .options(selectinload(User.profile))
-        .where(
-            User.role.in_([UserRole.STYLIST, UserRole.ORG_OWNER, UserRole.RECEPTION]),
-            User.status == UserStatus.ACTIVE,
-        )
-    )
-    staff_items = []
-    for staff in staff_result.scalars().all():
-        if not staff.org_id:
-            continue
-        org = next((o for o in orgs if o.id == staff.org_id), None)
-        first_name = staff.profile.first_name if staff.profile else ""
-        last_name = staff.profile.last_name if staff.profile else ""
-        full_name = f"{first_name} {last_name}".strip() or staff.email
-        staff_items.append(
-            {
-                "entity_type": KnowledgeEntityType.ORGANIZATION,
-                "entity_id": staff.id,
-                "org_id": staff.org_id,
-                "title": f"Staff Member — {full_name}",
-                "content": (
-                    f"Staff member {full_name} at {org.name if org else 'salon'}. "
-                    f"Role: {staff.role.value}. Email: {staff.email}."
-                ),
-                "metadata_json": {"staff_id": str(staff.id), "role": staff.role.value},
-            }
-        )
-    count += await _embed_and_save_chunks(session, staff_items, language, "staff members")
-
-    # Client reviews & feedback
-    feedback_result = await session.execute(
-        select(ClientFeedback).where(ClientFeedback.status == FeedbackModerationStatus.APPROVED)
-    )
-    fb_items = []
-    for fb in feedback_result.scalars().all():
-        org = next((o for o in orgs if o.id == fb.org_id), None)
-        fb_items.append(
-            {
-                "entity_type": KnowledgeEntityType.ORGANIZATION,
-                "entity_id": fb.id,
-                "org_id": fb.org_id,
-                "title": f"Client Review — {org.name if org else 'Salon'} ({fb.rating} Stars)",
-                "content": (
-                    f"Client review for {org.name if org else 'salon'}: rating {fb.rating} out of 5 stars. "
-                    f"Comment: {fb.comment or 'Great service and experience.'}"
-                ),
-                "metadata_json": {"feedback_id": str(fb.id), "rating": fb.rating},
-            }
-        )
-    count += await _embed_and_save_chunks(session, fb_items, language, "client reviews")
-
+    count += await _save(await category_documents(session), "categories")
+    orgs, settings_map = await load_approved_organizations(session)
+    count += await _save(organization_documents(orgs, settings_map), "organizations")
+    count += await _save(await service_documents(session, settings_map), "services")
+    count += await _save(await policy_documents(session), "cancellation policies")
+    count += await _save(platform_policy_documents(), "core platform policies")
+    count += await _save(await staff_documents(session, orgs), "staff members")
+    count += await _save(await review_documents(session, orgs), "client reviews")
     return count
 
 
@@ -394,15 +163,64 @@ def _entity_type_for_faq_item(item: dict) -> KnowledgeEntityType:
     return KnowledgeEntityType.PLATFORM
 
 
+def get_file_sha256(path: Path) -> str:
+    """Return SHA-256 hex digest of a file's content."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+async def get_stored_faq_hash(session: AsyncSession, language: str = "en") -> str | None:
+    """Return the file_hash stored in the FAQ knowledge chunks for the given language."""
+    stmt = (
+        select(func.jsonb_extract_path_text(KnowledgeChunk.metadata_json, "file_hash"))
+        .where(
+            KnowledgeChunk.entity_type.in_(
+                [
+                    KnowledgeEntityType.PLATFORM,
+                    KnowledgeEntityType.ORG_GUIDE,
+                    KnowledgeEntityType.ADMIN_GUIDE,
+                ]
+            ),
+            KnowledgeChunk.entity_id.is_(None),
+            KnowledgeChunk.language == language,
+            func.jsonb_extract_path_text(KnowledgeChunk.metadata_json, "file_hash").is_not(None),
+        )
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_chunk_counts(session: AsyncSession) -> tuple[int, int]:
+    """Return (live_entity_chunks_count, faq_chunks_count)."""
+    faq_types = [
+        KnowledgeEntityType.PLATFORM,
+        KnowledgeEntityType.ORG_GUIDE,
+        KnowledgeEntityType.ADMIN_GUIDE,
+    ]
+    faq_stmt = select(func.count(KnowledgeChunk.id)).where(
+        KnowledgeChunk.entity_type.in_(faq_types),
+        KnowledgeChunk.entity_id.is_(None),
+    )
+    total_stmt = select(func.count(KnowledgeChunk.id))
+    faq_count = int((await session.execute(faq_stmt)).scalar_one() or 0)
+    total_count = int((await session.execute(total_stmt)).scalar_one() or 0)
+    live_count = total_count - faq_count
+    return live_count, faq_count
+
+
 async def sync_platform_faq(
     session: AsyncSession,
     *,
     path: Path,
     language: str,
+    file_hash: str | None = None,
+    schema_hash: str | None = None,
 ) -> int:
     if not path.is_file():
         logger.warning("FAQ file missing: %s", path)
         return 0
+    if not file_hash:
+        file_hash = get_file_sha256(path)
     # Replace prior FAQ / guide chunks so re-ingest stays idempotent.
     await session.execute(
         delete(KnowledgeChunk).where(
@@ -414,6 +232,7 @@ async def sync_platform_faq(
                 ]
             ),
             KnowledgeChunk.entity_id.is_(None),
+            KnowledgeChunk.language == language,
         )
     )
     raw = json.loads(path.read_text(encoding="utf-8"))
@@ -433,18 +252,45 @@ async def sync_platform_faq(
                 "org_id": None,
                 "title": title,
                 "content": content,
-                "metadata_json": {"source": source, "audience": audience},
+                "metadata_json": {
+                    "source": source,
+                    "audience": audience,
+                    "file_hash": file_hash,
+                },
             }
         )
-    return await _embed_and_save_chunks(session, faq_items, language, "platform FAQs")
+    return await _embed_and_save_chunks(
+        session, faq_items, language, "platform FAQs", schema_hash=schema_hash
+    )
+
+
+async def get_stored_schema_hash(session: AsyncSession) -> str | None:
+    """Return the schema_hash stored in knowledge chunk metadata."""
+    stmt = (
+        select(func.jsonb_extract_path_text(KnowledgeChunk.metadata_json, "schema_hash"))
+        .where(
+            func.jsonb_extract_path_text(KnowledgeChunk.metadata_json, "schema_hash").is_not(None),
+        )
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def already_indexed(session: AsyncSession) -> int:
+    """Return count of existing knowledge chunks."""
+    result = await session.execute(select(func.count(KnowledgeChunk.id)))
+    return int(result.scalar_one() or 0)
 
 
 async def ingest(
     *,
     language: str,
     clear: bool,
+    force: bool = False,
     database_url: str | None,
     faq_file: Path,
+    schema_file: Path = DEFAULT_SCHEMA_RAG,
     skip_faq: bool,
 ) -> None:
     settings = get_settings()
@@ -455,17 +301,100 @@ async def ingest(
     )
 
     try:
-        await ensure_rag_schema(engine)
+        await ensure_rag_schema(engine, schema_file=schema_file)
         async with session_factory() as session:
+            current_faq_hash = (
+                get_file_sha256(faq_file) if (not skip_faq and faq_file.is_file()) else None
+            )
+            current_schema_hash = get_file_sha256(schema_file) if schema_file.is_file() else None
+            live_count, faq_count = await get_chunk_counts(session)
+            stored_faq_hash = (
+                await get_stored_faq_hash(session, language=language) if faq_count > 0 else None
+            )
+            stored_schema_hash = (
+                await get_stored_schema_hash(session) if (live_count + faq_count) > 0 else None
+            )
+
+            schema_changed = bool(
+                current_schema_hash
+                and (stored_schema_hash is None or current_schema_hash != stored_schema_hash)
+            )
+            faq_changed = bool(
+                current_faq_hash
+                and (stored_faq_hash is None or current_faq_hash != stored_faq_hash)
+            )
+
             if clear:
                 await session.execute(delete(KnowledgeChunk))
                 await session.commit()
                 logger.info("Cleared knowledge_chunk table")
+                live_count = 0
+                faq_count = 0
 
-            n_live = await sync_from_platform(session, language=language)
+            # If live catalog is already indexed and schema is unchanged:
+            if live_count > 0 and not force and not clear and not schema_changed:
+                if not faq_changed and faq_count > 0:
+                    logger.info(
+                        "Knowledge index, RAG schema, and FAQ file are up-to-date "
+                        "(%d live chunks, %d FAQ chunks, schema_hash=%s, faq_hash=%s). "
+                        "Skipping ingestion. Use --force to re-index.",
+                        live_count,
+                        faq_count,
+                        current_schema_hash[:8] if current_schema_hash else "none",
+                        current_faq_hash[:8] if current_faq_hash else "none",
+                    )
+                    return
+
+                if faq_changed:
+                    logger.info(
+                        "Detected changes in %s (hash: %s -> %s). Re-ingesting FAQ chunks...",
+                        faq_file.name,
+                        stored_faq_hash[:8] if stored_faq_hash else "none",
+                        current_faq_hash[:8] if current_faq_hash else "none",
+                    )
+                    n_faq = await sync_platform_faq(
+                        session,
+                        path=faq_file,
+                        language=language,
+                        file_hash=current_faq_hash,
+                        schema_hash=current_schema_hash,
+                    )
+                    await session.commit()
+                    logger.info(
+                        "Updated %d FAQ chunks from %s. Live catalog remains indexed (%d chunks).",
+                        n_faq,
+                        faq_file.name,
+                        live_count,
+                    )
+                    return
+
+            # Full index required (live_count == 0, force, or schema_changed):
+            if schema_changed and (live_count + faq_count) > 0:
+                logger.info(
+                    "Detected changes in %s (hash: %s -> %s). Re-indexing all knowledge chunks under new schema...",
+                    schema_file.name,
+                    stored_schema_hash[:8] if stored_schema_hash else "none",
+                    current_schema_hash[:8] if current_schema_hash else "none",
+                )
+                await session.execute(delete(KnowledgeChunk))
+                await session.commit()
+            elif force:
+                await session.execute(delete(KnowledgeChunk))
+                await session.commit()
+                logger.info("Cleared knowledge_chunk table for force re-index")
+
+            n_live = await sync_from_platform(
+                session, language=language, schema_hash=current_schema_hash
+            )
             n_faq = 0
-            if not skip_faq:
-                n_faq = await sync_platform_faq(session, path=faq_file, language=language)
+            if not skip_faq and faq_file.is_file():
+                n_faq = await sync_platform_faq(
+                    session,
+                    path=faq_file,
+                    language=language,
+                    file_hash=current_faq_hash,
+                    schema_hash=current_schema_hash,
+                )
             await session.commit()
             logger.info(
                 "Ingested %s live entity chunks + %s platform FAQ chunks (%s)",
@@ -487,8 +416,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Delete all knowledge_chunk rows before re-index",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-indexing even if knowledge_chunk table already has records",
+    )
     parser.add_argument("--database-url", default=None)
     parser.add_argument("--faq-file", type=Path, default=DEFAULT_FAQ)
+    parser.add_argument("--schema-file", type=Path, default=DEFAULT_SCHEMA_RAG)
     parser.add_argument(
         "--skip-faq",
         action="store_true",
@@ -503,8 +438,10 @@ def main(argv: list[str] | None = None) -> None:
         ingest(
             language=args.language,
             clear=args.clear,
+            force=args.force,
             database_url=args.database_url,
             faq_file=args.faq_file,
+            schema_file=args.schema_file,
             skip_faq=args.skip_faq,
         )
     )

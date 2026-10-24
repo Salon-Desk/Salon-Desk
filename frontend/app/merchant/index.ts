@@ -1,6 +1,5 @@
 export { ChangePasswordForm } from './_components/ChangePasswordForm'
-export { MerchantAuthModal } from './_components/merchant-auth-modal'
-export { MerchantConsole } from './_components/merchant-console'
+export { MerchantAuthModal } from './_components/MerchantAuthModal'
 export { type SettingsTab, SettingsTabs } from './_components/SettingsTabs'
 export {
   type MerchantContextValue,

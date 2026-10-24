@@ -169,13 +169,31 @@ async def get_booking(db: AsyncSession, booking_id: UUID) -> Booking:
     return booking
 
 
-async def list_client_bookings(db: AsyncSession, client_id: UUID) -> list[Booking]:
-    result = await db.execute(
-        select(Booking)
-        .options(*_BOOKING_LOAD_OPTIONS)
-        .where(Booking.client_id == client_id)
-        .order_by(Booking.starts_at.desc())
-    )
+async def list_client_bookings(
+    db: AsyncSession,
+    client_id: UUID,
+    sort: str = "starts_at_desc",
+) -> list[Booking]:
+    stmt = select(Booking).options(*_BOOKING_LOAD_OPTIONS).where(Booking.client_id == client_id)
+
+    # Apply sorting at database level for better performance
+    if sort == "starts_at_asc":
+        stmt = stmt.order_by(Booking.starts_at.asc())
+    elif sort == "starts_at_desc":
+        stmt = stmt.order_by(Booking.starts_at.desc())
+    elif sort == "created_at_asc":
+        stmt = stmt.order_by(Booking.created_at.asc())
+    elif sort == "created_at_desc":
+        stmt = stmt.order_by(Booking.created_at.desc())
+    elif sort == "total_price_asc":
+        stmt = stmt.order_by(Booking.total_price.asc())
+    elif sort == "total_price_desc":
+        stmt = stmt.order_by(Booking.total_price.desc())
+    else:
+        # Default: starts_at_desc
+        stmt = stmt.order_by(Booking.starts_at.desc())
+
+    result = await db.execute(stmt)
     return list(result.scalars().all())
 
 

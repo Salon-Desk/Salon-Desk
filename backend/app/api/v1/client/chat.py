@@ -1,10 +1,18 @@
 """AI chat: client booking concierge, or merchant/admin system help."""
 
-from fastapi import APIRouter, HTTPException, status
+import re
+
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.ai.chat_auth import try_handle_chat_auth
 from app.ai.chat_booking import try_handle_chat_booking
-from app.ai.llm import LLMError, get_llm_service
+from app.ai.chat_context import compress_conversation_history
+from app.ai.chat_responses import (
+    chat_response,
+    retrieved_chat_response,
+    with_client_booking_context,
+)
+from app.ai.llm import LLMError, get_fallback_llm_service, wrap_user_input
 from app.ai.portal import is_support_portal, normalize_portal
 from app.ai.rag_service import (
     build_chat_system_prompt,
@@ -13,57 +21,124 @@ from app.ai.rag_service import (
 )
 from app.ai.support_actions import resolve_portal_navigation
 from app.api.deps import DbSession, OptionalUser
-from app.schemas.chat import (
-    ChatCitation,
-    ChatRequest,
-    ChatResponse,
-    OrganizationCardOut,
-    ServiceCardOut,
-)
+from app.core.config import get_settings
+from app.schemas.chat import ChatRequest, ChatResponse
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+
+def _trusted_origin(request: Request) -> str | None:
+    origin = (request.headers.get("origin") or "").rstrip("/")
+    if not origin:
+        return None
+    settings = get_settings()
+    if origin in settings.cors_origins:
+        return origin
+    if settings.cors_origin_regex and re.fullmatch(settings.cors_origin_regex, origin):
+        return origin
+    return None
 
 
 @router.post("", response_model=ChatResponse)
 async def chat(
     body: ChatRequest,
     db: DbSession,
+    request: Request,
     user: OptionalUser = None,
 ) -> ChatResponse:
-    llm = get_llm_service()
+    llm = get_fallback_llm_service()
     portal = normalize_portal(body.portal)
+    language = body.language or "en"
 
     # Booking auth / hold confirmation only for the client concierge
     if not is_support_portal(portal):
-        auth_handled, auth_reply, auth_token, user_info = await try_handle_chat_auth(
-            db, llm, body.message, body.history
-        )
+        auth_res = await try_handle_chat_auth(db, llm, body.message, body.history)
+        auth_handled = auth_res[0]
+        auth_reply = auth_res[1]
+        auth_token = auth_res[2]
+        user_info = auth_res[3]
+        auth_ui_action = auth_res[4] if len(auth_res) > 4 else None
         if auth_handled:
-            return ChatResponse(
+            return chat_response(
+                llm,
                 reply=auth_reply,
-                provider=llm.provider_name,
-                model=llm.model,
-                detected_language=body.language or "en",
+                detected_language=language,
                 intent="auth",
                 auth_token=auth_token,
                 user=user_info,
+                ui_action=auth_ui_action,
             )
 
         booking_handled, booking_reply, confirmed_info = await try_handle_chat_booking(
-            db, llm, body.message, body.history, user=user
+            db,
+            llm,
+            body.message,
+            body.history,
+            user=user,
+            frontend_base=_trusted_origin(request),
         )
         if booking_handled:
-            return ChatResponse(
+            auth_token = confirmed_info.pop("auth_token", None) if confirmed_info else None
+            user_info = confirmed_info.pop("user", None) if confirmed_info else None
+            booking_ui_act_dict = confirmed_info.pop("ui_action", None) if confirmed_info else None
+            needs_auth = confirmed_info.pop("needs_auth", False) if confirmed_info else False
+            needs_stylist = confirmed_info.pop("needs_stylist", False) if confirmed_info else False
+            needs_time = confirmed_info.pop("needs_time", False) if confirmed_info else False
+            stylists = confirmed_info.pop("stylists", None) if confirmed_info else None
+            raw_recs = confirmed_info.pop("recommendations", None) if confirmed_info else None
+
+            from app.schemas.chat import ServiceCardOut
+
+            rec_cards: list[ServiceCardOut] = []
+            if raw_recs:
+                for r in raw_recs:
+                    if isinstance(r, ServiceCardOut):
+                        rec_cards.append(r)
+                    elif isinstance(r, dict):
+                        rec_cards.append(ServiceCardOut(**r))
+
+            ui_act = None
+            if booking_ui_act_dict:
+                from app.ai.support_actions import AgentUiAction
+
+                ui_act = AgentUiAction(**booking_ui_act_dict)
+
+            return chat_response(
+                llm,
                 reply=booking_reply,
-                provider=llm.provider_name,
-                model=llm.model,
-                detected_language=body.language or "en",
+                detected_language=language,
                 intent="booking",
-                confirmed_booking=confirmed_info,
+                confirmed_booking=(
+                    confirmed_info
+                    if confirmed_info
+                    and not needs_auth
+                    and not needs_stylist
+                    and not needs_time
+                    and not raw_recs
+                    else None
+                ),
                 payment_link=confirmed_info.get("payment_link") if confirmed_info else None,
+                auth_token=auth_token,
+                user=user_info,
+                ui_action=ui_act,
+                stylists=stylists,
+                recommendations=rec_cards,
             )
 
-    prior = [m.content for m in body.history if m.role == "user"]
+        from app.ai.tools.paypal_tools import handle_paypal_agent_chat
+
+        t9_handled, t9_reply, t9_meta = await handle_paypal_agent_chat(db, body.message, user=user)
+        if t9_handled:
+            return chat_response(
+                llm,
+                reply=t9_reply,
+                detected_language=language,
+                intent="paypal_checkout",
+                payment_link=t9_meta.get("approval_url") if t9_meta else None,
+                confirmed_booking=t9_meta,
+            )
+
+    prior = [turn.content for turn in body.history if turn.role == "user"]
     retrieved = await retrieve_context(
         db,
         body.message,
@@ -75,119 +150,36 @@ async def chat(
         portal=portal,
     )
     if retrieved.intent == "greeting" or retrieved.is_greeting:
-        return ChatResponse(
+        return chat_response(
+            llm,
             reply=greeting_reply_for_portal(portal),
-            provider=llm.provider_name,
-            model=llm.model,
             detected_language=retrieved.detected_language,
             intent=retrieved.intent,
         )
 
-    nav, ui_act = resolve_portal_navigation(portal, body.message)
+    navigation, ui_action = resolve_portal_navigation(portal, body.message)
     system = build_chat_system_prompt(retrieved, portal=portal)
-
-    # Client My Bookings & Cancellation Advisory
     if not is_support_portal(portal):
-        lower_msg = body.message.lower()
-        is_asking_booking = any(
-            phrase in lower_msg
-            for phrase in (
-                "my booking",
-                "my appointment",
-                "my reservation",
-                "cancel booking",
-                "cancel appointment",
-                "cancel my",
-                "what did i book",
-                "when is my",
-                "cancellation status",
-                "view booking",
-                "show booking",
-            )
+        system, navigation = await with_client_booking_context(
+            db, user, body.message, system, navigation
         )
-        is_asking_details = any(
-            phrase in lower_msg
-            for phrase in (
-                "organization detail",
-                "salon detail",
-                "service detail",
-                "about the salon",
-                "about the service",
-                "more about",
-            )
+
+    if navigation or ui_action:
+        act_label = ui_action.label if ui_action else (navigation.label if navigation else "")
+        target_path = (
+            ui_action.target
+            if ui_action and ui_action.target
+            else (navigation.target if navigation else "")
         )
-        if is_asking_booking or is_asking_details:
-            if user:
-                from app.ai.support_actions import AgentNavigation
-                from app.services import booking_service
-
-                user_bookings = await booking_service.list_client_bookings(db, user.id)
-                active_bookings = [
-                    b
-                    for b in user_bookings
-                    if b.status.value in ("CONFIRMED", "PENDING", "REAUTHORIZED")
-                ]
-                if active_bookings:
-                    booking_descriptions = []
-                    for b in active_bookings[:3]:
-                        svc_names = (
-                            ", ".join(bs.service.name for bs in b.booking_services if bs.service)
-                            or "Salon service"
-                        )
-                        deadline_str = (
-                            b.free_cancel_deadline_at.strftime("%b %d at %I:%M %p")
-                            if b.free_cancel_deadline_at
-                            else "24h prior"
-                        )
-                        booking_descriptions.append(
-                            f"- Booking #{str(b.id)[:8]}: {svc_names} at {b.organization.name if b.organization else 'Salon'} "
-                            f"on {b.starts_at.strftime('%A, %b %d at %I:%M %p')}. "
-                            f"Agreed hold: ${b.agreed_hold_amount}. "
-                            f"Free cancel deadline: {deadline_str}. "
-                            f"Late cancel penalty: ${b.agreed_late_cancel_fee}. Status: {b.status.value}."
-                        )
-                    bookings_text = "\n".join(booking_descriptions)
-                    client_context_note = (
-                        f"\n\n[Client's Live Bookings & Cancellation Information:\n{bookings_text}\n"
-                        f"Gain/Loss Advisory: If the client cancels before the free cancel deadline, "
-                        f"100% of the PayPal authorization hold is voided and released ($0 debited). "
-                        f"If the client cancels late after the deadline, the salon may capture the agreed late cancellation fee. "
-                        f"Direct them to open My Bookings to confirm or cancel their appointment.]"
-                    )
-                    system = f"{system}{client_context_note}"
-                    nav = AgentNavigation(
-                        target="/client/bookings",
-                        label="View My Bookings & Cancel",
-                        reason="Check booking details or manage cancellation",
-                    )
-                else:
-                    client_context_note = (
-                        "\n\n[Client Account Information: The client has no active appointments at this time. "
-                        "Remind them they can browse services or book an appointment anytime.]"
-                    )
-                    system = f"{system}{client_context_note}"
-            else:
-                client_context_note = (
-                    "\n\n[Client Account Note: The client is currently not signed in. "
-                    "Prompt them to sign in or use the Sign In modal so you can look up their active bookings and cancellation details.]"
-                )
-                system = f"{system}{client_context_note}"
-
-    if nav or ui_act:
-        act_label = ui_act.label if ui_act else (nav.label if nav else "")
-        target_path = ui_act.target if ui_act and ui_act.target else (nav.target if nav else "")
-        action_note = (
-            f"\n\n[Active Screen Action: The console interface is autonomously opening/navigating "
-            f"to {act_label} ({target_path}). Naturally acknowledge and confirm this action to the "
-            f"user in 1–2 friendly, spoken sentences.]"
+        system = (
+            f"{system}\n\n[Active Screen Action: The console interface is autonomously "
+            f"opening/navigating to {act_label} ({target_path}). Naturally acknowledge and "
+            f"confirm this action to the user in 1–2 friendly, spoken sentences.]"
         )
-        system = f"{system}{action_note}"
-
-    from app.ai.chat_context import compress_conversation_history
 
     messages = [{"role": "system", "content": system}]
     messages.extend(compress_conversation_history(body.history))
-    messages.append({"role": "user", "content": body.message})
+    messages.append({"role": "user", "content": wrap_user_input(body.message)})
 
     try:
         # Support how-tos need a bit more room for numbered steps.
@@ -196,52 +188,10 @@ async def chat(
     except LLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=exc.message) from exc
 
-    return ChatResponse(
+    return retrieved_chat_response(
+        llm,
         reply=reply,
-        provider=llm.provider_name,
-        model=llm.model,
-        detected_language=retrieved.detected_language,
-        intent=retrieved.intent,
-        citations=[
-            ChatCitation(
-                entity_type=c.entity_type,
-                entity_id=c.entity_id,
-                title=c.title,
-                content=c.content,
-            )
-            for c in retrieved.chunks
-        ],
-        recommendations=[
-            ServiceCardOut(
-                service_id=r.service_id,
-                organization_id=r.organization_id,
-                name=r.name,
-                organization_name=r.organization_name,
-                organization_picture=r.organization_picture,
-                image_url=r.image_url,
-                base_price=r.base_price,
-                duration_minutes=r.duration_minutes,
-                category_name=r.category_name,
-                description=r.description,
-                physical_address=r.physical_address,
-                distance_km=r.distance_km,
-                score=r.score,
-            )
-            for r in retrieved.recommendations
-        ],
-        organizations=[
-            OrganizationCardOut(
-                id=o.id,
-                name=o.name,
-                description=o.description,
-                picture=o.picture,
-                physical_address=o.physical_address,
-                rating=o.rating,
-                service_count=o.service_count,
-                distance_km=o.distance_km,
-            )
-            for o in retrieved.organizations
-        ],
-        navigation=nav,
-        ui_action=ui_act,
+        retrieved=retrieved,
+        navigation=navigation,
+        ui_action=ui_action,
     )
