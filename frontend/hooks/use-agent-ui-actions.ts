@@ -18,6 +18,9 @@ export interface AgentUiActionPayload {
 }
 
 export interface AgentActionHandlers {
+  // Client auth actions
+  onOpenAuthModal?: (view?: 'sign-in' | 'sign-up') => void
+
   // Merchant actions
   onOpenAddStaff?: () => void
   onOpenAddService?: () => void
@@ -89,6 +92,26 @@ export function useAgentUiActions(handlers: AgentActionHandlers = {}) {
 
       if (detail.type === 'ui_action' && detail.action) {
         switch (detail.action) {
+          // Client auth
+          case 'open_auth_modal':
+          case 'open_sign_in':
+          case 'open_sign_up': {
+            const view =
+              detail.action === 'open_sign_up' || detail.target === 'sign-up'
+                ? 'sign-up'
+                : 'sign-in'
+            if (handlers.onOpenAuthModal) {
+              handlers.onOpenAuthModal(view)
+            } else if (typeof window !== 'undefined') {
+              window.dispatchEvent(
+                new CustomEvent('salondesk:open_auth_modal', {
+                  detail: { view, portal: detail.portal || 'client' },
+                }),
+              )
+            }
+            break
+          }
+
           // Merchant
           case 'open_add_staff':
             handlers.onOpenAddStaff?.()

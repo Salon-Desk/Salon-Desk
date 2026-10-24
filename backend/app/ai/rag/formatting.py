@@ -5,6 +5,7 @@ from .constants import (
     RetrievedChunk,
     RetrievedContext,
     ServiceRecommendation,
+    StylistRecommendation,
     persona_for_portal,
 )
 
@@ -12,6 +13,7 @@ from .constants import (
 def format_context_text(
     chunks: list[RetrievedChunk],
     recommendations: list[ServiceRecommendation],
+    stylists: list[StylistRecommendation] | None = None,
 ) -> str:
     """Format retrieved chunks and recommendations into text for LLM context."""
     lines: list[str] = []
@@ -26,6 +28,16 @@ def format_context_text(
                 + (f" ({card.category_name})" if card.category_name else "")
                 + (f" @ {card.physical_address}" if card.physical_address else "")
                 + f" [service_id={card.service_id}]"
+            )
+
+    if stylists:
+        lines.append("Available stylists / staff (from live platform data):")
+        for st in stylists:
+            lines.append(
+                f"- {st.name} ({st.role})"
+                + (f" at {st.organization_name}" if st.organization_name else "")
+                + (f" · Specialties: {st.bio}" if st.bio else "")
+                + (f" · Rating: {st.rating}★" if st.rating else "")
             )
 
     for chunk in chunks:

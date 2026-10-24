@@ -7,6 +7,7 @@ import type {
   AgentConfirmedBooking,
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
+  AgentStylistRecommendation,
 } from '@/components/chat/useAgentChat'
 import { highlightElement } from '@/hooks/useAgentUiActions'
 import { type AssistantPortal, isSupportPortal, portalChrome } from '@/lib/assistant-portal'
@@ -22,6 +23,7 @@ export interface ChatMessageItem {
   time: string
   recommendations?: AgentServiceRecommendation[]
   organizations?: AgentOrganizationRecommendation[]
+  stylists?: AgentStylistRecommendation[]
   confirmedBooking?: AgentConfirmedBooking | null
   navigation?: {
     target: string
@@ -38,11 +40,23 @@ export interface ChatMessageItem {
   } | null
 }
 
-export { ConfirmedBookingCard, OrganizationCard, ServiceCard } from './ChatCards'
+export {
+  AuthPromptCard,
+  ConfirmedBookingCard,
+  OrganizationCard,
+  ServiceCard,
+  StylistCard,
+} from './ChatCards'
 export { ChatPanelShell, type ChatPanelShellProps, ConciergeAvatar } from './ChatPanelShell'
 export { RichText } from './RichText'
 
-import { ConfirmedBookingCard, OrganizationCard, ServiceCard } from './ChatCards'
+import {
+  AuthPromptCard,
+  ConfirmedBookingCard,
+  OrganizationCard,
+  ServiceCard,
+  StylistCard,
+} from './ChatCards'
 import { ConciergeAvatar } from './ChatPanelShell'
 import { RichText } from './RichText'
 
@@ -74,6 +88,7 @@ export interface ChatConversationProps<T extends ChatMessageItem = ChatMessageIt
   onPromptChange: (value: string) => void
   onSend: (prompt?: string) => void
   onSelectService?: (service: AgentServiceRecommendation) => void
+  onSelectStylist?: (stylist: AgentStylistRecommendation) => void
   onTryVoice?: () => void
   renderExtras?: (message: T) => React.ReactNode
   suggestions?: string[]
@@ -91,6 +106,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
   onPromptChange,
   onSend,
   onSelectService,
+  onSelectStylist,
   onTryVoice,
   renderExtras,
   suggestions,
@@ -171,6 +187,15 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
     } else {
       justSentRef.current = true
       onSend(`Book ${service.name} at ${service.organizationName}`)
+    }
+  }
+
+  const handleSelectStylist = (stylist: AgentStylistRecommendation) => {
+    if (onSelectStylist) {
+      onSelectStylist(stylist)
+    } else {
+      justSentRef.current = true
+      onSend(stylist.isAny ? 'Any available stylist' : `Book with ${stylist.name}`)
     }
   }
 
@@ -257,46 +282,70 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
               )}
 
               {/* Navigation or UI Actions */}
-              {!isUser && (msg.navigation || msg.uiAction) && (
-                <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
-                  <div className="flex flex-col gap-1.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-2.5 text-xs text-stone-800 shadow-2xs backdrop-blur-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-bold text-amber-950">
-                        <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                        <span>
-                          {msg.uiAction?.label || msg.navigation?.label || 'Action Executed'}
+              {!isUser &&
+                (msg.navigation ||
+                  (msg.uiAction &&
+                    !['open_auth_modal', 'open_sign_in', 'open_sign_up'].includes(
+                      msg.uiAction.action,
+                    ))) && (
+                  <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
+                    <div className="flex flex-col gap-1.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-2.5 text-xs text-stone-800 shadow-2xs backdrop-blur-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 font-bold text-amber-950">
+                          <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                          <span>
+                            {msg.uiAction?.label || msg.navigation?.label || 'Action Executed'}
+                          </span>
                         </span>
-                      </span>
-                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
-                        Executed
-                      </span>
+                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                          Executed
+                        </span>
+                      </div>
+                      {msg.uiAction?.details && (
+                        <p className="text-[11px] text-stone-600 leading-relaxed">
+                          {msg.uiAction.details}
+                        </p>
+                      )}
+                      {(msg.navigation?.target || msg.uiAction?.target) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const target = msg.uiAction?.target || msg.navigation?.target
+                            if (target && typeof window !== 'undefined') {
+                              window.location.href = target
+                            }
+                            if (msg.uiAction?.selector) {
+                              highlightElement(msg.uiAction.selector)
+                            }
+                          }}
+                          className="mt-0.5 inline-flex w-fit items-center gap-1 rounded-lg border border-amber-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-900 shadow-2xs transition-colors hover:bg-amber-50 cursor-pointer"
+                        >
+                          <span>Open Screen</span>
+                          <ArrowUpRight className="h-3 w-3" />
+                        </button>
+                      )}
                     </div>
-                    {msg.uiAction?.details && (
-                      <p className="text-[11px] text-stone-600 leading-relaxed">
-                        {msg.uiAction.details}
-                      </p>
-                    )}
-                    {(msg.navigation?.target || msg.uiAction?.target) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const target = msg.uiAction?.target || msg.navigation?.target
-                          if (target && typeof window !== 'undefined') {
-                            window.location.href = target
-                          }
-                          if (msg.uiAction?.selector) {
-                            highlightElement(msg.uiAction.selector)
-                          }
-                        }}
-                        className="mt-0.5 inline-flex w-fit items-center gap-1 rounded-lg border border-amber-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-900 shadow-2xs transition-colors hover:bg-amber-50 cursor-pointer"
-                      >
-                        <span>Open Screen</span>
-                        <ArrowUpRight className="h-3 w-3" />
-                      </button>
-                    )}
                   </div>
-                </div>
-              )}
+                )}
+
+              {/* Auth Prompt Card */}
+              {!support &&
+                !isUser &&
+                msg.uiAction &&
+                ['open_auth_modal', 'open_sign_in', 'open_sign_up'].includes(
+                  msg.uiAction.action,
+                ) && (
+                  <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
+                    <AuthPromptCard
+                      defaultView={
+                        msg.uiAction.target === 'sign-up' || msg.uiAction.action === 'open_sign_up'
+                          ? 'sign-up'
+                          : 'sign-in'
+                      }
+                      onContinue={() => sendPrompt('Please continue with my booking')}
+                    />
+                  </div>
+                )}
 
               {/* Confirmed Booking Card */}
               {!support && !isUser && msg.confirmedBooking && (
@@ -347,6 +396,23 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                       Show a few more
                     </button>
                   )}
+                </div>
+              )}
+
+              {/* Stylist Selection Cards */}
+              {!support && !isUser && msg.stylists && msg.stylists.length > 0 && (
+                <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%] space-y-1.5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+                  <p className="px-0.5 text-[11px] font-medium text-stone-400">
+                    {msg.stylists.length} stylist option{msg.stylists.length === 1 ? '' : 's'} — tap
+                    one to select
+                  </p>
+                  {msg.stylists.map((stylist) => (
+                    <StylistCard
+                      key={stylist.id}
+                      stylist={stylist}
+                      onSelect={handleSelectStylist}
+                    />
+                  ))}
                 </div>
               )}
 

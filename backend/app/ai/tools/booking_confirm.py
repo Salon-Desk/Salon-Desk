@@ -22,6 +22,7 @@ from .booking_helpers import (
     parse_starts_at,
     resolve_client,
     resolve_service,
+    resolve_stylist,
 )
 from .booking_responses import error_response, partial_success_response, success_response
 
@@ -48,18 +49,27 @@ def build_confirm_tools(
     async def book_and_confirm_appointment(
         service_query: str,
         preferred_time: str | None = None,
+        stylist_name: str | None = None,
         client_email: str | None = None,
         notes: str | None = None,
     ) -> str:
         """Book and immediately confirm an appointment with a $0 PayPal authorization hold.
 
         Use this when the client confirms they want to book a service (e.g. 'book the haircut',
-        'reserve an appointment tomorrow at 2pm').
+        'reserve an appointment tomorrow at 2pm') and optionally specifies their preferred stylist.
         """
         async with session_factory() as db:
             client = await resolve_client(db, client_email)
             if client is None:
-                return error_response("Please log in first before booking an appointment.")
+                if client_email:
+                    return error_response(
+                        f"I couldn't find a client account for '{client_email}'. "
+                        "Please create an account or sign in first."
+                    )
+                return error_response(
+                    "You need to be signed in or provide your registered email address before booking. "
+                    "Could you please tell me your account email?"
+                )
 
             service = await resolve_service(db, service_query)
             if service is None:
@@ -68,6 +78,9 @@ def build_confirm_tools(
                 )
 
             starts_at = parse_starts_at(preferred_time)
+            stylist_id, resolved_stylist = await resolve_stylist(
+                db, service.organization_id, stylist_name
+            )
 
             try:
                 booking = await booking_service.create_booking(
@@ -76,8 +89,9 @@ def build_confirm_tools(
                     org_id=service.organization_id,
                     service_ids=[service.id],
                     starts_at=starts_at,
-                    stylist_id=None,
-                    customer_notes=notes or "Booked via SalonDesk AI Voice Assistant",
+                    stylist_id=stylist_id,
+                    customer_notes=notes
+                    or f"Booked via SalonDesk AI Voice Assistant · Stylist: {resolved_stylist}",
                 )
             except Exception as exc:
                 logger.warning("Failed to create booking: %s", exc)
@@ -112,7 +126,9 @@ def build_confirm_tools(
 
             org = await db.get(Organization, service.organization_id)
             formatted_time = starts_at.strftime("%A, %b %d at %I:%M %p")
-            payload = build_booking_payload(booking, service, org, starts_at)
+            payload = build_booking_payload(
+                booking, service, org, starts_at, stylist_name=resolved_stylist
+            )
             await invoke_callback(on_booking_success, payload, log_label="on_booking_success")
 
             org_name = org.name if org else "Salon"
@@ -123,7 +139,7 @@ def build_confirm_tools(
                 formatted_time=formatted_time,
                 total_price=str(booking.total_price),
                 message=(
-                    f"Your appointment for {service.name} at {org_name} has been booked and "
+                    f"Your appointment for {service.name} with {resolved_stylist} at {org_name} has been booked and "
                     f"confirmed for {formatted_time}. A $0 PayPal authorization hold is active with free cancellation."
                 ),
             )

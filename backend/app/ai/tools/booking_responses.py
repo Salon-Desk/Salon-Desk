@@ -56,23 +56,40 @@ def pending_payment_response(
     total_price: str,
     payment_link: str,
     message: str,
+    stylist_name: str | None = None,
+    service_price: str | None = None,
+    platform_fee: str | None = None,
+    hold_amount: str | None = None,
+    free_cancel_deadline: str | None = None,
+    free_cancel_label: str | None = None,
+    late_cancel_fee: str | None = None,
+    no_show_fee: str | None = None,
+    **kwargs: Any,
 ) -> str:
     """Build a response for pending booking with payment link."""
-    return json.dumps(
-        {
-            "status": "pending_payment",
-            "booking_id": booking_id,
-            "service_id": service_id,
-            "service_name": service_name,
-            "organization_name": org_name,
-            "organization_id": org_id,
-            "starts_at": starts_at,
-            "formatted_time": formatted_time,
-            "total_price": total_price,
-            "payment_link": payment_link,
-            "message": message,
-        }
-    )
+    payload = {
+        "status": "pending_payment",
+        "booking_id": booking_id,
+        "service_id": service_id,
+        "service_name": service_name,
+        "organization_name": org_name,
+        "organization_id": org_id,
+        "stylist_name": stylist_name,
+        "starts_at": starts_at,
+        "formatted_time": formatted_time,
+        "service_price": service_price or total_price,
+        "platform_fee": platform_fee or "0.00",
+        "hold_amount": hold_amount or total_price,
+        "total_price": total_price,
+        "free_cancel_deadline": free_cancel_deadline,
+        "free_cancel_label": free_cancel_label,
+        "late_cancel_fee": late_cancel_fee,
+        "no_show_fee": no_show_fee,
+        "payment_link": payment_link,
+        "message": message,
+    }
+    payload.update(kwargs)
+    return json.dumps(payload)
 
 
 def bookings_list_response(bookings: list[dict[str, Any]], count: int) -> str:

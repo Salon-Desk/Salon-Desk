@@ -61,6 +61,20 @@ class OrganizationCardOut(BaseModel):
     distance_km: float | None = None
 
 
+class StylistCardOut(BaseModel):
+    """Stylist / Staff recommendation card for chat UI."""
+
+    id: str
+    name: str
+    organization_id: UUID | None = None
+    organization_name: str | None = None
+    role: str = "Stylist"
+    picture: str | None = None
+    bio: str | None = None
+    rating: float | None = None
+    is_any: bool = False
+
+
 class ChatResponse(BaseModel):
     reply: str
     provider: str
@@ -70,6 +84,7 @@ class ChatResponse(BaseModel):
     citations: list[ChatCitation] = Field(default_factory=list)
     recommendations: list[ServiceCardOut] = Field(default_factory=list)
     organizations: list[OrganizationCardOut] = Field(default_factory=list)
+    stylists: list[StylistCardOut] = Field(default_factory=list)
     confirmed_booking: dict[str, str | None] | None = None
     auth_token: str | None = None
     user: dict[str, str | None] | None = None

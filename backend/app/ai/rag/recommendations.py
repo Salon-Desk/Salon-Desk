@@ -30,7 +30,9 @@ def is_salon_hunt(query: str) -> bool:
     """Check if user is looking for salons/organizations in general (not specific services)."""
     lowered = (query or "").lower()
     looking_for_salon = any(hint in lowered for hint in _SALON_HUNT_HINTS)
-    named_a_service = any(hint in lowered for hint in _SPECIFIC_SERVICE_HINTS)
+    named_a_service = is_service_request(query) or any(
+        hint in lowered for hint in _SPECIFIC_SERVICE_HINTS
+    )
     return looking_for_salon and not named_a_service
 
 
