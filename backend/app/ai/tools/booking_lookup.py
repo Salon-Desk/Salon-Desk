@@ -4,6 +4,7 @@ from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.orm import selectinload
 
 from app.models.enums import ServiceStatus
 from app.models.service import Service
@@ -38,6 +39,7 @@ def build_lookup_tools(
 
             svc_res = await db.execute(
                 select(Service)
+                .options(selectinload(Service.category))
                 .where(
                     Service.organization_id == org.id,
                     Service.status == ServiceStatus.ACTIVE,
@@ -61,6 +63,31 @@ def build_lookup_tools(
                 }
                 for s in services
             ]
+
+            if on_discovery_results and services:
+                rec_cards = [
+                    {
+                        "service_id": str(s.id),
+                        "organization_id": str(org.id),
+                        "name": s.name,
+                        "organization_name": org.name,
+                        "organization_picture": org.picture,
+                        "image_url": getattr(s, "image_url", None),
+                        "base_price": str(s.base_price),
+                        "duration_minutes": s.duration_minutes,
+                        "category_name": s.category.name if s.category else None,
+                        "description": s.description,
+                        "physical_address": org.physical_address,
+                    }
+                    for s in services
+                ]
+                try:
+                    res = on_discovery_results({"recommendations": rec_cards})
+                    if inspect.isawaitable(res):
+                        await res
+                except Exception:
+                    pass
+
             return organization_details_response(org_data, services_data)
 
     @function_tool()
@@ -89,6 +116,28 @@ def build_lookup_tools(
                 "id": str(org.id) if org else None,
                 "name": org.name if org else None,
             }
+
+            if on_discovery_results:
+                rec_card = {
+                    "service_id": str(service.id),
+                    "organization_id": str(org.id) if org else "",
+                    "name": service.name,
+                    "organization_name": org.name if org else "Salon",
+                    "organization_picture": org.picture if org else None,
+                    "image_url": getattr(service, "image_url", None),
+                    "base_price": str(service.base_price),
+                    "duration_minutes": service.duration_minutes,
+                    "category_name": service.category.name if service.category else None,
+                    "description": service.description,
+                    "physical_address": org.physical_address if org else None,
+                }
+                try:
+                    res = on_discovery_results({"recommendations": [rec_card]})
+                    if inspect.isawaitable(res):
+                        await res
+                except Exception:
+                    pass
+
             return service_details_response(service_data, org_data)
 
     @function_tool()

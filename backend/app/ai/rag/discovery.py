@@ -168,10 +168,17 @@ async def collect_client_cards(
             session, seen_org_ids, limit=rec_limit
         )
 
+    if user_wants_services and not recommendations:
+        recommendations = await search_services_by_keywords(
+            session, "", org_id, user_lat, user_lng, rec_limit
+        )
+
     if user_wants_stylists:
         return recommendations, [], [], response_stylists
     if user_wants_salons:
         return recommendations, [], organizations[:rec_limit], []
-    if user_wants_services:
+    if recommendations:
         return recommendations, recommendations, [], []
+    if organizations:
+        return recommendations, [], organizations[:rec_limit], []
     return recommendations, [], [], []

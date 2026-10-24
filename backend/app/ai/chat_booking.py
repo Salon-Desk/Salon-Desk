@@ -215,9 +215,26 @@ async def _confirm_pending_booking(
 
 
 async def _resolve_requested_service(db: AsyncSession, service_query: str) -> Service | None:
+    clean_query = (service_query or "").strip()
+    if not clean_query:
+        return None
+
+    # Avoid matching generic intent words as service names
+    if clean_query.lower() in {
+        "service",
+        "services",
+        "booking",
+        "appointment",
+        "treatment",
+        "treatments",
+        "hair",
+        "salon",
+    }:
+        return None
+
     parsed_uuid: UUID | None = None
     try:
-        parsed_uuid = UUID(service_query.strip())
+        parsed_uuid = UUID(clean_query)
     except (ValueError, AttributeError):
         parsed_uuid = None
 
@@ -231,28 +248,16 @@ async def _resolve_requested_service(db: AsyncSession, service_query: str) -> Se
     )
     if parsed_uuid:
         stmt = stmt.where(Service.id == parsed_uuid)
-    elif service_query:
+    else:
         stmt = stmt.where(
             or_(
-                Service.name.ilike(f"%{service_query.strip()}%"),
-                Organization.name.ilike(f"%{service_query.strip()}%"),
+                Service.name.ilike(f"%{clean_query}%"),
+                Organization.name.ilike(f"%{clean_query}%"),
             )
         )
 
     service = (await db.execute(stmt.limit(1))).scalar_one_or_none()
-    if service is not None:
-        return service
-
-    fallback = await db.execute(
-        select(Service)
-        .join(Organization, Service.organization_id == Organization.id)
-        .where(
-            Organization.status == OrganizationStatus.APPROVED,
-            Service.status == ServiceStatus.ACTIVE,
-        )
-        .limit(1)
-    )
-    return fallback.scalar_one_or_none()
+    return service
 
 
 async def _get_active_service_cards(db: AsyncSession, limit: int = 4) -> list[dict[str, Any]]:
