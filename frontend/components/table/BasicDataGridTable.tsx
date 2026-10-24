@@ -13,13 +13,16 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  CheckCircle2,
   Eye,
   Filter,
+  PauseCircle,
   PlusCircle,
   Search,
   Settings,
   SquarePen,
   Trash2,
+  X,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -130,6 +133,9 @@ export function BasicDataGrid<T>({
   onEdit,
   onDelete,
   onSuspend,
+  onApprove,
+  onReject,
+  renderRowActions,
   customButtons,
   onSortChange,
   initialSort,
@@ -295,7 +301,11 @@ export function BasicDataGrid<T>({
       })
     })
 
-    if (showActions) {
+    const hasRowActions = Boolean(
+      onView || onEdit || onDelete || onSuspend || onApprove || onReject || renderRowActions,
+    )
+
+    if (showActions && hasRowActions) {
       result.push({
         id: `actions-sample-${randomNum.current}`,
 
@@ -336,21 +346,49 @@ export function BasicDataGrid<T>({
                 variant="ghost"
                 className="h-7 w-7 hover:bg-accent text-muted-foreground hover:text-primary transition-all duration-200 cursor-pointer"
                 onClick={() => onView(row.original)}
+                title="View details"
               >
                 <Eye className="h-3.5 w-3.5" />
                 <span className="sr-only">Detail</span>
+              </Button>
+            )}
+            {onApprove && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 transition-all duration-200 cursor-pointer"
+                onClick={() => onApprove(row.original)}
+                title="Approve"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span className="sr-only">Approve</span>
+              </Button>
+            )}
+            {onReject && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-all duration-200 cursor-pointer"
+                onClick={() => onReject(row.original)}
+                title="Reject"
+              >
+                <X className="h-3.5 w-3.5" />
+                <span className="sr-only">Reject</span>
               </Button>
             )}
             {onSuspend && (
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7 text-muted-foreground transition-all duration-200 hover:bg-secondary/15 hover:text-secondary"
+                className="h-7 w-7 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-all duration-200 cursor-pointer"
                 onClick={() => onSuspend(row.original)}
+                title="Suspend"
               >
-                <span className="sr-only">Suspend</span>S
+                <PauseCircle className="h-3.5 w-3.5" />
+                <span className="sr-only">Suspend</span>
               </Button>
             )}
+            {renderRowActions?.(row.original)}
           </div>
         ),
       })
@@ -366,6 +404,9 @@ export function BasicDataGrid<T>({
     onEdit,
     onDelete,
     onSuspend,
+    onApprove,
+    onReject,
+    renderRowActions,
     onSortChange,
   ])
 

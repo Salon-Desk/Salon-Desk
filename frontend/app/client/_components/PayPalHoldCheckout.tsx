@@ -8,7 +8,7 @@ import { PrimaryButton } from '@/components/button'
 import { ANY_AVAILABLE_STYLIST } from '@/lib/data/catalog'
 import { serviceImage } from '@/lib/data/service-content'
 import { formatDuration, formatUsd } from '@/lib/format'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import {
   browserTimeZone,
   formatDateInZone,
@@ -232,7 +232,7 @@ export function PayPalHoldCheckout({
               src={coverSrc}
               alt=""
               fill
-              unoptimized={shouldUnoptimizeImage(coverSrc)}
+              unoptimized={shouldUnoptimizedImage(coverSrc)}
               className="object-cover"
               sizes="64px"
             />

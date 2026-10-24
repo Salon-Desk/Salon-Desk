@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import String, cast, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenError, NotFoundError
@@ -15,6 +15,7 @@ from app.models.enums import (
     PaymentCaptureType,
 )
 from app.models.ledger import CommissionRecord, OrgCommissionInvoice
+from app.models.organization import Organization
 from app.models.payment import PaymentCapture
 from app.services.ledger_service import append_ledger
 
@@ -132,12 +133,22 @@ async def list_all_invoices(
     *,
     status: str | None = None,
     org_id: UUID | None = None,
+    q: str | None = None,
 ) -> list[OrgCommissionInvoice]:
     stmt = select(OrgCommissionInvoice)
     if org_id is not None:
         stmt = stmt.where(OrgCommissionInvoice.org_id == org_id)
-    if status:
+    if status and status.upper() != "ALL":
         stmt = stmt.where(OrgCommissionInvoice.status == OrgCommissionInvoiceStatus(status.upper()))
+    if q and q.strip():
+        search_pattern = f"%{q.strip()}%"
+        stmt = stmt.outerjoin(Organization, OrgCommissionInvoice.org_id == Organization.id).where(
+            or_(
+                Organization.name.ilike(search_pattern),
+                cast(OrgCommissionInvoice.id, String).ilike(search_pattern),
+                cast(OrgCommissionInvoice.org_id, String).ilike(search_pattern),
+            )
+        )
     stmt = stmt.order_by(OrgCommissionInvoice.created_at.desc())
     result = await db.execute(stmt)
     return list(result.scalars().all())

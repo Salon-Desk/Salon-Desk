@@ -2,8 +2,8 @@
 
 import { CheckCircle2, Copy, CreditCard, ExternalLink, ShieldCheck, Sparkles } from 'lucide-react'
 
+import { PrimaryButton } from '@/components/button'
 import { Card } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
 import type { ApiOrgAccount } from '@/types/api-org'
 
 interface MerchantPaypalCardProps {

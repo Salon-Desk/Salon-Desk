@@ -4,10 +4,10 @@ import { CreditCard } from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFTextField from '@/components/forms/RHFTextField'
-import PrimaryButton from '@/components/ui/primary-button'
 import { zodResolver } from '@/lib/schema/resolver'
 
 import {

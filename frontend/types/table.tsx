@@ -64,7 +64,10 @@ export type DataGridProps<T> = {
   onEdit?: (row: T) => void
   onDelete?: (row: T) => void
   onSuspend?: (row: T) => void
+  onApprove?: (row: T) => void
+  onReject?: (row: T) => void
   onMakeAdmin?: (row: T) => void
+  renderRowActions?: (row: T) => React.ReactNode
 
   // Custom buttons
   customButtons?: React.ReactNode[]

@@ -1,4 +1,4 @@
-import { HubExperience } from './_components/hub-experience'
+import { HubExperience } from './_components/HubExperience'
 
 export default function HubPage() {
   return <HubExperience />

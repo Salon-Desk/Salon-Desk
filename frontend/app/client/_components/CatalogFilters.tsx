@@ -191,15 +191,24 @@ export function CatalogFilters({
                 <SearchableSelect
                   value={organizationId}
                   onChange={onOrganizationChange}
-                  options={organizations.map((org) => ({
-                    value: org.id,
-                    label: org.name,
-                    description: org.physical_address || undefined,
-                    badge:
-                      typeof org.rating_avg === 'number' && org.rating_avg > 0
-                        ? `★ ${org.rating_avg.toFixed(1)}`
-                        : undefined,
-                  }))}
+                  options={organizations.map((org) => {
+                    const distLabel =
+                      typeof org.distance_km === 'number'
+                        ? org.distance_km < 1
+                          ? `${Math.round(org.distance_km * 1000)}m away`
+                          : `${org.distance_km.toFixed(1)} km away`
+                        : undefined
+                    const desc = [org.physical_address, distLabel].filter(Boolean).join(' • ')
+                    return {
+                      value: org.id,
+                      label: org.name,
+                      description: desc || undefined,
+                      badge:
+                        typeof org.rating_avg === 'number' && org.rating_avg > 0
+                          ? `★ ${org.rating_avg.toFixed(1)}`
+                          : undefined,
+                    }
+                  })}
                   placeholder={`All Salons (${organizationListControls?.total ?? organizations.length})`}
                   clearLabel={`All Salons (${organizationListControls?.total ?? organizations.length})`}
                   allowClear

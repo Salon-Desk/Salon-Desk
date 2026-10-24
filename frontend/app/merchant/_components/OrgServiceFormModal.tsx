@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 
+import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFDropeDown from '@/components/forms/RHFDropeDown'
@@ -12,8 +12,7 @@ import RHFTextArea from '@/components/forms/RHFTextArea'
 import RHFTextField from '@/components/forms/RHFTextField'
 import RHFUploadImage from '@/components/forms/RHFUploadImage'
 import { SearchableSelect } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
-import { toastColor } from '@/constant/toast-color'
+import useFormSubmitHandler from '@/hooks/form-handler'
 import { useSearchableCatalogCategories } from '@/hooks/use-searchable-catalog-options'
 import { zodResolver } from '@/lib/schema/resolver'
 import {
@@ -80,10 +79,10 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
     }
   }, [open, editing, categories, methods])
 
-  const onSubmit = async (data: OrgServiceFormData) => {
-    try {
+  const submitHandler = useFormSubmitHandler<OrgServiceFormData, ApiOrgService>(
+    async (data: OrgServiceFormData) => {
       if (editing) {
-        await updateService({
+        let res = await updateService({
           serviceId: editing.id,
           body: {
             service_category_id: data.service_category_id,
@@ -101,10 +100,10 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
         if (coverImage && typeof coverImage !== 'string') {
           const formData = new FormData()
           formData.append('file', coverImage)
-          await uploadServiceImage({ serviceId: editing.id, file: formData }).unwrap()
+          res = await uploadServiceImage({ serviceId: editing.id, file: formData }).unwrap()
         }
 
-        toast.success('Service updated', toastColor.success)
+        return { data: res }
       } else {
         const formData = new FormData()
         formData.append('service_category_id', data.service_category_id ?? '')
@@ -116,15 +115,18 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
         const coverImage = data.images?.cover
         if (coverImage instanceof File) formData.append('file', coverImage)
 
-        await createService(formData).unwrap()
-        toast.success('Service created', toastColor.success)
+        const res = await createService(formData).unwrap()
+        return { data: res }
       }
+    },
+    () => {
       onClose()
-    } catch (err) {
-      const message =
-        (err as { data?: { detail?: string } })?.data?.detail || 'Could not save service'
-      toast.error(String(message), toastColor.error)
-    }
+    },
+    editing ? 'Service updated successfully' : 'Service created successfully',
+  )
+
+  const onSubmit = async (data: OrgServiceFormData) => {
+    await submitHandler(data)
   }
 
   if (!open) return null
@@ -157,22 +159,29 @@ export function OrgServiceFormModal({ open, editing, onClose }: OrgServiceFormMo
             <Controller
               name="service_category_id"
               control={methods.control}
-              render={({ field }) => (
-                <SearchableSelect
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  disabled={categoryPicker.isLoading && categories.length === 0}
-                  options={categories.map((c) => ({ value: c.id, label: c.name }))}
-                  placeholder="Select category…"
-                  searchPlaceholder="Search categories…"
-                  emptyText="No categories found."
-                  triggerClassName="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                  onSearchChange={categoryListControls.onSearchChange}
-                  hasMore={categoryListControls.hasMore}
-                  onLoadMore={categoryListControls.onLoadMore}
-                  isLoadingMore={categoryListControls.isLoadingMore}
-                  loadMoreLabel="Load more categories"
-                />
+              render={({ field, fieldState: { error } }) => (
+                <div>
+                  <SearchableSelect
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    disabled={categoryPicker.isLoading && categories.length === 0}
+                    options={categories.map((c) => ({ value: c.id, label: c.name }))}
+                    placeholder="Select category…"
+                    searchPlaceholder="Search categories…"
+                    emptyText="No categories found."
+                    triggerClassName={`w-full rounded-lg border bg-white px-3 py-2 text-xs ${
+                      error ? 'border-rose-500' : 'border-slate-200'
+                    }`}
+                    onSearchChange={categoryListControls.onSearchChange}
+                    hasMore={categoryListControls.hasMore}
+                    onLoadMore={categoryListControls.onLoadMore}
+                    isLoadingMore={categoryListControls.isLoadingMore}
+                    loadMoreLabel="Load more categories"
+                  />
+                  {error?.message ? (
+                    <p className="mt-1 text-xs text-rose-500">{error.message}</p>
+                  ) : null}
+                </div>
               )}
             />
           </div>

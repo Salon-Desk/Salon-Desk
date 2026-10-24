@@ -2,8 +2,8 @@
 
 import { Clock, CreditCard, FileText, Shield, ShieldAlert, Sliders } from 'lucide-react'
 
+import { PrimaryButton } from '@/components/button'
 import { Card } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
 import { formatUsd } from '@/lib/format'
 import type { ApiCancellationPolicy } from '@/types/api-org'
 

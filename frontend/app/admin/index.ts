@@ -14,6 +14,6 @@ export {
   ADMIN_TAB_TITLES,
   getAdminTabFromPathname,
 } from './_constants/admin-nav'
-export { type AdminContextValue, AdminProvider, useAdminContext } from './_context/admin-context'
+export { type AdminContextValue, AdminProvider, useAdminContext } from './_context/AdminContext'
 export type { AdminTabId, CrSubTab, SalonStatusFilter } from './_types/admin-types'
 export { computeAdminMetrics } from './_utils/compute-admin-metrics'

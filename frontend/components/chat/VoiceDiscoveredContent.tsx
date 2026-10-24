@@ -25,7 +25,7 @@ import type {
 import { Checkbox } from '@/components/ui/checkbox'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import { formatUsd } from '@/lib/format'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import { cn } from '@/lib/utils'
 
 export interface PaymentLinkData {
@@ -272,7 +272,7 @@ export function VoiceDiscoveredContent({
                         src={org.picture}
                         alt={org.name}
                         fill
-                        unoptimized={shouldUnoptimizeImage(org.picture)}
+                        unoptimized={shouldUnoptimizedImage(org.picture)}
                         sizes="44px"
                         className="object-cover"
                       />
@@ -347,7 +347,7 @@ export function VoiceDiscoveredContent({
                         src={st.picture}
                         alt={st.name}
                         fill
-                        unoptimized={shouldUnoptimizeImage(st.picture)}
+                        unoptimized={shouldUnoptimizedImage(st.picture)}
                         sizes="44px"
                         className="object-cover"
                       />

@@ -6,10 +6,10 @@ import { useSelector } from 'react-redux'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
+import { PrimaryButton } from '@/components/button'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFAvatarImage from '@/components/forms/RHFAvatarImage'
 import RHFTextField from '@/components/forms/RHFTextField'
-import PrimaryButton from '@/components/ui/primary-button'
 import { toastColor } from '@/constant/toast-color'
 import { zodResolver } from '@/lib/schema/resolver'
 import {

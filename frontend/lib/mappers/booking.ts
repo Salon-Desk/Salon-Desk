@@ -120,6 +120,9 @@ export function mapApiBookingToUi(
     createdAt: new Date(booking.created_at).toLocaleString(),
     settlementNote: booking.cancellation_reason || undefined,
     reauthorizationCount: extras?.reauthorizationCount,
+    organizationTimezone: booking.organization_timezone || null,
+    startsAt: booking.starts_at || null,
+    endsAt: booking.ends_at || null,
   }
 }
 

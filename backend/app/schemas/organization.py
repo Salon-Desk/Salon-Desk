@@ -2,9 +2,10 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.common import ORMModel
+from app.schemas.working_hours import WorkingHoursSchema
 
 
 class OrganizationCreate(BaseModel):
@@ -31,9 +32,9 @@ class OrganizationOut(ORMModel):
 class OrgSettingsUpdate(BaseModel):
     timezone: str | None = None
     physical_address: str | None = None
-    lat: Decimal | None = None
-    lng: Decimal | None = None
-    working_hours: dict | None = None
+    lat: Decimal | None = Field(default=None, ge=-90, le=90)
+    lng: Decimal | None = Field(default=None, ge=-180, le=180)
+    working_hours: WorkingHoursSchema | dict | None = None
 
 
 class OrgSettingsOut(ORMModel):
@@ -73,6 +74,10 @@ class OrgEmployeeShiftOut(ORMModel):
     user_id: UUID
     org_shift_id: UUID
     created_at: datetime
+    employee_name: str | None = None
+    employee_email: str | None = None
+    shift_name: str | None = None
+    shift_data: dict | None = None
 
 
 class CancellationPolicyOut(ORMModel):
@@ -137,6 +142,8 @@ class CatalogOrganizationOut(ORMModel):
     timezone: str | None = None
     rating_avg: float = 0.0
     review_count: int = 0
+    working_hours: dict | None = None
+    distance_km: float | None = None
 
 
 class CatalogHeroOut(BaseModel):
