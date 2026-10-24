@@ -12,7 +12,7 @@ import {
   FormFieldLabel,
   FormFieldRoot,
 } from '@/components/forms/form-field-parts'
-import { resolveImageSrc, shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { resolveImageSrc, shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 
 interface RHFUploadImageProps {
   name: string
@@ -177,7 +177,7 @@ const RHFUploadImage = ({
                       alt="Upload preview"
                       fill
                       style={{ objectFit: 'cover', borderRadius: '0.75rem' }}
-                      unoptimized={shouldUnoptimizeImage(displayPreview)}
+                      unoptimized={shouldUnoptimizedImage(displayPreview)}
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity duration-200 rounded-xl flex items-center justify-center text-white text-[10px] sm:text-xs font-medium px-2 text-center">
                       Click or drag to replace

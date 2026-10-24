@@ -3,7 +3,7 @@
 import { Loader2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
-import { EmptyState } from '@/components/ui'
+import { EmptyState } from '@/components/empty'
 import { buildMerchantLayoutEmployeesSnapshotApiParams } from '@/lib/listing-params/merchant-dashboard-snapshot-list-params'
 import {
   type CalendarEvent,
@@ -20,6 +20,7 @@ import {
   useGetMyOrgBookingsQuery,
 } from '@/store/api/orgApi'
 import type { Booking } from '@/types'
+import { User } from '@/types/user'
 
 import { useSettlementActions } from '../_hooks/use-settlement-actions'
 import { AgendaView } from './AgendaView'
@@ -64,12 +65,6 @@ export function MerchantCalendarView() {
     isSettlementProcessing,
   } = useSettlementActions()
 
-  useEffect(() => {
-    if (view !== 'agenda' && staffId === ALL_STAFF_VALUE && employees[0]) {
-      setStaffId(employees[0].id)
-    }
-  }, [view, staffId, employees])
-
   const events = useMemo(
     () => mapApiBookingsToEvents(apiBookings, org?.name),
     [apiBookings, org?.name],
@@ -91,8 +86,27 @@ export function MerchantCalendarView() {
     return filterEventsForDay(events, anchor, staffId)
   }, [view, events, anchor, staffId])
 
-  const selectedStaff = employees.find((e) => e.id === staffId)
-  const stylistName = selectedStaff ? staffDisplayName(selectedStaff) : undefined
+  const [selectedStaffMember, setSelectedStaffMember] = useState<User | null>(null)
+
+  const handleStaffChange = (id: string, employee?: User) => {
+    setStaffId(id)
+    if (employee) {
+      setSelectedStaffMember(employee)
+    } else if (id === ALL_STAFF_VALUE) {
+      setSelectedStaffMember(null)
+    }
+  }
+
+  const selectedStaff =
+    selectedStaffMember?.id === staffId
+      ? selectedStaffMember
+      : employees.find((e) => e.id === staffId)
+  const stylistName =
+    staffId === ALL_STAFF_VALUE
+      ? `All Staff (${employees.length})`
+      : selectedStaff
+        ? staffDisplayName(selectedStaff)
+        : undefined
 
   const isLoading = staffLoading || bookingsLoading
 
@@ -114,7 +128,7 @@ export function MerchantCalendarView() {
         onAnchorChange={setAnchor}
         employees={employees}
         staffId={staffId}
-        onStaffChange={setStaffId}
+        onStaffChange={handleStaffChange}
         bookingCount={visibleEvents.length}
         onRefresh={() => void refetchBookings()}
         isRefreshing={isFetching}
@@ -147,7 +161,9 @@ export function MerchantCalendarView() {
               events={events}
               stylistId={staffId}
               stylistName={stylistName}
+              employees={employees}
               onSelect={handleSelectEvent}
+              onGoToday={() => setAnchor(new Date())}
             />
           ) : null}
           {view === 'week' ? (
@@ -156,6 +172,7 @@ export function MerchantCalendarView() {
               events={events}
               stylistId={staffId}
               stylistName={stylistName}
+              employees={employees}
               onSelect={handleSelectEvent}
               onSelectDay={(day) => {
                 setAnchor(day)

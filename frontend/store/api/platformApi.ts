@@ -204,6 +204,18 @@ export const platformApi = baseApi.injectEndpoints({
       invalidatesTags: ['admin'],
     }),
 
+    getAdminStaff: builder.query<
+      User[],
+      { q?: string; role?: string; page?: number; page_size?: number } | void
+    >({
+      query: (params) => ({
+        url: '/api/v1/admin/staff',
+        method: 'GET',
+        params: params || undefined,
+      }),
+      providesTags: ['admin', 'user'],
+    }),
+
     createAdminStaff: builder.mutation<User, CreateStaffRequest>({
       query: (data) => ({
         url: '/api/v1/admin/staff',
@@ -223,7 +235,7 @@ export const platformApi = baseApi.injectEndpoints({
 
     getAdminCommissionInvoices: builder.query<
       ApiPage<OrgCommissionInvoice>,
-      { page?: number; page_size?: number; status?: string; org_id?: string } | void
+      { page?: number; page_size?: number; status?: string; org_id?: string; q?: string } | void
     >({
       query: (params) => ({
         url: '/api/v1/admin/commission-invoices',
@@ -382,6 +394,7 @@ export const {
   useGetAdminCommissionsQuery,
   useCreateAdminCommissionMutation,
   useUpdateAdminCommissionMutation,
+  useGetAdminStaffQuery,
   useCreateAdminStaffMutation,
   useDeleteAdminStaffMutation,
   useGetAdminCommissionInvoicesQuery,

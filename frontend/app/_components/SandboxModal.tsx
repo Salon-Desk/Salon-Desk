@@ -5,13 +5,16 @@ import { useState } from 'react'
 
 import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
-import { CopyableValue, SegmentedControl } from '@/components/ui'
+import { SegmentedControl } from '@/components/ui'
 import { useClipboard } from '@/hooks'
 import {
   SAMPLE_AUTHORIZATION_PAYLOAD,
   SAMPLE_NO_SHOW_CAPTURE_PAYLOAD,
   SANDBOX_CREDENTIALS,
 } from '@/lib/constants'
+
+import { CredentialCard } from './CredentialCard'
+import { PayloadBlock } from './PayloadBlock'
 
 interface SandboxModalProps {
   onClose: () => void
@@ -140,105 +143,5 @@ export function SandboxModal({ onClose }: SandboxModalProps) {
         </div>
       )}
     </CustomResponsiveDialog>
-  )
-}
-
-function CredentialCard({
-  icon,
-  title,
-  badge,
-  badgeTone,
-  email,
-  password,
-  footerLeft,
-  footerRight,
-  copyKeyPrefix,
-  copiedKey,
-  onCopy,
-}: {
-  icon: React.ReactNode
-  title: string
-  badge: string
-  badgeTone: 'sky' | 'amber'
-  email: string
-  password: string
-  footerLeft: string
-  footerRight: string
-  copyKeyPrefix: string
-  copiedKey: string | null
-  onCopy: (value: string, key: string) => void
-}) {
-  return (
-    <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {icon}
-          <span className="font-bold text-slate-900 text-xs uppercase tracking-wider">{title}</span>
-        </div>
-        <span
-          className={`rounded border px-2 py-0.5 font-semibold text-[11px] ${
-            badgeTone === 'sky'
-              ? 'border-sky-200 bg-sky-100 text-sky-700'
-              : 'border-amber-200 bg-amber-100 text-amber-800'
-          }`}
-        >
-          {badge}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
-        <div className="space-y-1">
-          <span className="font-medium text-slate-500">Email / Username</span>
-          <CopyableValue
-            value={email}
-            copyKey={`${copyKeyPrefix}-email`}
-            copiedKey={copiedKey}
-            onCopy={onCopy}
-          />
-        </div>
-        <div className="space-y-1">
-          <span className="font-medium text-slate-500">Password</span>
-          <CopyableValue
-            value={password}
-            copyKey={`${copyKeyPrefix}-pass`}
-            copiedKey={copiedKey}
-            onCopy={onCopy}
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500">
-        <span>{footerLeft}</span>
-        <span>{footerRight}</span>
-      </div>
-    </div>
-  )
-}
-
-function PayloadBlock({
-  title,
-  hint,
-  tone,
-  payload,
-}: {
-  title: string
-  hint: string
-  tone: 'sky' | 'emerald'
-  payload: unknown
-}) {
-  return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between">
-        <span
-          className={`font-bold text-xs ${tone === 'sky' ? 'text-sky-700' : 'text-emerald-700'}`}
-        >
-          {title}
-        </span>
-        <span className="font-mono text-[11px] text-slate-500">{hint}</span>
-      </div>
-      <pre className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-900 p-3 font-mono text-[11px] text-slate-100">
-        {JSON.stringify(payload, null, 2)}
-      </pre>
-    </div>
   )
 }

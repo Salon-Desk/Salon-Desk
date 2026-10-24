@@ -19,10 +19,11 @@ import {
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 
+import { PrimaryButton } from '@/components/button'
 import { StatCard } from '@/components/card'
 import { LineTrendChart } from '@/components/chart/LineTrendChart'
-import { Badge, Card, EmptyState, HoldStateBadge, SearchInput } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
+import { EmptyState } from '@/components/empty'
+import { Badge, Card, HoldStateBadge, SearchInput } from '@/components/ui'
 import { openAgentChat } from '@/hooks/useAgentUiActions'
 import { useListingParams } from '@/hooks/useListingParams'
 import { ROUTES } from '@/lib/constants'
@@ -47,7 +48,7 @@ import {
 } from '@/store/api/orgApi'
 import type { Booking, HoldState } from '@/types'
 
-import { useMerchantContext } from '../_context/merchant-context'
+import { useMerchantContext } from '../_context/MerchantContext'
 
 export function MerchantDashboardView() {
   const { setSelectedBooking, setInspectConsentBooking } = useMerchantContext()

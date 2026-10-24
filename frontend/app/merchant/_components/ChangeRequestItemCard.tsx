@@ -1,8 +1,11 @@
 'use client'
 
-import { ArrowRight, CheckCircle2, Clock, Info, XCircle } from 'lucide-react'
+import { CheckCircle2, Clock, Info, XCircle } from 'lucide-react'
 
 import type { ApiChangeRequest } from '@/types/api-org'
+
+import { PaypalSnapshotDiff } from './PaypalSnapshotDiff'
+import { PolicySnapshotDiff } from './PolicySnapshotDiff'
 
 interface ChangeRequestItemCardProps {
   cr: ApiChangeRequest
@@ -90,106 +93,6 @@ export function ChangeRequestItemCard({ cr, defaultOrgName }: ChangeRequestItemC
           </div>
         </div>
       ) : null}
-    </div>
-  )
-}
-
-function PolicySnapshotDiff({
-  payload,
-  snapshot,
-}: {
-  payload: Record<string, unknown>
-  snapshot: Record<string, unknown>
-}) {
-  const snapshotData = (snapshot.data as Record<string, unknown>) ?? {}
-  const payloadData = (payload.data as Record<string, unknown>) ?? {}
-
-  const prevNotice = Number(snapshotData.free_cancel_hours ?? snapshotData.policyHours ?? 24)
-  const prevNoShow = Number(snapshotData.no_show_fee_percent ?? snapshotData.noShowFeePercent ?? 50)
-  const prevLateCancel = Number(
-    snapshotData.late_cancel_fee_percent ?? snapshotData.lateCancelFeePercent ?? 25,
-  )
-
-  const nextNotice = Number(payloadData.free_cancel_hours ?? payload.policyHours ?? 24)
-  const nextNoShow = Number(payloadData.no_show_fee_percent ?? payload.noShowFeePercent ?? 50)
-  const nextLateCancel = Number(
-    payloadData.late_cancel_fee_percent ?? payload.lateCancelFeePercent ?? 25,
-  )
-
-  return (
-    <div className="space-y-2 rounded-lg border border-amber-100 bg-amber-50/40 p-3">
-      <span className="block text-[10px] font-semibold uppercase tracking-wider text-amber-950">
-        Terms Comparison Snapshot
-      </span>
-      <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
-        <div className="space-y-1 rounded-md border border-slate-200/60 bg-white/80 p-2">
-          <span className="block text-[10px] font-semibold uppercase text-slate-400">
-            Previous Enforced Rules
-          </span>
-          <div className="space-y-0.5 text-xs text-slate-700">
-            <div>
-              Notice Cutoff: <span className="font-bold text-slate-900">{prevNotice}h</span>
-            </div>
-            <div>
-              No-Show Penalty: <span className="font-bold text-slate-900">{prevNoShow}%</span>
-            </div>
-            <div>
-              Late Cancel: <span className="font-bold text-slate-900">{prevLateCancel}%</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-1 rounded-md border border-amber-200/70 bg-white/90 p-2">
-          <span className="flex items-center gap-1 text-[10px] font-semibold uppercase text-amber-800">
-            <span>Proposed Amendment</span>
-            <ArrowRight className="h-3 w-3 text-amber-600" />
-          </span>
-          <div className="space-y-0.5 text-xs text-slate-800">
-            <div>
-              Notice Cutoff: <span className="font-bold text-amber-900">{nextNotice}h</span>
-            </div>
-            <div>
-              No-Show Penalty: <span className="font-bold text-rose-800">{nextNoShow}%</span>
-            </div>
-            <div>
-              Late Cancel: <span className="font-bold text-amber-900">{nextLateCancel}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PaypalSnapshotDiff({
-  payload,
-  snapshot,
-}: {
-  payload: Record<string, unknown>
-  snapshot: Record<string, unknown>
-}) {
-  return (
-    <div className="space-y-2 rounded-lg border border-sky-100 bg-sky-50/40 p-3">
-      <span className="block text-[10px] font-semibold uppercase tracking-wider text-sky-950">
-        Payout Destination Transition
-      </span>
-      <div className="flex flex-col gap-2 font-mono text-xs sm:flex-row sm:items-center">
-        <div className="flex-1 rounded-md border border-slate-200/60 bg-white/80 p-2">
-          <span className="block font-sans text-[10px] font-semibold uppercase text-slate-400">
-            Previous Merchant ID
-          </span>
-          <span className="font-bold text-slate-800">
-            {(snapshot.merchant_id as string) || 'None (Initial Setup)'}
-          </span>
-        </div>
-        <ArrowRight className="hidden h-4 w-4 shrink-0 self-center text-sky-600 sm:block" />
-        <div className="flex-1 rounded-md border border-sky-200/70 bg-white/90 p-2">
-          <span className="block font-sans text-[10px] font-semibold uppercase text-sky-800">
-            Proposed Merchant ID
-          </span>
-          <span className="font-bold text-sky-950">{(payload.merchant_id as string) || '—'}</span>
-        </div>
-      </div>
     </div>
   )
 }

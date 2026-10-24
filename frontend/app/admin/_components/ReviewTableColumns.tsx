@@ -1,24 +1,11 @@
-'use client'
-
-import { Check, Star, X } from 'lucide-react'
+import { Star } from 'lucide-react'
 import React from 'react'
 
 import { StatusBadge } from '@/components/badge'
-import PrimaryButton from '@/components/ui/primary-button'
 import type { ClientFeedbackItem } from '@/types/api-feedback'
 import type { ColumnDefinition } from '@/types/table'
 
-interface ReviewColumnOptions {
-  onApprove: (item: ClientFeedbackItem) => void
-  onReject: (item: ClientFeedbackItem) => void
-  isProcessingId: string | null
-}
-
-export function getReviewTableColumns({
-  onApprove,
-  onReject,
-  isProcessingId,
-}: ReviewColumnOptions): ColumnDefinition<ClientFeedbackItem>[] {
+export function getReviewTableColumns(): ColumnDefinition<ClientFeedbackItem>[] {
   return [
     {
       id: 'target',
@@ -86,45 +73,6 @@ export function getReviewTableColumns({
           <StatusBadge tone={tone} size="sm">
             {item.status ?? 'pending'}
           </StatusBadge>
-        )
-      },
-    },
-    {
-      id: 'actions',
-      header: 'Moderation',
-      headerClassName: 'text-right',
-      cellClassName: 'text-right',
-      cell: (item) => {
-        if (item.status !== 'pending') {
-          return <span className="font-mono text-[11px] text-slate-400">Resolved</span>
-        }
-        const isBusy = isProcessingId === item.id
-
-        return (
-          <div className="flex items-center justify-end gap-1.5">
-            <PrimaryButton
-              title="Approve"
-              variant="success"
-              size="sm"
-              fullWidth={false}
-              icon={<Check className="h-3 w-3" />}
-              className="h-8 rounded-lg px-2.5 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
-              isLoading={isBusy}
-              isDisabled={isBusy}
-              onClick={() => onApprove(item)}
-            />
-            <PrimaryButton
-              title="Reject"
-              variant="danger"
-              size="sm"
-              fullWidth={false}
-              icon={<X className="h-3 w-3" />}
-              className="h-8 rounded-lg px-2.5 text-xs font-semibold transition-all active:scale-[0.98]"
-              isLoading={isBusy}
-              isDisabled={isBusy}
-              onClick={() => onReject(item)}
-            />
-          </div>
         )
       },
     },

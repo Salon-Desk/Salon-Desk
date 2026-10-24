@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { resolveImageSrc } from '@/lib/util/remoteImage'
 import { cn } from '@/lib/utils'
 
-interface ErrorStateProps {
+export interface ErrorStateProps {
   title?: string
   description?: string
   actionLabel?: string
@@ -15,7 +15,7 @@ interface ErrorStateProps {
   className?: string
 }
 
-const ErrorState = ({
+export const ErrorState = ({
   title = 'Something went wrong',
   description = 'An unexpected error occurred. Please try again.',
   actionLabel = 'Retry',

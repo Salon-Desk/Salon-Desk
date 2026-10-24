@@ -33,7 +33,7 @@ import {
   ClientOrgDetailListParamsSchema,
 } from '@/lib/listing-params/client-org-detail-list-params'
 import { buildClientOrgStaffQueryArg } from '@/lib/listing-params/client-org-staff-list-params'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import {
   useGetCatalogCancellationPolicyQuery,
   useGetCatalogOrganizationQuery,
@@ -220,7 +220,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
           alt={org.name}
           fill
           priority
-          unoptimized={shouldUnoptimizeImage(coverPhoto)}
+          unoptimized={shouldUnoptimizedImage(coverPhoto)}
           className="object-cover"
           sizes="100vw"
         />
@@ -239,7 +239,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                     src={org.picture}
                     alt={org.name}
                     fill
-                    unoptimized={shouldUnoptimizeImage(org.picture)}
+                    unoptimized={shouldUnoptimizedImage(org.picture)}
                     className="object-cover"
                   />
                 ) : (
@@ -367,11 +367,11 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
         </div>
 
         {/* Tab Navigation */}
-        <div className="mb-8 flex border-b border-stone-200">
+        <div className="mb-8 flex overflow-x-auto scrollbar-none border-b border-stone-200">
           <button
             type="button"
             onClick={() => setParam('tab', 'services')}
-            className={`cursor-pointer border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
+            className={`cursor-pointer shrink-0 whitespace-nowrap border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
               activeTab === 'services'
                 ? 'border-stone-950 text-stone-950'
                 : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -382,7 +382,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
           <button
             type="button"
             onClick={() => setParam('tab', 'about')}
-            className={`cursor-pointer border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
+            className={`cursor-pointer shrink-0 whitespace-nowrap border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
               activeTab === 'about'
                 ? 'border-stone-950 text-stone-950'
                 : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -393,7 +393,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
           <button
             type="button"
             onClick={() => setParam('tab', 'staff')}
-            className={`cursor-pointer border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
+            className={`cursor-pointer shrink-0 whitespace-nowrap border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
               activeTab === 'staff'
                 ? 'border-stone-950 text-stone-950'
                 : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -404,7 +404,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
           <button
             type="button"
             onClick={() => setParam('tab', 'reviews')}
-            className={`cursor-pointer border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
+            className={`cursor-pointer shrink-0 whitespace-nowrap border-b-2 px-5 py-3 font-bold text-xs sm:text-sm transition-colors ${
               activeTab === 'reviews'
                 ? 'border-stone-950 text-stone-950'
                 : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -503,7 +503,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                           src={imageSrc}
                           alt={svc.name}
                           fill
-                          unoptimized={shouldUnoptimizeImage(imageSrc)}
+                          unoptimized={shouldUnoptimizedImage(imageSrc)}
                           className="object-cover transition-transform duration-500 group-hover:scale-104"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-transparent to-transparent" />

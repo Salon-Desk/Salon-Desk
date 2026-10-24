@@ -1,7 +1,7 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, HTTPException, Query, status
+from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DbSession, PlatformAdminOnly
@@ -17,6 +17,39 @@ from app.schemas.user import StaffCreate, UserOut
 router = APIRouter(prefix="/admin", tags=["platform"])
 
 # --- Platform staff ---
+
+
+@router.get("/staff", response_model=list[UserOut])
+async def list_staff(
+    user: PlatformAdminOnly,
+    db: DbSession,
+    role: str | None = Query(default=None, description="Filter by staff role"),
+    q: str | None = Query(default=None, description="Search staff by name or email"),
+) -> list[UserOut]:
+    _ = user
+    stmt = (
+        select(User)
+        .options(selectinload(User.profile))
+        .where(User.role.in_([UserRole.PLATFORM_ADMIN, UserRole.PLATFORM_STAFF]))
+    )
+    if role and role != "all":
+        try:
+            target_role = UserRole(role)
+            stmt = stmt.where(User.role == target_role)
+        except ValueError:
+            pass
+    if q and q.strip():
+        search_pattern = f"%{q.strip()}%"
+        stmt = stmt.outerjoin(User.profile).where(
+            or_(
+                User.email.ilike(search_pattern),
+                Profile.first_name.ilike(search_pattern),
+                Profile.last_name.ilike(search_pattern),
+            )
+        )
+    stmt = stmt.order_by(User.created_at.desc())
+    result = await db.execute(stmt)
+    return [UserOut.model_validate(u) for u in result.scalars().all()]
 
 
 @router.post("/staff", response_model=UserOut, status_code=status.HTTP_201_CREATED)

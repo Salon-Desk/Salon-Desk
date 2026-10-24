@@ -123,7 +123,7 @@ export function ServiceCard({
           src={service.imageUrl || service.organizationPicture || SERVICE_IMAGE_FALLBACK}
           alt=""
           fill
-          unoptimized={shouldUnoptimizeImage(
+          unoptimized={shouldUnoptimizedImage(
             service.imageUrl || service.organizationPicture || SERVICE_IMAGE_FALLBACK,
           )}
           sizes="48px"
@@ -182,7 +182,7 @@ export function OrganizationCard({
             src={org.picture}
             alt=""
             fill
-            unoptimized={shouldUnoptimizeImage(org.picture)}
+            unoptimized={shouldUnoptimizedImage(org.picture)}
             sizes="44px"
             className="object-cover"
           />

@@ -15,7 +15,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import { serviceImage } from '@/lib/data/service-content'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import type { SalonService } from '@/types'
 import type { FeaturedOrganization, FeaturedService } from '@/types/api-org'
 
@@ -110,7 +110,7 @@ export function CatalogFeaturedSection({
                         src={org.picture}
                         alt={org.name}
                         fill
-                        unoptimized={shouldUnoptimizeImage(org.picture)}
+                        unoptimized={shouldUnoptimizedImage(org.picture)}
                         className="object-cover transition-transform duration-500 group-hover:scale-104"
                       />
                     ) : (
@@ -141,7 +141,15 @@ export function CatalogFeaturedSection({
                     {org.physical_address && (
                       <p className="mt-1 flex items-center gap-1 text-xs text-stone-500 line-clamp-1">
                         <MapPin className="h-3.5 w-3.5 shrink-0 text-amber-600" />
-                        {org.physical_address}
+                        <span className="truncate">{org.physical_address}</span>
+                        {typeof org.distance_km === 'number' && (
+                          <span className="shrink-0 font-semibold text-amber-800">
+                            •{' '}
+                            {org.distance_km < 1
+                              ? `${Math.round(org.distance_km * 1000)}m away`
+                              : `${org.distance_km.toFixed(1)} km away`}
+                          </span>
+                        )}
                       </p>
                     )}
                     {org.description && (
@@ -217,7 +225,7 @@ export function CatalogFeaturedSection({
                       src={coverSrc}
                       alt={svc.name}
                       fill
-                      unoptimized={shouldUnoptimizeImage(coverSrc)}
+                      unoptimized={shouldUnoptimizedImage(coverSrc)}
                       className="object-cover transition-transform duration-500 group-hover:scale-104"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 via-transparent to-transparent" />

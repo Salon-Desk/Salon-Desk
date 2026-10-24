@@ -23,6 +23,7 @@ from app.services.catalog_queries import (
     apply_featured_badges,
     apply_service_sorting,
     build_service_list_query,
+    haversine_km_expr,
     load_featured_badges,
 )
 
@@ -32,16 +33,45 @@ async def list_organizations(
     page: int = 1,
     page_size: int = 20,
     q: str | None = None,
+    sort: str = "name",
+    lat: float | None = None,
+    lng: float | None = None,
+    max_distance_km: float | None = None,
 ) -> PageOut[CatalogOrganizationOut]:
-    stmt = (
-        select(Organization, OrgSettings)
-        .outerjoin(OrgSettings, OrgSettings.org_id == Organization.id)
-        .where(Organization.status == OrganizationStatus.APPROVED)
-    )
+    has_coords = lat is not None and lng is not None
+    distance_expr = haversine_km_expr(lat, lng).label("distance_km") if has_coords else None
+
+    if has_coords:
+        stmt = (
+            select(Organization, OrgSettings, distance_expr)
+            .outerjoin(OrgSettings, OrgSettings.org_id == Organization.id)
+            .where(Organization.status == OrganizationStatus.APPROVED)
+        )
+    else:
+        stmt = (
+            select(Organization, OrgSettings)
+            .outerjoin(OrgSettings, OrgSettings.org_id == Organization.id)
+            .where(Organization.status == OrganizationStatus.APPROVED)
+        )
+
     if q and q.strip():
         term = f"%{q.strip()}%"
         stmt = stmt.where(Organization.name.ilike(term) | Organization.description.ilike(term))
-    stmt = stmt.order_by(Organization.name)
+
+    if has_coords and max_distance_km is not None:
+        stmt = stmt.where(
+            OrgSettings.lat.is_not(None),
+            OrgSettings.lng.is_not(None),
+            distance_expr <= max_distance_km,
+        )
+
+    if has_coords and sort == "distance":
+        stmt = stmt.order_by(
+            func.coalesce(distance_expr, 999999.0).asc(),
+            Organization.name.asc(),
+        )
+    else:
+        stmt = stmt.order_by(Organization.name.asc())
 
     count_subquery = stmt.order_by(None).subquery()
     count_stmt = select(func.count()).select_from(count_subquery)
@@ -52,9 +82,19 @@ async def list_organizations(
     paged_stmt = stmt.offset(offset).limit(page_size)
     result = await db.execute(paged_stmt)
     items: list[CatalogOrganizationOut] = []
-    for org, settings in result.all():
-        rating_avg, review_count = await feedback_service.org_feedback_summary(db, org.id)
-        items.append(organization_to_out(org, settings, rating_avg, review_count))
+
+    if has_coords:
+        for org, settings, dist in result.all():
+            rating_avg, review_count = await feedback_service.org_feedback_summary(db, org.id)
+            dist_km = round(float(dist), 2) if dist is not None else None
+            items.append(
+                organization_to_out(org, settings, rating_avg, review_count, distance_km=dist_km)
+            )
+    else:
+        for org, settings in result.all():
+            rating_avg, review_count = await feedback_service.org_feedback_summary(db, org.id)
+            items.append(organization_to_out(org, settings, rating_avg, review_count))
+
     has_more = (offset + len(items)) < total
     return PageOut(
         items=items,

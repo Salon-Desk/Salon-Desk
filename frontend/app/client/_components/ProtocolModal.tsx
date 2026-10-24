@@ -8,7 +8,7 @@ import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import { protocolForService, serviceImage } from '@/lib/data/service-content'
 import { formatDuration, formatUsd } from '@/lib/format'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import type { SalonService } from '@/types'
 
 interface ProtocolModalProps {
@@ -57,7 +57,7 @@ export function ProtocolModal({ service, onClose, onBook }: ProtocolModalProps) 
           src={coverSrc}
           alt=""
           fill
-          unoptimized={shouldUnoptimizeImage(coverSrc)}
+          unoptimized={shouldUnoptimizedImage(coverSrc)}
           className="object-cover"
           sizes="(max-width: 640px) 100vw, 32rem"
         />
