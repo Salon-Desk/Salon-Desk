@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
+  User,
 } from 'lucide-react'
 import Image from 'next/image'
 import React, { useState } from 'react'
@@ -18,6 +19,7 @@ import { LegalDialog, type LegalDoc } from '@/app/client/_components/LegalDialog
 import type {
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
+  AgentStylistRecommendation,
 } from '@/components/chat/useAgentChat'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
@@ -210,6 +212,7 @@ export interface VoiceDiscoveredContentProps {
   setPaymentLinkData: (data: PaymentLinkData | null) => void
   visibleOrgs: AgentOrganizationRecommendation[]
   visibleServices: AgentServiceRecommendation[]
+  visibleStylists?: AgentStylistRecommendation[]
   canShowMoreServices: boolean
   isSending: boolean
   connectionState: ConnectionState
@@ -221,6 +224,7 @@ export function VoiceDiscoveredContent({
   setPaymentLinkData,
   visibleOrgs,
   visibleServices,
+  visibleStylists,
   canShowMoreServices,
   isSending,
   connectionState,
@@ -395,6 +399,78 @@ export function VoiceDiscoveredContent({
               Show a few more
             </button>
           )}
+        </div>
+      )}
+
+      {/* Real Discovered Stylists (When present) */}
+      {visibleStylists && visibleStylists.length > 0 && (
+        <div className="space-y-2 pt-1 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
+            <span className="flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5 text-amber-600" />
+              Available Stylists
+            </span>
+            <span className="font-mono text-emerald-700 lowercase">select a stylist</span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2">
+            {visibleStylists.map((st) => (
+              <div
+                key={st.id}
+                className="group relative flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-3 text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] hover:border-amber-300 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border border-slate-200/80 bg-amber-50 flex items-center justify-center">
+                    {st.isAny ? (
+                      <Sparkles className="h-5 w-5 text-amber-700" />
+                    ) : st.picture ? (
+                      <Image
+                        src={st.picture}
+                        alt={st.name}
+                        fill
+                        unoptimized={shouldUnoptimizeImage(st.picture)}
+                        sizes="44px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5 text-stone-500" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="truncate font-bold text-xs sm:text-sm text-slate-900 group-hover:text-amber-900 transition-colors">
+                        {st.name}
+                      </h4>
+                      {st.isAny ? (
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                          Fastest
+                        </span>
+                      ) : st.rating ? (
+                        <span className="inline-flex items-center text-[11px] font-medium text-amber-800">
+                          <Star className="mr-0.5 h-3 w-3 fill-amber-400 text-amber-500" />
+                          {st.rating}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-500">
+                      <span>{st.role || 'Stylist'}</span>
+                      {st.organizationName && <span>· {st.organizationName}</span>}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    void onSend(st.isAny ? 'Any available stylist' : `Book with ${st.name}`)
+                  }
+                  className="shrink-0 flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900 transition-colors cursor-pointer"
+                >
+                  <span>Select</span>
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </>

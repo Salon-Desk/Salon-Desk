@@ -5,7 +5,13 @@ from __future__ import annotations
 from typing import Any
 
 from app.ai.support_actions import AgentNavigation
-from app.schemas.chat import ChatCitation, ChatResponse, OrganizationCardOut, ServiceCardOut
+from app.schemas.chat import (
+    ChatCitation,
+    ChatResponse,
+    OrganizationCardOut,
+    ServiceCardOut,
+    StylistCardOut,
+)
 
 CLIENT_BOOKING_PHRASES = (
     "my booking",
@@ -36,15 +42,24 @@ def chat_response(
     reply: str,
     detected_language: str,
     intent: str,
+    stylists: list[StylistCardOut] | list[dict[str, Any]] | None = None,
     **extra: Any,
 ) -> ChatResponse:
     """Fill provider and model from the LLM that produced the reply."""
+    typed_stylists: list[StylistCardOut] = []
+    if stylists:
+        for s in stylists:
+            if isinstance(s, StylistCardOut):
+                typed_stylists.append(s)
+            elif isinstance(s, dict):
+                typed_stylists.append(StylistCardOut(**s))
     return ChatResponse(
         reply=reply,
         provider=llm.provider_name,
         model=llm.model,
         detected_language=detected_language,
         intent=intent,
+        stylists=typed_stylists,
         **extra,
     )
 
@@ -102,6 +117,20 @@ def retrieved_chat_response(
                 distance_km=org.distance_km,
             )
             for org in retrieved.organizations
+        ],
+        stylists=[
+            StylistCardOut(
+                id=str(st.id),
+                name=st.name,
+                organization_id=st.organization_id,
+                organization_name=st.organization_name,
+                role=st.role or "Stylist",
+                picture=st.picture,
+                bio=st.bio,
+                rating=st.rating,
+                is_any=st.is_any,
+            )
+            for st in getattr(retrieved, "stylists", [])
         ],
         navigation=navigation,
         ui_action=ui_action,

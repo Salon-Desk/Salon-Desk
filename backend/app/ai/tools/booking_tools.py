@@ -17,6 +17,7 @@ def build_booking_tools(
     session_factory: async_sessionmaker[AsyncSession],
     on_booking_success: Callable[[dict[str, Any]], Any] | None = None,
     on_payment_link: Callable[[dict[str, Any]], Any] | None = None,
+    on_discovery_results: Callable[[dict[str, Any]], Any] | None = None,
 ) -> list:
     """Return LiveKit ``@function_tool`` callables for voice/chat booking confirmation."""
     try:
@@ -28,5 +29,7 @@ def build_booking_tools(
         *build_confirm_tools(session_factory, on_booking_success, function_tool),
         *build_pending_tools(session_factory, on_payment_link, function_tool),
         *build_manage_tools(session_factory, function_tool),
-        *build_lookup_tools(session_factory, function_tool),
+        *build_lookup_tools(
+            session_factory, function_tool, on_discovery_results=on_discovery_results
+        ),
     ]

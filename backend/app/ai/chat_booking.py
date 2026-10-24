@@ -255,19 +255,50 @@ async def _resolve_requested_service(db: AsyncSession, service_query: str) -> Se
     return fallback.scalar_one_or_none()
 
 
+async def _get_active_service_cards(db: AsyncSession, limit: int = 4) -> list[dict[str, Any]]:
+    result = await db.execute(
+        select(Service, Organization)
+        .join(Organization, Service.organization_id == Organization.id)
+        .where(
+            Organization.status == OrganizationStatus.APPROVED,
+            Service.status == ServiceStatus.ACTIVE,
+        )
+        .order_by(Service.name)
+        .limit(limit)
+    )
+    cards = []
+    for srv, org in result.all():
+        cards.append(
+            {
+                "service_id": str(srv.id),
+                "organization_id": str(org.id),
+                "name": srv.name,
+                "organization_name": org.name,
+                "organization_picture": org.picture,
+                "image_url": srv.image_url,
+                "base_price": str(srv.base_price),
+                "duration_minutes": srv.duration_minutes,
+                "description": srv.description,
+                "physical_address": org.physical_address,
+            }
+        )
+    return cards
+
+
 async def _book_requested_service(
     db: AsyncSession,
     client: User,
     parsed: dict[str, Any],
     user_was_anonymous: bool = False,
     frontend_base: str | None = None,
-) -> tuple[bool, str, dict[str, str | None] | None]:
+) -> tuple[bool, str, dict[str, Any] | None]:
     service = await _resolve_requested_service(db, parsed.get("service_query") or "")
     if service is None:
+        rec_cards = await _get_active_service_cards(db)
         return (
             True,
-            "I couldn't find that service. Which salon or treatment did you have in mind?",
-            None,
+            "I couldn't find that specific service. Which salon or treatment did you have in mind? Here are some available services you can choose from:",
+            {"recommendations": rec_cards},
         )
 
     starts_at = _parse_starts_at(parsed.get("preferred_time"))
@@ -291,7 +322,32 @@ async def _book_requested_service(
                 f"Great choice! For {service.name} at {org_name} on {time_str}, "
                 "would you like to request a specific stylist, or book with any available stylist?"
             )
-        return True, reply, None
+        stylist_cards = [
+            {
+                "id": "any",
+                "name": "Any available stylist",
+                "organization_name": org_name,
+                "role": "Fastest appointment",
+                "is_any": True,
+            }
+        ]
+        for s in stylists:
+            if s.get("display_name"):
+                stylist_cards.append(
+                    {
+                        "id": str(s["id"]),
+                        "name": s["display_name"],
+                        "organization_name": org_name,
+                        "role": s.get("role") or "Stylist",
+                        "picture": s.get("picture"),
+                        "bio": ", ".join(s.get("specialties", []))
+                        if s.get("specialties")
+                        else None,
+                        "rating": float(s.get("rating_avg", 0.0)) if s.get("rating_avg") else None,
+                        "is_any": False,
+                    }
+                )
+        return True, reply, {"stylists": stylist_cards, "needs_stylist": True}
 
     stylist_id, resolved_stylist = await resolve_stylist(db, service.organization_id, stylist_query)
 
@@ -395,7 +451,7 @@ async def try_handle_chat_booking(
     history: list[ChatMessage],
     user: User | None = None,
     frontend_base: str | None = None,
-) -> tuple[bool, str, dict[str, str | None] | None]:
+) -> tuple[bool, str, dict[str, Any] | None]:
     """Check if the user is asking to book or confirm an appointment, and execute if so.
 
     Returns:
@@ -417,18 +473,45 @@ async def try_handle_chat_booking(
             "label": "Sign In",
             "details": "Sign in or create an account to reserve your appointment and authorize the PayPal deposit hold.",
         }
+        rec_cards: list[dict[str, Any]] = []
+        if parsed.get("service_query"):
+            matched_svc = await _resolve_requested_service(db, parsed.get("service_query") or "")
+            if matched_svc:
+                m_org = await db.get(Organization, matched_svc.organization_id)
+                rec_cards.append(
+                    {
+                        "service_id": str(matched_svc.id),
+                        "organization_id": str(matched_svc.organization_id),
+                        "name": matched_svc.name,
+                        "organization_name": m_org.name if m_org else "Salon",
+                        "organization_picture": m_org.picture if m_org else None,
+                        "image_url": matched_svc.image_url,
+                        "base_price": str(matched_svc.base_price),
+                        "duration_minutes": matched_svc.duration_minutes,
+                        "description": matched_svc.description,
+                        "physical_address": m_org.physical_address if m_org else None,
+                    }
+                )
         if client_email:
             return (
                 True,
                 f"I couldn't find a registered client account for '{client_email}'. "
                 "I've opened the sign-in modal for you — please sign in or create an account to continue your booking right here!",
-                {"ui_action": auth_ui_action, "needs_auth": True},
+                {
+                    "ui_action": auth_ui_action,
+                    "needs_auth": True,
+                    "recommendations": rec_cards,
+                },
             )
         return (
             True,
             "To reserve your appointment and authorize the PayPal hold, you must be signed in. "
             "I've opened the sign-in modal for you — once signed in, we can finalize your booking right here!",
-            {"ui_action": auth_ui_action, "needs_auth": True},
+            {
+                "ui_action": auth_ui_action,
+                "needs_auth": True,
+                "recommendations": rec_cards,
+            },
         )
 
     user_was_anonymous = user is None

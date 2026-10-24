@@ -260,10 +260,26 @@ class OrganizationRecommendation:
 
 
 @dataclass
+class StylistRecommendation:
+    """Interactive stylist / staff card payload for chat UI."""
+
+    id: str
+    name: str
+    organization_id: UUID | None = None
+    organization_name: str | None = None
+    role: str = "Stylist"
+    picture: str | None = None
+    bio: str | None = None
+    rating: float | None = None
+    is_any: bool = False
+
+
+@dataclass
 class RetrievedContext:
     chunks: list[RetrievedChunk] = field(default_factory=list)
     recommendations: list[ServiceRecommendation] = field(default_factory=list)
     organizations: list[OrganizationRecommendation] = field(default_factory=list)
+    stylists: list[StylistRecommendation] = field(default_factory=list)
     context_text: str = ""
     detected_language: str = "en"
     is_greeting: bool = False

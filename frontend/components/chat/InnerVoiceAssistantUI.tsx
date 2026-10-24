@@ -18,6 +18,7 @@ import { FloatingVoicePill } from '@/components/chat/FloatingVoicePill'
 import type {
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
+  AgentStylistRecommendation,
 } from '@/components/chat/useAgentChat'
 import { VoiceControlBar } from '@/components/chat/VoiceControlBar'
 import { VoiceDiscoveredContent } from '@/components/chat/VoiceDiscoveredContent'
@@ -78,6 +79,7 @@ export function InnerVoiceAssistantUI({
   const [enablingMic, setEnablingMic] = useState(false)
   const [discoveredOrgs, setDiscoveredOrgs] = useState<AgentOrganizationRecommendation[]>([])
   const [discoveredServices, setDiscoveredServices] = useState<AgentServiceRecommendation[]>([])
+  const [discoveredStylists, setDiscoveredStylists] = useState<AgentStylistRecommendation[]>([])
   const [paymentLinkData, setPaymentLinkData] = useState<{
     bookingId: string
     serviceName: string
@@ -273,6 +275,21 @@ export function InnerVoiceAssistantUI({
             )
             setDiscoveredServices(srvs)
           }
+          if (Array.isArray(parsed?.stylists) && parsed.stylists.length > 0) {
+            const stls: AgentStylistRecommendation[] = parsed.stylists.map(
+              (s: Record<string, unknown>) => ({
+                id: String(s.id),
+                name: String(s.name || ''),
+                organizationName: s.organization_name ? String(s.organization_name) : undefined,
+                role: s.role ? String(s.role) : undefined,
+                picture: s.picture ? String(s.picture) : null,
+                bio: s.bio ? String(s.bio) : null,
+                rating: typeof s.rating === 'number' ? s.rating : null,
+                isAny: Boolean(s.is_any),
+              }),
+            )
+            setDiscoveredStylists(stls)
+          }
           return
         }
 
@@ -390,6 +407,7 @@ export function InnerVoiceAssistantUI({
   const isThinking = state === 'thinking'
   const visibleOrgs = support ? [] : discoveredServices.length > 0 ? [] : discoveredOrgs
   const visibleServices = support ? [] : discoveredServices
+  const visibleStylists = support ? [] : discoveredStylists
   const canShowMoreServices = !support && discoveredServices.length === 3
 
   if (isMinimized) {
@@ -557,6 +575,7 @@ export function InnerVoiceAssistantUI({
           setPaymentLinkData={setPaymentLinkData}
           visibleOrgs={visibleOrgs}
           visibleServices={visibleServices}
+          visibleStylists={visibleStylists}
           canShowMoreServices={canShowMoreServices}
           isSending={isSending}
           connectionState={connectionState}

@@ -334,7 +334,9 @@ async def test_chat_booking_handler():
             user=mock_client,
         )
         assert handled is True
-        assert confirmed is None
+        assert confirmed is not None and "stylists" in confirmed
+        assert any(s["name"] == "Sarah" for s in confirmed["stylists"])
+        assert any(s["is_any"] is True for s in confirmed["stylists"])
         assert "stylist" in reply.lower()
         assert "Sarah" in reply
 

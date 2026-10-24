@@ -7,6 +7,7 @@ import type {
   AgentConfirmedBooking,
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
+  AgentStylistRecommendation,
 } from '@/components/chat/useAgentChat'
 import { highlightElement } from '@/hooks/useAgentUiActions'
 import { type AssistantPortal, isSupportPortal, portalChrome } from '@/lib/assistant-portal'
@@ -22,6 +23,7 @@ export interface ChatMessageItem {
   time: string
   recommendations?: AgentServiceRecommendation[]
   organizations?: AgentOrganizationRecommendation[]
+  stylists?: AgentStylistRecommendation[]
   confirmedBooking?: AgentConfirmedBooking | null
   navigation?: {
     target: string
@@ -38,11 +40,23 @@ export interface ChatMessageItem {
   } | null
 }
 
-export { AuthPromptCard, ConfirmedBookingCard, OrganizationCard, ServiceCard } from './ChatCards'
+export {
+  AuthPromptCard,
+  ConfirmedBookingCard,
+  OrganizationCard,
+  ServiceCard,
+  StylistCard,
+} from './ChatCards'
 export { ChatPanelShell, type ChatPanelShellProps, ConciergeAvatar } from './ChatPanelShell'
 export { RichText } from './RichText'
 
-import { AuthPromptCard, ConfirmedBookingCard, OrganizationCard, ServiceCard } from './ChatCards'
+import {
+  AuthPromptCard,
+  ConfirmedBookingCard,
+  OrganizationCard,
+  ServiceCard,
+  StylistCard,
+} from './ChatCards'
 import { ConciergeAvatar } from './ChatPanelShell'
 import { RichText } from './RichText'
 
@@ -74,6 +88,7 @@ export interface ChatConversationProps<T extends ChatMessageItem = ChatMessageIt
   onPromptChange: (value: string) => void
   onSend: (prompt?: string) => void
   onSelectService?: (service: AgentServiceRecommendation) => void
+  onSelectStylist?: (stylist: AgentStylistRecommendation) => void
   onTryVoice?: () => void
   renderExtras?: (message: T) => React.ReactNode
   suggestions?: string[]
@@ -91,6 +106,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
   onPromptChange,
   onSend,
   onSelectService,
+  onSelectStylist,
   onTryVoice,
   renderExtras,
   suggestions,
@@ -171,6 +187,15 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
     } else {
       justSentRef.current = true
       onSend(`Book ${service.name} at ${service.organizationName}`)
+    }
+  }
+
+  const handleSelectStylist = (stylist: AgentStylistRecommendation) => {
+    if (onSelectStylist) {
+      onSelectStylist(stylist)
+    } else {
+      justSentRef.current = true
+      onSend(stylist.isAny ? 'Any available stylist' : `Book with ${stylist.name}`)
     }
   }
 
@@ -371,6 +396,23 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                       Show a few more
                     </button>
                   )}
+                </div>
+              )}
+
+              {/* Stylist Selection Cards */}
+              {!support && !isUser && msg.stylists && msg.stylists.length > 0 && (
+                <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%] space-y-1.5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+                  <p className="px-0.5 text-[11px] font-medium text-stone-400">
+                    {msg.stylists.length} stylist option{msg.stylists.length === 1 ? '' : 's'} — tap
+                    one to select
+                  </p>
+                  {msg.stylists.map((stylist) => (
+                    <StylistCard
+                      key={stylist.id}
+                      stylist={stylist}
+                      onSelect={handleSelectStylist}
+                    />
+                  ))}
                 </div>
               )}
 

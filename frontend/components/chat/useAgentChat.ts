@@ -43,6 +43,17 @@ export interface AgentOrganizationRecommendation {
   distanceKm?: number | null
 }
 
+export interface AgentStylistRecommendation {
+  id: string
+  name: string
+  organizationName?: string | null
+  role?: string | null
+  picture?: string | null
+  bio?: string | null
+  rating?: number | null
+  isAny?: boolean
+}
+
 export interface AgentConfirmedBooking {
   id: string
   serviceName: string
@@ -69,6 +80,7 @@ export interface AgentChatMessage {
   time: string
   recommendations?: AgentServiceRecommendation[]
   organizations?: AgentOrganizationRecommendation[]
+  stylists?: AgentStylistRecommendation[]
   confirmedBooking?: AgentConfirmedBooking | null
   navigation?: {
     target: string
@@ -194,6 +206,19 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
               rating: o.rating ?? 4.9,
               serviceCount: o.service_count ?? 0,
               distanceKm: o.distance_km,
+            }))
+
+        const stylists: AgentStylistRecommendation[] = support
+          ? []
+          : (data.stylists ?? []).map((s) => ({
+              id: s.id,
+              name: s.name,
+              organizationName: s.organization_name,
+              role: s.role,
+              picture: s.picture,
+              bio: s.bio,
+              rating: s.rating,
+              isAny: Boolean(s.is_any),
             }))
 
         type RawConfirmedBooking = {
@@ -339,6 +364,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
             time: formatClockTime(),
             recommendations: recommendations.length > 0 ? recommendations : undefined,
             organizations: organizations.length > 0 ? organizations : undefined,
+            stylists: stylists.length > 0 ? stylists : undefined,
             confirmedBooking,
             navigation: data.navigation,
             uiAction: data.ui_action,

@@ -44,6 +44,7 @@ async def publish_discovery_results(room: Any, payload: dict[str, Any]) -> None:
                     "type": "catalog_results",
                     "recommendations": payload.get("recommendations", []),
                     "organizations": payload.get("organizations", []),
+                    "stylists": payload.get("stylists", []),
                 }
             )
             await room.local_participant.publish_data(data, topic="lk.client.catalog")

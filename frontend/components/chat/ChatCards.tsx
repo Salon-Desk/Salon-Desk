@@ -1,6 +1,16 @@
 'use client'
 
-import { Building2, CheckCircle2, Lock, LogIn, ShieldCheck, Star, UserPlus } from 'lucide-react'
+import {
+  Building2,
+  CheckCircle2,
+  Lock,
+  LogIn,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  User,
+  UserPlus,
+} from 'lucide-react'
 import Image from 'next/image'
 import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
@@ -11,6 +21,7 @@ import type {
   AgentConfirmedBooking,
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
+  AgentStylistRecommendation,
 } from '@/components/chat/useAgentChat'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
@@ -18,6 +29,70 @@ import { formatUsd } from '@/lib/format'
 import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import { cn } from '@/lib/utils'
 import type { RootState } from '@/store'
+
+/**
+ * Stylist recommendation card rendered inside assistant turn.
+ */
+export function StylistCard({
+  stylist,
+  onSelect,
+}: {
+  stylist: AgentStylistRecommendation
+  onSelect: (stylist: AgentStylistRecommendation) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(stylist)}
+      className="group flex w-full items-center gap-3 rounded-2xl border border-stone-200/90 bg-white p-2.5 text-left shadow-2xs transition-all hover:border-amber-300 hover:shadow-xs cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500"
+    >
+      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-stone-200 bg-amber-50">
+        {stylist.isAny ? (
+          <Sparkles className="h-5 w-5 text-amber-700" />
+        ) : stylist.picture ? (
+          <Image
+            src={stylist.picture}
+            alt={stylist.name}
+            fill
+            unoptimized={shouldUnoptimizeImage(stylist.picture)}
+            sizes="44px"
+            className="object-cover"
+          />
+        ) : (
+          <User className="h-5 w-5 text-stone-500" />
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <h4 className="truncate text-[13px] font-semibold text-stone-950 group-hover:text-amber-900">
+            {stylist.name}
+          </h4>
+          {stylist.isAny ? (
+            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+              Fastest
+            </span>
+          ) : stylist.rating ? (
+            <span className="inline-flex items-center text-[11px] font-medium text-amber-800">
+              <Star className="mr-0.5 h-3 w-3 fill-amber-400 text-amber-500" />
+              {stylist.rating}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-0.5 truncate text-[11px] font-medium text-stone-500">
+          {stylist.organizationName
+            ? `${stylist.role || 'Stylist'} · ${stylist.organizationName}`
+            : stylist.role || 'Stylist'}
+        </p>
+        {stylist.bio && <p className="mt-0.5 truncate text-[11px] text-stone-400">{stylist.bio}</p>}
+      </div>
+
+      <span className="inline-flex shrink-0 items-center rounded-full bg-stone-950 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors group-hover:bg-amber-600">
+        Select
+      </span>
+    </button>
+  )
+}
 
 /**
  * Service recommendation card rendered inside assistant turn.

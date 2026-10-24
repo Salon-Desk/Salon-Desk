@@ -1,6 +1,6 @@
-"""Lookup tools for salon and service details."""
-
-from __future__ import annotations
+import inspect
+from collections.abc import Callable
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -19,6 +19,7 @@ from .booking_responses import (
 def build_lookup_tools(
     session_factory: async_sessionmaker[AsyncSession],
     function_tool,
+    on_discovery_results: Callable[[dict[str, Any]], Any] | None = None,
 ) -> list:
     """Return tools that describe a salon or a service."""
 
@@ -125,6 +126,42 @@ def build_lookup_tools(
             staff_list = await get_organization_stylists(db, org.id)
             stylist_names = [s.get("display_name") for s in staff_list if s.get("display_name")]
             options = stylist_names + ["Any available stylist"]
+
+            if on_discovery_results:
+                stylist_cards = [
+                    {
+                        "id": "any",
+                        "name": "Any available stylist",
+                        "organization_name": org.name,
+                        "role": "Fastest appointment",
+                        "is_any": True,
+                    }
+                ]
+                for s in staff_list:
+                    if s.get("display_name"):
+                        stylist_cards.append(
+                            {
+                                "id": str(s["id"]),
+                                "name": s["display_name"],
+                                "organization_name": org.name,
+                                "role": s.get("role") or "Stylist",
+                                "picture": s.get("picture"),
+                                "bio": ", ".join(s.get("specialties", []))
+                                if s.get("specialties")
+                                else None,
+                                "rating": float(s.get("rating_avg", 0.0))
+                                if s.get("rating_avg")
+                                else None,
+                                "is_any": False,
+                            }
+                        )
+                try:
+                    res = on_discovery_results({"stylists": stylist_cards})
+                    if inspect.isawaitable(res):
+                        await res
+                except Exception:
+                    pass
+
             return json.dumps(
                 {
                     "status": "success",

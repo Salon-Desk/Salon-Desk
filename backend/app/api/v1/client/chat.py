@@ -82,6 +82,20 @@ async def chat(
             user_info = confirmed_info.pop("user", None) if confirmed_info else None
             booking_ui_act_dict = confirmed_info.pop("ui_action", None) if confirmed_info else None
             needs_auth = confirmed_info.pop("needs_auth", False) if confirmed_info else False
+            needs_stylist = confirmed_info.pop("needs_stylist", False) if confirmed_info else False
+            stylists = confirmed_info.pop("stylists", None) if confirmed_info else None
+            raw_recs = confirmed_info.pop("recommendations", None) if confirmed_info else None
+
+            from app.schemas.chat import ServiceCardOut
+
+            rec_cards: list[ServiceCardOut] = []
+            if raw_recs:
+                for r in raw_recs:
+                    if isinstance(r, ServiceCardOut):
+                        rec_cards.append(r)
+                    elif isinstance(r, dict):
+                        rec_cards.append(ServiceCardOut(**r))
+
             ui_act = None
             if booking_ui_act_dict:
                 from app.ai.support_actions import AgentUiAction
@@ -93,11 +107,17 @@ async def chat(
                 reply=booking_reply,
                 detected_language=language,
                 intent="booking",
-                confirmed_booking=confirmed_info if confirmed_info and not needs_auth else None,
+                confirmed_booking=(
+                    confirmed_info
+                    if confirmed_info and not needs_auth and not needs_stylist and not raw_recs
+                    else None
+                ),
                 payment_link=confirmed_info.get("payment_link") if confirmed_info else None,
                 auth_token=auth_token,
                 user=user_info,
                 ui_action=ui_act,
+                stylists=stylists,
+                recommendations=rec_cards,
             )
 
         from app.ai.tools.paypal_tools import handle_paypal_agent_chat

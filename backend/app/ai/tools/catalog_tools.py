@@ -287,6 +287,7 @@ def build_voice_tools(
             session_factory,
             on_booking_success=on_booking_success,
             on_payment_link=on_payment_link,
+            on_discovery_results=on_discovery_results,
         )
     )
     tools.extend(
