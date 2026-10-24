@@ -160,15 +160,38 @@ def organization_documents(
     settings_map: dict[uuid.UUID, OrgSettings],
 ) -> list[dict]:
     items = []
+    day_names = {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun",
+    }
     for org in orgs:
         settings = settings_map.get(org.id)
+        hours_str = ""
+        if settings and isinstance(settings.working_hours, dict):
+            parts = []
+            for d, name in day_names.items():
+                windows = settings.working_hours.get(d, [])
+                if windows:
+                    win_str = ", ".join(f"{w[0]}-{w[1]}" for w in windows if len(w) == 2)
+                    parts.append(f"{name}: {win_str}")
+                else:
+                    parts.append(f"{name}: Closed")
+            if parts:
+                hours_str = "Operating Hours: " + "; ".join(parts)
+
         content = " | ".join(
             part
             for part in [
                 org.name,
                 org.description or "",
                 settings.physical_address if settings else "",
-                settings.timezone if settings else "",
+                f"Timezone: {settings.timezone}" if settings and settings.timezone else "",
+                hours_str,
             ]
             if part
         )
@@ -183,6 +206,7 @@ def organization_documents(
                     "organization_id": str(org.id),
                     "physical_address": settings.physical_address if settings else None,
                     "timezone": settings.timezone if settings else None,
+                    "working_hours": settings.working_hours if settings else None,
                     "lat": str(settings.lat) if settings and settings.lat is not None else None,
                     "lng": str(settings.lng) if settings and settings.lng is not None else None,
                 },

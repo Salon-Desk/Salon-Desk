@@ -26,25 +26,17 @@ function invoiceTone(status: string): 'slate' | 'amber' | 'emerald' | 'rose' | '
 
 interface InvoiceColumnOptions {
   orgNameById: Map<string, string>
-  onIssue: (inv: OrgCommissionInvoice) => void
-  onVoid: (inv: OrgCommissionInvoice) => void
-  issuing: boolean
-  voiding: boolean
 }
 
 export function getAdminInvoiceTableColumns({
   orgNameById,
-  onIssue,
-  onVoid,
-  issuing,
-  voiding,
 }: InvoiceColumnOptions): ColumnDefinition<OrgCommissionInvoice>[] {
   return [
     {
       id: 'org',
       header: 'Organization',
       cell: (inv) => (
-        <span className="font-medium text-slate-900 text-xs">
+        <span className="font-semibold text-slate-900 text-xs">
           {orgNameById.get(inv.org_id) || inv.org_id.slice(0, 8)}
         </span>
       ),
@@ -81,36 +73,6 @@ export function getAdminInvoiceTableColumns({
       header: 'Due',
       cell: (inv) => (
         <span className="font-mono text-[11px] text-slate-500">{inv.due_date || '—'}</span>
-      ),
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      headerClassName: 'text-right',
-      cellClassName: 'text-right',
-      cell: (inv) => (
-        <div className="flex items-center justify-end space-x-2">
-          {inv.status?.toUpperCase() === 'DRAFT' ? (
-            <button
-              type="button"
-              disabled={issuing}
-              onClick={() => onIssue(inv)}
-              className="cursor-pointer rounded-md px-2 py-1 font-semibold text-sky-700 text-xs transition-all hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98] disabled:opacity-50"
-            >
-              Issue
-            </button>
-          ) : null}
-          {inv.status?.toUpperCase() !== 'PAID' && inv.status?.toUpperCase() !== 'VOID' ? (
-            <button
-              type="button"
-              disabled={voiding}
-              onClick={() => onVoid(inv)}
-              className="cursor-pointer rounded-md px-2 py-1 font-semibold text-rose-700 text-xs transition-all hover:bg-rose-50 hover:text-rose-900 active:scale-[0.98] disabled:opacity-50"
-            >
-              Void
-            </button>
-          ) : null}
-        </div>
       ),
     },
   ]

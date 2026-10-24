@@ -5,7 +5,7 @@ export {
   type MerchantContextValue,
   MerchantProvider,
   useMerchantContext,
-} from './_context/merchant-context'
+} from './_context/MerchantContext'
 export {
   useMerchantSettlement,
   type UseMerchantSettlementOptions,

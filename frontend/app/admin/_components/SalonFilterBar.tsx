@@ -11,6 +11,7 @@ interface SalonFilterBarProps {
   searchQuery: string
   debouncedSearch: string
   totalMatching: number
+  showSearch?: boolean
   onFilterChange: (filter: StatusFilter) => void
   onSearchChange: (query: string) => void
   onResetFilters: () => void
@@ -24,6 +25,7 @@ export function SalonFilterBar({
   searchQuery,
   debouncedSearch,
   totalMatching,
+  showSearch = true,
   onFilterChange,
   onSearchChange,
   onResetFilters,
@@ -61,15 +63,17 @@ export function SalonFilterBar({
           })}
         </div>
 
-        <div className="w-full sm:w-80">
-          <SearchInput
-            value={searchQuery}
-            onChange={onSearchChange}
-            placeholder="Search salon name, description, UUID…"
-            shortcut="⌘K"
-            className="w-full text-xs"
-          />
-        </div>
+        {showSearch && (
+          <div className="w-full sm:w-80">
+            <SearchInput
+              value={searchQuery}
+              onChange={onSearchChange}
+              placeholder="Search salon name, description, UUID…"
+              shortcut="⌘K"
+              className="w-full text-xs"
+            />
+          </div>
+        )}
       </div>
 
       {/* Active Filter Strip */}

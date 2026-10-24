@@ -7,7 +7,7 @@ import { UserMenu } from '@/components/auth/user-menu'
 import { Logo } from '@/components/brand'
 import { ROUTES } from '@/lib/constants'
 
-import { AppCard } from './app-card'
+import { AppCard } from './AppCard'
 import { SandboxModal } from './SandboxModal'
 
 export function HubExperience() {

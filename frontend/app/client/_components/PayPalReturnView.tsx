@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
-import PrimaryButton from '@/components/ui/primary-button'
+import { PrimaryButton } from '@/components/button'
 import { useCompletePaymentHoldMutation } from '@/store/api/clientApi'
 
 export function PayPalReturnView() {

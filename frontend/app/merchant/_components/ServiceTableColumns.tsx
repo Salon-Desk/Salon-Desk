@@ -1,26 +1,18 @@
-import { Clock, Edit2 } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import Image from 'next/image'
 
 import { StatusBadge } from '@/components/badge/StatusBadge'
-import { IconButton } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
 import { formatUsd } from '@/lib/format'
-import { resolveImageSrc, shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { resolveImageSrc, shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import type { ApiOrgService } from '@/types/api-org'
 import type { ColumnDefinition } from '@/types/table'
 
 interface ServiceTableColumnsProps {
   categoryNameById: Map<string, string>
-  onEdit: (service: ApiOrgService) => void
-  onDeactivate: (service: ApiOrgService) => void
-  isDeactivating: boolean
 }
 
 export function getServiceTableColumns({
   categoryNameById,
-  onEdit,
-  onDeactivate,
-  isDeactivating,
 }: ServiceTableColumnsProps): ColumnDefinition<ApiOrgService>[] {
   return [
     {
@@ -44,7 +36,7 @@ export function getServiceTableColumns({
                   alt={service.name}
                   fill
                   className="object-cover"
-                  unoptimized={shouldUnoptimizeImage(coverSrc)}
+                  unoptimized={shouldUnoptimizedImage(coverSrc)}
                 />
               </div>
             ) : (
@@ -103,33 +95,6 @@ export function getServiceTableColumns({
           </StatusBadge>
         )
       },
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: (service) => (
-        <div className="flex items-center justify-end gap-1.5">
-          <IconButton
-            aria-label="Edit service"
-            onClick={() => onEdit(service)}
-            className="h-8 w-8 rounded-lg text-slate-500 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200"
-            title="Edit service"
-          >
-            <Edit2 className="h-3.5 w-3.5" />
-          </IconButton>
-          {service.status !== 'inactive' ? (
-            <PrimaryButton
-              title="Deactivate"
-              variant="ghost"
-              size="sm"
-              fullWidth={false}
-              isDisabled={isDeactivating}
-              className="h-7.5 rounded-lg px-2.5 text-xs text-slate-500 hover:text-rose-700"
-              onClick={() => onDeactivate(service)}
-            />
-          ) : null}
-        </div>
-      ),
     },
   ]
 }

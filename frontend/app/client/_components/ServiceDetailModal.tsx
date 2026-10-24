@@ -22,7 +22,7 @@ import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDial
 import { serviceImage } from '@/lib/data/service-content'
 import { formatDuration, formatUsd } from '@/lib/format'
 import { buildClientOrgStaffQueryArg } from '@/lib/listing-params/client-org-staff-list-params'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import {
   useGetCatalogCancellationPolicyQuery,
   useGetCatalogOrganizationQuery,
@@ -143,7 +143,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
             alt={name}
             fill
             priority
-            unoptimized={shouldUnoptimizeImage(coverSrc)}
+            unoptimized={shouldUnoptimizedImage(coverSrc)}
             className="object-cover"
             sizes="(max-width: 640px) 100vw, 680px"
           />
@@ -272,7 +272,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
                           src={org.picture}
                           alt={salonName}
                           fill
-                          unoptimized={shouldUnoptimizeImage(org.picture)}
+                          unoptimized={shouldUnoptimizedImage(org.picture)}
                           className="object-cover"
                         />
                       </div>
@@ -348,7 +348,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
                             src={member.picture}
                             alt={member.display_name}
                             fill
-                            unoptimized={shouldUnoptimizeImage(member.picture)}
+                            unoptimized={shouldUnoptimizedImage(member.picture)}
                             className="object-cover"
                           />
                         </div>

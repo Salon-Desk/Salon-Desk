@@ -1,11 +1,15 @@
 'use client'
 
-import { Clock, Sliders } from 'lucide-react'
-import { useMemo } from 'react'
+import { CheckCircle2, Clock, Sliders, XCircle } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
-import { Badge, Card, EmptyState, SearchInput } from '@/components/ui'
+import { StatCard } from '@/components/card'
+import { EmptyState } from '@/components/empty'
+import { Badge, Card, PageHeader, SearchInput } from '@/components/ui'
 import { Pagination } from '@/components/ui/pagination'
 import { AdminQueryState } from '@/components/ui/query-state-view'
+import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import { useListingParams } from '@/hooks/useListingParams'
@@ -32,6 +36,7 @@ export function AdminRequestsView() {
     AdminRequestsListParams,
     typeof AdminRequestsListParamsSchema
   >(AdminRequestsListParamsSchema)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useAgentUiActions({
     onFilterPolicyRequests: () => {
@@ -50,6 +55,16 @@ export function AdminRequestsView() {
   } = useGetAdminChangeRequestsQuery(params, {
     skip: skipAdminApi,
   })
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await refetch()
+      toast.success('Governance queue updated', toastColor.info)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   const paginatedRequests = requestsData?.items ?? []
   const totalItems = requestsData?.total ?? paginatedRequests.length
@@ -94,18 +109,48 @@ export function AdminRequestsView() {
   )
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 animate-in fade-in duration-300">
-      <div>
-        <h1 className="font-extrabold text-xl text-slate-900 tracking-tight sm:text-2xl">
-          Change Request Governance
-        </h1>
-        <p className="text-xs text-slate-500">
-          Review, approve, and audit merchant policy amendments and PayPal payout configuration
-          changes.
-        </p>
+    <div className="mx-auto w-full max-w-6xl space-y-6 pb-12 animate-in fade-in duration-300">
+      {/* Header Banner */}
+      <PageHeader
+        eyebrow="Merchant Governance · Policy & Payout Amendments"
+        title="Change Request Governance"
+        badge={`${counts.PENDING} Actionable`}
+        description="Review, approve, and audit salon merchant policy updates (free cancellation windows, no-show penalties) and PayPal payout configuration changes."
+        onRefresh={() => void handleRefresh()}
+        isRefreshing={isRefreshing}
+        refreshTitle="Refresh requests"
+      />
+
+      {/* 3 KPI Summary Cards */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        <StatCard
+          label="Pending Review"
+          value={String(counts.PENDING)}
+          footnote="Requires platform administrator decision"
+          icon={Clock}
+          tone={counts.PENDING > 0 ? 'amber' : 'slate'}
+          className="hover:border-amber-200 hover:shadow-xs transition-all"
+        />
+        <StatCard
+          label="Approved Policies"
+          value={String(counts.APPROVED)}
+          footnote="Merged into active salon policies"
+          icon={CheckCircle2}
+          tone="emerald"
+          className="hover:border-emerald-200 hover:shadow-xs transition-all"
+        />
+        <StatCard
+          label="Rejected Amendments"
+          value={String(counts.REJECTED)}
+          footnote="Declined compliance changes"
+          icon={XCircle}
+          tone="rose"
+          className="hover:border-rose-200 hover:shadow-xs transition-all"
+        />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+      {/* Filter Bar & Search */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs">
         <SearchInput
           value={displayParams.search}
           onChange={(val) => setParams({ search: val, page: 1 })}
@@ -123,7 +168,7 @@ export function AdminRequestsView() {
                 key={key}
                 type="button"
                 onClick={() => setParams({ status: key, page: 1 })}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer active:scale-[0.98] ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold capitalize transition-all cursor-pointer active:scale-[0.98] ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'

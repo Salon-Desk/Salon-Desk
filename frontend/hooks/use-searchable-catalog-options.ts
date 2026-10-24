@@ -17,9 +17,17 @@ import type { ApiServiceCategory, CatalogOrganization, CatalogService } from '@/
 export function useSearchableCatalogOrganizations(options?: {
   skip?: boolean
   selectedOrgId?: string
+  lat?: number
+  lng?: number
+  sort?: string
+  max_distance_km?: number
 }) {
   const skip = options?.skip ?? false
   const selectedOrgId = options?.selectedOrgId?.trim() ?? ''
+  const lat = options?.lat
+  const lng = options?.lng
+  const sort = options?.sort
+  const max_distance_km = options?.max_distance_km
 
   const { data: selectedOrg } = useGetCatalogOrganizationQuery(selectedOrgId, {
     skip: skip || !selectedOrgId,
@@ -27,8 +35,16 @@ export function useSearchableCatalogOrganizations(options?: {
 
   const buildArgs = useCallback(
     ({ search, page, pageSize }: { search: string; page: number; pageSize: number }) =>
-      buildClientCatalogOrganizationsApiParams({ search, page, limit: pageSize }),
-    [],
+      buildClientCatalogOrganizationsApiParams({
+        search,
+        page,
+        limit: pageSize,
+        ...(typeof lat === 'number' ? { lat } : {}),
+        ...(typeof lng === 'number' ? { lng } : {}),
+        ...(sort ? { sort } : {}),
+        ...(typeof max_distance_km === 'number' ? { max_distance_km } : {}),
+      }),
+    [lat, lng, sort, max_distance_km],
   )
 
   const resolvePinned = useCallback(

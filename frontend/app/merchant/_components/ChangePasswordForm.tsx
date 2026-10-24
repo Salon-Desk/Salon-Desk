@@ -3,10 +3,10 @@
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
+import { PrimaryButton } from '@/components/button'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFTextField from '@/components/forms/RHFTextField'
 import { Card } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
 import { toastColor } from '@/constant/toast-color'
 import { useChangePasswordMutation } from '@/store/api/sharedApi'
 

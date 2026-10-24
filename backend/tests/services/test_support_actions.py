@@ -57,3 +57,49 @@ def test_client_navigation():
     nav, _ = resolve_portal_navigation("client", "take me to my bookings")
     assert nav is not None
     assert nav.target == "/client/bookings"
+
+    nav_explore, _ = resolve_portal_navigation("client", "find salons near me")
+    assert nav_explore is not None
+    assert nav_explore.target == "/client/explore"
+    assert nav_explore.tab == "explore"
+
+    nav_book, _ = resolve_portal_navigation("client", "book haircut tomorrow")
+    assert nav_book is not None
+    assert nav_book.target == "/client/book"
+    assert nav_book.tab == "checkout"
+
+
+def test_admin_new_routes_and_filters():
+    # Admin reviews
+    nav, _ = resolve_portal_navigation("admin", "moderate client reviews")
+    assert nav is not None
+    assert nav.target == "/admin/reviews"
+    assert nav.tab == "reviews"
+
+    # Admin curation / merchandising
+    nav, _ = resolve_portal_navigation("admin", "tune popular ranking and hero banner")
+    assert nav is not None
+    assert nav.target == "/admin/curation"
+    assert nav.tab == "curation"
+
+    # Admin pending salons filter action
+    nav, ui_act = resolve_portal_navigation("admin", "show me pending salons to approve")
+    assert nav is not None
+    assert nav.target == "/admin/salons"
+    assert ui_act is not None
+    assert ui_act.action == "filter_pending"
+
+
+def test_merchant_billing_and_filter_actions():
+    # Merchant billing
+    nav, _ = resolve_portal_navigation("merchant", "how do I pay a commission invoice?")
+    assert nav is not None
+    assert nav.target == "/merchant/billing"
+    assert nav.tab == "billing"
+
+    # Merchant active holds filter
+    nav, ui_act = resolve_portal_navigation("merchant", "show active holds")
+    assert nav is not None
+    assert nav.target == "/merchant/appointments"
+    assert ui_act is not None
+    assert ui_act.action == "filter_holds"
