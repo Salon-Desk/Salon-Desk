@@ -281,7 +281,12 @@ def build_voice_tools(
         user_location_getter=user_location_getter,
         on_discovery_results=on_discovery_results,
     )
-    tools.extend(build_schedule_tools(session_factory))
+    tools.extend(
+        build_schedule_tools(
+            session_factory,
+            on_discovery_results=on_discovery_results,
+        )
+    )
     tools.extend(
         build_booking_tools(
             session_factory,

@@ -165,7 +165,13 @@ async def retrieve_context(
             intent="support" if intent == "booking" else intent,
         )
 
-    context_recs, response_recs, response_orgs, response_stylists = await collect_client_cards(
+    (
+        context_recs,
+        response_recs,
+        response_orgs,
+        response_stylists,
+        context_orgs,
+    ) = await collect_client_cards(
         session,
         merged=merged,
         query=query,
@@ -175,7 +181,9 @@ async def retrieve_context(
         user_lng=user_lng,
         rec_limit=rec_limit,
     )
-    context_text = format_context_text(merged, context_recs, stylists=response_stylists)
+    context_text = format_context_text(
+        merged, context_recs, stylists=response_stylists, organizations=context_orgs
+    )
     return RetrievedContext(
         chunks=merged,
         recommendations=response_recs,

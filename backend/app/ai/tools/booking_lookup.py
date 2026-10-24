@@ -6,10 +6,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import selectinload
 
+from app.ai.rag.utils import format_working_hours
 from app.models.enums import ServiceStatus
+from app.models.organization import OrgSettings
 from app.models.service import Service
 
-from .booking_helpers import resolve_organization, resolve_service
+from .booking_helpers import get_organization_stylists, resolve_organization, resolve_service
 from .booking_responses import (
     error_response,
     organization_details_response,
@@ -37,6 +39,19 @@ def build_lookup_tools(
             if not org:
                 return error_response(f"Could not find an organization matching '{org_query}'.")
 
+            settings_res = await db.execute(select(OrgSettings).where(OrgSettings.org_id == org.id))
+            settings = settings_res.scalar_one_or_none()
+            tz = settings.timezone if settings and settings.timezone else "UTC"
+            addr = settings.physical_address if settings else org.physical_address
+            wh_formatted = (
+                format_working_hours(settings.working_hours)
+                if settings and settings.working_hours
+                else "Mon-Sat 9:00 AM - 6:00 PM"
+            )
+
+            staff_list = await get_organization_stylists(db, org.id)
+            stylist_names = [s.get("display_name") for s in staff_list if s.get("display_name")]
+
             svc_res = await db.execute(
                 select(Service)
                 .options(selectinload(Service.category))
@@ -44,7 +59,7 @@ def build_lookup_tools(
                     Service.organization_id == org.id,
                     Service.status == ServiceStatus.ACTIVE,
                 )
-                .limit(5)
+                .limit(10)
             )
             services = list(svc_res.scalars().all())
 
@@ -53,6 +68,10 @@ def build_lookup_tools(
                 "name": org.name,
                 "description": org.description,
                 "status": org.status.value,
+                "physical_address": addr,
+                "timezone": tz,
+                "working_hours": wh_formatted,
+                "stylists": stylist_names,
             }
             services_data = [
                 {
@@ -60,6 +79,8 @@ def build_lookup_tools(
                     "name": s.name,
                     "base_price": str(s.base_price),
                     "duration_minutes": s.duration_minutes,
+                    "category_name": s.category.name if s.category else None,
+                    "description": s.description,
                 }
                 for s in services
             ]
@@ -77,7 +98,7 @@ def build_lookup_tools(
                         "duration_minutes": s.duration_minutes,
                         "category_name": s.category.name if s.category else None,
                         "description": s.description,
-                        "physical_address": org.physical_address,
+                        "physical_address": addr,
                     }
                     for s in services
                 ]
@@ -104,6 +125,13 @@ def build_lookup_tools(
                 return error_response(f"Could not find a service matching '{service_query}'.")
 
             org = service.organization
+            settings = None
+            if org:
+                settings_res = await db.execute(
+                    select(OrgSettings).where(OrgSettings.org_id == org.id)
+                )
+                settings = settings_res.scalar_one_or_none()
+
             service_data = {
                 "id": str(service.id),
                 "name": service.name,
@@ -115,6 +143,17 @@ def build_lookup_tools(
             org_data = {
                 "id": str(org.id) if org else None,
                 "name": org.name if org else None,
+                "physical_address": (
+                    settings.physical_address
+                    if settings
+                    else (org.physical_address if org else None)
+                ),
+                "timezone": settings.timezone if settings and settings.timezone else "UTC",
+                "working_hours": (
+                    format_working_hours(settings.working_hours)
+                    if settings and settings.working_hours
+                    else None
+                ),
             }
 
             if on_discovery_results:

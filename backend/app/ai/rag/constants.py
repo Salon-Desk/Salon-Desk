@@ -266,6 +266,8 @@ class OrganizationRecommendation:
     rating: float = 4.9
     service_count: int = 0
     distance_km: float | None = None
+    working_hours: dict | None = None
+    timezone: str | None = None
 
 
 @dataclass

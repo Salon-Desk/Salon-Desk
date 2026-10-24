@@ -2,21 +2,35 @@
 
 from .constants import (
     DEFAULT_RECOMMENDATION_LIMIT,
+    OrganizationRecommendation,
     RetrievedChunk,
     RetrievedContext,
     ServiceRecommendation,
     StylistRecommendation,
     persona_for_portal,
 )
+from .utils import format_working_hours
 
 
 def format_context_text(
     chunks: list[RetrievedChunk],
     recommendations: list[ServiceRecommendation],
     stylists: list[StylistRecommendation] | None = None,
+    organizations: list[OrganizationRecommendation] | None = None,
 ) -> str:
     """Format retrieved chunks and recommendations into text for LLM context."""
     lines: list[str] = []
+
+    if organizations:
+        lines.append("Salons / Organizations (from live platform data):")
+        for org in organizations:
+            addr_part = f" @ {org.physical_address}" if org.physical_address else ""
+            dist_part = f" ({org.distance_km} km away)" if org.distance_km is not None else ""
+            hours_part = (
+                f" · Hours: {format_working_hours(org.working_hours)}" if org.working_hours else ""
+            )
+            tz_part = f" · Timezone: {org.timezone}" if org.timezone else ""
+            lines.append(f"- {org.name}{dist_part}{addr_part}{hours_part}{tz_part}")
 
     if recommendations:
         lines.append("Recommended services (from live platform data):")

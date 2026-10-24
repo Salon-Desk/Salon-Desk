@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload
 
 from app.ai.llm import BaseLLMService, LLMError
 from app.ai.tools.booking_helpers import get_organization_stylists, resolve_stylist
+from app.core.exceptions import ForbiddenError
 from app.core.security import create_access_token
 from app.models.booking import Booking
 from app.models.enums import BookingStatus, OrganizationStatus, ServiceStatus, UserRole
@@ -396,6 +397,31 @@ async def _get_active_service_cards(db: AsyncSession, limit: int = 4) -> list[di
     return cards
 
 
+async def _get_sample_available_slots(
+    db: AsyncSession,
+    service_id: UUID,
+    target_day: date | None = None,
+) -> tuple[str, list[str]]:
+    """Query live DB availability for service_id on target_day and return formatted slot strings."""
+    try:
+        from app.services.availability_service import get_availability, resolve_org_timezone
+
+        day = target_day or (datetime.now(UTC) + timedelta(days=1)).date()
+        avail = await get_availability(db, service_id=service_id, day=day)
+        org_tz = resolve_org_timezone(avail.timezone)
+        open_slots = [
+            s.starts_at.astimezone(org_tz).strftime("%I:%M %p").lstrip("0")
+            for s in avail.slots
+            if s.available
+        ]
+        if open_slots:
+            sample_str = f" Available openings tomorrow include {', '.join(open_slots[:4])}."
+            return sample_str, open_slots
+    except Exception as exc:
+        logger.debug("Live availability lookup skipped: %s", exc)
+    return "", []
+
+
 async def _book_requested_service(
     db: AsyncSession,
     client: User,
@@ -444,8 +470,10 @@ async def _book_requested_service(
 
     # 1. Missing time and missing stylist (e.g. user selected service card)
     if starts_at is None and not stylist_query:
+        sample_str, _ = await _get_sample_available_slots(db, service.id)
         reply = (
-            f"Great choice! For {service.name} at {org_name}, what date and time would you like to come in? "
+            f"Great choice! For {service.name} at {org_name},{sample_str} "
+            "what date and time would you like to come in? "
             "You can also pick your preferred stylist below, or choose 'Any available stylist'."
         )
         return True, reply, {"stylists": stylist_cards, "needs_time": True, "needs_stylist": True}
@@ -453,9 +481,34 @@ async def _book_requested_service(
     # 2. Missing time, but stylist is chosen
     if starts_at is None and stylist_query:
         _s_id, resolved_stylist = await resolve_stylist(db, service.organization_id, stylist_query)
+        sample_str, _ = await _get_sample_available_slots(db, service.id)
         reply = (
             f"Great! What date and time would you like to book {service.name} with {resolved_stylist} at {org_name}? "
-            "(e.g. tomorrow at 2 PM, Friday at 10 AM, or any time that works for you)"
+            f"(e.g. tomorrow at 2 PM, Friday at 10 AM, or any time that works for you){sample_str}"
+        )
+        return True, reply, {"needs_time": True}
+
+    # Verify live slot availability before committing
+    slot_open = True
+    try:
+        from app.services.availability_service import check_slot_available
+
+        ends_at = starts_at + timedelta(minutes=service.duration_minutes)
+        slot_open = await check_slot_available(
+            db,
+            service=service,
+            starts_at=starts_at,
+            ends_at=ends_at,
+        )
+    except Exception as exc:
+        logger.debug("Slot availability pre-check skipped: %s", exc)
+        slot_open = True
+
+    if not slot_open:
+        sample_str, _ = await _get_sample_available_slots(db, service.id, starts_at.date())
+        reply = (
+            f"Sorry, that time is no longer available for {service.name} at {org_name}.{sample_str} "
+            "Would you like to pick another time?"
         )
         return True, reply, {"needs_time": True}
 
@@ -489,6 +542,13 @@ async def _book_requested_service(
             stylist_id=stylist_id,
             customer_notes=parsed.get("notes")
             or f"Booked via AI Concierge Chat · Stylist: {resolved_stylist}",
+        )
+    except ForbiddenError:
+        sample_str, _ = await _get_sample_available_slots(db, service.id, starts_at.date())
+        return (
+            True,
+            f"That time slot was just booked or is unavailable for {service.name} at {org_name}.{sample_str} Want to try another time?",
+            {"needs_time": True},
         )
     except Exception as exc:
         logger.error("Failed to create booking via chat: %s", exc)
