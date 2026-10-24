@@ -89,6 +89,11 @@ export function InnerVoiceAssistantUI({
     totalPrice: string
     paymentLink: string
   } | null>(null)
+  const [transcriptHistory, setTranscriptHistory] = useState<
+    Array<{ id: string; sender: 'user' | 'assistant'; text: string; time: string }>
+  >([])
+  const transcriptContainerRef = useRef<HTMLDivElement>(null)
+  const isUserScrolledUpRef = useRef(false)
   const endedByAgentRef = useRef(false)
   const hasConnectedRef = useRef(false)
 
@@ -180,6 +185,23 @@ export function InnerVoiceAssistantUI({
       try {
         const text = new TextDecoder().decode(payload)
         const parsed = JSON.parse(text)
+
+        if (parsed?.type === 'user_transcript' && parsed?.text) {
+          const cleanText = String(parsed.text).trim()
+          if (cleanText) {
+            isUserScrolledUpRef.current = false
+            setTranscriptHistory((prev) => [
+              ...prev,
+              {
+                id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                sender: 'user',
+                text: cleanText,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              },
+            ])
+          }
+          return
+        }
 
         if (parsed?.type === 'auth_success' && parsed?.access_token && parsed?.user) {
           dispatch(
@@ -392,6 +414,16 @@ export function InnerVoiceAssistantUI({
       const value = (text ?? draft).trim()
       if (!value || isSending || connectionState !== ConnectionState.Connected) return
       try {
+        isUserScrolledUpRef.current = false
+        setTranscriptHistory((prev) => [
+          ...prev,
+          {
+            id: `usr-typed-${Date.now()}`,
+            sender: 'user',
+            text: value,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ])
         await sendChat(value)
         setDraft('')
       } catch (err) {
@@ -401,7 +433,51 @@ export function InnerVoiceAssistantUI({
     [sendChat, isSending, connectionState, draft, setDraft],
   )
 
-  const latestTranscript = agentTranscriptions.at(-1)?.text
+  useEffect(() => {
+    if (!agentTranscriptions || agentTranscriptions.length === 0) return
+
+    setTranscriptHistory((prev) => {
+      const updated = [...prev]
+      for (const segment of agentTranscriptions) {
+        const segText = segment.text?.trim()
+        if (!segText) continue
+
+        const segId = `agent-${segment.id}`
+        const existingIdx = updated.findIndex((m) => m.id === segId)
+
+        if (existingIdx >= 0) {
+          if (updated[existingIdx].text !== segText) {
+            updated[existingIdx] = {
+              ...updated[existingIdx],
+              text: segText,
+            }
+          }
+        } else {
+          updated.push({
+            id: segId,
+            sender: 'assistant',
+            text: segText,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          })
+        }
+      }
+      return updated
+    })
+  }, [agentTranscriptions])
+
+  const handleTranscriptScroll = useCallback(() => {
+    const el = transcriptContainerRef.current
+    if (!el) return
+    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 40
+    isUserScrolledUpRef.current = !isAtBottom
+  }, [])
+
+  useEffect(() => {
+    const el = transcriptContainerRef.current
+    if (!el || isUserScrolledUpRef.current) return
+    el.scrollTop = el.scrollHeight
+  }, [transcriptHistory])
+
   const isSpeaking = state === 'speaking'
   const isListening = state === 'listening'
   const isThinking = state === 'thinking'
@@ -544,10 +620,10 @@ export function InnerVoiceAssistantUI({
           </div>
         )}
 
-        {/* Live Transcription Box */}
+        {/* Live Conversation Transcript Stream */}
         <div className="rounded-xl border border-slate-200/80 bg-white/95 p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] backdrop-blur-sm">
-          <div className="mb-1.5 flex items-center justify-between border-b border-slate-100 pb-1.5">
-            <span className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+          <div className="mb-2 flex items-center justify-between border-b border-slate-100 pb-1.5">
+            <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold">
               <Sparkles
                 className={cn(
                   'h-3 w-3',
@@ -556,18 +632,66 @@ export function InnerVoiceAssistantUI({
                   portal === 'client' && 'text-amber-500',
                 )}
               />
-              {support ? `${chrome.title} Voice` : 'Agent Voice Stream'}
+              {support ? `${chrome.title} Voice Stream` : 'Live Conversation Stream'}
             </span>
-            <span className="rounded-md border border-emerald-200/50 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-mono font-semibold text-emerald-600">
-              16kHz Opus
-            </span>
+            <div className="flex items-center gap-1.5">
+              {isSpeaking && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-mono font-medium text-emerald-700 animate-pulse">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Speaking
+                </span>
+              )}
+              {isListening && !isMuted && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-1.5 py-0.5 text-[10px] font-mono font-medium text-rose-700 animate-pulse">
+                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                  Listening
+                </span>
+              )}
+              <span className="rounded-md border border-slate-200/70 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono font-medium text-slate-500">
+                16kHz Opus
+              </span>
+            </div>
           </div>
-          <p className="text-xs sm:text-sm font-normal leading-relaxed text-slate-800 whitespace-pre-wrap">
-            {latestTranscript ||
-              (support
-                ? 'Say hi, or ask how to use a part of the console.'
-                : 'Say hi, or tell me what you are hoping to book.')}
-          </p>
+
+          <div
+            ref={transcriptContainerRef}
+            onScroll={handleTranscriptScroll}
+            className="max-h-64 space-y-2.5 overflow-y-auto pr-1"
+          >
+            {transcriptHistory.length === 0 ? (
+              <p className="text-xs sm:text-sm font-normal leading-relaxed text-slate-500 italic">
+                {support
+                  ? 'Say hi, or ask how to use a part of the console.'
+                  : 'Say hi, or tell me what you are hoping to book.'}
+              </p>
+            ) : (
+              transcriptHistory.map((msg) => {
+                const isUser = msg.sender === 'user'
+                return (
+                  <div
+                    key={msg.id}
+                    className={cn('flex flex-col', isUser ? 'items-end' : 'items-start')}
+                  >
+                    <div className="mb-0.5 flex items-center gap-1 px-1 text-[10px] font-medium text-slate-400">
+                      <span>{isUser ? 'You' : chrome.title}</span>
+                      <span>·</span>
+                      <span>{msg.time}</span>
+                    </div>
+                    <div
+                      className={cn(
+                        'rounded-2xl px-3.5 py-2 text-xs sm:text-[13px] leading-relaxed shadow-xs max-w-[88%] whitespace-pre-wrap',
+                        isUser
+                          ? 'rounded-tr-xs bg-slate-900 text-slate-50'
+                          : 'rounded-tl-xs border border-slate-200/80 bg-slate-50 text-slate-900',
+                      )}
+                    >
+                      {msg.text}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
         </div>
 
         <VoiceDiscoveredContent
@@ -580,6 +704,18 @@ export function InnerVoiceAssistantUI({
           isSending={isSending}
           connectionState={connectionState}
           onSend={handleSend}
+          onSelectStylist={(st) => {
+            setDiscoveredStylists([])
+            void handleSend(st.isAny ? 'Any available stylist' : `Book with ${st.name}`)
+          }}
+          onSelectService={(rec) => {
+            setDiscoveredServices([])
+            void handleSend(`Book ${rec.name} at ${rec.organizationName}`)
+          }}
+          onSelectOrg={(org) => {
+            setDiscoveredOrgs([])
+            void handleSend(`Show services for ${org.name}`)
+          }}
         />
       </div>
 

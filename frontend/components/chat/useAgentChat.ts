@@ -115,10 +115,6 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const [clientConciergeChat] = useClientConciergeChatMutation()
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isThinking])
-
-  useEffect(() => {
     if (support) return
     void requestGeolocation({ enableHighAccuracy: false, timeout: 5000 })
       .then(setLocation)

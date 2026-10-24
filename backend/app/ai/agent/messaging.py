@@ -144,3 +144,20 @@ async def publish_payment_link(room: Any, payload: dict[str, Any]) -> None:
             logger.info("Published payment_link message to room participant")
     except Exception as exc:
         logger.warning("Failed to publish payment_link data: %s", exc)
+
+
+async def publish_user_transcript(room: Any, text: str) -> None:
+    """Publish transcribed user utterance to room."""
+    try:
+        clean = (text or "").strip()
+        if room.local_participant and clean:
+            data = json.dumps(
+                {
+                    "type": "user_transcript",
+                    "text": clean,
+                }
+            )
+            await room.local_participant.publish_data(data, topic="lk.client.transcript")
+            logger.info("Published user_transcript to room participant: %s", clean[:40])
+    except Exception as exc:
+        logger.warning("Failed to publish user transcript data: %s", exc)
