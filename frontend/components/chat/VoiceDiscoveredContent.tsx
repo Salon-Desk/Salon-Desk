@@ -446,7 +446,7 @@ export function VoiceDiscoveredContent({
                         src={rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK}
                         alt={rec.name}
                         fill
-                        unoptimized={shouldUnoptimizeImage(
+                        unoptimized={shouldUnoptimizedImage(
                           rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK,
                         )}
                         sizes="48px"
