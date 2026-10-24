@@ -30,7 +30,7 @@ import {
 } from '@/store/api/orgApi'
 import { logout, userSelector } from '@/store/authSlice'
 
-import { useMerchantContext } from '../_context/merchant-context'
+import { useMerchantContext } from '../_context/MerchantContext'
 import { getMerchantTabFromPathname } from '../_types/merchant-types'
 import { ConsentModal } from './ConsentModal'
 import { MerchantHeader } from './MerchantHeader'

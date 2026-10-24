@@ -1,10 +1,6 @@
-'use client'
-
 import { format } from 'date-fns'
-import { Check } from 'lucide-react'
 
-import { StatusBadge } from '@/components/badge/StatusBadge'
-import PrimaryButton from '@/components/ui/primary-button'
+import { StatusBadge } from '@/components/badge'
 import { formatUsd } from '@/lib/format'
 import type { OrgCommissionInvoice } from '@/types/api-org'
 import type { ColumnDefinition } from '@/types/table'
@@ -26,17 +22,7 @@ function invoiceTone(status: string): 'slate' | 'amber' | 'emerald' | 'rose' | '
   }
 }
 
-interface MerchantInvoiceTableColumnsProps {
-  onPay: (invoice: OrgCommissionInvoice) => void
-  payingId: string | null
-  isPaying: boolean
-}
-
-export function getMerchantInvoiceTableColumns({
-  onPay,
-  payingId,
-  isPaying,
-}: MerchantInvoiceTableColumnsProps): ColumnDefinition<OrgCommissionInvoice>[] {
+export function getMerchantInvoiceTableColumns(): ColumnDefinition<OrgCommissionInvoice>[] {
   return [
     {
       id: 'status',
@@ -109,42 +95,6 @@ export function getMerchantInvoiceTableColumns({
           <span className="text-[10px] text-amber-700 font-medium">SalonDesk SaaS</span>
         </div>
       ),
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: (inv) => {
-        const canPay =
-          inv.status?.toUpperCase() === 'ISSUED' || inv.status?.toUpperCase() === 'OVERDUE'
-        if (!canPay) {
-          if (inv.status?.toUpperCase() === 'PAID') {
-            return (
-              <div className="flex justify-end">
-                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">
-                  <Check className="h-3 w-3" />
-                  <span>Settled</span>
-                </span>
-              </div>
-            )
-          }
-          return null
-        }
-
-        const isThisPaying = payingId === inv.id || isPaying
-
-        return (
-          <div className="flex justify-end">
-            <PrimaryButton
-              title={isThisPaying ? 'Processing…' : 'Pay via PayPal'}
-              size="sm"
-              fullWidth={false}
-              isDisabled={payingId === inv.id}
-              className="h-8 rounded-lg px-3 text-xs bg-amber-500 hover:bg-amber-600 text-white"
-              onClick={() => onPay(inv)}
-            />
-          </div>
-        )
-      },
     },
   ]
 }

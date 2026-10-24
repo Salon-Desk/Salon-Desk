@@ -4,12 +4,12 @@ import { useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 
+import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFDropeDown from '@/components/forms/RHFDropeDown'
 import RHFNumberField from '@/components/forms/RHFNumberField'
 import RHFTextField from '@/components/forms/RHFTextField'
-import PrimaryButton from '@/components/ui/primary-button'
 import { toastColor } from '@/constant/toast-color'
 import { zodResolver } from '@/lib/schema/resolver'
 import {

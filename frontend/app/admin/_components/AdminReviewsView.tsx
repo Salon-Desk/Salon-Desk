@@ -1,21 +1,13 @@
 'use client'
 
-import {
-  Check,
-  CheckCircle2,
-  Clock,
-  MessageSquareQuote,
-  RefreshCw,
-  Sparkles,
-  Star,
-  X,
-} from 'lucide-react'
+import { Check, CheckCircle2, Clock, MessageSquareQuote, Star, X } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { StatCard } from '@/components/card'
+import { EmptyState } from '@/components/empty'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
-import { EmptyState } from '@/components/ui'
+import { PageHeader } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 import { AdminQueryState } from '@/components/ui/query-state-view'
 import { toastColor } from '@/constant/toast-color'
@@ -142,52 +134,15 @@ export function AdminReviewsView() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 pb-12 animate-in fade-in duration-300">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-amber-50/25 to-amber-100/20 p-6 shadow-xs backdrop-blur-md sm:p-8">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
-        <div className="pointer-events-none absolute -left-12 -bottom-12 h-44 w-44 rounded-full bg-amber-200/20 blur-3xl" />
-
-        <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-center">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-900 shadow-2xs">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
-              </span>
-              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-              <span>Catalog Quality · Client Review Moderation</span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-extrabold text-slate-900 text-2xl tracking-tight sm:text-3xl">
-                Client Review Moderation
-              </h1>
-              <span className="rounded-full bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white shadow-2xs">
-                {stats.pendingCount} Actionable
-              </span>
-            </div>
-
-            <p className="max-w-2xl text-xs text-slate-600 sm:text-sm leading-relaxed">
-              Verify customer reviews and feedback before they appear publicly on salon profiles and
-              service booking menus. Maintain network authenticity and quality.
-            </p>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-xs backdrop-blur-sm">
-            <button
-              type="button"
-              onClick={() => void handleRefresh()}
-              disabled={isRefreshing}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 font-semibold text-slate-700 text-xs shadow-2xs transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.94] disabled:opacity-50"
-              title="Refresh reviews"
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 text-slate-500 ${isRefreshing ? 'animate-spin text-amber-600' : ''}`}
-              />
-              <span>Sync</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Catalog Quality · Client Review Moderation"
+        title="Client Review Moderation"
+        badge={`${stats.pendingCount} Actionable`}
+        description="Verify customer reviews and feedback before they appear publicly on salon profiles and service booking menus. Maintain network authenticity and quality."
+        onRefresh={() => void handleRefresh()}
+        isRefreshing={isRefreshing}
+        refreshTitle="Refresh reviews"
+      />
 
       {/* 3 Summary KPI Cards */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">

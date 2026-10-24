@@ -4,8 +4,8 @@ import { Building2, Check, MessageSquareQuote, Scissors, Star, X } from 'lucide-
 import React from 'react'
 
 import { StatusBadge } from '@/components/badge'
+import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
-import PrimaryButton from '@/components/ui/primary-button'
 import type { ClientFeedbackItem } from '@/types/api-feedback'
 
 interface ReviewDetailsModalProps {

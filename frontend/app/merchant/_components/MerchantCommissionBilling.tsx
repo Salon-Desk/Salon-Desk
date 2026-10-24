@@ -2,7 +2,9 @@
 
 import {
   ArrowRight,
+  Check,
   Clock,
+  CreditCard,
   FileText,
   Info,
   Loader2,
@@ -11,14 +13,17 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  Sliders,
   Wallet,
 } from 'lucide-react'
+import Link from 'next/link'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { PrimaryButton } from '@/components/button'
+import { EmptyState } from '@/components/empty/EmptyState'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
-import { EmptyState } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
+import { PageHeader } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useListingParams } from '@/hooks/useListingParams'
 import { formatUsd } from '@/lib/format'
@@ -158,21 +163,45 @@ export function MerchantCommissionBilling() {
     [],
   )
 
-  const invoiceColumns = useMemo(
-    () =>
-      getMerchantInvoiceTableColumns({
-        onPay: (inv) => void handlePay(inv),
-        payingId: payingInvoiceId,
-        isPaying: Boolean(isPayingMutation),
-      }),
-    [handlePay, payingInvoiceId, isPayingMutation],
-  )
+  const invoiceColumns = useMemo(() => getMerchantInvoiceTableColumns(), [])
 
   const isLoading = invoicesLoading || recordsLoading
   const isError = invoicesError || recordsError
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300 pb-12">
+      {/* Page Header */}
+      <PageHeader
+        variant="card"
+        accent="amber"
+        eyebrow={
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Direct PayPal Settlements Active</span>
+          </div>
+        }
+        title="Platform Billing & Commission Ledger"
+        description="Client payments settle 100% directly to your PayPal merchant account. SalonDesk tracks booking-time commission (5.0%) in your ledger, billed periodically."
+        actions={
+          <>
+            <Link
+              href="/merchant/settings"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-all"
+            >
+              <Sliders className="h-3.5 w-3.5 text-slate-500" />
+              <span>Finance Settings</span>
+            </Link>
+            <Link
+              href="/merchant/settings/paypal"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-sky-300/80 bg-gradient-to-r from-sky-500 to-sky-600 px-3 py-2 text-xs font-semibold text-white shadow-xs hover:from-sky-600 hover:to-sky-700 transition-all"
+            >
+              <CreditCard className="h-3.5 w-3.5 text-white" />
+              <span>PayPal Credentials</span>
+            </Link>
+          </>
+        }
+      />
+
       {/* 1. Financial KPI Cards */}
       <MerchantBillingKpiCards
         records={records}
@@ -469,7 +498,40 @@ export function MerchantCommissionBilling() {
                 showSearch={false}
                 showItemsPerPage={false}
                 showColumnSelector
-                showActions={false}
+                showActions={true}
+                renderRowActions={(inv) => {
+                  const canPay =
+                    inv.status?.toUpperCase() === 'ISSUED' ||
+                    inv.status?.toUpperCase() === 'OVERDUE'
+                  if (!canPay) {
+                    if (inv.status?.toUpperCase() === 'PAID') {
+                      return (
+                        <div className="flex justify-end">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">
+                            <Check className="h-3 w-3" />
+                            <span>Settled</span>
+                          </span>
+                        </div>
+                      )
+                    }
+                    return null
+                  }
+
+                  const isThisPaying = payingInvoiceId === inv.id || Boolean(isPayingMutation)
+
+                  return (
+                    <div className="flex justify-end">
+                      <PrimaryButton
+                        title={isThisPaying ? 'Processing…' : 'Pay via PayPal'}
+                        size="sm"
+                        fullWidth={false}
+                        isDisabled={payingInvoiceId === inv.id}
+                        className="h-8 rounded-lg px-3 text-xs bg-amber-500 hover:bg-amber-600 text-white"
+                        onClick={() => void handlePay(inv)}
+                      />
+                    </div>
+                  )
+                }}
                 tableClassName="border-slate-100"
                 headerClassName="bg-slate-50/80 text-slate-700"
               />

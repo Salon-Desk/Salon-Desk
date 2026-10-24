@@ -2,8 +2,8 @@
 
 import { Sliders, Sparkles, Star } from 'lucide-react'
 
+import { PrimaryButton } from '@/components/button'
 import { Card } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
 import type { UpdatePopularSettingsRequest } from '@/types/api-org'
 
 interface PopularTuningSectionProps {

@@ -3,7 +3,7 @@
 import { format, isToday, isTomorrow, isYesterday } from 'date-fns'
 import { CalendarDays } from 'lucide-react'
 
-import { EmptyState } from '@/components/ui'
+import { EmptyState } from '@/components/empty'
 import type { CalendarEvent } from '@/lib/util/calendar'
 import { cn } from '@/lib/utils'
 

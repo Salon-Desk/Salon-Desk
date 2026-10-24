@@ -4,12 +4,12 @@ import { Building2, Loader2 } from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { PrimaryButton } from '@/components/button'
 import { RHFTextArea } from '@/components/forms'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFAvatarImage from '@/components/forms/RHFAvatarImage'
 import RHFTextField from '@/components/forms/RHFTextField'
 import { Card } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
 import useFormSubmitHandler from '@/hooks/formHandler'
 import { zodResolver } from '@/lib/schema/resolver'
 import {

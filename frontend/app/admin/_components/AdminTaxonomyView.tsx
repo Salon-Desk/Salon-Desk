@@ -1,13 +1,14 @@
 'use client'
 
-import { CheckCircle2, Layers, Plus, RefreshCw, Sparkles, Tags } from 'lucide-react'
+import { CheckCircle2, Layers, Plus, Sparkles, Tags } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { PrimaryButton } from '@/components/button'
 import { StatCard } from '@/components/card'
+import { EmptyState } from '@/components/empty'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
-import { EmptyState } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
+import { PageHeader } from '@/components/ui'
 import { AdminQueryState } from '@/components/ui/query-state-view'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
@@ -65,61 +66,27 @@ export function AdminTaxonomyView() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 pb-12 animate-in fade-in duration-300 sm:space-y-6">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-amber-50/25 to-amber-100/20 p-6 shadow-xs backdrop-blur-md sm:p-8">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
-        <div className="pointer-events-none absolute -left-12 -bottom-12 h-44 w-44 rounded-full bg-amber-200/20 blur-3xl" />
-
-        <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-center">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-900 shadow-2xs">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
-              </span>
-              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-              <span>Platform Taxonomy · Universal Catalog Index</span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-extrabold text-slate-900 text-2xl tracking-tight sm:text-3xl">
-                Service Taxonomy &amp; Categories
-              </h1>
-              <span className="rounded-full bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white shadow-2xs">
-                {totalItems} {totalItems === 1 ? 'Category' : 'Categories'}
-              </span>
-            </div>
-
-            <p className="max-w-2xl text-xs text-slate-600 sm:text-sm leading-relaxed">
-              Manage standardized salon service categories used across the platform for service
-              catalog discovery, client booking menus, and automated commission take-rate mapping.
-            </p>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-xs backdrop-blur-sm">
-            <button
-              type="button"
-              onClick={() => void refetch()}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 font-semibold text-slate-700 text-xs shadow-2xs transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.92]"
-              title="Refresh categories"
-            >
-              <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
-              <span>Sync</span>
-            </button>
-
-            <PrimaryButton
-              title="Add Category"
-              size="sm"
-              fullWidth={false}
-              icon={<Plus className="h-3.5 w-3.5" />}
-              className="h-10 rounded-xl px-4.5 text-xs font-bold shadow-xs transition-all hover:shadow-md active:scale-[0.98]"
-              onClick={() => {
-                setEditing(null)
-                setIsOpen(true)
-              }}
-            />
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Platform Taxonomy · Universal Catalog Index"
+        title="Service Taxonomy & Categories"
+        badge={`${totalItems} ${totalItems === 1 ? 'Category' : 'Categories'}`}
+        description="Manage standardized salon service categories used across the platform for service catalog discovery, client booking menus, and automated commission take-rate mapping."
+        onRefresh={() => void refetch()}
+        refreshTitle="Refresh categories"
+        actions={
+          <PrimaryButton
+            title="Add Category"
+            size="sm"
+            fullWidth={false}
+            icon={<Plus className="h-3.5 w-3.5" />}
+            className="h-10 rounded-xl px-4.5 text-xs font-bold shadow-xs transition-all hover:shadow-md active:scale-[0.98]"
+            onClick={() => {
+              setEditing(null)
+              setIsOpen(true)
+            }}
+          />
+        }
+      />
 
       {/* KPI Stat Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">

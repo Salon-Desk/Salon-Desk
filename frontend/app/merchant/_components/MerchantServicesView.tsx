@@ -4,10 +4,11 @@ import { LayoutGrid, List, Loader2, Plus, Scissors, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { PrimaryButton } from '@/components/button'
+import { EmptyState } from '@/components/empty'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
-import { EmptyState, SegmentedControl } from '@/components/ui'
+import { PageHeader, SegmentedControl } from '@/components/ui'
 import { Pagination } from '@/components/ui/pagination'
-import PrimaryButton from '@/components/ui/primary-button'
 import { toastColor } from '@/constant/toast-color'
 import { useListingParams } from '@/hooks/use-listing-params'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
@@ -106,43 +107,40 @@ export function MerchantServicesView() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 animate-in fade-in duration-300 sm:space-y-5">
       {/* Top Header Card */}
-      <div className="relative flex flex-col justify-between gap-3 overflow-hidden rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white via-white to-sky-50/60 p-4 sm:flex-row sm:items-center sm:p-5">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-sky-300/20 blur-3xl" />
-        <div className="relative">
-          <span className="mb-2 inline-flex rounded-full bg-sky-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-sky-800">
-            Booking menu
-          </span>
-          <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
-            Service Catalog &amp; Menus
-          </h1>
-          <p className="text-slate-500 text-xs">
-            {isLoading
-              ? 'Loading…'
-              : `${allServices.length} services configured for client online booking`}
-          </p>
-        </div>
-        <div className="relative flex items-center gap-2" data-agent-action="add-service">
-          <SegmentedControl
-            options={[
-              { value: 'table' as const, label: 'Table', icon: List },
-              { value: 'grid' as const, label: 'Cards', icon: LayoutGrid },
-            ]}
-            value={viewMode}
-            onChange={(val) => setViewMode(val)}
-          />
-          <PrimaryButton
-            title="Add new service"
-            size="sm"
-            fullWidth={false}
-            icon={<Plus className="h-4 w-4" />}
-            className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
-            onClick={() => {
-              setEditing(null)
-              setIsFormOpen(true)
-            }}
-          />
-        </div>
-      </div>
+      <PageHeader
+        variant="card"
+        accent="sky"
+        eyebrow="Booking menu"
+        title="Service Catalog & Menus"
+        description={
+          isLoading
+            ? 'Loading…'
+            : `${allServices.length} services configured for client online booking`
+        }
+        actions={
+          <div className="relative flex items-center gap-2" data-agent-action="add-service">
+            <SegmentedControl
+              options={[
+                { value: 'table' as const, label: 'Table', icon: List },
+                { value: 'grid' as const, label: 'Cards', icon: LayoutGrid },
+              ]}
+              value={viewMode}
+              onChange={(val) => setViewMode(val)}
+            />
+            <PrimaryButton
+              title="Add new service"
+              size="sm"
+              fullWidth={false}
+              icon={<Plus className="h-4 w-4" />}
+              className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
+              onClick={() => {
+                setEditing(null)
+                setIsFormOpen(true)
+              }}
+            />
+          </div>
+        }
+      />
 
       {/* Category Filter Tabs Bar */}
       <div className="flex flex-col gap-2 rounded-2xl border border-slate-200/70 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">

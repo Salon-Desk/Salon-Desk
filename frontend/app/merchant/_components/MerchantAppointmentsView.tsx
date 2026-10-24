@@ -1,8 +1,10 @@
 'use client'
 
+import { ShieldCheck } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { PrimaryButton } from '@/components/button'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
 import { QueryStateView } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
@@ -122,10 +124,8 @@ export function MerchantAppointmentsView() {
       getBookingTableColumns({
         onCopy: handleCopy,
         copiedId,
-        onInspectConsent: handleInspectConsent,
-        onSettle: handleSettle,
       }),
-    [handleCopy, copiedId, handleInspectConsent, handleSettle],
+    [handleCopy, copiedId],
   )
 
   return (
@@ -187,6 +187,36 @@ export function MerchantAppointmentsView() {
             showPagination={true}
             showItemsPerPage={true}
             showColumnSelector
+            showActions={true}
+            renderRowActions={(b) => {
+              const isSettled =
+                b.status === 'CAPTURED' || b.status === 'NO_SHOW_CAPTURED' || b.status === 'VOIDED'
+
+              return (
+                <div className="flex items-center justify-end gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleInspectConsent(b)}
+                    className="cursor-pointer rounded-lg border border-slate-200/70 bg-white p-1.5 text-slate-400 transition-all hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700"
+                    title="Inspect PayPal Authorization Consent Receipt"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                  </button>
+
+                  <PrimaryButton
+                    title={isSettled ? 'Details' : 'Settle'}
+                    size="sm"
+                    fullWidth={false}
+                    className={`h-8 cursor-pointer rounded-lg px-3 text-xs font-semibold ${
+                      isSettled
+                        ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    }`}
+                    onClick={() => handleSettle(b)}
+                  />
+                </div>
+              )
+            }}
             tableClassName="border-amber-100/80"
             headerClassName="bg-amber-50/35"
           />

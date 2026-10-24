@@ -14,8 +14,8 @@ import {
 import React from 'react'
 
 import { StatusBadge } from '@/components/badge'
+import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
-import PrimaryButton from '@/components/ui/primary-button'
 import type { ApiOrganization } from '@/types/api-org'
 
 import { formatRegistrationDate } from '../_utils'

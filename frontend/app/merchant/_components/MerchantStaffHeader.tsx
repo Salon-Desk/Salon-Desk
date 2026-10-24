@@ -1,10 +1,10 @@
 'use client'
 
-import { Clock, Plus, RefreshCw, Sparkles } from 'lucide-react'
+import { Clock, Plus, RefreshCw } from 'lucide-react'
 import type React from 'react'
 
-import { IconButton } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
+import { PrimaryButton } from '@/components/button'
+import { IconButton, PageHeader } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 export interface MerchantStaffHeaderProps {
@@ -43,46 +43,14 @@ export function MerchantStaffHeader({
   className,
 }: MerchantStaffHeaderProps) {
   return (
-    <div
-      className={cn(
-        'relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-amber-50/25 to-amber-100/20 p-6 shadow-xs backdrop-blur-md sm:p-8',
-        className,
-      )}
-    >
-      {/* Ambient background glow accents */}
-      <div className="pointer-events-none absolute -right-12 -top-12 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
-      <div className="pointer-events-none absolute -left-12 -bottom-12 h-44 w-44 rounded-full bg-amber-200/20 blur-3xl" />
-
-      <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-center">
-        {/* Left: Eyebrow badge, Title, Counter pill, and Subtitle */}
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-900 shadow-2xs">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
-            </span>
-            <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-            <span>{badgeLabel}</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-extrabold text-slate-900 text-2xl tracking-tight sm:text-3xl">
-              {title}
-            </h1>
-            <span className="rounded-full bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white shadow-2xs">
-              {totalMembers} {totalMembers === 1 ? 'Member' : 'Members'}
-            </span>
-          </div>
-
-          {description && (
-            <p className="text-xs text-slate-500 sm:text-sm font-normal leading-relaxed">
-              {description}
-            </p>
-          )}
-        </div>
-
-        {/* Right: Action buttons toolbar */}
-        <div className="flex shrink-0 flex-wrap items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-xs backdrop-blur-sm">
+    <PageHeader
+      className={className}
+      eyebrow={badgeLabel}
+      title={title}
+      badge={`${totalMembers} ${totalMembers === 1 ? 'Member' : 'Members'}`}
+      description={description}
+      actions={
+        <>
           {onRefresh && (
             <IconButton
               aria-label="Refresh roster"
@@ -120,8 +88,8 @@ export function MerchantStaffHeader({
           )}
 
           {actions}
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    />
   )
 }

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
-import PrimaryButton from '@/components/ui/primary-button'
+import { PrimaryButton } from '@/components/button'
 import { toastColor } from '@/constant/toast-color'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import {

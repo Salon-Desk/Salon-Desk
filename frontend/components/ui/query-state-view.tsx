@@ -3,7 +3,7 @@
 import { Loader2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import PrimaryButton from '@/components/ui/primary-button'
+import { PrimaryButton } from '@/components/button'
 
 export interface QueryStateViewProps {
   isLoading: boolean

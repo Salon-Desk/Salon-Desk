@@ -1,7 +1,6 @@
-import { CheckCircle2, Clock, Copy, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Clock, Copy } from 'lucide-react'
 
-import { HoldStateBadge } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
+import { HoldStateBadge } from '@/components/badge'
 import { formatUsd } from '@/lib/format'
 import type { Booking } from '@/types'
 import type { ColumnDefinition } from '@/types/table'
@@ -9,15 +8,11 @@ import type { ColumnDefinition } from '@/types/table'
 interface BookingTableColumnsProps {
   onCopy: (id: string, text: string) => void
   copiedId: string | null
-  onInspectConsent: (booking: Booking) => void
-  onSettle: (booking: Booking) => void
 }
 
 export function getBookingTableColumns({
   onCopy,
   copiedId,
-  onInspectConsent,
-  onSettle,
 }: BookingTableColumnsProps): ColumnDefinition<Booking>[] {
   return [
     {
@@ -117,39 +112,6 @@ export function getBookingTableColumns({
       id: 'status',
       header: 'Escrow State',
       cell: (b) => <HoldStateBadge status={b.status} />,
-    },
-    {
-      id: 'actions',
-      header: '',
-      cell: (b) => {
-        const isSettled =
-          b.status === 'CAPTURED' || b.status === 'NO_SHOW_CAPTURED' || b.status === 'VOIDED'
-
-        return (
-          <div className="flex items-center justify-end gap-1.5">
-            <button
-              type="button"
-              onClick={() => onInspectConsent(b)}
-              className="cursor-pointer rounded-lg border border-slate-200/70 bg-white p-1.5 text-slate-400 transition-all hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700"
-              title="Inspect PayPal Authorization Consent Receipt"
-            >
-              <ShieldCheck className="h-4 w-4" />
-            </button>
-
-            <PrimaryButton
-              title={isSettled ? 'Details' : 'Settle'}
-              size="sm"
-              fullWidth={false}
-              className={`h-8 cursor-pointer rounded-lg px-3 text-xs font-semibold ${
-                isSettled
-                  ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
-                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
-              }`}
-              onClick={() => onSettle(b)}
-            />
-          </div>
-        )
-      },
     },
   ]
 }

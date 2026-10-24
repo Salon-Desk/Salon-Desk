@@ -1,94 +1,22 @@
 'use client'
 
-import {
-  AlertCircle,
-  ArrowRight,
-  ChevronDown,
-  Clock,
-  Copy,
-  Plus,
-  Sparkles,
-  Trash2,
-} from 'lucide-react'
+import { AlertCircle, ArrowRight, Clock, Copy, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
 
 import { toastColor } from '@/constant/toast-color'
-import { DAYS, DEFAULT_WORKING_HOURS, TIME_OPTIONS } from '@/constant/working-hours'
-import {
-  calculateWeeklyStats,
-  formatIntervalDuration,
-  formatTime12,
-} from '@/lib/util/working-hours'
+import { DAYS, DEFAULT_WORKING_HOURS } from '@/constant/working-hours'
+import { calculateWeeklyStats, formatIntervalDuration } from '@/lib/util/working-hours'
 import { cn } from '@/lib/utils'
 import type { DayKey, TimeInterval, WorkingHoursMap } from '@/types/api-org'
+
+import { DayToggleSwitch } from './DayToggleSwitch'
+import { TimeSelect } from './TimeSelect'
 
 interface WorkingHoursEditorProps {
   value?: WorkingHoursMap | Record<string, unknown> | null
   onChange: (hours: WorkingHoursMap) => void
   disabled?: boolean
-}
-
-interface TimeSelectProps {
-  value: string
-  disabled?: boolean
-  onChange: (val: string) => void
-  label: string
-}
-
-function TimeSelect({ value, disabled, onChange, label }: TimeSelectProps) {
-  return (
-    <div className="relative inline-flex items-center">
-      <select
-        value={value}
-        disabled={disabled}
-        aria-label={label}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-9 appearance-none rounded-lg border border-slate-200/90 bg-white pl-3 pr-7 text-xs font-semibold text-slate-800 shadow-2xs transition-colors hover:border-slate-300 focus:border-amber-500 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {TIME_OPTIONS.map((time) => (
-          <option key={time} value={time}>
-            {formatTime12(time)}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-slate-400" />
-    </div>
-  )
-}
-
-function DayToggleSwitch({
-  checked,
-  disabled,
-  onChange,
-  ariaLabel,
-}: {
-  checked: boolean
-  disabled?: boolean
-  onChange: () => void
-  ariaLabel: string
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={ariaLabel}
-      disabled={disabled}
-      onClick={onChange}
-      className={cn(
-        'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50',
-        checked ? 'bg-amber-600' : 'bg-slate-200',
-      )}
-    >
-      <span
-        className={cn(
-          'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out',
-          checked ? 'translate-x-4' : 'translate-x-0',
-        )}
-      />
-    </button>
-  )
 }
 
 export function WorkingHoursEditor({ value, onChange, disabled = false }: WorkingHoursEditorProps) {

@@ -68,15 +68,16 @@ Every agent and developer working in `frontend/` MUST adhere to these seven arch
 
 ### Rule 3: Dialogs & Modals — Exclusively `CustomResponsiveDialog`
 
-- **Component**: `@/components/dialog/CustomResponsiveDialog` (`components/dialog/CustomResponsiveDialog.tsx`).
-- **Standard**: Every modal, drawer, or sheet dialog across client, merchant, and admin portals MUST use `CustomResponsiveDialog`. It provides adaptive desktop dialog and mobile drawer rendering with full accessibility (`DialogTitle`, `DialogDescription`).
+- **Components**:
+  - `@/components/dialog/CustomResponsiveDialog` (`components/dialog/CustomResponsiveDialog.tsx`) for adaptive desktop modals / mobile responsive dialogs.
+  - `@/components/drawer/CustomDrawer` (`components/drawer/CustomDrawer.tsx`) for dedicated slide-over / bottom / side drawer surfaces.
+- **Standard**: Every modal, drawer, or sheet dialog across client, merchant, and admin portals MUST use `CustomResponsiveDialog` (for modals/dialogs) or `CustomDrawer` (for dedicated drawer surfaces). They provide full accessibility (`DialogTitle`/`DrawerTitle`, descriptions) and keyboard navigation.
 - **Confirmation Dialogs**: For specific actions, use specialized domain confirmation dialogs from `@/components/dialog`:
   - `DeleteConfirmationDialog`
   - `CancelConfirmationDialog`
   - `PaymentConfirmationDialog`
 - **Prohibited**:
   - Competing modal wrappers (`components/ui/modal.tsx`, `components/ui/confirm-dialog.tsx` — deleted and banned).
-  - Standalone drawer wrappers (`components/drawer/CustomDrawer.tsx` — deleted and banned).
   - Direct uncontrolled Radix/shadcn `Dialog` or `Drawer` implementations in feature views.
 
 ### Rule 4: Forms — `useFormHandler` + Zod + `FormProvider` + `RHF*`
@@ -134,6 +135,7 @@ components/
   button/                                  PrimaryButton, RefreshButton
   card/                                    StatCard, PanelCard
   dialog/                                  CustomResponsiveDialog, confirmation dialogs
+  drawer/                                  CustomDrawer
   table/                                   BasicDataGridTable, Pagination, TableActionLink
   forms/                                   RHF* fields, DatePickerField, dropzones
   layout/                                  Console shell, portal switcher, auth gate
@@ -285,6 +287,7 @@ Client drawer UI: `app/client/_components/ConciergeDrawer.tsx`.
 | ---------- | -------------------- | --------------------------------------------------------- |
 | Tables     | `components/table/`  | `BasicDataGridTable`, `Pagination`, `TableActionLink`     |
 | Dialogs    | `components/dialog/` | `CustomResponsiveDialog`, confirmation dialogs            |
+| Drawers    | `components/drawer/` | `CustomDrawer`                                            |
 | Cards      | `components/card/`   | `StatCard`, `PanelCard`                                   |
 | Badges     | `components/badge/`  | `StatusBadge`, `HoldStateBadge`, domain status badges     |
 | Buttons    | `components/button/` | `PrimaryButton`, `RefreshButton`                          |

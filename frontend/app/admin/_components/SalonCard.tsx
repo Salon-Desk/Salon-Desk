@@ -2,8 +2,8 @@
 
 import { Calendar, CheckCircle2, Copy, Eye, PauseCircle, Sparkles } from 'lucide-react'
 
+import { PrimaryButton } from '@/components/button'
 import { Badge, Card } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
 import type { ApiOrganization } from '@/types/api-org'
 
 import { formatRegistrationDate } from '../_utils'
