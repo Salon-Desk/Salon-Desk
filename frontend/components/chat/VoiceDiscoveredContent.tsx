@@ -11,6 +11,7 @@ import {
   Sparkles,
   Star,
   User,
+  X,
 } from 'lucide-react'
 import Image from 'next/image'
 import React, { useState } from 'react'
@@ -217,6 +218,9 @@ export interface VoiceDiscoveredContentProps {
   isSending: boolean
   connectionState: ConnectionState
   onSend: (text: string) => Promise<void> | void
+  onSelectStylist?: (stylist: AgentStylistRecommendation) => void
+  onSelectService?: (service: AgentServiceRecommendation) => void
+  onSelectOrg?: (org: AgentOrganizationRecommendation) => void
 }
 
 export function VoiceDiscoveredContent({
@@ -229,7 +233,14 @@ export function VoiceDiscoveredContent({
   isSending,
   connectionState,
   onSend,
+  onSelectStylist,
+  onSelectService,
+  onSelectOrg,
 }: VoiceDiscoveredContentProps) {
+  const [isServicesExplicitlyClosed, setIsServicesExplicitlyClosed] = useState<boolean | null>(null)
+  const isServicesCollapsed =
+    isServicesExplicitlyClosed ?? Boolean(visibleStylists && visibleStylists.length > 0)
+
   return (
     <>
       {/* Payment Link Card (When present) */}
@@ -293,7 +304,13 @@ export function VoiceDiscoveredContent({
 
                 <button
                   type="button"
-                  onClick={() => void onSend(`Show services for ${org.name}`)}
+                  onClick={() => {
+                    if (onSelectOrg) {
+                      onSelectOrg(org)
+                    } else {
+                      void onSend(`Show services for ${org.name}`)
+                    }
+                  }}
                   className="shrink-0 flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900 transition-colors cursor-pointer"
                 >
                   <span>Services</span>
@@ -304,105 +321,7 @@ export function VoiceDiscoveredContent({
         </div>
       )}
 
-      {/* Real Recommended Services (When present) */}
-      {visibleServices.length > 0 && (
-        <div className="space-y-2 pt-1 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
-            <span className="flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-              Recommended Services
-            </span>
-            <span className="font-mono text-emerald-700 lowercase">$0 today</span>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2">
-            {visibleServices.map((rec, idx) => (
-              <div
-                key={rec.serviceId || idx}
-                className="group relative rounded-xl border border-amber-200/90 bg-gradient-to-br from-amber-50/40 via-white to-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] hover:border-amber-400 hover:shadow-md transition-all"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200/80 bg-slate-100">
-                    <Image
-                      src={rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK}
-                      alt={rec.name}
-                      fill
-                      unoptimized={shouldUnoptimizedImage(
-                        rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK,
-                      )}
-                      sizes="48px"
-                      className="object-cover"
-                    />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h4 className="truncate font-bold text-xs sm:text-sm text-slate-900 group-hover:text-amber-900 transition-colors">
-                          {rec.name}
-                        </h4>
-                        <p className="truncate text-[11px] text-slate-500 font-medium">
-                          {rec.organizationName}
-                        </p>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="block font-mono text-xs sm:text-sm font-bold text-slate-900">
-                          ${rec.basePrice}
-                        </span>
-                        <span className="block text-[9px] font-mono text-emerald-700 font-medium">
-                          $0 hold
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600 pt-1.5 border-t border-amber-100">
-                      <div className="flex items-center gap-2">
-                        {rec.durationMinutes && (
-                          <span className="flex items-center gap-1 font-mono text-[10px] text-slate-500">
-                            <Clock className="h-3 w-3 text-amber-600" />
-                            {rec.durationMinutes} min
-                          </span>
-                        )}
-                        {rec.distanceKm !== null && rec.distanceKm !== undefined && (
-                          <span className="flex items-center gap-0.5 font-mono text-[10px] text-amber-800">
-                            <MapPin className="h-3 w-3 text-amber-600" />
-                            {rec.distanceKm} km
-                          </span>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          void onSend(`Book ${rec.name} at ${rec.organizationName}`)
-                        }}
-                        className="flex items-center gap-1 rounded-lg bg-stone-950 hover:bg-amber-600 text-white px-2 py-0.5 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                      >
-                        <CalendarCheck className="h-3 w-3" />
-                        <span>Select &amp; Book</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          {canShowMoreServices && (
-            <button
-              type="button"
-              disabled={isSending || connectionState !== ConnectionState.Connected}
-              onClick={() => void onSend('Show me a few more options')}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-amber-300 hover:bg-amber-50/60 cursor-pointer disabled:opacity-40"
-            >
-              Show a few more
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Real Discovered Stylists (When present) */}
+      {/* Real Discovered Stylists (Prioritized first when present) */}
       {visibleStylists && visibleStylists.length > 0 && (
         <div className="space-y-2 pt-1 animate-in fade-in duration-200">
           <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
@@ -461,9 +380,13 @@ export function VoiceDiscoveredContent({
 
                 <button
                   type="button"
-                  onClick={() =>
-                    void onSend(st.isAny ? 'Any available stylist' : `Book with ${st.name}`)
-                  }
+                  onClick={() => {
+                    if (onSelectStylist) {
+                      onSelectStylist(st)
+                    } else {
+                      void onSend(st.isAny ? 'Any available stylist' : `Book with ${st.name}`)
+                    }
+                  }}
                   className="shrink-0 flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900 transition-colors cursor-pointer"
                 >
                   <span>Select</span>
@@ -473,6 +396,134 @@ export function VoiceDiscoveredContent({
           </div>
         </div>
       )}
+
+      {/* Real Recommended Services (When present) */}
+      {visibleServices.length > 0 &&
+        (isServicesCollapsed ? (
+          <div className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white/90 px-3 py-1.5 text-xs text-slate-600 shadow-2xs motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
+            <span className="flex items-center gap-1.5 font-medium text-[11px]">
+              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+              <span>{visibleServices.length} Recommended Services hidden</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsServicesExplicitlyClosed(false)}
+              className="font-semibold text-amber-800 hover:text-amber-900 cursor-pointer text-[11px]"
+            >
+              Show
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2 pt-1 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                Recommended Services
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-emerald-700 lowercase">$0 today</span>
+                <button
+                  type="button"
+                  onClick={() => setIsServicesExplicitlyClosed(true)}
+                  title="Close recommended services"
+                  className="rounded-md p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  <span className="sr-only">Close recommended services</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              {visibleServices.map((rec, idx) => (
+                <div
+                  key={rec.serviceId || idx}
+                  className="group relative rounded-xl border border-amber-200/90 bg-gradient-to-br from-amber-50/40 via-white to-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_0_rgba(255,255,255,0.85)] hover:border-amber-400 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200/80 bg-slate-100">
+                      <Image
+                        src={rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK}
+                        alt={rec.name}
+                        fill
+                        unoptimized={shouldUnoptimizedImage(
+                          rec.imageUrl || rec.organizationPicture || SERVICE_IMAGE_FALLBACK,
+                        )}
+                        sizes="48px"
+                        className="object-cover"
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h4 className="truncate font-bold text-xs sm:text-sm text-slate-900 group-hover:text-amber-900 transition-colors">
+                            {rec.name}
+                          </h4>
+                          <p className="truncate text-[11px] text-slate-500 font-medium">
+                            {rec.organizationName}
+                          </p>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="block font-mono text-xs sm:text-sm font-bold text-slate-900">
+                            ${rec.basePrice}
+                          </span>
+                          <span className="block text-[9px] font-mono text-emerald-700 font-medium">
+                            $0 hold
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600 pt-1.5 border-t border-amber-100">
+                        <div className="flex items-center gap-2">
+                          {rec.durationMinutes && (
+                            <span className="flex items-center gap-1 font-mono text-[10px] text-slate-500">
+                              <Clock className="h-3 w-3 text-amber-600" />
+                              {rec.durationMinutes} min
+                            </span>
+                          )}
+                          {rec.distanceKm !== null && rec.distanceKm !== undefined && (
+                            <span className="flex items-center gap-0.5 font-mono text-[10px] text-amber-800">
+                              <MapPin className="h-3 w-3 text-amber-600" />
+                              {rec.distanceKm} km
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (onSelectService) {
+                              onSelectService(rec)
+                            } else {
+                              void onSend(`Book ${rec.name} at ${rec.organizationName}`)
+                            }
+                          }}
+                          className="flex items-center gap-1 rounded-lg bg-stone-950 hover:bg-amber-600 text-white px-2 py-0.5 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                        >
+                          <CalendarCheck className="h-3 w-3" />
+                          <span>Select &amp; Book</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {canShowMoreServices && (
+              <button
+                type="button"
+                disabled={isSending || connectionState !== ConnectionState.Connected}
+                onClick={() => void onSend('Show me a few more options')}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-amber-300 hover:bg-amber-50/60 cursor-pointer disabled:opacity-40"
+              >
+                Show a few more
+              </button>
+            )}
+          </div>
+        ))}
     </>
   )
 }
