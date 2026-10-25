@@ -30,7 +30,7 @@ import {
 } from '@/lib/listing-params/client-my-bookings-list-params'
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
 import type { RootState } from '@/store'
-import { setChatMode, setChatOpen } from '@/store/agentChatSlice'
+import { setChatMode, setChatOpen, setChatReplyContext } from '@/store/agentChatSlice'
 import {
   useCancelBookingMutation,
   useGetCatalogCurationQuery,
@@ -378,10 +378,28 @@ export function ClientExperience({
     void openCheckout(service)
   }
 
-  const handleAskAi = (_service: SalonService) => {
+  const handleAskAi = (service: SalonService) => {
+    const replyContext = {
+      serviceId: service.id,
+      serviceName: service.name,
+      organizationName: service.organizationName,
+      basePrice: service.price,
+      durationMinutes: service.durationMin,
+      imageUrl: service.imageUrl,
+      categoryName: service.category,
+      description: service.description,
+    }
+    dispatch(setChatReplyContext(replyContext))
     dispatch(setChatMode('chat'))
     dispatch(setChatOpen(true))
-    window.dispatchEvent(new CustomEvent('salondesk:open_chat', { detail: { mode: 'chat' } }))
+    window.dispatchEvent(
+      new CustomEvent('salondesk:open_chat', {
+        detail: {
+          mode: 'chat',
+          replyContext,
+        },
+      }),
+    )
   }
 
   const handleConfirmCancelBooking = async () => {

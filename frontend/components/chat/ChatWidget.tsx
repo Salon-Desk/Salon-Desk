@@ -22,7 +22,14 @@ const VoiceAgentView = dynamic(
 )
 import { anyChatFeatureEnabled, features } from '@/lib/features'
 import type { AppDispatch, RootState } from '@/store'
-import { setChatMinimized, setChatMode, setChatOpen, setChatPortal } from '@/store/agentChatSlice'
+import {
+  type AgentChatReplyContext,
+  setChatMinimized,
+  setChatMode,
+  setChatOpen,
+  setChatPortal,
+  setChatReplyContext,
+} from '@/store/agentChatSlice'
 
 export interface ChatWidgetProps {
   /** Controlled open state — omit for Redux / floating FAB ownership. */
@@ -74,9 +81,15 @@ export function ChatWidget({
 
   useEffect(() => {
     const handleOpen = (e: Event) => {
-      const customEvent = e as CustomEvent<{ mode?: 'chat' | 'voice' }>
+      const customEvent = e as CustomEvent<{
+        mode?: 'chat' | 'voice'
+        replyContext?: AgentChatReplyContext
+      }>
       if (customEvent.detail?.mode) {
         dispatch(setChatMode(customEvent.detail.mode))
+      }
+      if (customEvent.detail?.replyContext) {
+        dispatch(setChatReplyContext(customEvent.detail.replyContext))
       }
       if (!isControlled) {
         dispatch(setChatOpen(true))
@@ -141,6 +154,8 @@ export function ChatWidget({
                   prompt={chat.prompt}
                   onPromptChange={chat.setPrompt}
                   onSend={chat.send}
+                  replyContext={chat.replyContext}
+                  onClearReplyContext={chat.clearReplyContext}
                   onSelectService={
                     support
                       ? undefined
