@@ -42,6 +42,7 @@ class ServiceStatus(str, enum.Enum):
 
 
 class BookingStatus(str, enum.Enum):
+    PENDING_PAYMENT = "PENDING_PAYMENT"
     PENDING = "PENDING"
     CONFIRMED = "CONFIRMED"
     COMPLETED = "COMPLETED"

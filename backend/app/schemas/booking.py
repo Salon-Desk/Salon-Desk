@@ -23,6 +23,11 @@ class BookingCancelRequest(BaseModel):
     reason: str | None = None
 
 
+class BookingRescheduleRequest(BaseModel):
+    starts_at: datetime
+    stylist_id: UUID | None = None
+
+
 class ConsentCreate(BaseModel):
     terms_version: str
     terms_text: str

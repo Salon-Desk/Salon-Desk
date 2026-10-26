@@ -1,9 +1,11 @@
 'use client'
 
 import { ArrowUpRight, ChevronDown, Mic, Send, Sparkles, X } from 'lucide-react'
+import Image from 'next/image'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import type {
+  AgentChatReplyContext,
   AgentConfirmedBooking,
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
@@ -25,6 +27,7 @@ export interface ChatMessageItem {
   organizations?: AgentOrganizationRecommendation[]
   stylists?: AgentStylistRecommendation[]
   confirmedBooking?: AgentConfirmedBooking | null
+  replyContext?: AgentChatReplyContext | null
   navigation?: {
     target: string
     tab?: string | null
@@ -87,6 +90,8 @@ export interface ChatConversationProps<T extends ChatMessageItem = ChatMessageIt
   prompt: string
   onPromptChange: (value: string) => void
   onSend: (prompt?: string) => void
+  replyContext?: AgentChatReplyContext | null
+  onClearReplyContext?: () => void
   onSelectService?: (service: AgentServiceRecommendation) => void
   onSelectStylist?: (stylist: AgentStylistRecommendation) => void
   onTryVoice?: () => void
@@ -105,6 +110,8 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
   prompt,
   onPromptChange,
   onSend,
+  replyContext,
+  onClearReplyContext,
   onSelectService,
   onSelectStylist,
   onTryVoice,
@@ -149,6 +156,12 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
     isMountedRef.current = true
     textareaRef.current?.focus()
   }, [scrollToBottom])
+
+  useEffect(() => {
+    if (replyContext) {
+      textareaRef.current?.focus()
+    }
+  }, [replyContext])
 
   useEffect(() => {
     if (!isMountedRef.current) return
@@ -324,6 +337,49 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                         ),
                   )}
                 >
+                  {isUser && msg.replyContext && (
+                    <div className="mb-2 flex items-center gap-2.5 rounded-xl border-l-2 border-l-amber-400 bg-stone-900/90 p-2 text-left backdrop-blur-xs">
+                      {msg.replyContext.imageUrl ? (
+                        <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-stone-800 border border-stone-700/60">
+                          <Image
+                            src={msg.replyContext.imageUrl}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            sizes="32px"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-300">
+                          <Sparkles className="h-4 w-4" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                            Service
+                          </span>
+                          {msg.replyContext.organizationName && (
+                            <span className="text-[10px] text-stone-400 truncate">
+                              • {msg.replyContext.organizationName}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-semibold text-stone-100 truncate">
+                          {msg.replyContext.serviceName}
+                        </p>
+                        {(msg.replyContext.basePrice !== undefined ||
+                          msg.replyContext.durationMinutes !== undefined) && (
+                          <p className="text-[10px] text-stone-400">
+                            {msg.replyContext.basePrice !== undefined &&
+                              `$${msg.replyContext.basePrice}`}
+                            {msg.replyContext.durationMinutes !== undefined &&
+                              ` • ${msg.replyContext.durationMinutes}m`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <RichText content={msg.text} />
                 </div>
               </div>
@@ -643,6 +699,66 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
 
       {/* Bottom Input Area */}
       <div className="border-t border-stone-200/70 bg-white/95 px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
+        {/* Telegram-style reply preview */}
+        {replyContext && (
+          <div className="mb-2 flex items-center justify-between gap-3 rounded-2xl border-l-4 border-l-amber-500 bg-stone-100/95 p-2 pl-3 shadow-2xs backdrop-blur-md transition-all motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {replyContext.imageUrl ? (
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-stone-200 border border-stone-200/80">
+                  <Image
+                    src={replyContext.imageUrl}
+                    alt={replyContext.serviceName}
+                    fill
+                    className="object-cover"
+                    sizes="40px"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                    Replying to service
+                  </span>
+                  {replyContext.organizationName && (
+                    <>
+                      <span className="text-stone-300">•</span>
+                      <span className="text-[11px] font-medium text-stone-500 truncate">
+                        {replyContext.organizationName}
+                      </span>
+                    </>
+                  )}
+                </div>
+                <p className="text-xs font-bold text-stone-900 truncate">
+                  {replyContext.serviceName}
+                </p>
+                {(replyContext.basePrice !== undefined ||
+                  replyContext.durationMinutes !== undefined) && (
+                  <p className="text-[11px] text-stone-500 truncate">
+                    {replyContext.basePrice !== undefined && `$${replyContext.basePrice}`}
+                    {replyContext.durationMinutes !== undefined &&
+                      ` • ${replyContext.durationMinutes}m`}
+                  </p>
+                )}
+              </div>
+            </div>
+            {onClearReplyContext && (
+              <button
+                type="button"
+                onClick={onClearReplyContext}
+                aria-label="Cancel reply"
+                title="Cancel reply"
+                className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-stone-400 hover:bg-stone-200 hover:text-stone-700 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
+
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -662,7 +778,9 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
             value={prompt}
             onChange={(e) => onPromptChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={chrome.placeholder}
+            placeholder={
+              replyContext ? `Ask about ${replyContext.serviceName}...` : chrome.placeholder
+            }
             className="max-h-[120px] flex-1 resize-none bg-transparent py-2 text-[16px] leading-relaxed sm:text-[13px] text-stone-900 placeholder:text-stone-400 focus:outline-hidden"
           />
 

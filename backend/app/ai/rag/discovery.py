@@ -179,9 +179,9 @@ async def collect_client_cards(
         )
 
     if user_wants_stylists:
-        return recommendations, [], [], response_stylists
+        return recommendations, [], [], response_stylists, organizations[:rec_limit]
     if user_wants_salons:
-        return recommendations, [], organizations[:rec_limit], []
+        return recommendations, [], organizations[:rec_limit], [], organizations[:rec_limit]
     if user_wants_services and recommendations:
-        return recommendations, recommendations, [], []
-    return recommendations, [], [], []
+        return recommendations, recommendations, [], [], organizations[:rec_limit]
+    return recommendations, [], [], [], organizations[:rec_limit]

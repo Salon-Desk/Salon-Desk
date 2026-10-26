@@ -35,9 +35,12 @@ export function mapBookingStatusToHoldState(status: string): HoldState {
     case 'REAUTHORIZED':
       return 'REAUTHORIZED'
     case 'CONFIRMED':
+      return 'HELD'
+    case 'PENDING_PAYMENT':
+      return 'PENDING_PAYMENT'
     case 'PENDING':
     default:
-      return 'HELD'
+      return 'PENDING'
   }
 }
 
@@ -100,6 +103,8 @@ export function mapApiBookingToUi(
       hour: 'numeric',
       minute: '2-digit',
     }),
+    startsAt: booking.starts_at,
+    endsAt: booking.ends_at,
     durationMin,
     servicePrice: price,
     holdAmount,
@@ -121,8 +126,6 @@ export function mapApiBookingToUi(
     settlementNote: booking.cancellation_reason || undefined,
     reauthorizationCount: extras?.reauthorizationCount,
     organizationTimezone: booking.organization_timezone || null,
-    startsAt: booking.starts_at || null,
-    endsAt: booking.ends_at || null,
   }
 }
 

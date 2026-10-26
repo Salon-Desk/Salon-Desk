@@ -22,6 +22,9 @@ async def run_hold_expiration_loop(*, interval_seconds: float = 300.0) -> None:
             processed = await tick()
             if processed:
                 logger.info("Processed %d expiring/expired payment hold(s)", processed)
+            expired_pending = await expire_abandoned_pending_bookings()
+            if expired_pending:
+                logger.info("Auto-cancelled %d abandoned pending booking(s)", expired_pending)
         except Exception:
             logger.exception("Hold expiration tick failed")
         await asyncio.sleep(interval_seconds)
@@ -114,6 +117,34 @@ async def tick() -> int:
                     booking.id,
                     booking.starts_at,
                 )
+
+        if processed:
+            await db.commit()
+        else:
+            await db.rollback()
+
+    return processed
+
+
+async def expire_abandoned_pending_bookings(*, max_age_minutes: int = 30) -> int:
+    """Auto-cancel pending bookings where buyer never completed payment hold."""
+    now = datetime.now(UTC)
+    threshold = now - timedelta(minutes=max_age_minutes)
+    processed = 0
+
+    async with AsyncSessionLocal() as db:
+        stale_pending = await db.execute(
+            select(Booking)
+            .where(
+                Booking.status.in_([BookingStatus.PENDING, BookingStatus.PENDING_PAYMENT]),
+                Booking.created_at <= threshold,
+            )
+            .limit(50)
+        )
+        for abandoned in stale_pending.scalars().all():
+            abandoned.status = BookingStatus.CANCELLED
+            abandoned.cancellation_reason = "Payment session expired or abandoned"
+            processed += 1
 
         if processed:
             await db.commit()

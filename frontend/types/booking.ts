@@ -1,5 +1,12 @@
 /** Lifecycle of a PayPal authorization hold, from reservation through settlement. */
-export type HoldState = 'HELD' | 'CAPTURED' | 'VOIDED' | 'NO_SHOW_CAPTURED' | 'REAUTHORIZED'
+export type HoldState =
+  | 'HELD'
+  | 'CAPTURED'
+  | 'VOIDED'
+  | 'NO_SHOW_CAPTURED'
+  | 'REAUTHORIZED'
+  | 'PENDING'
+  | 'PENDING_PAYMENT'
 
 export interface Booking {
   id: string
@@ -14,6 +21,8 @@ export interface Booking {
   stylistName: string
   stylistPicture?: string | null
   appointmentTime: string
+  startsAt?: string
+  endsAt?: string
   customerNotes?: string | null
   durationMin: number
   servicePrice: number
@@ -46,10 +55,6 @@ export interface Booking {
   reauthorizedAt?: string
   /** Organization timezone (e.g., 'America/New_York') */
   organizationTimezone?: string | null
-  /** ISO datetime of appointment start time in UTC */
-  startsAt?: string | null
-  /** ISO datetime of appointment end time in UTC */
-  endsAt?: string | null
 }
 
 export type LedgerAction =

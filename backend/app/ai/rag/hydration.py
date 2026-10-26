@@ -360,6 +360,8 @@ async def hydrate_organization_recommendations(
                 rating=4.9,
                 service_count=count,
                 distance_km=dist,
+                working_hours=o_settings.working_hours if o_settings else None,
+                timezone=o_settings.timezone if o_settings else "UTC",
             )
         )
 

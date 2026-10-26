@@ -6,3 +6,4 @@ export {
 } from './CustomResponsiveDialog'
 export { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
 export { PaymentConfirmationDialog } from './PaymentConfirmationDialog'
+export { RescheduleBookingDialog } from './RescheduleBookingDialog'
