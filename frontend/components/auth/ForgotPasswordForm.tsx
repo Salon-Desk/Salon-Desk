@@ -4,11 +4,11 @@ import type { FC } from 'react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { PrimaryButton } from '@/components/button'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFEmailField from '@/components/forms/RHFEmailField'
 import RHFPasswordField from '@/components/forms/RHFPasswordField'
 import RHFTextField from '@/components/forms/RHFTextField'
-import PrimaryButton from '@/components/ui/primary-button'
 import useFormSubmitHandler from '@/hooks/formHandler'
 import {
   forgotPasswordDefaultValues,

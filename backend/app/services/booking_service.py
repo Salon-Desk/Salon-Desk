@@ -47,7 +47,7 @@ __all__ = [
 ]
 
 _BOOKING_LOAD_OPTIONS = (
-    selectinload(Booking.organization),
+    selectinload(Booking.organization).selectinload(Organization.settings),
     selectinload(Booking.client).selectinload(User.profile),
     selectinload(Booking.stylist).selectinload(User.profile),
     selectinload(Booking.booking_services).selectinload(BookingService.service),
@@ -141,6 +141,7 @@ async def create_booking(
         service=primary,
         starts_at=starts_at,
         ends_at=ends_at,
+        stylist_id=stylist_id,
     )
     if not available:
         raise ForbiddenError("Selected time slot is not available")

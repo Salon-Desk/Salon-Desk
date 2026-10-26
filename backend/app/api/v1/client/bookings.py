@@ -96,10 +96,15 @@ async def availability(
     service_id: UUID,
     day: date = Query(..., description="Calendar day in the salon's timezone (YYYY-MM-DD)"),
     slot_minutes: int = Query(default=30, ge=5, le=120),
+    stylist_id: UUID | None = Query(default=None, description="Optional stylist filter"),
 ) -> AvailabilityOut:
     try:
         return await booking_service.get_availability(
-            db, service_id=service_id, day=day, slot_minutes=slot_minutes
+            db,
+            service_id=service_id,
+            day=day,
+            slot_minutes=slot_minutes,
+            stylist_id=stylist_id,
         )
     except NotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=exc.message) from exc

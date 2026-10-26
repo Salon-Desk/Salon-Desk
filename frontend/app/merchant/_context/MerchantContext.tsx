@@ -78,6 +78,10 @@ export interface MerchantContextValue {
   openChangePolicy: () => void
   handleSubmitPolicyChange: (e: FormEvent) => void
 
+  // Mobile sidebar
+  isMobileSidebarOpen: boolean
+  setIsMobileSidebarOpen: (open: boolean) => void
+
   // Actions
   settlement: ReturnType<typeof useMerchantSettlement>
   handleSignIn: () => void
@@ -114,6 +118,7 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     policyHours: 24,
     noShowFee: 30,
   })
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
   const showIdempotencyNotice = useCallback((msg: string) => {
     setIdempotencyToast(msg)
@@ -484,6 +489,9 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     setPolicyForm,
     openChangePolicy,
     handleSubmitPolicyChange,
+
+    isMobileSidebarOpen,
+    setIsMobileSidebarOpen,
 
     settlement,
     handleSignIn,

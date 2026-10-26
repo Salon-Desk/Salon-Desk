@@ -1,12 +1,12 @@
 'use client'
 
-import { Building2, CreditCard, Lock, Shield } from 'lucide-react'
+import { Building2, Clock, CreditCard, Lock, Shield } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 
 import { Button } from '@/components/ui'
 
-export type SettingsTab = 'general' | 'paypal' | 'policies' | 'security'
+export type SettingsTab = 'general' | 'hours-location' | 'paypal' | 'policies' | 'security'
 
 interface SettingsTabsProps {
   activeTab: SettingsTab
@@ -15,6 +15,7 @@ interface SettingsTabsProps {
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: 'general', label: 'General', icon: <Building2 className="h-4 w-4" /> },
+  { id: 'hours-location', label: 'Hours & Location', icon: <Clock className="h-4 w-4" /> },
   { id: 'paypal', label: 'PayPal', icon: <CreditCard className="h-4 w-4" /> },
   { id: 'policies', label: 'Policies', icon: <Shield className="h-4 w-4" /> },
   { id: 'security', label: 'Security', icon: <Lock className="h-4 w-4" /> },

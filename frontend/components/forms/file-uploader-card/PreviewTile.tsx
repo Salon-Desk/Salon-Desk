@@ -4,7 +4,7 @@ import { X } from 'lucide-react'
 import Image from 'next/image'
 import { memo, useState } from 'react'
 
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 
 import {
   previewGridClassName,
@@ -33,7 +33,7 @@ export const PreviewTile = memo(
           fill
           sizes="192px"
           className="object-cover"
-          unoptimized={shouldUnoptimizeImage(src)}
+          unoptimized={shouldUnoptimizedImage(src)}
           onError={() => {
             if (item.fallbackSrc && src !== item.fallbackSrc) {
               setSrc(item.fallbackSrc)

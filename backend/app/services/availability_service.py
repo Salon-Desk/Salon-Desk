@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import NotFoundError
 from app.models.booking import Booking, BookingService
 from app.models.enums import BookingStatus, ServiceStatus
-from app.models.organization import OrgSettings
+from app.models.organization import OrgEmployeeShift, OrgSettings, OrgShift
 from app.models.service import Service
 from app.schemas.booking import AvailabilityOut, TimeSlot
 
@@ -30,9 +30,30 @@ async def check_slot_available(
     service: Service,
     starts_at: datetime,
     ends_at: datetime,
+    stylist_id: UUID | None = None,
     exclude_booking_id: UUID | None = None,
 ) -> bool:
     now = datetime.now(UTC)
+    if stylist_id:
+        stylist_conditions = [
+            Booking.stylist_id == stylist_id,
+            Booking.status.in_(
+                [
+                    BookingStatus.PENDING,
+                    BookingStatus.CONFIRMED,
+                    BookingStatus.COMPLETED,
+                ]
+            ),
+            Booking.starts_at < ends_at,
+            Booking.ends_at > starts_at,
+        ]
+        if exclude_booking_id:
+            stylist_conditions.append(Booking.id != exclude_booking_id)
+        stylist_count_q = select(func.count(Booking.id)).where(and_(*stylist_conditions))
+        stylist_busy = (await db.execute(stylist_count_q)).scalar_one()
+        if int(stylist_busy) > 0:
+            return False
+
     conditions = [
         Booking.org_id == service.organization_id,
         or_(
@@ -64,9 +85,10 @@ async def get_availability(
     service_id: UUID,
     day: date,
     slot_minutes: int = 30,
+    stylist_id: UUID | None = None,
 ) -> AvailabilityOut:
     """
-    Build slots from org working_hours for the given calendar day.
+    Build slots from org working_hours (and stylist shifts if specified) for the given calendar day.
 
     Working-hour windows are interpreted in the organization timezone and returned
     as UTC-aware datetimes (ISO) for booking.create.
@@ -88,6 +110,26 @@ async def get_availability(
     for window in windows_raw or []:
         if isinstance(window, (list, tuple)) and len(window) == 2:
             open_windows.append([str(window[0]), str(window[1])])
+
+    # If stylist is specified, filter by their assigned shifts if any exist
+    if stylist_id:
+        shift_stmt = (
+            select(OrgShift)
+            .join(OrgEmployeeShift, OrgEmployeeShift.org_shift_id == OrgShift.id)
+            .where(
+                OrgEmployeeShift.user_id == stylist_id,
+                OrgShift.org_id == service.organization_id,
+            )
+        )
+        shifts = (await db.execute(shift_stmt)).scalars().all()
+        stylist_windows: list[list[str]] = []
+        for s in shifts:
+            if isinstance(s.data, dict) and "windows" in s.data:
+                for w in s.data.get("windows", []):
+                    if isinstance(w, (list, tuple)) and len(w) == 2:
+                        stylist_windows.append([str(w[0]), str(w[1])])
+        if stylist_windows:
+            open_windows = stylist_windows
 
     if not open_windows:
         return AvailabilityOut(
@@ -116,7 +158,13 @@ async def get_availability(
             if slot_end <= now_utc:
                 cursor += step
                 continue
-            ok = await check_slot_available(db, service=service, starts_at=cursor, ends_at=slot_end)
+            ok = await check_slot_available(
+                db,
+                service=service,
+                starts_at=cursor,
+                ends_at=slot_end,
+                stylist_id=stylist_id,
+            )
             slots.append(TimeSlot(starts_at=cursor, ends_at=slot_end, available=ok))
             cursor += step
 

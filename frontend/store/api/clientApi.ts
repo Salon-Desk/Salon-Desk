@@ -47,7 +47,15 @@ export const clientApi = baseApi.injectEndpoints({
 
     getCatalogOrganizations: builder.query<
       ApiPage<CatalogOrganization>,
-      { page?: number; page_size?: number; q?: string } | void
+      {
+        page?: number
+        page_size?: number
+        q?: string
+        sort?: string
+        lat?: number
+        lng?: number
+        max_distance_km?: number
+      } | void
     >({
       query: (params) => ({
         url: '/api/v1/catalog/organizations',
@@ -252,12 +260,17 @@ export const clientApi = baseApi.injectEndpoints({
 
     getBookingAvailability: builder.query<
       AvailabilityResponse,
-      { service_id: string; day: string; slot_minutes?: number }
+      { service_id: string; day: string; slot_minutes?: number; stylist_id?: string | null }
     >({
-      query: ({ service_id, day, slot_minutes }) => ({
+      query: ({ service_id, day, slot_minutes, stylist_id }) => ({
         url: '/api/v1/bookings/availability',
         method: 'GET',
-        params: { service_id, day, slot_minutes },
+        params: {
+          service_id,
+          day,
+          ...(slot_minutes ? { slot_minutes } : {}),
+          ...(stylist_id ? { stylist_id } : {}),
+        },
       }),
     }),
 

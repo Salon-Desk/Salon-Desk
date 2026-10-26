@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
-import PrimaryButton from '@/components/ui/primary-button'
+import { PrimaryButton } from '@/components/button'
 import { useResendVerificationMutation, useVerifyEmailMutation } from '@/store/api/sharedApi'
 
 export function VerifyEmailView() {

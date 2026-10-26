@@ -3,6 +3,7 @@ export { AgentChatView } from './AgentChatView'
 export * from './ChatUI'
 export type { ChatWidgetProps } from './ChatWidget'
 export { ChatWidget } from './ChatWidget'
+export { GlobalChatWidget } from './GlobalChatWidget'
 export type { InnerVoiceAssistantUIProps } from './InnerVoiceAssistantUI'
 export { InnerVoiceAssistantUI } from './InnerVoiceAssistantUI'
 export {

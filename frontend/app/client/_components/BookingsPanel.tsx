@@ -21,7 +21,7 @@ import { RescheduleBookingDialog } from '@/components/dialog'
 import { EmptyState, HoldStateBadge } from '@/components/ui'
 import { buildCancelOutcomePreview } from '@/lib/booking/cancel-policy'
 import { formatBookingRef, formatUsd } from '@/lib/format'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import type { Booking } from '@/types'
 
 interface BookingsPanelProps {
@@ -381,7 +381,7 @@ function ActiveHoldCard({
                   alt=""
                   width={20}
                   height={20}
-                  unoptimized={shouldUnoptimizeImage(booking.stylistPicture)}
+                  unoptimized={shouldUnoptimizedImage(booking.stylistPicture)}
                   className="h-5 w-5 rounded-full object-cover"
                 />
               ) : (

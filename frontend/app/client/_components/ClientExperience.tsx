@@ -8,7 +8,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { CancelBookingDialog } from '@/app/client/_components/CancelBookingDialog'
-import { EmptyState, Toast } from '@/components/ui'
+import { EmptyState } from '@/components/empty'
+import { Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useGeolocation, useToast } from '@/hooks'
 import {
@@ -116,6 +117,14 @@ export function ClientExperience({
   const categoryPicker = useSearchableCatalogCategories({ skip: !isExplorePage })
   const orgPicker = useSearchableCatalogOrganizations({
     selectedOrgId: filterOrgId ?? displayParams.orgId,
+    ...(displayParams.sortBy === 'distance' && userCoords
+      ? {
+          lat: userCoords.lat,
+          lng: userCoords.lng,
+          sort: 'distance',
+          max_distance_km: NEARBY_RADIUS_KM,
+        }
+      : {}),
   })
   const categories = categoryPicker.items
   const organizations = orgPicker.items

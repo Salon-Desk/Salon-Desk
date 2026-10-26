@@ -1,10 +1,9 @@
 'use client'
 
-import { Clock, CreditCard, Edit2 } from 'lucide-react'
+import { Clock, CreditCard } from 'lucide-react'
 import React from 'react'
 
 import { StatusBadge } from '@/components/badge'
-import { IconButton } from '@/components/ui'
 import { formatUsd } from '@/lib/format'
 import type { PlatformCommission } from '@/types/api-org'
 import type { ColumnDefinition } from '@/types/table'
@@ -19,12 +18,10 @@ export function formatCommissionRate(c: PlatformCommission): string {
 
 interface CommissionColumnOptions {
   categoryNameById: Map<string, string>
-  onEdit: (commission: PlatformCommission) => void
 }
 
 export function getCommissionTableColumns({
   categoryNameById,
-  onEdit,
 }: CommissionColumnOptions): ColumnDefinition<PlatformCommission>[] {
   return [
     {
@@ -75,22 +72,6 @@ export function getCommissionTableColumns({
           <Clock className="h-3 w-3" />
           <span>Active Policy</span>
         </div>
-      ),
-    },
-    {
-      id: 'actions',
-      header: 'Action',
-      headerClassName: 'text-right',
-      cellClassName: 'text-right',
-      cell: (c) => (
-        <IconButton
-          aria-label="Edit commission"
-          onClick={() => onEdit(c)}
-          className="h-8 w-8 rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 active:scale-95"
-          title="Edit commission rule"
-        >
-          <Edit2 className="h-3.5 w-3.5" />
-        </IconButton>
       ),
     },
   ]

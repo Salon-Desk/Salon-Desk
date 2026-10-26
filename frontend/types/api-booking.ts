@@ -35,6 +35,7 @@ export interface ApiBooking {
   stylist_picture?: string | null
   service_name?: string | null
   organization_name?: string | null
+  organization_timezone?: string | null
 }
 
 export interface OrgBookingsQuery {

@@ -4,12 +4,12 @@ import { AlertCircle, Clock } from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFDropeDown from '@/components/forms/RHFDropeDown'
 import RHFNumberField from '@/components/forms/RHFNumberField'
 import RHFTextField from '@/components/forms/RHFTextField'
-import PrimaryButton from '@/components/ui/primary-button'
 import { zodResolver } from '@/lib/schema/resolver'
 
 import { type PolicyChangeFormData, policyChangeSchema } from '../_schemas/settings.schema'

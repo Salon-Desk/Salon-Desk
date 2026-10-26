@@ -4,7 +4,7 @@ import { Star, User } from 'lucide-react'
 import Image from 'next/image'
 import React from 'react'
 
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import type { CatalogStaffMember } from '@/types/api-feedback'
 import type { CatalogService } from '@/types/api-org'
 
@@ -56,7 +56,7 @@ export function OrgDetailStaffTab({
                       src={member.picture}
                       alt={member.display_name}
                       fill
-                      unoptimized={shouldUnoptimizeImage(member.picture)}
+                      unoptimized={shouldUnoptimizedImage(member.picture)}
                       className="object-cover"
                     />
                   </div>

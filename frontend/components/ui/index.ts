@@ -22,6 +22,12 @@ export {
   TextField,
 } from './form'
 export {
+  PageHeader,
+  type PageHeaderAccent,
+  type PageHeaderProps,
+  type PageHeaderVariant,
+} from './page-header'
+export {
   Pagination,
   type PaginationProps,
   TablePagination,

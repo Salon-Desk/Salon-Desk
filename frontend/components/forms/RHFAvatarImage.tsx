@@ -13,7 +13,7 @@ import {
   FormFieldLabel,
   FormFieldRoot,
 } from '@/components/forms/form-field-parts'
-import { resolveImageSrc, shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { resolveImageSrc, shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 
 interface RHFAvatarImageProps {
   name: string
@@ -96,7 +96,7 @@ const RHFAvatarImage = ({ name, label = 'Profile Picture' }: RHFAvatarImageProps
                   height={138}
                   alt="avatar"
                   className="size-full object-cover"
-                  unoptimized={shouldUnoptimizeImage(preview)}
+                  unoptimized={shouldUnoptimizedImage(preview)}
                 />
               ) : (
                 <div className="flex size-full items-center justify-center">

@@ -6,37 +6,30 @@ import { useState } from 'react'
 
 import { ChangePasswordForm } from '@/app/merchant/_components/ChangePasswordForm'
 import { MerchantFinanceSettings } from '@/app/merchant/_components/MerchantFinanceSettings'
-import { MerchantOrgSettingsPanel } from '@/app/merchant/_components/MerchantOrgSettingsPanel'
+import { MerchantGeneralSettingsPanel } from '@/app/merchant/_components/MerchantGeneralSettingsPanel'
+import { MerchantLocationHoursPanel } from '@/app/merchant/_components/MerchantLocationHoursPanel'
 import { type SettingsTab, SettingsTabs } from '@/app/merchant/_components/SettingsTabs'
-import { Card } from '@/components/ui'
+import { Card, PageHeader } from '@/components/ui'
 
 export function MerchantSettingsView() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general')
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 animate-in fade-in duration-300">
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white via-white to-violet-50/60 p-5 sm:p-6">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-violet-300/20 blur-3xl" />
-        <div className="relative">
-          <span className="mb-2 inline-flex rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-violet-800">
-            Organization controls
-          </span>
-          <h1 className="font-extrabold text-slate-900 text-xl tracking-tight sm:text-2xl">
-            Salon Settings
-          </h1>
-          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500 sm:text-sm">
-            Manage location, operating timezone, PayPal disbursement rails, cancellation guarantee
-            rules, and account security.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        variant="card"
+        accent="violet"
+        eyebrow="Organization controls"
+        title="Salon Settings"
+        description="Manage location, operating timezone, PayPal disbursement rails, cancellation guarantee rules, and account security."
+      />
 
       <SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       {activeTab === 'general' && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <MerchantOrgSettingsPanel />
+            <MerchantGeneralSettingsPanel />
           </div>
 
           <div className="space-y-4 lg:col-span-5">
@@ -68,6 +61,8 @@ export function MerchantSettingsView() {
           </div>
         </div>
       )}
+
+      {activeTab === 'hours-location' && <MerchantLocationHoursPanel />}
 
       {activeTab === 'paypal' && <MerchantFinanceSettings mode="paypal" />}
 

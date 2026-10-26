@@ -1,9 +1,9 @@
 'use client'
 
-import { Calendar, CheckCircle2, Copy, PauseCircle, Sparkles } from 'lucide-react'
+import { Calendar, CheckCircle2, Copy, Eye, PauseCircle, Sparkles } from 'lucide-react'
 
+import { PrimaryButton } from '@/components/button'
 import { Badge, Card } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
 import type { ApiOrganization } from '@/types/api-org'
 
 import { formatRegistrationDate } from '../_utils'
@@ -17,6 +17,7 @@ interface SalonCardProps {
   copiedKey: string | null
   onApprove: (org: ApiOrganization) => void
   onSuspend: (org: ApiOrganization) => void
+  onViewDetail: (org: ApiOrganization) => void
   onCopy: (text: string, label: string) => void
 }
 
@@ -28,6 +29,7 @@ export function SalonCard({
   copiedKey,
   onApprove,
   onSuspend,
+  onViewDetail,
   onCopy,
 }: SalonCardProps) {
   const isApproved = org.status === 'approved'
@@ -107,6 +109,15 @@ export function SalonCard({
 
       {/* Action Buttons */}
       <div className="flex items-center gap-2 self-end sm:self-center shrink-0 pt-2 sm:pt-0">
+        <button
+          type="button"
+          onClick={() => onViewDetail(org)}
+          className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98]"
+          title="View salon details"
+        >
+          <Eye className="h-3.5 w-3.5 text-slate-500" />
+          <span>Detail</span>
+        </button>
         {!isApproved && (
           <PrimaryButton
             title={isActioning && approving ? 'Approving…' : 'Approve Salon'}

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import React from 'react'
 
 import { ANY_AVAILABLE_STYLIST } from '@/lib/data/catalog'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import { cn } from '@/lib/utils'
 import type { StaffMember } from '@/types'
 
@@ -54,7 +54,7 @@ export function StylistPicker({ stylist, staffOptions, isLoading, onSelect }: St
                     alt=""
                     width={52}
                     height={52}
-                    unoptimized={shouldUnoptimizeImage(staff.avatar)}
+                    unoptimized={shouldUnoptimizedImage(staff.avatar)}
                     className="h-13 w-13 shrink-0 rounded-2xl object-cover"
                   />
                 ) : (

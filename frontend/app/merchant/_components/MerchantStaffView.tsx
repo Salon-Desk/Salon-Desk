@@ -3,54 +3,48 @@
 import {
   Calendar,
   CheckCircle2,
-  Copy,
-  Edit2,
   Filter,
   LayoutGrid,
   List,
   Loader2,
-  Mail,
-  Phone,
   Plus,
-  RefreshCw,
   Search,
-  Sparkles,
-  Trash2,
   UserCheck,
-  UserRound,
   Users,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { PrimaryButton } from '@/components/button'
 import { StatCard } from '@/components/card'
 import { DeleteConfirmationDialog } from '@/components/dialog/DeleteConfirmationDialog'
+import { EmptyState } from '@/components/empty'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
-import { Badge, Card, EmptyState, IconButton, SegmentedControl } from '@/components/ui'
+import { SegmentedControl } from '@/components/ui'
 import { Pagination } from '@/components/ui/pagination'
-import PrimaryButton from '@/components/ui/primary-button'
 import { toastColor } from '@/constant/toast-color'
+import { useListingParams } from '@/hooks/use-listing-params'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
-import { useListingParams } from '@/hooks/useListingParams'
 import {
   buildMerchantStaffCountApiParams,
   merchantStaffListDefaults,
   type MerchantStaffListParams,
   MerchantStaffListParamsSchema,
 } from '@/lib/listing-params/merchant-staff-list-params'
-import {
-  staffAvatarGradient,
-  staffDisplayName,
-  staffInitials,
-  staffPhone,
-  staffPicture,
-} from '@/lib/util/staff-display'
+import { staffDisplayName } from '@/lib/util/staff-display'
 import { cn } from '@/lib/utils'
-import { useDeleteMyEmployeeMutation, useGetMyEmployeesQuery } from '@/store/api/orgApi'
+import {
+  useDeleteMyEmployeeMutation,
+  useGetMyEmployeeShiftsQuery,
+  useGetMyEmployeesQuery,
+} from '@/store/api/orgApi'
 import type { User } from '@/types/user'
 
 import { EditEmployeeModal } from './EditEmployeeModal'
 import { EmployeeFormModal } from './EmployeeFormModal'
+import { MerchantStaffCard } from './MerchantStaffCard'
+import { MerchantStaffHeader } from './MerchantStaffHeader'
+import { StaffShiftsModal } from './StaffShiftsModal'
 import { getStaffTableColumns } from './StaffTableColumns'
 
 export function MerchantStaffView() {
@@ -76,7 +70,10 @@ export function MerchantStaffView() {
   const totalItems = employeesData?.total ?? employees.length
   const [deleteEmployee, { isLoading: isDeleting }] = useDeleteMyEmployeeMutation()
 
+  const { data: employeeShifts = [] } = useGetMyEmployeeShiftsQuery()
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isShiftsOpen, setIsShiftsOpen] = useState(false)
+  const [selectedStaffForShift, setSelectedStaffForShift] = useState<string | null>(null)
   const [editingEmployee, setEditingEmployee] = useState<User | null>(null)
   const [deleting, setDeleting] = useState<User | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -142,68 +139,28 @@ export function MerchantStaffView() {
       getStaffTableColumns({
         onCopyId: handleCopyId,
         copiedId,
-        onEdit: (m) => setEditingEmployee(m),
-        onDelete: (m) => setDeleting(m),
+        employeeShifts,
+        onManageShifts: (m) => {
+          setSelectedStaffForShift(m.id)
+          setIsShiftsOpen(true)
+        },
       }),
-    [copiedId],
+    [copiedId, employeeShifts],
   )
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 pb-12 animate-in fade-in duration-300 sm:space-y-6">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-amber-50/25 to-amber-100/20 p-6 shadow-xs backdrop-blur-md sm:p-8">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
-        <div className="pointer-events-none absolute -left-12 -bottom-12 h-44 w-44 rounded-full bg-amber-200/20 blur-3xl" />
-
-        <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-center">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-900 shadow-2xs">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
-              </span>
-              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-              <span>Salon Team Management</span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-extrabold text-slate-900 text-2xl tracking-tight sm:text-3xl">
-                Stylists &amp; Staff Directory
-              </h1>
-              <span className="rounded-full bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white shadow-2xs">
-                {stats.total} {stats.total === 1 ? 'Member' : 'Members'}
-              </span>
-            </div>
-
-            <p className="max-w-2xl text-xs text-slate-600 sm:text-sm leading-relaxed">
-              Manage your verified roster, assign schedule permissions, track contact details, and
-              organize your front desk and stylist team.
-            </p>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-xs backdrop-blur-sm">
-            <IconButton
-              aria-label="Refresh roster"
-              onClick={() => void refetch()}
-              className="h-10 w-10 cursor-pointer rounded-xl border border-slate-200 bg-white text-slate-600 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-[0.92]"
-              title="Refresh staff"
-            >
-              <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin text-amber-600' : ''}`} />
-            </IconButton>
-
-            <div data-agent-action="add-staff">
-              <PrimaryButton
-                title="Add team member"
-                size="sm"
-                fullWidth={false}
-                icon={<Plus className="h-4 w-4" />}
-                className="h-10 rounded-xl px-5 text-xs font-bold shadow-xs transition-all hover:shadow-md active:scale-[0.98]"
-                onClick={() => setIsAddOpen(true)}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <MerchantStaffHeader
+        totalMembers={stats.total}
+        isFetching={isFetching}
+        onRefresh={() => void refetch()}
+        onOpenShifts={() => {
+          setSelectedStaffForShift(null)
+          setIsShiftsOpen(true)
+        }}
+        onAddStaff={() => setIsAddOpen(true)}
+      />
 
       {/* Interactive Metric Stat Cards with Quick Filtering */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
@@ -259,34 +216,18 @@ export function MerchantStaffView() {
         />
       </div>
 
-      {/* Filter and View Command Bar */}
+      {/* Role Filter & View Switcher Bar */}
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 flex-col gap-2.5 sm:flex-row sm:items-center">
-          <div className="relative min-w-[220px] max-w-sm flex-1">
-            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by name, email, or phone…"
-              value={displayParams.search}
-              onChange={(e) => {
-                setParams({ search: e.target.value, page: 1 })
-              }}
-              className="h-9.5 w-full rounded-xl border border-slate-200/90 bg-slate-50/70 pr-4 pl-9 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-amber-500 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20"
-            />
-          </div>
-
-          {/* Role filter pills */}
-          <div className="flex items-center gap-1 overflow-x-auto rounded-xl bg-slate-100/80 p-1">
-            <SegmentedControl
-              options={roleFilterOptions}
-              value={roleFilter}
-              onChange={(val) => {
-                setParams({ role: val, page: 1 })
-              }}
-              variant="pills"
-              className="h-8.5"
-            />
-          </div>
+        <div className="flex items-center gap-1 overflow-x-auto rounded-xl bg-slate-100/80 p-1">
+          <SegmentedControl
+            options={roleFilterOptions}
+            value={roleFilter}
+            onChange={(val) => {
+              setParams({ role: val, page: 1 })
+            }}
+            variant="pills"
+            className="h-8.5"
+          />
         </div>
 
         {/* View Switcher & Roster Count */}
@@ -363,7 +304,7 @@ export function MerchantStaffView() {
         </div>
       ) : null}
 
-      {/* Empty State */}
+      {/* Empty State when no employees at all */}
       {!isLoading &&
       !isError &&
       employees.length === 0 &&
@@ -386,212 +327,98 @@ export function MerchantStaffView() {
         />
       ) : null}
 
-      {/* Empty Search Results */}
-      {!isLoading && !isError && totalItems === 0 && (settledSearch || roleFilter !== 'all') ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center shadow-xs">
-          <Filter className="mb-2 h-8 w-8 text-slate-300" />
-          <h3 className="font-semibold text-sm text-slate-800">No matching team members</h3>
-          <p className="mt-1 max-w-sm text-xs text-slate-500">
-            No employees match your filter
-            {settledSearch ? ` “${settledSearch}”` : ''}. Try clearing filters or searching another
-            keyword.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setParams(merchantStaffListDefaults)
-            }}
-            className="mt-3.5 cursor-pointer text-xs font-bold text-amber-700 underline underline-offset-2 transition-all hover:text-amber-800 active:scale-[0.98]"
-          >
-            Clear all filters
-          </button>
-        </div>
-      ) : null}
-
-      {/* Grid View */}
-      {!isLoading && !isError && paginatedEmployees.length > 0 && viewMode === 'grid' ? (
+      {/* Grid / Cards View */}
+      {!isLoading && !isError && stats.total > 0 && viewMode === 'grid' ? (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {paginatedEmployees.map((member) => {
-              const name = staffDisplayName(member)
-              const initials = staffInitials(name)
-              const gradient = staffAvatarGradient(member.id || name)
-              const picture = staffPicture(member)
-              const phone = staffPhone(member)
-              const roleTone =
-                member.role === 'org_owner'
-                  ? 'amber'
-                  : member.role === 'reception'
-                    ? 'sky'
-                    : 'emerald'
-              const roleLabel =
-                member.role === 'org_owner'
-                  ? 'Owner'
-                  : member.role === 'reception'
-                    ? 'Receptionist'
-                    : 'Stylist'
+          {/* Grid Toolbar with Search and Actions matching table toolbar */}
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="w-full lg:mr-1 lg:max-w-xl lg:flex-1">
+              <div className="relative w-full">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748B]"
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  placeholder="Search team by name, email, or phone…"
+                  value={displayParams.search}
+                  onChange={(e) => setParams({ search: e.target.value, page: 1 })}
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 py-0 pl-10 pr-4 text-[13px] text-slate-900 placeholder:text-slate-400 transition-all focus-visible:border-amber-500 focus-visible:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20"
+                />
+              </div>
+            </div>
 
-              const isOwner = member.role === 'org_owner'
-              const isActive = (member.status || 'active').toLowerCase() === 'active'
-
-              return (
-                <Card
-                  key={member.id}
-                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all duration-200 hover:-translate-y-1 hover:border-amber-300 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.12),0_4px_12px_-2px_rgba(0,0,0,0.03)]"
-                >
-                  {/* Decorative top accent line with role-based gradient */}
-                  <div
-                    className={cn(
-                      'pointer-events-none absolute inset-x-0 top-0 h-1 transition-opacity duration-200 opacity-60 group-hover:opacity-100',
-                      member.role === 'org_owner'
-                        ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600'
-                        : member.role === 'reception'
-                          ? 'bg-gradient-to-r from-sky-400 via-sky-500 to-sky-600'
-                          : 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600',
-                    )}
-                  />
-
-                  <div className="space-y-4">
-                    {/* Top bar: Avatar + Status + Badges */}
-                    <div className="flex items-start justify-between">
-                      <div className="relative">
-                        {picture ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={picture}
-                            alt={name}
-                            className="h-14 w-14 rounded-2xl border-2 border-white object-cover shadow-sm ring-1 ring-slate-200/80 transition-transform duration-200 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div
-                            className={cn(
-                              'flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-base font-bold text-white shadow-sm ring-1 ring-white/40 transition-transform duration-200 group-hover:scale-105',
-                              gradient,
-                            )}
-                          >
-                            {initials || <UserRound className="h-6 w-6" />}
-                          </div>
-                        )}
-                        <span
-                          className={cn(
-                            'absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs',
-                            isActive ? 'bg-emerald-500' : 'bg-slate-400',
-                          )}
-                          title={isActive ? 'Active Member' : 'Inactive Member'}
-                        />
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-end gap-1.5 pl-3">
-                        <Badge tone={roleTone} size="sm" variant="soft" className="font-semibold">
-                          {roleLabel}
-                        </Badge>
-                        <Badge
-                          tone={isActive ? 'emerald' : 'slate'}
-                          size="sm"
-                          variant="soft"
-                          dot
-                          pulsing={isActive}
-                          className="font-medium"
-                        >
-                          {member.status || 'Active'}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Name and Contact details */}
-                    <div>
-                      <h3 className="font-bold text-base text-slate-900 tracking-tight transition-colors group-hover:text-amber-800">
-                        {name}
-                      </h3>
-
-                      <div className="mt-3 space-y-2 text-xs text-slate-500">
-                        <a
-                          href={`mailto:${member.email}`}
-                          className="flex items-center gap-2 truncate text-slate-600 transition-colors hover:text-amber-700 hover:underline"
-                          title="Send email"
-                        >
-                          <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-colors group-hover:text-amber-600" />
-                          <span className="truncate font-mono text-[11.5px]">{member.email}</span>
-                        </a>
-
-                        {phone ? (
-                          <a
-                            href={`tel:${phone}`}
-                            className="flex items-center gap-2 font-mono text-[11.5px] text-slate-600 transition-colors hover:text-amber-700 hover:underline"
-                            title="Call phone number"
-                          >
-                            <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-colors group-hover:text-amber-600" />
-                            <span>{phone}</span>
-                          </a>
-                        ) : (
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <Phone className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-                            <span className="italic text-[11px]">No phone provided</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Footer Actions */}
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                    <div className="flex items-center gap-1 font-mono text-[11px] text-slate-400">
-                      <span>ID: {member.id.slice(0, 8)}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyId(member.id)}
-                        className="cursor-pointer rounded-md p-1 transition-all hover:bg-slate-100 hover:text-slate-700 active:scale-95"
-                        title="Copy staff ID"
-                      >
-                        {copiedId === member.id ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <IconButton
-                        aria-label="Edit team member"
-                        onClick={() => setEditingEmployee(member)}
-                        className="h-8 w-8 rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 active:scale-95"
-                        title="Edit details"
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </IconButton>
-
-                      {!isOwner ? (
-                        <IconButton
-                          aria-label="Remove team member"
-                          onClick={() => setDeleting(member)}
-                          className="h-8 w-8 rounded-lg border border-slate-200/80 bg-white text-rose-600 shadow-2xs transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 active:scale-95"
-                          title="Remove member"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </IconButton>
-                      ) : null}
-                    </div>
-                  </div>
-                </Card>
-              )
-            })}
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <span className="mr-auto text-[11px] font-medium text-slate-500 lg:mr-1">
+                {totalItems} {totalItems === 1 ? 'record' : 'records'}
+              </span>
+              <PrimaryButton
+                key="add-staff-grid"
+                title="Add team member"
+                size="sm"
+                fullWidth={false}
+                icon={<Plus className="h-3.5 w-3.5" />}
+                className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
+                onClick={() => setIsAddOpen(true)}
+              />
+            </div>
           </div>
 
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            pageSize={pageSize}
-            setCurrentPage={(page) => setParam('page', page)}
-            onPageSizeChange={(size) => setParams({ limit: size, page: 1 })}
-            pageSizeOptions={[6, 9, 15, 30]}
-          />
+          {paginatedEmployees.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {paginatedEmployees.map((member) => (
+                <MerchantStaffCard
+                  key={member.id}
+                  member={member}
+                  shifts={employeeShifts.filter((es) => es.user_id === member.id)}
+                  onCopyId={handleCopyId}
+                  isCopied={copiedId === member.id}
+                  onEdit={(m) => setEditingEmployee(m)}
+                  onDelete={member.role !== 'org_owner' ? (m) => setDeleting(m) : undefined}
+                  onManageShifts={(m) => {
+                    setSelectedStaffForShift(m.id)
+                    setIsShiftsOpen(true)
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center shadow-xs">
+              <Filter className="mb-2 h-8 w-8 text-slate-300" />
+              <h3 className="font-semibold text-sm text-slate-800">No matching team members</h3>
+              <p className="mt-1 max-w-sm text-xs text-slate-500">
+                No employees match your filter
+                {settledSearch ? ` “${settledSearch}”` : ''}. Try clearing filters or searching
+                another keyword.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setParams(merchantStaffListDefaults)
+                }}
+                className="mt-3.5 cursor-pointer text-xs font-bold text-amber-700 underline underline-offset-2 transition-all hover:text-amber-800 active:scale-[0.98]"
+              >
+                Clear all filters
+              </button>
+            </div>
+          )}
+
+          {paginatedEmployees.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              setCurrentPage={(page) => setParam('page', page)}
+              onPageSizeChange={(size) => setParams({ limit: size, page: 1 })}
+              pageSizeOptions={[6, 9, 15, 30]}
+            />
+          )}
         </div>
       ) : null}
 
-      {/* Table / Roster View */}
-      {!isLoading && !isError && paginatedEmployees.length > 0 && viewMode === 'table' ? (
+      {/* Table / Roster View: uses BasicDataGridTable's dedicated search section and action column */}
+      {!isLoading && !isError && stats.total > 0 && viewMode === 'table' ? (
         <BasicDataGridTable
           data={paginatedEmployees}
           columns={staffColumns}
@@ -605,9 +432,21 @@ export function MerchantStaffView() {
           onPageChange={(page) => setParam('page', page)}
           onItemPerPageChange={(size) => setParams({ limit: size, page: 1 })}
           showPagination={true}
-          showSearch={false}
+          showSearch={true}
+          searchPlaceholder="Search team by name, email, or phone…"
+          initialSearchValue={displayParams.search}
+          onSearch={(search) => setParams({ search, page: 1 })}
           showItemsPerPage={true}
-          showColumnSelector
+          showColumnSelector={true}
+          showActions={true}
+          onEdit={(member) => setEditingEmployee(member)}
+          onDelete={(member) => {
+            if (member.role === 'org_owner') {
+              toast.error('The organization owner cannot be removed', toastColor.error)
+              return
+            }
+            setDeleting(member)
+          }}
           tableClassName="border-slate-200/80"
           headerClassName="bg-slate-50/70"
           customButtons={[
@@ -632,6 +471,16 @@ export function MerchantStaffView() {
         employee={editingEmployee}
         open={!!editingEmployee}
         onClose={() => setEditingEmployee(null)}
+      />
+
+      {/* Staff Shifts & Scheduling Modal */}
+      <StaffShiftsModal
+        open={isShiftsOpen}
+        onClose={() => {
+          setIsShiftsOpen(false)
+          setSelectedStaffForShift(null)
+        }}
+        initialEmployeeId={selectedStaffForShift}
       />
 
       {/* Delete Confirmation */}

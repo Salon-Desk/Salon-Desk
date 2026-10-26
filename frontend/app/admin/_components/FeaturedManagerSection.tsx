@@ -4,8 +4,9 @@ import { Building2, Plus, Scissors, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 
-import { Badge, Card, EmptyState, IconButton, SearchableSelect } from '@/components/ui'
-import PrimaryButton from '@/components/ui/primary-button'
+import { PrimaryButton } from '@/components/button'
+import { EmptyState } from '@/components/empty'
+import { Badge, Card, IconButton, SearchableSelect } from '@/components/ui'
 import type {
   ApiOrganization,
   CatalogService,

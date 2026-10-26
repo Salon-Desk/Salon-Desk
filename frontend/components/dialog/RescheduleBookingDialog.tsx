@@ -9,7 +9,7 @@ import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import { toastColor } from '@/constant/toast-color'
 import { formatBookingRef } from '@/lib/format'
-import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
+import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import { useGetBookingAvailabilityQuery, useRescheduleBookingMutation } from '@/store/api/clientApi'
 import type { Booking } from '@/types'
 import type { ApiBooking } from '@/types/api-booking'
@@ -167,7 +167,7 @@ export function RescheduleBookingDialog({
                 alt=""
                 width={16}
                 height={16}
-                unoptimized={shouldUnoptimizeImage(booking.stylistPicture)}
+                unoptimized={shouldUnoptimizedImage(booking.stylistPicture)}
                 className="h-4 w-4 rounded-full object-cover"
               />
             ) : (

@@ -1,10 +1,10 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Suspense } from 'react'
 
 import { PortalGuard } from '@/components/layout/portal-guard'
+import { LoadingSpinner } from '@/components/loader/LoadingSpinner'
 
 /** Client catalog is public; PortalGuard only waits for session hydrate. */
 export default function ClientLayout({ children }: { children: ReactNode }) {
@@ -12,9 +12,8 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
     <PortalGuard portal="client" allowAnonymous>
       <Suspense
         fallback={
-          <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-50">
-            <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
-            <p className="text-xs text-slate-500">Loading…</p>
+          <div className="flex min-h-screen items-center justify-center bg-slate-50">
+            <LoadingSpinner size="md" text="Loading…" />
           </div>
         }
       >

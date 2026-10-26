@@ -3,9 +3,9 @@
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
+import { PrimaryButton } from '@/components/button'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFTextField from '@/components/forms/RHFTextField'
-import PrimaryButton from '@/components/ui/primary-button'
 import { toastColor } from '@/constant/toast-color'
 import { zodResolver } from '@/lib/schema/resolver'
 import {
@@ -73,10 +73,9 @@ export function ChangeRequestReviewActions({ request }: ChangeRequestReviewActio
             title={approving ? 'Approving…' : 'Approve'}
             type="button"
             size="sm"
-            fullWidth
             isLoading={approving}
             isDisabled={isLoading}
-            className="h-10 rounded-xl font-bold text-xs shadow-xs transition-all active:scale-[0.98]"
+            className="h-10 rounded-xl font-bold text-xs shadow-xs transition-all active:scale-[0.98] w-32"
             onClick={() => void submit('approve')}
           />
           <PrimaryButton
@@ -84,10 +83,9 @@ export function ChangeRequestReviewActions({ request }: ChangeRequestReviewActio
             type="button"
             variant="destructive"
             size="sm"
-            fullWidth
             isLoading={rejecting}
             isDisabled={isLoading}
-            className="h-10 rounded-xl font-bold text-xs transition-all active:scale-[0.98]"
+            className="h-10 rounded-xl font-bold text-xs transition-all active:scale-[0.98] w-32"
             onClick={() => void submit('reject')}
           />
         </div>

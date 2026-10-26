@@ -95,6 +95,7 @@ class BookingOut(ORMModel):
     stylist_picture: str | None = None
     service_name: str | None = None
     organization_name: str | None = None
+    organization_timezone: str | None = None
 
 
 def _user_display_name(user) -> str | None:
@@ -128,6 +129,7 @@ def booking_to_out(booking) -> BookingOut:
     service_rel = getattr(first_service, "service", None) if first_service else None
     client_profile = getattr(client, "profile", None) if client else None
     organization = getattr(booking, "organization", None)
+    org_settings = getattr(organization, "settings", None) if organization else None
 
     return BookingOut(
         id=booking.id,
@@ -157,4 +159,5 @@ def booking_to_out(booking) -> BookingOut:
         stylist_picture=_user_picture(stylist),
         service_name=getattr(service_rel, "name", None) if service_rel else None,
         organization_name=getattr(organization, "name", None) if organization else None,
+        organization_timezone=getattr(org_settings, "timezone", None) if org_settings else None,
     )
