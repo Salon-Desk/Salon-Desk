@@ -5,6 +5,7 @@ import {
   ArrowUpDown,
   Calendar,
   Clock,
+  CreditCard,
   FileText,
   Lock,
   Plus,
@@ -14,7 +15,9 @@ import {
   XCircle,
 } from 'lucide-react'
 import Image from 'next/image'
+import { useState } from 'react'
 
+import { RescheduleBookingDialog } from '@/components/dialog'
 import { EmptyState, HoldStateBadge } from '@/components/ui'
 import { buildCancelOutcomePreview } from '@/lib/booking/cancel-policy'
 import { formatBookingRef, formatUsd } from '@/lib/format'
@@ -22,11 +25,13 @@ import { shouldUnoptimizeImage } from '@/lib/util/remoteImage'
 import type { Booking } from '@/types'
 
 interface BookingsPanelProps {
+  pendingBookings?: Booking[]
   activeHolds: Booking[]
   pastBookings: Booking[]
   onBrowseCatalog: () => void
   onCancel: (booking: Booking) => void
   onViewReceipt: (booking: Booking) => void
+  onCompletePayment?: (booking: Booking) => void
   searchQuery: string
   onSearchChange: (value: string) => void
   sortBy:
@@ -48,16 +53,19 @@ interface BookingsPanelProps {
 }
 
 export function BookingsPanel({
+  pendingBookings = [],
   activeHolds,
   pastBookings,
   onBrowseCatalog,
   onCancel,
   onViewReceipt,
+  onCompletePayment,
   searchQuery,
   onSearchChange,
   sortBy,
   onSortChange,
 }: BookingsPanelProps) {
+  const [rescheduleTarget, setRescheduleTarget] = useState<Booking | null>(null)
   return (
     <div className="space-y-8 sm:space-y-12">
       {/* Editorial Header */}
@@ -129,11 +137,42 @@ export function BookingsPanel({
         </div>
       </div>
 
+      {/* Pending Authorization (Payment Incomplete) Section */}
+      {pendingBookings && pendingBookings.length > 0 ? (
+        <section>
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
+              <h2 className="text-sm font-bold text-stone-900">
+                Pending Authorization (Payment Incomplete)
+              </h2>
+            </div>
+            <span className="rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-bold text-amber-900">
+              {pendingBookings.length}
+            </span>
+            <span className="ml-auto hidden sm:inline text-xs text-amber-800 font-medium">
+              Reservation is temporarily held · Complete payment to secure appointment
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            {pendingBookings.map((booking) => (
+              <PendingBookingCard
+                key={booking.id}
+                booking={booking}
+                onCancel={() => onCancel(booking)}
+                onCompletePayment={onCompletePayment ? () => onCompletePayment(booking) : undefined}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {/* Active Holds Section */}
       <section>
         <div className="mb-5 flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             <h2 className="text-sm font-bold text-stone-900">Active Authorization Holds</h2>
           </div>
           <span className="rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 text-xs font-bold text-amber-800">
@@ -148,7 +187,7 @@ export function BookingsPanel({
           <EmptyState
             icon={Calendar}
             title="No Active Reservation Holds"
-            description="You currently have no pending appointment holds. Explore the catalog and reserve with $0 charged upfront."
+            description="You currently have no confirmed appointment holds. Explore the catalog and reserve with $0 charged upfront."
             actionLabel="Explore Service Catalog"
             onAction={onBrowseCatalog}
           />
@@ -160,6 +199,7 @@ export function BookingsPanel({
                 booking={booking}
                 onCancel={() => onCancel(booking)}
                 onViewReceipt={onViewReceipt}
+                onReschedule={() => setRescheduleTarget(booking)}
               />
             ))}
           </div>
@@ -275,6 +315,14 @@ export function BookingsPanel({
           </>
         )}
       </section>
+
+      {rescheduleTarget && (
+        <RescheduleBookingDialog
+          booking={rescheduleTarget}
+          open={Boolean(rescheduleTarget)}
+          onClose={() => setRescheduleTarget(null)}
+        />
+      )}
     </div>
   )
 }
@@ -283,10 +331,12 @@ function ActiveHoldCard({
   booking,
   onCancel,
   onViewReceipt,
+  onReschedule,
 }: {
   booking: Booking
   onCancel: () => void
   onViewReceipt: (booking: Booking) => void
+  onReschedule: () => void
 }) {
   const cancelPreview = buildCancelOutcomePreview({
     totalPrice: booking.servicePrice,
@@ -414,36 +464,150 @@ function ActiveHoldCard({
         ) : null}
       </div>
 
-      {/* Action buttons */}
-      <div className="flex items-center gap-2.5 pt-4 border-t border-stone-100">
+      {/* Management Actions: Reschedule */}
+      <div className="pt-4 border-t border-stone-100 space-y-2.5">
         <button
           type="button"
-          onClick={() => onViewReceipt(booking)}
-          className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs sm:text-sm font-semibold px-4 transition-colors cursor-pointer active:scale-[0.98]"
+          onClick={onReschedule}
+          className="w-full h-10 inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-800 text-xs sm:text-sm font-semibold px-3 transition-colors cursor-pointer active:scale-[0.98]"
         >
-          <FileText className="h-3.5 w-3.5 text-stone-600" />
-          <span>View Receipt</span>
+          <Calendar className="h-3.5 w-3.5 text-amber-600" />
+          <span>Reschedule</span>
         </button>
+
+        {/* Action buttons: Receipt & Cancel */}
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => onViewReceipt(booking)}
+            className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs sm:text-sm font-medium px-4 transition-colors cursor-pointer active:scale-[0.98]"
+          >
+            <FileText className="h-3.5 w-3.5 text-stone-500" />
+            <span>View Receipt</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs sm:text-sm font-semibold px-4 transition-colors cursor-pointer active:scale-[0.98]"
+          >
+            <XCircle className="h-3.5 w-3.5 text-rose-600" />
+            {cancelPreview.withinFreeWindow ? (
+              <>
+                <span className="sm:hidden">Cancel ($0)</span>
+                <span className="hidden sm:inline">Cancel & release ($0)</span>
+              </>
+            ) : (
+              <>
+                <span className="sm:hidden">Cancel ({formatUsd(cancelPreview.chargeAmount)})</span>
+                <span className="hidden sm:inline">
+                  Cancel ({formatUsd(cancelPreview.chargeAmount)} fee)
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PendingBookingCard({
+  booking,
+  onCancel,
+  onCompletePayment,
+}: {
+  booking: Booking
+  onCancel: () => void
+  onCompletePayment?: () => void
+}) {
+  return (
+    <div className="flex flex-col justify-between rounded-3xl border border-amber-300/80 bg-amber-50/40 p-4 transition-all hover:border-amber-400 sm:p-7">
+      <div>
+        <div className="mb-4 space-y-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-mono text-[11px] font-semibold tracking-widest text-amber-800 uppercase">
+              {formatBookingRef(booking.id)}
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-100/90 border border-amber-300 px-2.5 py-1 text-xs font-bold text-amber-900">
+              <span className="h-2 w-2 rounded-full bg-amber-600 animate-pulse" />
+              <span>Payment Pending</span>
+            </span>
+          </div>
+          <h3 className="font-serif text-xl font-normal text-stone-950 sm:text-2xl">
+            {booking.serviceName}
+          </h3>
+          {booking.salonName ? (
+            <p className="truncate text-xs text-stone-500">{booking.salonName}</p>
+          ) : null}
+        </div>
+
+        <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-950">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <p>
+            Payment authorization is not finished. Complete PayPal authorization now to secure your
+            appointment.
+          </p>
+        </div>
+
+        <div className="mb-5 grid grid-cols-2 gap-x-3 gap-y-3.5 rounded-2xl bg-white/90 border border-stone-200/60 p-3.5 text-xs sm:p-4">
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
+              Stylist
+            </span>
+            <div className="flex items-center gap-1.5 font-medium text-stone-900">
+              <User className="h-3.5 w-3.5 text-stone-500" />
+              <span>{booking.stylistName}</span>
+            </div>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
+              Scheduled For
+            </span>
+            <div className="flex items-center gap-1.5 font-medium text-stone-900">
+              <Clock className="h-3.5 w-3.5 text-stone-500" />
+              <span>{booking.appointmentTime}</span>
+            </div>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
+              Service total
+            </span>
+            <div className="font-semibold text-stone-900">{formatUsd(booking.servicePrice)}</div>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
+              Authorization hold
+            </span>
+            <div className="font-medium text-amber-800">
+              {formatUsd(booking.holdAmount)} ($0 charged today)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2.5 pt-4 border-t border-amber-200/60">
+        {onCompletePayment ? (
+          <button
+            type="button"
+            onClick={onCompletePayment}
+            className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-semibold px-4 transition-colors cursor-pointer active:scale-[0.98] shadow-xs"
+          >
+            <CreditCard className="h-3.5 w-3.5" />
+            <span>Complete Payment</span>
+          </button>
+        ) : null}
 
         <button
           type="button"
           onClick={onCancel}
-          className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs sm:text-sm font-semibold px-4 transition-colors cursor-pointer active:scale-[0.98]"
+          className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs sm:text-sm font-semibold px-4 transition-colors cursor-pointer active:scale-[0.98]"
         >
-          <XCircle className="h-3.5 w-3.5 text-rose-600" />
-          {cancelPreview.withinFreeWindow ? (
-            <>
-              <span className="sm:hidden">Cancel ($0)</span>
-              <span className="hidden sm:inline">Cancel & release hold ($0)</span>
-            </>
-          ) : (
-            <>
-              <span className="sm:hidden">Cancel ({formatUsd(cancelPreview.chargeAmount)})</span>
-              <span className="hidden sm:inline">
-                Cancel ({formatUsd(cancelPreview.chargeAmount)} late fee)
-              </span>
-            </>
-          )}
+          <XCircle className="h-3.5 w-3.5 text-stone-400" />
+          <span>Cancel</span>
         </button>
       </div>
     </div>

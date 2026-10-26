@@ -41,6 +41,7 @@ async def _ensure_pgvector(conn) -> None:
 async def _ensure_enum_values(conn) -> None:
     # Postgres enums are not altered by create_all — add new values if missing.
     for enum_name, value in (
+        ("booking_status", "PENDING_PAYMENT"),
         ("payment_hold_status", "PENDING"),
         ("payment_hold_status", "REAUTHORIZED"),
         ("commission_record_status", "ACCRUED"),

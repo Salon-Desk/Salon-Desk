@@ -39,7 +39,7 @@ class Booking(TimestampedModel):
             name="booking_status",
             values_callable=lambda x: [e.value for e in x],
         ),
-        default=BookingStatus.PENDING,
+        default=BookingStatus.PENDING_PAYMENT,
         nullable=False,
     )
     total_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)

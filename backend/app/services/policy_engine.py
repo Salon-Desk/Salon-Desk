@@ -8,6 +8,7 @@ from app.core.exceptions import ForbiddenError, PolicyViolationException
 from app.models.enums import BookingStatus, PaymentHoldStatus, UserRole
 
 VALID_BOOKING_TRANSITIONS: dict[BookingStatus, set[BookingStatus]] = {
+    BookingStatus.PENDING_PAYMENT: {BookingStatus.CONFIRMED, BookingStatus.CANCELLED},
     BookingStatus.PENDING: {BookingStatus.CONFIRMED, BookingStatus.CANCELLED},
     BookingStatus.CONFIRMED: {
         BookingStatus.COMPLETED,

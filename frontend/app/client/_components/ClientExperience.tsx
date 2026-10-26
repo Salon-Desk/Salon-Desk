@@ -350,8 +350,17 @@ export function ClientExperience({
     [apiBookings, orgNameById, user],
   )
 
+  const pendingBookings = uiBookings.filter(
+    (b) => b.status === 'PENDING' || b.status === 'PENDING_PAYMENT',
+  )
   const activeHolds = uiBookings.filter((b) => b.status === 'HELD' || b.status === 'REAUTHORIZED')
-  const pastBookings = uiBookings.filter((b) => b.status !== 'HELD' && b.status !== 'REAUTHORIZED')
+  const pastBookings = uiBookings.filter(
+    (b) =>
+      b.status !== 'HELD' &&
+      b.status !== 'REAUTHORIZED' &&
+      b.status !== 'PENDING' &&
+      b.status !== 'PENDING_PAYMENT',
+  )
 
   const resolveCatalog = async (service: SalonService): Promise<CatalogService | null> => {
     const cached = catalogById.get(service.id)
@@ -786,11 +795,24 @@ export function ClientExperience({
               <>
                 <ClientMyBookingsReviews />
                 <BookingsPanel
+                  pendingBookings={pendingBookings}
                   activeHolds={activeHolds}
                   pastBookings={pastBookings}
                   onBrowseCatalog={() => setActiveTab('catalog')}
                   onCancel={setCancelTarget}
                   onViewReceipt={setReceiptBooking}
+                  onCompletePayment={(booking) => {
+                    const liveSlot =
+                      booking.startsAt && !Number.isNaN(Date.parse(booking.startsAt))
+                        ? booking.startsAt
+                        : null
+                    router.push(
+                      checkoutPath(booking.serviceId, {
+                        slot: liveSlot,
+                        stylist: booking.stylistId || undefined,
+                      }),
+                    )
+                  }}
                   searchQuery={myBookingsListing.displayParams.q}
                   onSearchChange={(value) => myBookingsListing.setParam('q', value)}
                   sortBy={myBookingsListing.displayParams.sort}

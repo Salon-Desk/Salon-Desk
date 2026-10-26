@@ -83,6 +83,8 @@ def test_is_within_free_cancel_window() -> None:
 
 def test_booking_transitions() -> None:
     # Valid transitions
+    assert_valid_booking_transition(BookingStatus.PENDING_PAYMENT, BookingStatus.CONFIRMED)
+    assert_valid_booking_transition(BookingStatus.PENDING_PAYMENT, BookingStatus.CANCELLED)
     assert_valid_booking_transition(BookingStatus.PENDING, BookingStatus.CONFIRMED)
     assert_valid_booking_transition(BookingStatus.PENDING, BookingStatus.CANCELLED)
     assert_valid_booking_transition(BookingStatus.CONFIRMED, BookingStatus.COMPLETED)
@@ -96,6 +98,8 @@ def test_booking_transitions() -> None:
         assert_valid_booking_transition(BookingStatus.CANCELLED, BookingStatus.CONFIRMED)
     with pytest.raises(PolicyViolationException):
         assert_valid_booking_transition(BookingStatus.PENDING, BookingStatus.COMPLETED)
+    with pytest.raises(PolicyViolationException):
+        assert_valid_booking_transition(BookingStatus.PENDING_PAYMENT, BookingStatus.COMPLETED)
 
 
 def test_hold_transitions() -> None:

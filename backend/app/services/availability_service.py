@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
@@ -32,14 +32,15 @@ async def check_slot_available(
     ends_at: datetime,
     exclude_booking_id: UUID | None = None,
 ) -> bool:
+    now = datetime.now(UTC)
     conditions = [
         Booking.org_id == service.organization_id,
-        Booking.status.in_(
-            [
-                BookingStatus.PENDING,
-                BookingStatus.CONFIRMED,
-                BookingStatus.COMPLETED,
-            ]
+        or_(
+            Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.COMPLETED]),
+            and_(
+                Booking.status.in_([BookingStatus.PENDING, BookingStatus.PENDING_PAYMENT]),
+                Booking.created_at >= now - timedelta(minutes=15),
+            ),
         ),
         Booking.starts_at < ends_at,
         Booking.ends_at > starts_at,

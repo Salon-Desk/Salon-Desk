@@ -1,5 +1,12 @@
 /** Lifecycle of a PayPal authorization hold, from reservation through settlement. */
-export type HoldState = 'HELD' | 'CAPTURED' | 'VOIDED' | 'NO_SHOW_CAPTURED' | 'REAUTHORIZED'
+export type HoldState =
+  | 'HELD'
+  | 'CAPTURED'
+  | 'VOIDED'
+  | 'NO_SHOW_CAPTURED'
+  | 'REAUTHORIZED'
+  | 'PENDING'
+  | 'PENDING_PAYMENT'
 
 export interface Booking {
   id: string
@@ -14,6 +21,8 @@ export interface Booking {
   stylistName: string
   stylistPicture?: string | null
   appointmentTime: string
+  startsAt?: string
+  endsAt?: string
   customerNotes?: string | null
   durationMin: number
   servicePrice: number

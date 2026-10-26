@@ -12,6 +12,7 @@ from app.schemas.booking import (
     BookingCancelRequest,
     BookingCreate,
     BookingOut,
+    BookingRescheduleRequest,
     ConsentCreate,
     ConsentOut,
     booking_to_out,
@@ -178,6 +179,41 @@ async def cancel_booking(
             status.HTTP_403_FORBIDDEN
             if isinstance(exc, ForbiddenError)
             else status.HTTP_404_NOT_FOUND
+        )
+        raise HTTPException(code, detail=exc.message) from exc
+    return booking_to_out(booking)
+
+
+@router.post("/{booking_id}/reschedule", response_model=BookingOut)
+async def reschedule_booking(
+    booking_id: UUID,
+    body: BookingRescheduleRequest,
+    user: CurrentUser,
+    db: DbSession,
+) -> BookingOut:
+    try:
+        booking = await booking_service.get_booking(db, booking_id)
+        is_org = user.org_id == booking.org_id and user.role in {
+            UserRole.ORG_OWNER,
+            UserRole.RECEPTION,
+        }
+        booking = await booking_service.reschedule_booking(
+            db,
+            booking=booking,
+            starts_at=body.starts_at,
+            stylist_id=body.stylist_id,
+            actor_id=user.id,
+            is_org=is_org,
+        )
+    except (ForbiddenError, NotFoundError) as exc:
+        code = (
+            status.HTTP_409_CONFLICT
+            if isinstance(exc, ForbiddenError) and "not available" in exc.message.lower()
+            else (
+                status.HTTP_403_FORBIDDEN
+                if isinstance(exc, ForbiddenError)
+                else status.HTTP_404_NOT_FOUND
+            )
         )
         raise HTTPException(code, detail=exc.message) from exc
     return booking_to_out(booking)
