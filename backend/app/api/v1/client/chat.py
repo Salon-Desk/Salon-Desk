@@ -4,6 +4,7 @@ import re
 
 from fastapi import APIRouter, HTTPException, Request, status
 
+from app.ai.chat_agent import run_chat_agent
 from app.ai.chat_auth import try_handle_chat_auth
 from app.ai.chat_booking import try_handle_chat_booking
 from app.ai.chat_context import compress_conversation_history
@@ -183,8 +184,23 @@ async def chat(
 
     try:
         # Support how-tos need a bit more room for numbered steps.
-        max_tokens = 360 if is_support_portal(portal) else 220
-        reply = await llm.chat(messages, temperature=0.55, max_tokens=max_tokens)
+        max_tokens = 360 if is_support_portal(portal) else 260
+        if not is_support_portal(portal):
+            reply, extra_recs, extra_orgs = await run_chat_agent(
+                llm,
+                messages,
+                db=db,
+                user_lat=body.user_lat,
+                user_lng=body.user_lng,
+                max_tokens=max_tokens,
+                temperature=0.55,
+            )
+            if extra_recs:
+                retrieved.recommendations = extra_recs
+            if extra_orgs:
+                retrieved.organizations = extra_orgs
+        else:
+            reply = await llm.chat(messages, temperature=0.55, max_tokens=max_tokens)
     except LLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=exc.message) from exc
 
