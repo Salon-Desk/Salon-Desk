@@ -13,6 +13,8 @@ export const HOLD_STATE_TONE: Record<HoldState, Tone> = {
   CAPTURED: 'emerald',
   NO_SHOW_CAPTURED: 'rose',
   VOIDED: 'slate',
+  PENDING: 'amber',
+  PENDING_PAYMENT: 'amber',
 }
 
 export const HOLD_STATE_LABEL: Record<HoldState, string> = {
@@ -21,6 +23,8 @@ export const HOLD_STATE_LABEL: Record<HoldState, string> = {
   CAPTURED: 'Captured',
   NO_SHOW_CAPTURED: 'No-show fee',
   VOIDED: 'Voided',
+  PENDING: 'Payment Pending',
+  PENDING_PAYMENT: 'Payment Pending',
 }
 
 /** Compact labels for the appointment filter pills. */
@@ -30,6 +34,8 @@ export const HOLD_STATE_FILTER_LABEL: Record<HoldState, string> = {
   CAPTURED: 'Captured',
   NO_SHOW_CAPTURED: 'No-Show',
   VOIDED: 'Voided',
+  PENDING: 'Pending',
+  PENDING_PAYMENT: 'Pending',
 }
 
 export const HOLD_STATES = Object.keys(HOLD_STATE_TONE) as HoldState[]

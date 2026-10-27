@@ -15,6 +15,7 @@ import {
   FormFieldLabel,
   FormFieldRoot,
 } from '@/components/forms/form-field-parts'
+import { cn } from '@/lib/utils'
 
 interface RHFPasswordFieldProps {
   name: string
@@ -28,6 +29,8 @@ const RHFPasswordField = ({
   label,
   isRequired = true,
   hint,
+  className,
+  placeholder = 'Enter Password',
   ...other
 }: RHFPasswordFieldProps & React.InputHTMLAttributes<HTMLInputElement>) => {
   const { control, clearErrors } = useFormContext()
@@ -42,23 +45,23 @@ const RHFPasswordField = ({
         <FormFieldRoot>
           <FormFieldLabel htmlFor={controlId} label={label} isRequired={isRequired} />
 
-          <div className={formControlShellClassName({ hasError: !!error })}>
+          <div className={cn(formControlShellClassName({ hasError: !!error }), className)}>
             <Lock className={formControlInlineIconClassName} aria-hidden />
 
             <input
               id={controlId}
               type={showPassword ? 'text' : 'password'}
-              placeholder="Enter Password"
+              placeholder={placeholder}
               aria-invalid={!!error}
               aria-describedby={error ? errorId : undefined}
-              className={formControlShellInputClassName}
               {...field}
+              {...other}
               value={field.value ?? ''}
               onChange={(e) => {
                 field.onChange(e.target.value)
                 clearErrors(name)
               }}
-              {...other}
+              className={formControlShellInputClassName}
             />
 
             <button

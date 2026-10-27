@@ -237,3 +237,23 @@ def test_compress_conversation_history() -> None:
     assert len(compressed_long) == 5  # 1 summary + 4 preserved recent turns
     assert "[Prior Conversation Context Summary:" in compressed_long[0]["content"]
     assert compressed_long[-1]["content"] == "Turn message 15"
+
+
+def test_format_context_text_with_live_organizations() -> None:
+    from uuid import uuid4
+
+    from app.ai.rag.constants import OrganizationRecommendation
+    from app.ai.rag.formatting import format_context_text
+
+    org = OrganizationRecommendation(
+        id=uuid4(),
+        name="Lovely Beauty Spa",
+        physical_address="123 Wellness Blvd",
+        working_hours={"mon": [["09:00", "18:00"]], "tue": [["09:00", "18:00"]]},
+        timezone="America/New_York",
+    )
+    formatted = format_context_text(chunks=[], recommendations=[], organizations=[org])
+    assert "Lovely Beauty Spa" in formatted
+    assert "123 Wellness Blvd" in formatted
+    assert "America/New_York" in formatted
+    assert "Hours: Mon: 9 AM - 6 PM" in formatted

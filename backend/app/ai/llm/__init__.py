@@ -51,9 +51,44 @@ class FallbackLLMService(BaseLLMService):
     def api_key(self) -> str:
         return self.primary.api_key()
 
+    async def chat_completion(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        temperature: float = 0.2,
+        max_tokens: int | None = 1024,
+        response_format: dict[str, Any] | None = None,
+        tools: list[dict[str, Any]] | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        chain = [self.primary, *self.fallbacks]
+        last_err: Exception | None = None
+        for service in chain:
+            try:
+                if (
+                    service.provider_name in ("openai", "groq", "deepseek")
+                    and not service.api_key()
+                ):
+                    continue
+                return await service.chat_completion(
+                    messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    response_format=response_format,
+                    tools=tools,
+                    tool_choice=tool_choice,
+                )
+            except (LLMError, Exception) as exc:
+                last_err = exc
+                continue
+
+        if last_err:
+            raise LLMError(f"All LLM providers in fallback chain failed: {last_err}") from last_err
+        raise LLMError("No active LLM providers configured in fallback chain")
+
     async def chat(
         self,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         *,
         temperature: float = 0.2,
         max_tokens: int | None = 1024,

@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form'
 import { useDispatch } from 'react-redux'
 
 import { useAuthModal } from '@/components/auth/auth-context'
-import { DemoAccountShortcuts } from '@/components/auth/demo-account-shortcuts'
 import { PrimaryButton } from '@/components/button'
 import FormProvider from '@/components/forms/FormProvider'
 import RHFEmailField from '@/components/forms/RHFEmailField'
@@ -32,7 +31,6 @@ import type { User } from '@/types/user'
 interface SignInFormProps {
   portal: AppPortal
   onForgotPassword: () => void
-  onOpenDemo?: () => void
   successMessage?: string
 }
 
@@ -46,7 +44,6 @@ const roleMatchesPortal = (portal: AppPortal, user: User | null | undefined) => 
 export const SignInForm: FC<SignInFormProps> = ({
   portal,
   onForgotPassword,
-  onOpenDemo,
   successMessage = 'Signed in successfully',
 }) => {
   const router = useRouter()
@@ -144,8 +141,6 @@ export const SignInForm: FC<SignInFormProps> = ({
           fullWidth="full"
           className="h-11 rounded-xl font-semibold shadow-none"
         />
-
-        {onOpenDemo ? <DemoAccountShortcuts onOpenAll={onOpenDemo} /> : null}
       </div>
     </FormProvider>
   )

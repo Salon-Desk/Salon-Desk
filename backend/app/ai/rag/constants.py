@@ -29,6 +29,8 @@ _MORE_RECOMMENDATIONS_RE = re.compile(
     r"|few more"
     r"|another"
     r"|all (the )?options"
+    r"|all( of them)?"
+    r"|all services"
     r"|full list"
     r")\b",
     re.I,
@@ -266,6 +268,8 @@ class OrganizationRecommendation:
     rating: float = 4.9
     service_count: int = 0
     distance_km: float | None = None
+    working_hours: dict | None = None
+    timezone: str | None = None
 
 
 @dataclass

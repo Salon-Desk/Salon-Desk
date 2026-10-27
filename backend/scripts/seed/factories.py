@@ -25,6 +25,7 @@ from app.models.payment import OrgAccount, PaymentHold
 from app.models.policy import Consent, OrgCancellationPolicy
 from app.models.service import Service, ServiceGiving
 from app.models.user import User
+from app.services.auth_service import DEFAULT_CANCELLATION_POLICY
 from app.services.ledger_service import build_consent_signature
 
 from .constants import (
@@ -33,7 +34,6 @@ from .constants import (
     COMMISSION_FRACTION,
     CONSENT_TERMS,
     CONSENT_TERMS_VERSION,
-    DEFAULT_CANCELLATION_POLICY,
     DEFAULT_COMMISSION_RATE,
     DEFAULT_WORKING_HOURS,
     MORNING_SHIFT_DATA,

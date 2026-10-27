@@ -304,6 +304,18 @@ export const clientApi = baseApi.injectEndpoints({
       },
     ),
 
+    rescheduleBooking: builder.mutation<
+      ApiBooking,
+      { bookingId: string; body: { starts_at: string; stylist_id?: string | null } }
+    >({
+      query: ({ bookingId, body }) => ({
+        url: `/api/v1/bookings/${bookingId}/reschedule`,
+        method: 'POST',
+        data: body,
+      }),
+      invalidatesTags: ['bookings'],
+    }),
+
     createPaymentHold: builder.mutation<PaymentHold, CreateHoldRequest>({
       query: (data) => ({
         url: '/api/v1/payments/holds',
@@ -364,6 +376,7 @@ export const {
   useGetBookingQuery,
   useCreateBookingConsentMutation,
   useCancelBookingMutation,
+  useRescheduleBookingMutation,
   useCreatePaymentHoldMutation,
   useCompletePaymentHoldMutation,
   useClientConciergeChatMutation,

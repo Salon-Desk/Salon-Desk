@@ -13,9 +13,16 @@ import { formatClockTime } from '@/lib/format'
 import { createSequentialId } from '@/lib/ids'
 import { type GeoCoords, requestGeolocation } from '@/lib/util/geo'
 import type { RootState } from '@/store'
-import { appendChatMessage, setChatPrompt } from '@/store/agentChatSlice'
+import {
+  type AgentChatReplyContext,
+  appendChatMessage,
+  clearChatReplyContext,
+  setChatPrompt,
+} from '@/store/agentChatSlice'
 import { useClientConciergeChatMutation } from '@/store/api/clientApi'
 import { setAuthData } from '@/store/authSlice'
+
+export type { AgentChatReplyContext }
 
 export interface AgentServiceRecommendation {
   serviceId: string
@@ -95,6 +102,7 @@ export interface AgentChatMessage {
     details?: string | null
     selector?: string | null
   } | null
+  replyContext?: AgentChatReplyContext | null
 }
 
 export interface UseAgentChatOptions {
@@ -108,15 +116,12 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const router = useRouter()
   const messages = useSelector((state: RootState) => state.agentChat.messages)
   const prompt = useSelector((state: RootState) => state.agentChat.prompt)
+  const replyContext = useSelector((state: RootState) => state.agentChat.replyContext)
   const [isThinking, setIsThinking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [location, setLocation] = useState<GeoCoords | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [clientConciergeChat] = useClientConciergeChatMutation()
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isThinking])
 
   useEffect(() => {
     if (support) return
@@ -134,32 +139,51 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     [dispatch],
   )
 
+  const clearReplyContext = useCallback(() => {
+    dispatch(clearChatReplyContext())
+  }, [dispatch])
+
   const send = useCallback(
     async (customPrompt?: string) => {
       if (!features.agentChat) return
       const query = (customPrompt ?? prompt).trim()
       if (!query) return
 
+      const activeReply = replyContext
       const userMsg: AgentChatMessage = {
         id: createSequentialId('usr'),
         sender: 'user',
         text: query,
         time: formatClockTime(),
+        replyContext: activeReply ? { ...activeReply } : undefined,
       }
       dispatch(appendChatMessage(userMsg))
       dispatch(setChatPrompt(''))
+      if (activeReply) {
+        dispatch(clearChatReplyContext())
+      }
       setIsThinking(true)
       setError(null)
 
       const historyPayload: Array<{ role: 'user' | 'assistant'; content: string }> = [
         ...messages
           .filter((m) => !m.id.startsWith('msg-welcome'))
-          .map((m) => ({ role: m.sender, content: m.text })),
+          .map((m) => ({
+            role: m.sender,
+            content:
+              m.sender === 'user' && m.replyContext
+                ? `[Regarding ${m.replyContext.serviceName}${m.replyContext.organizationName ? ` at ${m.replyContext.organizationName}` : ''}]: ${m.text}`
+                : m.text,
+          })),
       ].slice(-12)
+
+      const outgoingMessage = activeReply
+        ? `[Regarding ${activeReply.serviceName}${activeReply.organizationName ? ` at ${activeReply.organizationName}` : ''}]: ${query}`
+        : query
 
       try {
         const data = await clientConciergeChat({
-          message: query,
+          message: outgoingMessage,
           language: features.defaultLanguage,
           history: historyPayload,
           portal,
@@ -391,7 +415,17 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         setIsThinking(false)
       }
     },
-    [clientConciergeChat, prompt, messages, location, dispatch, router, portal, support],
+    [
+      clientConciergeChat,
+      prompt,
+      messages,
+      location,
+      dispatch,
+      router,
+      portal,
+      support,
+      replyContext,
+    ],
   )
 
   return {
@@ -399,6 +433,8 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     messagesEndRef,
     prompt,
     setPrompt,
+    replyContext,
+    clearReplyContext,
     isThinking,
     error,
     send,

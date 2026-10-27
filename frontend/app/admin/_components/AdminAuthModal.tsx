@@ -64,11 +64,7 @@ export function AdminAuthModal() {
       }
     >
       {(view === 'sign-in' || view === 'sign-up') && (
-        <SignInForm
-          portal="admin"
-          onForgotPassword={() => setView('forgot-password')}
-          onOpenDemo={() => setView('demo-personas')}
-        />
+        <SignInForm portal="admin" onForgotPassword={() => setView('forgot-password')} />
       )}
       {view === 'forgot-password' && (
         <ForgotPasswordForm onBackToSignIn={() => setView('sign-in')} />

@@ -4,9 +4,9 @@ import type { DemoPersona } from '@/components/auth/demo-personas-panel'
 
 export const CLIENT_DEMO_PERSONAS: DemoPersona[] = [
   {
-    email: 'client@example.com',
-    label: 'Client Demo (Ada Client)',
-    subtitle: 'client@example.com · Client App',
+    email: 'abebe07@personal.example.com',
+    label: 'Client Demo (Abebe Client)',
+    subtitle: 'abebe07@personal.example.com · Client App',
     destination: '/client',
     portal: 'client',
     icon: (
@@ -18,9 +18,9 @@ export const CLIENT_DEMO_PERSONAS: DemoPersona[] = [
     badgeClass: 'bg-sky-100 text-sky-700',
   },
   {
-    email: 'client2@example.com',
-    label: 'Client Demo (Baye Client)',
-    subtitle: 'client2@example.com · Client App',
+    email: 'ailurophile99@personal.example.com',
+    label: 'Client Demo (Ailuro Client)',
+    subtitle: 'ailurophile99@personal.example.com · Client App',
     destination: '/client',
     portal: 'client',
     icon: (

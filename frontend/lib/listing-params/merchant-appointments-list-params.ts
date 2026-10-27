@@ -3,12 +3,13 @@ import {
   listingDefaultsFromSchema,
   type ListingParamSchema,
 } from '@/hooks/useListingParams'
+import type { HoldState } from '@/types'
 
 import { LISTING_SECTION_PAGE_SIZE } from './listing-api-limits'
 
 export type MerchantAppointmentsListParams = {
   search: string
-  holdStatus: 'ALL' | 'HELD' | 'CAPTURED' | 'VOIDED' | 'REAUTHORIZED' | 'NO_SHOW_CAPTURED'
+  holdStatus: 'ALL' | HoldState
   page: number
   limit: number
 }

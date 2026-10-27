@@ -3,6 +3,7 @@
 import { Sparkles } from 'lucide-react'
 import Link from 'next/link'
 
+import { SandboxCredentialsIconButton } from '@/app/_components/SandboxCredentialsIconButton'
 import { UserMenu } from '@/components/auth/user-menu'
 import { Logo } from '@/components/brand'
 import { ROUTES } from '@/lib/constants'
@@ -75,6 +76,7 @@ export function ClientHeader({
 
         {/* Right: AI Concierge + User Menu */}
         <div className="flex shrink-0 items-center gap-2">
+          <SandboxCredentialsIconButton />
           <button
             type="button"
             onClick={onToggleConcierge}

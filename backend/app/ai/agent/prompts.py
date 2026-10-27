@@ -6,16 +6,14 @@ import re
 
 GREETING_EN = "Hey, I can help you find a salon or book a time. What are you hoping to get done?"
 
-GREETING_AM = "ሰላም፣ እኔ የ SalonDesk ረዳት ነኝ። አገልግሎት ለመፈለግ ወይም ቀጠሮ ለመያዝ መርዳት እችላለሁ። ምን ይፈልጋሉ?"
-
 MERCHANT_GREETING_EN = (
-    "Hi — this is merchant help, not the booking concierge. "
-    "I can walk you through services, staff, bookings, settlements, or settings. "
+    "Hi — I'm your SalonDesk merchant assistant. "
+    "I can walk you through services, staff, appointments, settlements, or settings. "
     "What are you trying to do?"
 )
 
 ADMIN_GREETING_EN = (
-    "Hi — this is platform admin help, not the booking concierge. "
+    "Hi — I'm your platform admin assistant. "
     "I can explain organizations, approvals, commissions, or change requests. "
     "What do you need?"
 )
@@ -209,4 +207,3 @@ def greeting_for(language: str, portal: str = "client") -> str:
         return MERCHANT_GREETING_EN
     if portal == "admin":
         return ADMIN_GREETING_EN
-    return GREETING_AM if language == "am" else GREETING_EN

@@ -2,7 +2,6 @@
 
 import { CheckCircle2, Layers, Plus, Sparkles, Tags } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
-import { toast } from 'sonner'
 
 import { PrimaryButton } from '@/components/button'
 import { StatCard } from '@/components/card'
@@ -10,7 +9,6 @@ import { EmptyState } from '@/components/empty'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
 import { PageHeader } from '@/components/ui'
 import { AdminQueryState } from '@/components/ui/query-state-view'
-import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { useListingParams } from '@/hooks/useListingParams'
 import {
@@ -45,23 +43,7 @@ export function AdminTaxonomyView() {
 
   const [isOpen, setIsOpen] = useState(false)
   const [editing, setEditing] = useState<ApiServiceCategory | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
-
-  const handleCopyId = (id: string) => {
-    void navigator.clipboard.writeText(id)
-    setCopiedId(id)
-    toast.success('Category UUID copied to clipboard', toastColor.success)
-    setTimeout(() => setCopiedId(null), 2000)
-  }
-
-  const columns = useMemo(
-    () =>
-      getTaxonomyTableColumns({
-        copiedId,
-        onCopyId: handleCopyId,
-      }),
-    [copiedId],
-  )
+  const columns = useMemo(() => getTaxonomyTableColumns(), [])
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 pb-12 animate-in fade-in duration-300 sm:space-y-6">

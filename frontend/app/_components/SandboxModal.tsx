@@ -1,31 +1,88 @@
 'use client'
 
-import { Code2, ExternalLink, KeyRound, Shield, Store, User } from 'lucide-react'
-import { useState } from 'react'
+import {
+  ExternalLink,
+  FlaskConical,
+  KeyRound,
+  Shield,
+  ShieldCheck,
+  Store,
+  User,
+} from 'lucide-react'
+import { type ReactNode, useState } from 'react'
 
 import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import { SegmentedControl } from '@/components/ui'
 import { useClipboard } from '@/hooks'
-import {
-  SAMPLE_AUTHORIZATION_PAYLOAD,
-  SAMPLE_NO_SHOW_CAPTURE_PAYLOAD,
-  SANDBOX_CREDENTIALS,
-} from '@/lib/constants'
+import { SALONDESK_DEMO_PORTAL_PASSWORD, SANDBOX_CREDENTIALS } from '@/lib/constants'
 
 import { CredentialCard } from './CredentialCard'
-import { PayloadBlock } from './PayloadBlock'
 
 interface SandboxModalProps {
   onClose: () => void
 }
 
-type SandboxTab = 'credentials' | 'payload'
+type SandboxTab = 'system' | 'sandbox' | 'client' | 'merchant'
+
+function SectionHeading({ children }: { children: ReactNode }) {
+  return (
+    <h4 className="font-bold text-[11px] text-slate-500 uppercase tracking-wider">{children}</h4>
+  )
+}
+
+function AuthorizationHoldNotice() {
+  return (
+    <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3.5">
+      <Shield className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+      <div className="space-y-1 text-amber-900 text-xs">
+        <span className="block font-bold text-amber-800">Authorization hold model</span>
+        <p className="leading-relaxed">
+          Checkout uses{' '}
+          <code className="rounded bg-amber-100 px-1 py-0.5 font-bold font-mono text-amber-900">
+            intent: AUTHORIZE
+          </code>
+          . Funds are held at booking—not captured until service completion or a policy fee applies.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function TechStackPanel() {
+  const { techStack } = SANDBOX_CREDENTIALS
+  const rows = [
+    { label: 'Frontend', value: techStack.framework },
+    { label: 'PayPal API', value: techStack.paypalApi },
+    { label: 'PayPal SDK', value: techStack.paypalSdk },
+    { label: 'Agent toolkit', value: techStack.agentToolkit },
+    { label: 'AI', value: techStack.aiEngine },
+  ] as const
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <SectionHeading>Demo stack</SectionHeading>
+      <ul className="mt-3 space-y-2 text-xs">
+        {rows.map((row) => (
+          <li key={row.label} className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+            <span className="shrink-0 font-semibold text-slate-500 sm:w-28">{row.label}</span>
+            <span className="text-slate-800">{row.value}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 export function SandboxModal({ onClose }: SandboxModalProps) {
   const { copiedKey, copy } = useClipboard()
-  const [activeTab, setActiveTab] = useState<SandboxTab>('credentials')
-  const { buyerAccount, merchantAccount } = SANDBOX_CREDENTIALS
+  const [activeTab, setActiveTab] = useState<SandboxTab>('system')
+  const {
+    paypalBuyerAccounts,
+    paypalMerchantAccounts,
+    portalClientAccounts,
+    portalSystemAccounts,
+  } = SANDBOX_CREDENTIALS
 
   return (
     <CustomResponsiveDialog
@@ -33,7 +90,7 @@ export function SandboxModal({ onClose }: SandboxModalProps) {
       setOpen={(isOpen) => {
         if (!isOpen) onClose()
       }}
-      classNameContent="max-w-2xl"
+      classNameContent="max-w-2xl max-h-[85vh] overflow-y-auto"
       header={
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -43,21 +100,21 @@ export function SandboxModal({ onClose }: SandboxModalProps) {
             </h3>
           </div>
           <p className="text-slate-500 text-xs">
-            Ready-to-use PayPal sandbox test accounts &amp; API payloads
+            SalonDesk portal logins and PayPal sandbox wallets
           </p>
         </div>
       }
       footer={
         <div className="flex w-full items-center justify-between">
           <span className="text-slate-500 text-xs">
-            PayPal Sandbox developer portal:{' '}
+            PayPal Sandbox:{' '}
             <a
-              href="https://developer.paypal.com"
+              href="https://sandbox.paypal.com"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 font-medium text-sky-600 hover:underline"
             >
-              developer.paypal.com <ExternalLink className="h-3 w-3" />
+              sandbox.paypal.com <ExternalLink className="h-3 w-3" />
             </a>
           </span>
           <PrimaryButton
@@ -73,75 +130,141 @@ export function SandboxModal({ onClose }: SandboxModalProps) {
       <SegmentedControl
         value={activeTab}
         onChange={setActiveTab}
+        fullWidth
+        className="flex-wrap"
         options={[
-          { value: 'credentials', label: 'Sandbox Accounts', icon: User },
-          { value: 'payload', label: 'Authorization Payloads', icon: Code2 },
+          { value: 'system', label: 'System', icon: ShieldCheck },
+          { value: 'sandbox', label: 'Sandbox', icon: FlaskConical },
+          { value: 'client', label: 'Client', icon: User },
+          { value: 'merchant', label: 'Merchant', icon: Store },
         ]}
       />
 
-      {activeTab === 'credentials' ? (
-        <div className="mt-5 space-y-5">
-          <CredentialCard
-            icon={<User className="h-4 w-4 text-sky-600" />}
-            title="Client / Buyer Sandbox Account"
-            badge="Pre-Funded Mock Buyer"
-            badgeTone="sky"
-            email={buyerAccount.email}
-            password={buyerAccount.password}
-            footerLeft={`Name: ${buyerAccount.name}`}
-            footerRight={`Payment Card: ${buyerAccount.card}`}
-            copyKeyPrefix="buyer"
-            copiedKey={copiedKey}
-            onCopy={copy}
-          />
-
-          <CredentialCard
-            icon={<Store className="h-4 w-4 text-amber-600" />}
-            title="Salon Merchant Sandbox Account"
-            badge="Flagship SoHo Salon"
-            badgeTone="amber"
-            email={merchantAccount.email}
-            password={merchantAccount.password}
-            footerLeft={`Salon: ${merchantAccount.salonName}`}
-            footerRight={`ID: ${merchantAccount.merchantId}`}
-            copyKeyPrefix="merchant"
-            copiedKey={copiedKey}
-            onCopy={copy}
-          />
-
-          <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3.5">
-            <Shield className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <div className="space-y-1 text-amber-900 text-xs">
-              <span className="block font-bold text-amber-800">
-                Fintech Rule: Authorization Hold Model
-              </span>
-              <p className="leading-relaxed">
-                All customer checkout flows enforce{' '}
-                <code className="rounded bg-amber-100 px-1 py-0.5 font-bold font-mono text-amber-900">
-                  intent: &apos;AUTHORIZE&apos;
-                </code>
-                . No money leaves the client&apos;s account at booking time. Funds are securely
-                locked on their card and captured only upon service completion or no-show penalty.
-              </p>
+      <div className="mt-5 space-y-6">
+        {activeTab === 'system' ? (
+          <>
+            <div className="space-y-3">
+              <SectionHeading>
+                SalonDesk platform (password: {SALONDESK_DEMO_PORTAL_PASSWORD})
+              </SectionHeading>
+              {portalSystemAccounts.map((account, index) => (
+                <CredentialCard
+                  key={account.email}
+                  icon={<ShieldCheck className="h-4 w-4 text-emerald-600" />}
+                  title={account.label}
+                  badge={account.portal}
+                  badgeTone="sky"
+                  email={account.email}
+                  password={account.password}
+                  footerLeft={`Role: ${account.label}`}
+                  footerRight={account.portal}
+                  copyKeyPrefix={`portal-system-${index}`}
+                  copiedKey={copiedKey}
+                  onCopy={copy}
+                />
+              ))}
             </div>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-5 space-y-4">
-          <PayloadBlock
-            title="1. Deposit Hold Creation (`POST /v2/checkout/orders`)"
-            hint="intent: AUTHORIZE"
-            tone="sky"
-            payload={SAMPLE_AUTHORIZATION_PAYLOAD}
-          />
-          <PayloadBlock
-            title="2. No-Show Fee Partial Capture (`POST /v2/payments/authorizations/{id}/capture`)"
-            hint="final_capture: true"
-            tone="emerald"
-            payload={SAMPLE_NO_SHOW_CAPTURE_PAYLOAD}
-          />
-        </div>
-      )}
+            <TechStackPanel />
+          </>
+        ) : null}
+
+        {activeTab === 'sandbox' ? (
+          <>
+            <div className="space-y-3">
+              <SectionHeading>PayPal personal (checkout wallet)</SectionHeading>
+              {paypalBuyerAccounts.map((account, index) => (
+                <CredentialCard
+                  key={account.email}
+                  icon={<User className="h-4 w-4 text-sky-600" />}
+                  title={`Buyer ${index + 1}`}
+                  badge={account.label}
+                  badgeTone="sky"
+                  email={account.email}
+                  password={account.password}
+                  footerLeft="Sign in when PayPal checkout opens"
+                  footerRight="Not a SalonDesk app login"
+                  copyKeyPrefix={`paypal-buyer-${index}`}
+                  copiedKey={copiedKey}
+                  onCopy={copy}
+                />
+              ))}
+            </div>
+            <div className="space-y-3">
+              <SectionHeading>PayPal business (first two seeded salons)</SectionHeading>
+              {paypalMerchantAccounts.map((account, index) => (
+                <CredentialCard
+                  key={account.email}
+                  icon={<Store className="h-4 w-4 text-amber-600" />}
+                  title={`Business ${index + 1}`}
+                  badge={account.salonName}
+                  badgeTone="amber"
+                  email={account.email}
+                  password={account.password}
+                  footerLeft={`Merchant / App ID: ${account.merchantId}`}
+                  footerRight="PayPal Developer sandbox"
+                  copyKeyPrefix={`paypal-merchant-${index}`}
+                  copiedKey={copiedKey}
+                  onCopy={copy}
+                />
+              ))}
+            </div>
+          </>
+        ) : null}
+
+        {activeTab === 'client' ? (
+          <>
+            <div className="space-y-3">
+              <SectionHeading>
+                SalonDesk client portal (password: {SALONDESK_DEMO_PORTAL_PASSWORD})
+              </SectionHeading>
+              {portalClientAccounts.map((account, index) => (
+                <CredentialCard
+                  key={account.email}
+                  icon={<User className="h-4 w-4 text-sky-600" />}
+                  title={`Client ${index + 1}`}
+                  badge={account.label}
+                  badgeTone="sky"
+                  email={account.email}
+                  password={account.password}
+                  footerLeft={`PayPal wallet password: ${account.paypalCheckoutPassword}`}
+                  footerRight="See Sandbox tab for PayPal login"
+                  copyKeyPrefix={`portal-client-${index}`}
+                  copiedKey={copiedKey}
+                  onCopy={copy}
+                />
+              ))}
+            </div>
+            <AuthorizationHoldNotice />
+          </>
+        ) : null}
+
+        {activeTab === 'merchant' ? (
+          <>
+            <div className="space-y-3">
+              <SectionHeading>
+                SalonDesk merchant portal (password: {SALONDESK_DEMO_PORTAL_PASSWORD})
+              </SectionHeading>
+              {paypalMerchantAccounts.map((account, index) => (
+                <CredentialCard
+                  key={account.portalOwnerEmail}
+                  icon={<Store className="h-4 w-4 text-amber-600" />}
+                  title={`Owner ${index + 1}`}
+                  badge={account.salonName}
+                  badgeTone="amber"
+                  email={account.portalOwnerEmail}
+                  password={SALONDESK_DEMO_PORTAL_PASSWORD}
+                  footerLeft={`PayPal business: ${account.email}`}
+                  footerRight={`Merchant ID: ${account.merchantId}`}
+                  copyKeyPrefix={`portal-owner-${index}`}
+                  copiedKey={copiedKey}
+                  onCopy={copy}
+                />
+              ))}
+            </div>
+            <AuthorizationHoldNotice />
+          </>
+        ) : null}
+      </div>
     </CustomResponsiveDialog>
   )
 }

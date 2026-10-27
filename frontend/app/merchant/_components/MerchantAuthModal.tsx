@@ -59,11 +59,7 @@ export function MerchantAuthModal() {
       }
     >
       {view === 'sign-in' && (
-        <SignInForm
-          portal="merchant"
-          onForgotPassword={() => setView('forgot-password')}
-          onOpenDemo={() => setView('demo-personas')}
-        />
+        <SignInForm portal="merchant" onForgotPassword={() => setView('forgot-password')} />
       )}
       {view === 'sign-up' && <MerchantSignUpForm />}
       {view === 'forgot-password' && (

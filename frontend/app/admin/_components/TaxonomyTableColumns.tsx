@@ -1,21 +1,12 @@
 'use client'
 
-import { CheckCircle2, Copy, Layers } from 'lucide-react'
-import React from 'react'
+import { Layers } from 'lucide-react'
 
 import { StatusBadge } from '@/components/badge'
 import type { ApiServiceCategory } from '@/types/api-org'
 import type { ColumnDefinition } from '@/types/table'
 
-interface TaxonomyColumnOptions {
-  copiedId: string | null
-  onCopyId: (id: string) => void
-}
-
-export function getTaxonomyTableColumns({
-  copiedId,
-  onCopyId,
-}: TaxonomyColumnOptions): ColumnDefinition<ApiServiceCategory>[] {
+export function getTaxonomyTableColumns(): ColumnDefinition<ApiServiceCategory>[] {
   return [
     {
       id: 'name',
@@ -41,25 +32,6 @@ export function getTaxonomyTableColumns({
         <p className="line-clamp-2 max-w-md text-slate-500 text-xs leading-relaxed">
           {category.description || 'Platform service category classification.'}
         </p>
-      ),
-    },
-    {
-      id: 'id',
-      header: 'Category ID',
-      cell: (category) => (
-        <button
-          type="button"
-          onClick={() => onCopyId(category.id)}
-          className="inline-flex cursor-pointer items-center gap-1 font-mono text-[11px] text-slate-400 transition-colors hover:text-slate-700"
-          title="Copy category UUID"
-        >
-          <span>ID: {category.id.slice(0, 8)}…</span>
-          {copiedId === category.id ? (
-            <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-          ) : (
-            <Copy className="h-3 w-3 text-slate-400" />
-          )}
-        </button>
       ),
     },
     {

@@ -29,6 +29,7 @@ from .messaging import (
     publish_nearby_orgs,
     publish_payment_link,
     publish_ui_action,
+    publish_user_transcript,
 )
 from .session import (
     build_session_factory,
@@ -95,6 +96,8 @@ class SalonVoiceAgent:
 
         if is_garbage_transcript(text):
             return
+
+        await publish_user_transcript(self.room, text)
 
         if is_farewell(text):
             await self.handle_farewell()

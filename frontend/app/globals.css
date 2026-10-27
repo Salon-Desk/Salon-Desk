@@ -140,3 +140,34 @@
   position: relative !important;
   z-index: 35 !important;
 }
+
+/* intl-tel-input inside form shell (RHFPhoneField) */
+.salon-phone-field .iti {
+  display: block;
+  width: 100%;
+}
+
+.salon-phone-field .iti input.iti__tel-input {
+  width: 100%;
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none;
+  font-size: var(--form-control-text);
+  line-height: normal;
+}
+
+.salon-phone-field .iti__country-container {
+  padding: 0;
+}
+
+.salon-phone-field .iti__selected-country-primary {
+  padding-left: 0;
+}
+
+.salon-phone-field .iti__selected-dial-code {
+  margin-left: 2px;
+  font-size: var(--form-control-text);
+  color: var(--foreground);
+}

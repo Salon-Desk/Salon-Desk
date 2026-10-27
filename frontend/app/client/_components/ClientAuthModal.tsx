@@ -73,11 +73,7 @@ export function ClientAuthModal() {
       }
     >
       {view === 'sign-in' && (
-        <SignInForm
-          portal="client"
-          onForgotPassword={() => setView('forgot-password')}
-          onOpenDemo={() => setView('demo-personas')}
-        />
+        <SignInForm portal="client" onForgotPassword={() => setView('forgot-password')} />
       )}
       {view === 'sign-up' && <ClientSignUpForm />}
       {view === 'forgot-password' && (

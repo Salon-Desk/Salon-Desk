@@ -4,6 +4,9 @@ from decimal import Decimal
 
 DEFAULT_PASSWORD = "Password123!"
 
+PRIMARY_DEMO_CLIENT_EMAIL = "abebe07@personal.example.com"
+SECONDARY_DEMO_CLIENT_EMAIL = "ailurophile99@personal.example.com"
+
 PLATFORM_ADMIN_EMAIL = "admin@salondesk.local"
 PLATFORM_STAFF_EMAIL = "staff@salondesk.local"
 
@@ -22,7 +25,7 @@ CATEGORY_DEFINITIONS: list[tuple[str, str]] = [
 
 DEFAULT_TIMEZONE = "Africa/Addis_Ababa"
 DEFAULT_CURRENCY = "USD"
-DEFAULT_COMMISSION_RATE = Decimal("5.0000")
+DEFAULT_COMMISSION_RATE = Decimal("2.0000")
 COMMISSION_FRACTION = Decimal("0.05")
 
 DEFAULT_WORKING_HOURS = {

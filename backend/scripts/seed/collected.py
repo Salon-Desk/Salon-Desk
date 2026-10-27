@@ -15,6 +15,18 @@ from pathlib import Path
 from .images import AVATAR_IMAGES, SERVICE_COVER_IMAGES
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
+
+# PayPal sandbox merchants linked to the first demo organizations (hackathon judges).
+PAYPAL_SANDBOX_MERCHANT_OVERRIDES: tuple[dict[str, str], ...] = (
+    {
+        "merchant_id": "VFP4W4G9ZGRHA",
+        "merchant_email": "merchent-two4113@business.example.com",
+    },
+    {
+        "merchant_id": "H2BNRFRFXM8BA",
+        "merchant_email": "merchant330@business.example.com",
+    },
+)
 SOURCE_FILES = (
     "ethiopia-addis-ababa-salons.json",
     "ethiopia-other-cities-salons.json",
@@ -563,4 +575,6 @@ def build_organizations() -> list[dict]:
                 "services": _services(row, org_category, currency, index),
             }
         )
+        if index < len(PAYPAL_SANDBOX_MERCHANT_OVERRIDES):
+            definitions[-1].update(PAYPAL_SANDBOX_MERCHANT_OVERRIDES[index])
     return definitions

@@ -22,6 +22,7 @@ import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { SandboxCredentialsIconButton } from '@/app/_components/SandboxCredentialsIconButton'
 import { toastColor } from '@/constant/toast-color'
 import { useListingParams } from '@/hooks/useListingParams'
 import { serviceImage } from '@/lib/data/service-content'
@@ -183,6 +184,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
           </Link>
 
           <div className="flex items-center gap-2">
+            <SandboxCredentialsIconButton />
             <button
               type="button"
               onClick={handleShare}

@@ -6,6 +6,17 @@ import { features } from '@/lib/features'
 
 export type ChatMode = 'chat' | 'voice'
 
+export interface AgentChatReplyContext {
+  serviceId: string
+  serviceName: string
+  organizationName?: string | null
+  basePrice?: number | string | null
+  durationMinutes?: number | null
+  imageUrl?: string | null
+  categoryName?: string | null
+  description?: string | null
+}
+
 export interface FabPosition {
   x: number
   y: number
@@ -19,6 +30,7 @@ export interface AgentChatState {
   messages: AgentChatMessage[]
   prompt: string
   fabPosition: FabPosition | null
+  replyContext: AgentChatReplyContext | null
 }
 
 function initialMode(): ChatMode {
@@ -60,6 +72,7 @@ const initialState: AgentChatState = {
   messages: [buildWelcomeMessage('client')],
   prompt: '',
   fabPosition: null,
+  replyContext: null,
 }
 
 export const agentChatSlice = createSlice({
@@ -96,6 +109,12 @@ export const agentChatSlice = createSlice({
     setChatPrompt: (state, action: PayloadAction<string>) => {
       state.prompt = action.payload
     },
+    setChatReplyContext: (state, action: PayloadAction<AgentChatReplyContext | null>) => {
+      state.replyContext = action.payload
+    },
+    clearChatReplyContext: (state) => {
+      state.replyContext = null
+    },
     setChatMessages: (state, action: PayloadAction<AgentChatMessage[]>) => {
       state.messages = action.payload
     },
@@ -126,6 +145,7 @@ export const agentChatSlice = createSlice({
       state.messages = [buildWelcomeMessage(state.portal)]
       state.prompt = ''
       state.isMinimized = false
+      state.replyContext = null
     },
   },
 })
@@ -137,6 +157,8 @@ export const {
   setChatMode,
   setChatPortal,
   setChatPrompt,
+  setChatReplyContext,
+  clearChatReplyContext,
   setChatMessages,
   appendChatMessage,
   setFabPosition,

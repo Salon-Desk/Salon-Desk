@@ -25,11 +25,11 @@ POSTGRES_PORT ?= 5432
 SEED_DATABASE_URL ?= postgresql+asyncpg://postgres:postgres@localhost:$(POSTGRES_PORT)/salondesk
 SEED_ALL ?= 0
 
-# Seed demo data (20 orgs, 100 services by default; set SEED_ALL=1 or make seed-all for all).
+# Seed demo data (12 orgs, 100 services by default; set SEED_ALL=1 or make seed-all for all).
 seed:
 	cd backend && uv run python -m scripts.seed $(if $(filter 1 true,$(SEED_ALL)),--all,) --database-url "$(SEED_DATABASE_URL)"
 
-# Wipe all tables then seed fresh demo data (20 orgs, 100 services by default).
+# Wipe all tables then seed fresh demo data (12 orgs, 100 services by default).
 seed-clear:
 	cd backend && uv run python -m scripts.seed --clear $(if $(filter 1 true,$(SEED_ALL)),--all,) --database-url "$(SEED_DATABASE_URL)"
 
