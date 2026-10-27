@@ -29,6 +29,8 @@ _MORE_RECOMMENDATIONS_RE = re.compile(
     r"|few more"
     r"|another"
     r"|all (the )?options"
+    r"|all( of them)?"
+    r"|all services"
     r"|full list"
     r")\b",
     re.I,

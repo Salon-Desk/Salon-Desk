@@ -177,9 +177,17 @@ def build_chat_system_prompt(
             "They asked for more options. You may mention these extra picks, still conversationally."
         )
 
+    if not support:
+        parts.append(
+            "You have tools (get_salon_services, get_salon_details, search_salons). "
+            "When the user asks what services, treatments, prices, or menu a specific salon or spa offers, "
+            "or asks for 'all of them' / 'full list', call get_salon_services to load their full live catalog."
+        )
+
     if retrieved.context_text:
         parts.append(
-            "Verified services you can mention (do not invent others):\n" + retrieved.context_text
+            "Verified platform context you can mention (do not invent others):\n"
+            + retrieved.context_text
         )
     else:
         parts.append(

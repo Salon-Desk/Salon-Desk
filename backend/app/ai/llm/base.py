@@ -66,11 +66,13 @@ class BaseLLMService(ABC):
 
     def build_payload(
         self,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         *,
         temperature: float,
         max_tokens: int | None,
         response_format: dict[str, Any] | None,
+        tools: list[dict[str, Any]] | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "model": self.model,
@@ -81,23 +83,31 @@ class BaseLLMService(ABC):
             payload["max_tokens"] = max_tokens
         if response_format is not None:
             payload["response_format"] = response_format
+        if tools:
+            payload["tools"] = tools
+            if tool_choice:
+                payload["tool_choice"] = tool_choice
         return payload
 
-    async def chat(
+    async def chat_completion(
         self,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         *,
         temperature: float = 0.2,
         max_tokens: int | None = 1024,
         response_format: dict[str, Any] | None = None,
-    ) -> str:
-        """Return assistant message content from chat/completions."""
+        tools: list[dict[str, Any]] | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Return assistant message dict from chat/completions (may include content and/or tool_calls)."""
         url = f"{self.base_url}/chat/completions"
         payload = self.build_payload(
             messages,
             temperature=temperature,
             max_tokens=max_tokens,
             response_format=response_format,
+            tools=tools,
+            tool_choice=tool_choice,
         )
         logger.debug(
             "LLM request provider=%s model=%s url=%s",
@@ -119,10 +129,26 @@ class BaseLLMService(ABC):
 
         data = response.json()
         try:
-            content = data["choices"][0]["message"]["content"]
+            return data["choices"][0]["message"]
         except (KeyError, IndexError, TypeError) as exc:
             raise LLMError(f"Unexpected LLM response shape from {self.provider_name}") from exc
 
+    async def chat(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        temperature: float = 0.2,
+        max_tokens: int | None = 1024,
+        response_format: dict[str, Any] | None = None,
+    ) -> str:
+        """Return assistant message content from chat/completions."""
+        msg = await self.chat_completion(
+            messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response_format=response_format,
+        )
+        content = msg.get("content")
         if not isinstance(content, str) or not content.strip():
             raise LLMError(f"Empty completion from {self.provider_name}")
         return content
