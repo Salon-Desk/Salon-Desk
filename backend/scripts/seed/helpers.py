@@ -224,12 +224,20 @@ async def _ensure_additive_columns(conn) -> None:
     )
 
 
+async def _drop_public_schema(conn) -> None:
+    """Wipe the public schema including orphan tables not on SQLAlchemy metadata."""
+    await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+    await conn.execute(text("CREATE SCHEMA public"))
+    await conn.execute(text("GRANT ALL ON SCHEMA public TO public"))
+    await conn.execute(text("GRANT ALL ON SCHEMA public TO postgres"))
+
+
 async def ensure_schema(engine: AsyncEngine, *, recreate: bool = False) -> None:
     async with engine.begin() as conn:
-        await _ensure_pgvector(conn)
         if recreate:
-            await conn.run_sync(Base.metadata.drop_all)
-            logger.info("Dropped all tables for schema recreate")
+            await _drop_public_schema(conn)
+            logger.info("Dropped public schema (CASCADE) for schema recreate")
+        await _ensure_pgvector(conn)
         await conn.run_sync(Base.metadata.create_all)
         if not recreate:
             await _ensure_additive_columns(conn)

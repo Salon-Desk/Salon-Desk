@@ -27,6 +27,7 @@ const RHFNumberPasswordField = ({
   label,
   isRequired = true,
   placeholder,
+  className,
   ...other
 }: IProps & React.InputHTMLAttributes<HTMLInputElement>) => {
   const { control, clearErrors } = useFormContext()
@@ -45,7 +46,7 @@ const RHFNumberPasswordField = ({
             <FormFieldLabel htmlFor={controlId} label={label} isRequired={isRequired} />
           ) : null}
 
-          <div className={formControlShellClassName({ hasError: !!error })}>
+          <div className={cn(formControlShellClassName({ hasError: !!error }), className)}>
             <input
               id={controlId}
               type={showPassword ? 'text' : 'password'}
@@ -53,15 +54,15 @@ const RHFNumberPasswordField = ({
               placeholder={placeholder}
               aria-invalid={!!error}
               aria-describedby={error ? errorId : undefined}
-              className={cn(formControlShellInputClassName, 'pr-2')}
               {...field}
+              {...other}
               value={field.value ?? ''}
               onChange={(e) => {
                 const digitsOnly = handleInput(e.target.value)
                 field.onChange(digitsOnly)
                 clearErrors(name)
               }}
-              {...other}
+              className={cn(formControlShellInputClassName, 'pr-2')}
             />
             <button
               type="button"

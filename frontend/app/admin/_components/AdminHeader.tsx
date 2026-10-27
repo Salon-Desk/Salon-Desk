@@ -3,6 +3,7 @@
 import { Menu } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
+import { SandboxCredentialsIconButton } from '@/app/_components/SandboxCredentialsIconButton'
 import { UserMenu } from '@/components/auth/user-menu'
 
 import { ADMIN_TAB_TITLES, getAdminTabFromPathname } from '../_constants/admin-nav'
@@ -41,6 +42,7 @@ export function AdminHeader({ activeTab: explicitTab, onOpenMobileSidebar }: Adm
       </div>
 
       <div className="flex items-center gap-2.5 shrink-0">
+        <SandboxCredentialsIconButton />
         <UserMenu portal="admin" />
       </div>
     </header>

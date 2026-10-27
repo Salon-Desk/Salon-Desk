@@ -8,6 +8,7 @@ import { Logo } from '@/components/brand'
 import { ROUTES } from '@/lib/constants'
 
 import { AppCard } from './AppCard'
+import { SandboxCredentialsIconButton } from './SandboxCredentialsIconButton'
 import { SandboxModal } from './SandboxModal'
 
 export function HubExperience() {
@@ -15,7 +16,8 @@ export function HubExperience() {
 
   return (
     <div className="flex min-h-screen flex-col justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8 selection:bg-amber-500/20 selection:text-amber-900 relative">
-      <div className="absolute top-6 right-6 z-20">
+      <div className="absolute top-6 right-6 z-20 flex items-center gap-2">
+        <SandboxCredentialsIconButton />
         <UserMenu />
       </div>
 
@@ -65,7 +67,7 @@ export function HubExperience() {
 
           <AppCard
             title="Sandbox & Keys"
-            description="Inspect PayPal sandbox test buyer & merchant accounts, authorization hold payloads, and developer tools."
+            description="Inspect PayPal sandbox buyer and merchant accounts plus SalonDesk portal logins for judges."
             badge="Developer"
             badgeTone="purple"
             icon={KeyRound}

@@ -29,6 +29,8 @@ from .constants import (
     CATEGORY_DEFINITIONS,
     DEFAULT_PASSWORD,
     PLATFORM_ADMIN_EMAIL,
+    PRIMARY_DEMO_CLIENT_EMAIL,
+    SECONDARY_DEMO_CLIENT_EMAIL,
 )
 from .helpers import CoverAllocator, already_seeded, build_user, clear_database, ensure_schema
 from .images import AVATAR_IMAGES
@@ -154,17 +156,17 @@ async def _add_authorized_booking(
 
 async def seed_clients_and_bookings(session: AsyncSession, org_data_list: list[dict]) -> None:
     client_a = build_user(
-        email="client@example.com",
+        email=PRIMARY_DEMO_CLIENT_EMAIL,
         role=UserRole.CLIENT,
-        first_name="Ada",
+        first_name="Abebe",
         last_name="Client",
         phone="+15551230001",
         picture=AVATAR_IMAGES[0],
     )
     client_b = build_user(
-        email="client2@example.com",
+        email=SECONDARY_DEMO_CLIENT_EMAIL,
         role=UserRole.CLIENT,
-        first_name="Baye",
+        first_name="Ailuro",
         last_name="Client",
         phone="+15551230002",
         picture=AVATAR_IMAGES[1],
@@ -298,7 +300,7 @@ async def run_seed(
         eff_limit_orgs = None
         eff_limit_services = None
     else:
-        eff_limit_orgs = limit_orgs if limit_orgs is not None else 20
+        eff_limit_orgs = limit_orgs if limit_orgs is not None else 12
         eff_limit_services = limit_services if limit_services is not None else 100
 
     try:
@@ -334,7 +336,7 @@ async def run_seed(
             sum(len(org_data["services"]) for org_data in org_data_list),
             " (full dataset)"
             if seed_all
-            else " (demo subset: 20 orgs, ~100 services; use --all for full catalog)",
+            else " (demo subset: 12 orgs, ~100 services; use --all for full catalog)",
         )
         logger.info("Default password for all users: %s", DEFAULT_PASSWORD)
     finally:
@@ -354,13 +356,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--all",
         action="store_true",
-        help="Seed full dataset (all ~432 organizations and ~9,100 services). Default is demo mode (20 orgs, 100 services).",
+        help="Seed full dataset (all ~432 organizations and ~9,100 services). Default is demo mode (12 orgs, 100 services).",
     )
     parser.add_argument(
         "--limit-orgs",
         type=int,
         default=None,
-        help="Custom number of organizations to seed (overrides default of 20 when not --all)",
+        help="Custom number of organizations to seed (overrides default of 12 when not --all)",
     )
     parser.add_argument(
         "--limit-services",
