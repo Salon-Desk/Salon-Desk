@@ -3,6 +3,7 @@
 import { Menu } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
+import { SandboxCredentialsIconButton } from '@/app/_components/SandboxCredentialsIconButton'
 import { UserMenu } from '@/components/auth/user-menu'
 
 import {
@@ -50,6 +51,7 @@ export function MerchantHeader({
       </div>
 
       <div className="flex items-center gap-2.5 shrink-0">
+        <SandboxCredentialsIconButton />
         <UserMenu portal="merchant" />
       </div>
     </header>

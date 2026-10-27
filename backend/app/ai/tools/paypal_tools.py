@@ -19,6 +19,8 @@ from app.services.paypal_toolkit import (
 
 logger = logging.getLogger("salondesk.ai.paypal_tools")
 
+PRIMARY_DEMO_CLIENT_EMAIL = "abebe07@personal.example.com"
+
 
 async def handle_paypal_agent_chat(
     db: AsyncSession,
@@ -51,7 +53,7 @@ async def handle_paypal_agent_chat(
     if client is None:
         res = await db.execute(
             select(User)
-            .where(User.email == "client@example.com", User.role == UserRole.CLIENT)
+            .where(User.email == PRIMARY_DEMO_CLIENT_EMAIL, User.role == UserRole.CLIENT)
             .limit(1)
         )
         client = res.scalar_one_or_none()
@@ -117,7 +119,7 @@ def build_paypal_agent_tools(
             if client is None:
                 res = await db.execute(
                     select(User)
-                    .where(User.email == "client@example.com", User.role == UserRole.CLIENT)
+                    .where(User.email == PRIMARY_DEMO_CLIENT_EMAIL, User.role == UserRole.CLIENT)
                     .limit(1)
                 )
                 client = res.scalar_one_or_none()
@@ -198,7 +200,7 @@ def build_paypal_agent_tools(
             if client is None:
                 res = await db.execute(
                     select(User)
-                    .where(User.email == "client@example.com", User.role == UserRole.CLIENT)
+                    .where(User.email == PRIMARY_DEMO_CLIENT_EMAIL, User.role == UserRole.CLIENT)
                     .limit(1)
                 )
                 client = res.scalar_one_or_none()

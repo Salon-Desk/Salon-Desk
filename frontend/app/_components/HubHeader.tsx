@@ -3,14 +3,11 @@
 import Link from 'next/link'
 
 import { Logo } from '@/components/brand'
-import { PrimaryButton } from '@/components/button'
 import { PORTAL_NAV } from '@/components/layout'
 
-interface HubHeaderProps {
-  onOpenSandboxModal?: () => void
-}
+import { SandboxCredentialsIconButton } from './SandboxCredentialsIconButton'
 
-export function HubHeader({ onOpenSandboxModal }: HubHeaderProps) {
+export function HubHeader() {
   return (
     <header className="sticky top-0 z-30 w-full border-slate-200/80 border-b bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-8 px-4 py-3.5 sm:px-6">
@@ -28,12 +25,7 @@ export function HubHeader({ onOpenSandboxModal }: HubHeaderProps) {
           ))}
         </nav>
 
-        <PrimaryButton
-          variant="secondary"
-          onClick={onOpenSandboxModal}
-          title="Sandbox Keys"
-          fullWidth={false}
-        />
+        <SandboxCredentialsIconButton />
       </div>
     </header>
   )

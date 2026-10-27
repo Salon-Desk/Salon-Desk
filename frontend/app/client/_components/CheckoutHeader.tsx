@@ -3,6 +3,7 @@
 import { ArrowLeft, Lock } from 'lucide-react'
 import React from 'react'
 
+import { SandboxCredentialsIconButton } from '@/app/_components/SandboxCredentialsIconButton'
 import { UserMenu } from '@/components/auth/user-menu'
 import { Logo } from '@/components/brand'
 
@@ -20,6 +21,7 @@ export function CheckoutHeader({ onExit }: { onExit: () => void }) {
         </button>
         <Logo theme="light" size="sm" linkToHome={false} />
         <div className="flex items-center gap-2">
+          <SandboxCredentialsIconButton />
           <span className="hidden items-center gap-1 text-[11px] font-medium text-stone-400 md:inline-flex">
             <Lock className="h-3 w-3" />
             Secure checkout

@@ -69,18 +69,110 @@ export const BUYER_PERSONAS: Record<
   },
 }
 
+export const SALONDESK_DEMO_PORTAL_PASSWORD = 'Password123!' as const
+
+export type SandboxPayPalBuyerAccount = {
+  email: string
+  password: string
+  label: string
+}
+
+export type SandboxPayPalMerchantAccount = {
+  email: string
+  password: string
+  merchantId: string
+  salonName: string
+  portalOwnerEmail: string
+}
+
+export type SandboxPortalClientAccount = {
+  email: string
+  password: typeof SALONDESK_DEMO_PORTAL_PASSWORD
+  label: string
+  paypalCheckoutPassword: string
+}
+
+export type SandboxPortalSystemAccount = {
+  email: string
+  password: typeof SALONDESK_DEMO_PORTAL_PASSWORD
+  label: string
+  portal: string
+}
+
 export const SANDBOX_CREDENTIALS = {
+  /** PayPal sandbox personal accounts — use at PayPal checkout / wallet login. */
+  paypalBuyerAccounts: [
+    {
+      email: 'abebe07@personal.example.com',
+      password: ',S7W{C-b',
+      label: 'Personal sandbox buyer 1',
+    },
+    {
+      email: 'ailurophile99@personal.example.com',
+      password: 'RKd4)RGo',
+      label: 'Personal sandbox buyer 2',
+    },
+  ] satisfies SandboxPayPalBuyerAccount[],
+  /** PayPal sandbox business accounts — linked to the first two seeded salons. */
+  paypalMerchantAccounts: [
+    {
+      email: 'merchent-two4113@business.example.com',
+      password: 'G+!U0^6h',
+      merchantId: 'VFP4W4G9ZGRHA',
+      salonName: 'Abi Beauty Salon',
+      portalOwnerEmail: 'owner@abibeautysalon.local',
+    },
+    {
+      email: 'merchant330@business.example.com',
+      password: '7AKMvL%>',
+      merchantId: 'H2BNRFRFXM8BA',
+      salonName: 'Lovely Beauty Spa',
+      portalOwnerEmail: 'owner@lovelybeautyspa.local',
+    },
+  ] satisfies SandboxPayPalMerchantAccount[],
+  /** SalonDesk app sign-in (same emails as buyers where noted). Portal password is shared. */
+  portalClientAccounts: [
+    {
+      email: 'abebe07@personal.example.com',
+      password: SALONDESK_DEMO_PORTAL_PASSWORD,
+      label: 'Abebe Client',
+      paypalCheckoutPassword: ',S7W{C-b',
+    },
+    {
+      email: 'ailurophile99@personal.example.com',
+      password: SALONDESK_DEMO_PORTAL_PASSWORD,
+      label: 'Ailuro Client',
+      paypalCheckoutPassword: 'RKd4)RGo',
+    },
+  ] satisfies SandboxPortalClientAccount[],
+  /** SalonDesk platform admin/staff (seeded). */
+  portalSystemAccounts: [
+    {
+      email: 'admin@salondesk.local',
+      password: SALONDESK_DEMO_PORTAL_PASSWORD,
+      label: 'Platform Admin',
+      portal: 'Admin console',
+    },
+    {
+      email: 'staff@salondesk.local',
+      password: SALONDESK_DEMO_PORTAL_PASSWORD,
+      label: 'Platform Staff',
+      portal: 'Admin console',
+    },
+  ] satisfies SandboxPortalSystemAccount[],
+  /** @deprecated Use paypalBuyerAccounts[0] — kept for toolbar quick copy. */
   buyerAccount: {
-    email: 'client@example.com',
-    password: 'Password123!',
-    name: 'Ada Client (Demo Client)',
-    card: '•••• 4242 (Visa Mock)',
+    email: 'abebe07@personal.example.com',
+    password: ',S7W{C-b',
+    name: 'Abebe Client (PayPal Sandbox)',
+    card: 'PayPal Sandbox wallet',
   },
+  /** @deprecated Use paypalMerchantAccounts[0] — kept for toolbar quick copy. */
   merchantAccount: {
-    email: 'owner@abibeautysalon.local',
-    password: 'Password123!',
+    email: 'merchent-two4113@business.example.com',
+    password: 'G+!U0^6h',
     salonName: 'Abi Beauty Salon',
-    merchantId: 'DEMO-0001-ABIBEAUTYSALON',
+    merchantId: 'VFP4W4G9ZGRHA',
   },
   techStack: {
     framework: 'Next.js 16 App Router',
@@ -99,7 +191,7 @@ export const SAMPLE_AUTHORIZATION_PAYLOAD = {
       reference_id: 'SD-8491',
       amount: { currency_code: 'USD', value: '25.00' },
       description: 'SalonDesk Authorization Hold: Precision Fade & Hot Towel Beard',
-      payee: { merchant_id: 'SELAM-MERCHANT-DEMO' },
+      payee: { merchant_id: SANDBOX_CREDENTIALS.paypalMerchantAccounts[0].merchantId },
     },
   ],
   application_context: {

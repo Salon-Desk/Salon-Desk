@@ -9,8 +9,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Controller, useFormContext } from 'react-hook-form'
 
 import {
-  formControlInputClassName,
-  formControlLeftIconClassName,
+  formControlInlineIconClassName,
+  formControlShellClassName,
+  formControlShellInputClassName,
   FormFieldError,
   formFieldHtmlIds,
   FormFieldLabel,
@@ -18,6 +19,7 @@ import {
 } from '@/components/forms/form-field-parts'
 import { validationMessages } from '@/constant/validation-messages'
 import { isValidPhoneValue, phonesEqual, toPhoneFieldValue } from '@/lib/util/phone'
+import { cn } from '@/lib/utils'
 
 interface RHFPhoneFieldProps {
   name: string
@@ -65,6 +67,7 @@ const RHFPhoneField = ({
   disabled,
   showLabel = true,
   placeholder = 'Enter phone number',
+  className,
   onBlur: externalOnBlur,
   ...other
 }: CombinedProps) => {
@@ -138,77 +141,77 @@ const RHFPhoneField = ({
             <FormFieldLabel htmlFor={controlId} label={label} isRequired={isRequired} />
           ) : null}
 
-          <div ref={containerRef} className="relative w-full">
-            <Phone className={formControlLeftIconClassName} aria-hidden />
-
+          <div
+            ref={containerRef}
+            className={cn(formControlShellClassName({ hasError: !!error }), className)}
+          >
             {isMounted ? (
-              <IntlTelInput
-                ref={itiRef}
-                initialCountry="et"
-                dropdownParent={document.body}
-                value={toPhoneFieldValue(field.value) || field.value || ''}
-                onChangeNumber={(phone: string) => {
-                  // Normalize to E.164 so form state matches ITI / API helpers.
-                  const next = toPhoneFieldValue(phone) || phone
+              <div className="salon-phone-field min-w-0 flex-1">
+                <IntlTelInput
+                  ref={itiRef}
+                  initialCountry="et"
+                  dropdownParent={document.body}
+                  value={toPhoneFieldValue(field.value) || field.value || ''}
+                  onChangeNumber={(phone: string) => {
+                    // Normalize to E.164 so form state matches ITI / API helpers.
+                    const next = toPhoneFieldValue(phone) || phone
 
-                  // Ignore echoes of what we just emitted (autofill / ITI reconcile).
-                  if (
-                    next === lastEmittedRef.current ||
-                    phonesEqual(next, lastEmittedRef.current)
-                  ) {
-                    return
-                  }
+                    // Ignore echoes of what we just emitted (autofill / ITI reconcile).
+                    if (
+                      next === lastEmittedRef.current ||
+                      phonesEqual(next, lastEmittedRef.current)
+                    ) {
+                      return
+                    }
 
-                  if (phonesEqual(next, field.value) || next === (field.value ?? '')) {
-                    return
-                  }
+                    if (phonesEqual(next, field.value) || next === (field.value ?? '')) {
+                      return
+                    }
 
-                  lastEmittedRef.current = next
-                  field.onChange(next)
-                  clearErrors(name)
-                }}
-                disabled={disabled}
-                inputProps={{
-                  id: controlId,
-                  placeholder,
-                  'aria-invalid': !!error,
-                  'aria-describedby': error ? errorId : undefined,
-                  className: formControlInputClassName({
-                    hasError: !!error,
-                    hasLeftIcon: true,
-                  }),
-                  autoComplete: 'tel',
-                  ...other,
-                  onFocus: () => {
-                    // Close others when text input is focused directly
-                    closeOtherItiDropdowns(getItiInstance() ?? undefined)
-                  },
-                  onBlur: (event) => {
-                    getItiInstance()?.closeCountrySelector()
-                    field.onBlur()
-                    externalOnBlur?.(event)
-                  },
-                }}
-                containerClass="w-full"
-                searchInputClass="w-full"
-                onChangeValidity={(isValid: boolean) => {
-                  if (!isValid && error) {
+                    lastEmittedRef.current = next
+                    field.onChange(next)
                     clearErrors(name)
-                  }
-                }}
-                onChangeCountry={(_iso2: string) => {}}
-                onChangeErrorCode={(_errorCode: ValidationError | null) => {}}
-              />
+                  }}
+                  disabled={disabled}
+                  inputProps={{
+                    id: controlId,
+                    placeholder,
+                    'aria-invalid': !!error,
+                    'aria-describedby': error ? errorId : undefined,
+                    autoComplete: 'tel',
+                    ...other,
+                    className: cn(formControlShellInputClassName, 'h-auto min-h-0 py-1'),
+                    onFocus: () => {
+                      // Close others when text input is focused directly
+                      closeOtherItiDropdowns(getItiInstance() ?? undefined)
+                    },
+                    onBlur: (event) => {
+                      getItiInstance()?.closeCountrySelector()
+                      field.onBlur()
+                      externalOnBlur?.(event)
+                    },
+                  }}
+                  containerClass="w-full"
+                  searchInputClass="w-full"
+                  onChangeValidity={(isValid: boolean) => {
+                    if (!isValid && error) {
+                      clearErrors(name)
+                    }
+                  }}
+                  onChangeCountry={(_iso2: string) => {}}
+                  onChangeErrorCode={(_errorCode: ValidationError | null) => {}}
+                />
+              </div>
             ) : (
-              <input
-                id={controlId}
-                readOnly
-                placeholder={placeholder}
-                className={formControlInputClassName({
-                  hasError: !!error,
-                  hasLeftIcon: true,
-                })}
-              />
+              <>
+                <Phone className={formControlInlineIconClassName} aria-hidden />
+                <input
+                  id={controlId}
+                  readOnly
+                  placeholder={placeholder}
+                  className={formControlShellInputClassName}
+                />
+              </>
             )}
           </div>
 

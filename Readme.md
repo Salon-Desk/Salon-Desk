@@ -223,7 +223,7 @@ Password for all seeded users: `Password123!`
 | `owner@selam.local` | Org owner |
 | `reception@selam.local` | Reception |
 | `stylist1@selam.local` / `stylist2@selam.local` | Stylists |
-| `client@example.com` / `client2@example.com` | Clients |
+| `abebe07@personal.example.com` / `ailurophile99@personal.example.com` | Clients (SalonDesk portal; PayPal checkout passwords in app Sandbox modal) |
 
 Judge demo reset (non-production): `POST /api/demo/reset` (clear + seed).
 
@@ -382,7 +382,7 @@ Frontend RTK Query clients: `frontend/store/api/{shared,platform,org,client}Api.
 
 <!-- VPS -->
 ```bash
-# Demo seed (20 orgs, ~60-100 services):
+# Demo seed (12 orgs, ~60-100 services):
 docker exec -it salondesk sh -lc 'cd /app/backend && python -m scripts.seed --clear'
 
 # Full catalog seed (~432 orgs, ~9,100 services):
