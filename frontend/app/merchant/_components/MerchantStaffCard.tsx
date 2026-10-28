@@ -262,7 +262,6 @@ export function MerchantStaffCard({
               <span>Edit</span>
             </Button>
           )}
-
           {!isOwner && onResendInvite && (
             <Button
               variant="outline"
