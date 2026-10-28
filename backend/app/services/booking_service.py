@@ -24,7 +24,12 @@ from app.models.payment import PaymentHold
 from app.models.policy import OrgCancellationPolicy
 from app.models.service import Service
 from app.models.user import User
-from app.services.availability_service import check_slot_available, get_availability
+from app.services.availability_service import (
+    check_slot_available,
+    find_eligible_stylists_for_service,
+    get_availability,
+    is_stylist_on_time_off,
+)
 from app.services.commission_service import (
     commission_rule_for_service,
     total_platform_commission_for_services,
@@ -228,6 +233,8 @@ async def create_booking(
         for s in services:
             curr_end = curr_start + timedelta(minutes=s.duration_minutes)
             s_stylist = service_stylist_map.get(s.id, stylist_id)
+            if s_stylist and await is_stylist_on_time_off(db, s_stylist, curr_start.date()):
+                raise ForbiddenError(f"Selected stylist for {s.name} is off on this date")
             slot_ok = await check_slot_available(
                 db,
                 service=s,
@@ -241,6 +248,21 @@ async def create_booking(
     else:
         primary = services[0]
         common_stylist = service_stylist_map.get(primary.id, stylist_id)
+        if common_stylist is None:
+            eligible_stylists = await find_eligible_stylists_for_service(
+                db,
+                org_id=org_id,
+                service=primary,
+                day=starts_at.date(),
+                starts_at=starts_at,
+                ends_at=ends_at,
+            )
+            if eligible_stylists:
+                common_stylist = eligible_stylists[0].id
+                stylist_id = common_stylist
+        elif await is_stylist_on_time_off(db, common_stylist, starts_at.date()):
+            raise ForbiddenError("Selected stylist is off on this date")
+
         available = await check_slot_available(
             db,
             service=primary,

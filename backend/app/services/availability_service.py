@@ -10,9 +10,14 @@ from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import NotFoundError
 from app.models.booking import Booking, BookingService
-from app.models.enums import BookingStatus, ServiceStatus, UserRole
-from app.models.organization import OrgEmployeeShift, OrgSettings, OrgShift
-from app.models.service import Service
+from app.models.enums import BookingStatus, ServiceStatus, UserRole, UserStatus
+from app.models.organization import (
+    OrgEmployeeShift,
+    OrgEmployeeTimeOff,
+    OrgSettings,
+    OrgShift,
+)
+from app.models.service import OrgEmployeeCategory, Service
 from app.models.user import User
 from app.schemas.booking import AvailabilityOut, TimeSlot
 
@@ -60,6 +65,179 @@ def _intersect_windows(
     return sorted_unique
 
 
+def _day_matches_shift_days(day: date, shift_days: list[str] | None) -> bool:
+    if shift_days is None:
+        shift_days = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+    if not shift_days:
+        return False
+    weekday_name = day.strftime("%A").lower()
+    weekday_abbr = _WEEKDAY_KEYS[day.weekday()]
+    return any(
+        d.lower().strip() == weekday_name or d.lower().strip().startswith(weekday_abbr)
+        for d in shift_days
+    )
+
+
+async def is_stylist_on_time_off(
+    db: AsyncSession,
+    stylist_id: UUID,
+    day: date,
+) -> bool:
+    stmt = select(func.count(OrgEmployeeTimeOff.id)).where(
+        OrgEmployeeTimeOff.user_id == stylist_id,
+        OrgEmployeeTimeOff.start_date <= day,
+        OrgEmployeeTimeOff.end_date >= day,
+    )
+    count = (await db.execute(stmt)).scalar_one()
+    if not isinstance(count, (int, float, str, bytes)):
+        return False
+    return int(count) > 0
+
+
+async def find_eligible_stylists_for_service(
+    db: AsyncSession,
+    *,
+    org_id: UUID,
+    service: Service,
+    day: date,
+    starts_at: datetime | None = None,
+    ends_at: datetime | None = None,
+) -> list[User]:
+    # 1. Fetch active stylists/owners
+    stmt = select(User).where(
+        User.org_id == org_id,
+        User.role.in_([UserRole.STYLIST, UserRole.ORG_OWNER]),
+        User.status == UserStatus.ACTIVE,
+    )
+    stylists = list((await db.execute(stmt)).scalars().all())
+    if not stylists:
+        return []
+
+    # 2. Check service category assignments
+    cat_stmt = (
+        select(OrgEmployeeCategory.user_id)
+        .join(User, User.id == OrgEmployeeCategory.user_id)
+        .where(User.org_id == org_id)
+    )
+    assigned_any = (await db.execute(cat_stmt)).scalars().all()
+    if assigned_any:
+        match_cat_stmt = select(OrgEmployeeCategory.user_id).where(
+            OrgEmployeeCategory.user_id.in_([s.id for s in stylists]),
+            OrgEmployeeCategory.service_category_id == service.service_category_id,
+        )
+        matching_ids = set((await db.execute(match_cat_stmt)).scalars().all())
+        stylists = [s for s in stylists if s.id in matching_ids]
+        if not stylists:
+            return []
+
+    # 3. Filter out stylists on time off
+    time_off_stmt = select(OrgEmployeeTimeOff.user_id).where(
+        OrgEmployeeTimeOff.user_id.in_([s.id for s in stylists]),
+        OrgEmployeeTimeOff.start_date <= day,
+        OrgEmployeeTimeOff.end_date >= day,
+    )
+    time_off_ids = set((await db.execute(time_off_stmt)).scalars().all())
+    stylists = [s for s in stylists if s.id not in time_off_ids]
+    if not stylists:
+        return []
+
+    # 4. Filter by weekly assigned shifts
+    shifts_stmt = (
+        select(OrgEmployeeShift, OrgShift)
+        .join(OrgShift, OrgShift.id == OrgEmployeeShift.org_shift_id)
+        .where(
+            OrgEmployeeShift.user_id.in_([s.id for s in stylists]),
+            OrgShift.org_id == org_id,
+        )
+    )
+    shift_results = (await db.execute(shifts_stmt)).all()
+    stylist_shifts: dict[UUID, list[tuple[OrgEmployeeShift, OrgShift]]] = {}
+    for emp_shift, shift_template in shift_results:
+        stylist_shifts.setdefault(emp_shift.user_id, []).append((emp_shift, shift_template))
+
+    filtered_stylists: list[User] = []
+    settings_res = None
+    tz = None
+
+    for s in stylists:
+        assigned = stylist_shifts.get(s.id)
+        if assigned:
+            matching_shifts = [
+                (es, st) for es, st in assigned if _day_matches_shift_days(day, es.days)
+            ]
+            if not matching_shifts:
+                continue
+            if starts_at and ends_at:
+                if settings_res is None:
+                    settings_res = await db.execute(
+                        select(OrgSettings).where(OrgSettings.org_id == org_id)
+                    )
+                    settings = settings_res.scalar_one_or_none()
+                    tz = resolve_org_timezone(settings.timezone if settings else "UTC")
+                in_window = False
+                for _, st in matching_shifts:
+                    if isinstance(st.data, dict) and "windows" in st.data:
+                        for w in st.data.get("windows", []):
+                            if isinstance(w, (list, tuple)) and len(w) == 2:
+                                sh, sm = map(int, str(w[0]).split(":"))
+                                eh, em = map(int, str(w[1]).split(":"))
+                                w_start = datetime(
+                                    day.year, day.month, day.day, sh, sm, tzinfo=tz
+                                ).astimezone(UTC)
+                                w_end = datetime(
+                                    day.year, day.month, day.day, eh, em, tzinfo=tz
+                                ).astimezone(UTC)
+                                if starts_at >= w_start and ends_at <= w_end:
+                                    in_window = True
+                                    break
+                        if in_window:
+                            break
+                    else:
+                        in_window = True
+                if not in_window:
+                    continue
+        filtered_stylists.append(s)
+
+    stylists = filtered_stylists
+    if not stylists:
+        return []
+
+    # 5. Filter out stylists with overlapping bookings
+    if starts_at and ends_at:
+        busy_stmt = select(Booking.stylist_id).where(
+            Booking.stylist_id.in_([s.id for s in stylists]),
+            Booking.status.in_(
+                [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.COMPLETED]
+            ),
+            Booking.starts_at < ends_at,
+            Booking.ends_at > starts_at,
+        )
+        busy_ids = set((await db.execute(busy_stmt)).scalars().all())
+        stylists = [s for s in stylists if s.id not in busy_ids]
+        if not stylists:
+            return []
+
+    # 6. Rank stylists by workload on this date (least busy first)
+    day_start = datetime(day.year, day.month, day.day, 0, 0, 0, tzinfo=UTC)
+    day_end = day_start + timedelta(days=1)
+    workload_stmt = (
+        select(Booking.stylist_id, func.count(Booking.id))
+        .where(
+            Booking.stylist_id.in_([s.id for s in stylists]),
+            Booking.status.in_(
+                [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.COMPLETED]
+            ),
+            Booking.starts_at >= day_start,
+            Booking.starts_at < day_end,
+        )
+        .group_by(Booking.stylist_id)
+    )
+    workload_map = dict((await db.execute(workload_stmt)).all())
+    stylists.sort(key=lambda s: workload_map.get(s.id, 0))
+
+    return stylists
+
+
 async def check_stylist_shift(
     db: AsyncSession,
     *,
@@ -76,7 +254,8 @@ async def check_stylist_shift(
 
     starts_local = starts_at.astimezone(tz)
     ends_local = ends_at.astimezone(tz)
-    day_key = _WEEKDAY_KEYS[starts_local.date().weekday()]
+    day = starts_local.date()
+    day_key = _WEEKDAY_KEYS[day.weekday()]
     windows_raw = (settings.working_hours if settings else {}).get(day_key, [])
     salon_open_windows: list[list[str]] = []
     for window in windows_raw or []:
@@ -92,34 +271,45 @@ async def check_stylist_shift(
     ):
         return False
 
+    if await is_stylist_on_time_off(db, stylist_id, day):
+        return False
+
     shift_stmt = (
-        select(OrgShift)
+        select(OrgShift, OrgEmployeeShift)
         .join(OrgEmployeeShift, OrgEmployeeShift.org_shift_id == OrgShift.id)
         .where(
             OrgEmployeeShift.user_id == stylist_id,
             OrgShift.org_id == org_id,
         )
     )
-    shifts = (await db.execute(shift_stmt)).scalars().all()
-    shift_windows: list[list[str]] = []
-    stylist_breaks: list[list[str]] = []
-    for s in shifts:
-        if isinstance(s.data, dict):
-            for w in s.data.get("windows", []):
-                if isinstance(w, (list, tuple)) and len(w) == 2:
-                    shift_windows.append([str(w[0]), str(w[1])])
-            for b in s.data.get("breaks", []):
-                if isinstance(b, (list, tuple)) and len(b) == 2:
-                    stylist_breaks.append([str(b[0]), str(b[1])])
+    shift_rows = (await db.execute(shift_stmt)).all()
+    if shift_rows:
+        matching_rows = [(s, es) for s, es in shift_rows if _day_matches_shift_days(day, es.days)]
+        if not matching_rows:
+            return False
 
-    # If stylist has designated shift windows, slot must fall within them
-    if shift_windows and not any(
-        slot_start_time_s >= w[0] and slot_end_time_s <= w[1] for w in shift_windows
-    ):
-        return False
+        shift_windows: list[list[str]] = []
+        stylist_breaks: list[list[str]] = []
+        for s, _ in matching_rows:
+            if isinstance(s.data, dict):
+                for w in s.data.get("windows", []):
+                    if isinstance(w, (list, tuple)) and len(w) == 2:
+                        shift_windows.append([str(w[0]), str(w[1])])
+                for b in s.data.get("breaks", []):
+                    if isinstance(b, (list, tuple)) and len(b) == 2:
+                        stylist_breaks.append([str(b[0]), str(b[1])])
 
-    # Slot must not conflict with stylist breaks
-    return not any(slot_start_time_s < b[1] and slot_end_time_s > b[0] for b in stylist_breaks)
+        # If stylist has designated shift windows, slot must fall within them
+        if shift_windows and not any(
+            slot_start_time_s >= w[0] and slot_end_time_s <= w[1] for w in shift_windows
+        ):
+            return False
+
+        # Slot must not conflict with stylist breaks
+        if any(slot_start_time_s < b[1] and slot_end_time_s > b[0] for b in stylist_breaks):
+            return False
+
+    return True
 
 
 async def check_slot_available(
@@ -131,10 +321,24 @@ async def check_slot_available(
     stylist_id: UUID | None = None,
     exclude_booking_id: UUID | None = None,
 ) -> bool:
+    day = starts_at.date()
     now = datetime.now(UTC)
     if starts_at <= now:
         return False
+
     if stylist_id:
+        if await is_stylist_on_time_off(db, stylist_id, day):
+            return False
+
+        shift_stmt = select(OrgEmployeeShift).where(
+            OrgEmployeeShift.user_id == stylist_id,
+        )
+        assigned_shifts = (await db.execute(shift_stmt)).scalars().all()
+        if assigned_shifts and not any(
+            _day_matches_shift_days(day, es.days) for es in assigned_shifts
+        ):
+            return False
+
         stylist_conditions = [
             Booking.stylist_id == stylist_id,
             Booking.status.in_(
@@ -153,6 +357,24 @@ async def check_slot_available(
         stylist_busy = (await db.execute(stylist_count_q)).scalar_one()
         if int(stylist_busy) > 0:
             return False
+    else:
+        org_stylists_count_q = select(func.count(User.id)).where(
+            User.org_id == service.organization_id,
+            User.role.in_([UserRole.STYLIST, UserRole.ORG_OWNER]),
+            User.status == UserStatus.ACTIVE,
+        )
+        org_has_stylists = (await db.execute(org_stylists_count_q)).scalar_one()
+        if int(org_has_stylists) > 0:
+            eligible = await find_eligible_stylists_for_service(
+                db,
+                org_id=service.organization_id,
+                service=service,
+                day=day,
+                starts_at=starts_at,
+                ends_at=ends_at,
+            )
+            if not eligible:
+                return False
 
     conditions = [
         Booking.org_id == service.organization_id,
@@ -238,23 +460,54 @@ async def get_availability(
             else:
                 stylist_name = stylist_user.email
 
+        if await is_stylist_on_time_off(db, stylist_id, day):
+            return AvailabilityOut(
+                timezone=str(tz),
+                day=day.isoformat(),
+                open_windows=[],
+                slots=[],
+                salon_hours=salon_open_windows,
+                shift_windows=[],
+                stylist_name=stylist_name,
+                simultaneous_capacity=service.simultaneous_capacity,
+                service_duration_minutes=duration_minutes or service.duration_minutes,
+            )
+
         shift_stmt = (
-            select(OrgShift)
+            select(OrgShift, OrgEmployeeShift)
             .join(OrgEmployeeShift, OrgEmployeeShift.org_shift_id == OrgShift.id)
             .where(
                 OrgEmployeeShift.user_id == stylist_id,
                 OrgShift.org_id == service.organization_id,
             )
         )
-        shifts = (await db.execute(shift_stmt)).scalars().all()
-        for s in shifts:
-            if isinstance(s.data, dict):
-                for w in s.data.get("windows", []):
-                    if isinstance(w, (list, tuple)) and len(w) == 2:
-                        shift_windows.append([str(w[0]), str(w[1])])
-                for b in s.data.get("breaks", []):
-                    if isinstance(b, (list, tuple)) and len(b) == 2:
-                        stylist_breaks.append([str(b[0]), str(b[1])])
+        shift_rows = (await db.execute(shift_stmt)).all()
+        if shift_rows:
+            matching_rows = [
+                (s, es) for s, es in shift_rows if _day_matches_shift_days(day, es.days)
+            ]
+            if not matching_rows:
+                return AvailabilityOut(
+                    timezone=str(tz),
+                    day=day.isoformat(),
+                    open_windows=[],
+                    slots=[],
+                    salon_hours=salon_open_windows,
+                    shift_windows=[],
+                    stylist_name=stylist_name,
+                    simultaneous_capacity=service.simultaneous_capacity,
+                    service_duration_minutes=duration_minutes or service.duration_minutes,
+                )
+            for s, _ in matching_rows:
+                if isinstance(s.data, dict):
+                    if "windows" in s.data:
+                        for w in s.data.get("windows", []):
+                            if isinstance(w, (list, tuple)) and len(w) == 2:
+                                shift_windows.append([str(w[0]), str(w[1])])
+                    if "breaks" in s.data:
+                        for b in s.data.get("breaks", []):
+                            if isinstance(b, (list, tuple)) and len(b) == 2:
+                                stylist_breaks.append([str(b[0]), str(b[1])])
 
         if shift_windows:
             effective_open_windows = _intersect_windows(salon_open_windows, shift_windows)

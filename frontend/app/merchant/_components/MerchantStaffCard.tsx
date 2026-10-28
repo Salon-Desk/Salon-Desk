@@ -288,6 +288,32 @@ export function MerchantStaffCard({
             </Button>
           )}
 
+          {!isOwner && onResendInvite && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onResendInvite(member)}
+              title="Resend invitation email with temporary credentials"
+              className="h-8 gap-1 rounded-xl border-slate-200/90 bg-white px-2 text-xs font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900 shadow-2xs transition-all active:scale-95"
+            >
+              <Mail className="h-3.5 w-3.5 text-sky-600" />
+              <span>Invite</span>
+            </Button>
+          )}
+
+          {!isOwner && onResetPassword && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onResetPassword(member)}
+              title="Reset password and email new temporary credentials"
+              className="h-8 gap-1 rounded-xl border-slate-200/90 bg-white px-2 text-xs font-semibold text-slate-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900 shadow-2xs transition-all active:scale-95"
+            >
+              <KeyRound className="h-3.5 w-3.5 text-amber-600" />
+              <span>Reset</span>
+            </Button>
+          )}
+
           {!isOwner && onDelete ? (
             <Button
               variant="ghost"
