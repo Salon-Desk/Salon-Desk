@@ -23,7 +23,7 @@ class PageOut(BaseModel, Generic[T]):
     page: int
     page_size: int
     total: int
-    has_more: bool
+    has_more: bool = False
 
 
 PaginatedResponse = PageOut

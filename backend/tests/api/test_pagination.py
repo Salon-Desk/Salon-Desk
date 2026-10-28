@@ -24,6 +24,15 @@ def test_page_out_schema() -> None:
     assert len(page.items) == 1
     assert page.has_more is False
 
+    # Default has_more if omitted
+    page_default = PageOut[SampleItem](
+        items=[SampleItem(id=1, name="Test")],
+        page=1,
+        page_size=10,
+        total=1,
+    )
+    assert page_default.has_more is False
+
 
 def test_paginate_items_multi_page() -> None:
     data = [SampleItem(id=i, name=f"Item {i}") for i in range(1, 26)]

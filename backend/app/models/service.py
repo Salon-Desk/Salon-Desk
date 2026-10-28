@@ -14,6 +14,9 @@ class ServiceCategory(TimestampedModel):
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(32), default="ACTIVE", server_default="ACTIVE", nullable=False
+    )
 
     services = relationship("Service", back_populates="category")
     commissions = relationship("PlatformCommission", back_populates="service_category")

@@ -171,3 +171,69 @@ class CatalogCancellationPolicyOut(BaseModel):
     no_show_fee_percent: float = 50
     late_cancel_fee_percent: float | None = None
     data: dict = {}
+
+
+class AdminOrgOwnerOut(BaseModel):
+    id: UUID
+    email: str
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+    status: str
+    role: str
+    created_at: datetime | None = None
+
+
+class AdminOrgPaypalOut(BaseModel):
+    id: UUID | None = None
+    merchant_id: str | None = None
+    merchant_email: str | None = None
+    display_name: str | None = None
+    currency: str = "USD"
+    status: str | None = None
+    approved_at: datetime | None = None
+    created_at: datetime | None = None
+
+
+class AdminOrgServiceItem(BaseModel):
+    id: UUID
+    name: str
+    category_name: str | None = None
+    base_price: Decimal
+    duration_minutes: int
+    status: str
+    simultaneous_capacity: int = 1
+
+
+class AdminOrgStaffItem(BaseModel):
+    id: UUID
+    first_name: str
+    last_name: str
+    email: str
+    role: str
+    picture: str | None = None
+    phone: str | None = None
+
+
+class AdminOrganizationDetailOut(ORMModel):
+    id: UUID
+    owner_id: UUID
+    name: str
+    status: str
+    description: str | None = None
+    picture: str | None = None
+    created_at: datetime
+    owner: AdminOrgOwnerOut | None = None
+    paypal_account: AdminOrgPaypalOut | None = None
+    physical_address: str | None = None
+    timezone: str | None = None
+    lat: Decimal | None = None
+    lng: Decimal | None = None
+    working_hours: dict | None = None
+    cancellation_policy: CatalogCancellationPolicyOut | None = None
+    rating_avg: float = 0.0
+    review_count: int = 0
+    services_count: int = 0
+    staff_count: int = 0
+    services: list[AdminOrgServiceItem] = []
+    staff: list[AdminOrgStaffItem] = []

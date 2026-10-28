@@ -34,6 +34,7 @@ import { SalonDetailsModal } from './SalonDetailsModal'
 import { SalonFilterBar } from './SalonFilterBar'
 import { SalonHeader } from './SalonHeader'
 import { SalonKpiGrid } from './SalonKpiGrid'
+import { SalonStatusConfirmDialog } from './SalonStatusConfirmDialog'
 import { getSalonTableColumns } from './SalonTableColumns'
 
 export function AdminSalonsView() {
@@ -47,6 +48,10 @@ export function AdminSalonsView() {
   const [actioningOrgId, setActioningOrgId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
   const [selectedOrg, setSelectedOrg] = useState<ApiOrganization | null>(null)
+  const [statusActionTarget, setStatusActionTarget] = useState<{
+    org: ApiOrganization
+    action: 'approve' | 'suspend'
+  } | null>(null)
 
   useAgentUiActions({
     onAction: (payload) => {
@@ -103,33 +108,35 @@ export function AdminSalonsView() {
     setTimeout(() => setCopiedKey(null), 2000)
   }
 
-  const handleApprove = async (org: ApiOrganization) => {
-    try {
-      setActioningOrgId(org.id)
-      await approveOrg(org.id).unwrap()
-      toast.success(`${org.name} successfully approved`, toastColor.success)
-      void refetchOrganizations()
-      void refetchDashboard()
-    } catch (err) {
-      toast.error(
-        String((err as { data?: { detail?: string } })?.data?.detail || 'Approval failed'),
-        toastColor.error,
-      )
-    } finally {
-      setActioningOrgId(null)
-    }
+  const requestApprove = (org: ApiOrganization) => {
+    setStatusActionTarget({ org, action: 'approve' })
   }
 
-  const handleSuspend = async (org: ApiOrganization) => {
+  const requestSuspend = (org: ApiOrganization) => {
+    setStatusActionTarget({ org, action: 'suspend' })
+  }
+
+  const handleConfirmStatusChange = async () => {
+    if (!statusActionTarget) return
+    const { org, action } = statusActionTarget
     try {
       setActioningOrgId(org.id)
-      await suspendOrg(org.id).unwrap()
-      toast.success(`${org.name} suspended`, toastColor.success)
+      if (action === 'approve') {
+        await approveOrg(org.id).unwrap()
+        toast.success(`${org.name} successfully activated`, toastColor.success)
+      } else {
+        await suspendOrg(org.id).unwrap()
+        toast.success(`${org.name} suspended`, toastColor.success)
+      }
+      setStatusActionTarget(null)
       void refetchOrganizations()
       void refetchDashboard()
     } catch (err) {
       toast.error(
-        String((err as { data?: { detail?: string } })?.data?.detail || 'Suspension failed'),
+        String(
+          (err as { data?: { detail?: string } })?.data?.detail ||
+            `${action === 'approve' ? 'Activation' : 'Suspension'} failed`,
+        ),
         toastColor.error,
       )
     } finally {
@@ -221,11 +228,11 @@ export function AdminSalonsView() {
                   variant="ghost"
                   className="h-7 w-7 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 transition-all duration-200 cursor-pointer"
                   disabled={isActioning && approving}
-                  onClick={() => void handleApprove(org)}
-                  title="Approve salon"
+                  onClick={() => requestApprove(org)}
+                  title="Activate salon"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
-                  <span className="sr-only">Approve</span>
+                  <span className="sr-only">Activate</span>
                 </Button>
               ) : (
                 <Button
@@ -233,7 +240,7 @@ export function AdminSalonsView() {
                   variant="ghost"
                   className="h-7 w-7 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-all duration-200 cursor-pointer"
                   disabled={isActioning && suspending}
-                  onClick={() => void handleSuspend(org)}
+                  onClick={() => requestSuspend(org)}
                   title="Suspend salon"
                 >
                   <PauseCircle className="h-3.5 w-3.5" />
@@ -254,8 +261,8 @@ export function AdminSalonsView() {
                 approving={approving}
                 suspending={suspending}
                 copiedKey={copiedKey}
-                onApprove={handleApprove}
-                onSuspend={handleSuspend}
+                onApprove={requestApprove}
+                onSuspend={requestSuspend}
                 onViewDetail={(item) => setSelectedOrg(item)}
                 onCopy={handleCopy}
               />
@@ -307,12 +314,21 @@ export function AdminSalonsView() {
         org={selectedOrg}
         open={Boolean(selectedOrg)}
         onClose={() => setSelectedOrg(null)}
-        onApprove={(org) => void handleApprove(org)}
-        onSuspend={(org) => void handleSuspend(org)}
+        onApprove={(org) => requestApprove(org)}
+        onSuspend={(org) => requestSuspend(org)}
         onCopy={handleCopy}
         copiedKey={copiedKey}
         approving={approving}
         suspending={suspending}
+      />
+
+      <SalonStatusConfirmDialog
+        open={Boolean(statusActionTarget)}
+        onClose={() => setStatusActionTarget(null)}
+        onConfirm={() => void handleConfirmStatusChange()}
+        salonName={statusActionTarget?.org.name ?? ''}
+        targetAction={statusActionTarget?.action ?? 'approve'}
+        isLoading={actioningOrgId === statusActionTarget?.org.id && (approving || suspending)}
       />
     </div>
   )

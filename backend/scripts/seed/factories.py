@@ -76,7 +76,8 @@ async def create_categories_and_commissions(session: AsyncSession, categories_da
     from app.models.service import ServiceCategory
 
     categories = [
-        ServiceCategory(name=name, description=description) for name, description in categories_data
+        ServiceCategory(name=name, description=description, status="ACTIVE")
+        for name, description in categories_data
     ]
     session.add_all(categories)
     await session.flush()

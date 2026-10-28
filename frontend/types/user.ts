@@ -60,7 +60,7 @@ export interface UpdateEmployeeRequest {
 
 export interface CreateStaffRequest {
   email: string
-  password: string
+  password?: string
   first_name: string
   last_name: string
   middle_name?: string | null

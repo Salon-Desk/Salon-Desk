@@ -60,7 +60,11 @@ class EmployeeUpdate(BaseModel):
 
 class StaffCreate(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8)
+    password: str | None = Field(
+        default=None,
+        min_length=8,
+        description="Optional. If omitted, an 8-char password is auto-generated.",
+    )
     first_name: str
     last_name: str
     middle_name: str | None = None

@@ -57,7 +57,7 @@ async def send_email(
             username=settings.smtp_user,
             password=settings.smtp_password,
             use_tls=settings.smtp_port == 465,
-            start_tls=settings.smtp_port == 587,
+            start_tls=settings.smtp_port in (587, 2525),
             timeout=15.0,
         )
     except Exception as exc:
@@ -184,3 +184,61 @@ async def notify_platform(
     if secondary and secondary.lower() != (settings.notify_email or "").lower():
         await send_email_safe(subject, body, to_address=secondary)
     return ok
+
+
+async def send_staff_invite_email(
+    *,
+    to_address: str,
+    first_name: str,
+    temp_password: str,
+) -> bool:
+    """Send welcome invitation with temporary auto-generated credentials to platform staff."""
+    settings = get_settings()
+    login_url = f"{settings.frontend_base_url.rstrip('/')}/login"
+    subject = "Welcome to SalonDesk Platform Staff"
+    body = (
+        f"Hi {first_name},\n\n"
+        "You have been invited as a platform staff member at SalonDesk.\n\n"
+        f"Your login email: {to_address}\n"
+        f"Your temporary password: {temp_password}\n\n"
+        f"Please log in at: {login_url}\n\n"
+        "We recommend changing your password after signing in.\n"
+    )
+    html = (
+        f"<p>Hi {first_name},</p>"
+        "<p>You have been invited as a platform staff member at SalonDesk.</p>"
+        f"<p><strong>Email:</strong> {to_address}<br/>"
+        f"<strong>Temporary Password:</strong> <code>{temp_password}</code></p>"
+        f'<p><a href="{login_url}">Log in to SalonDesk</a></p>'
+        "<p>We recommend changing your password after signing in.</p>"
+    )
+    return await send_email_safe(subject, body, to_address=to_address, html_body=html)
+
+
+async def send_staff_password_reset_email(
+    *,
+    to_address: str,
+    first_name: str,
+    temp_password: str,
+) -> bool:
+    """Send reset password notification with new temporary credentials to platform staff."""
+    settings = get_settings()
+    login_url = f"{settings.frontend_base_url.rstrip('/')}/login"
+    subject = "Your SalonDesk Temporary Password"
+    body = (
+        f"Hi {first_name},\n\n"
+        "Your SalonDesk platform staff password has been reset by an administrator.\n\n"
+        f"Your login email: {to_address}\n"
+        f"Your new temporary password: {temp_password}\n\n"
+        f"Please log in at: {login_url}\n\n"
+        "We recommend updating your password once logged in.\n"
+    )
+    html = (
+        f"<p>Hi {first_name},</p>"
+        "<p>Your SalonDesk platform staff password has been reset by an administrator.</p>"
+        f"<p><strong>Email:</strong> {to_address}<br/>"
+        f"<strong>New Temporary Password:</strong> <code>{temp_password}</code></p>"
+        f'<p><a href="{login_url}">Log in to SalonDesk</a></p>'
+        "<p>We recommend updating your password once logged in.</p>"
+    )
+    return await send_email_safe(subject, body, to_address=to_address, html_body=html)

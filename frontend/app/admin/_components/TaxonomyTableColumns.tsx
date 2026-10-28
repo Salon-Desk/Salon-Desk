@@ -35,13 +35,34 @@ export function getTaxonomyTableColumns(): ColumnDefinition<ApiServiceCategory>[
       ),
     },
     {
+      id: 'active_salons',
+      header: 'Active Salons',
+      cell: (category) => (
+        <span className="font-semibold text-slate-900 text-xs font-mono">
+          {category.active_organizations_count ?? 0}
+        </span>
+      ),
+    },
+    {
+      id: 'active_services',
+      header: 'Active Services',
+      cell: (category) => (
+        <span className="font-semibold text-slate-900 text-xs font-mono">
+          {category.active_services_count ?? 0}
+        </span>
+      ),
+    },
+    {
       id: 'status',
       header: 'Status',
-      cell: () => (
-        <StatusBadge tone="emerald" size="sm">
-          Active
-        </StatusBadge>
-      ),
+      cell: (category) => {
+        const isActive = (category.status ?? 'ACTIVE').toUpperCase() === 'ACTIVE'
+        return (
+          <StatusBadge tone={isActive ? 'emerald' : 'slate'} size="sm" dot>
+            {isActive ? 'Active' : 'Inactive'}
+          </StatusBadge>
+        )
+      },
     },
   ]
 }
