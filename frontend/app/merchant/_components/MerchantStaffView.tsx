@@ -13,6 +13,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { PrimaryButton } from '@/components/button'
@@ -31,6 +32,7 @@ import {
   type MerchantStaffListParams,
   MerchantStaffListParamsSchema,
 } from '@/lib/listing-params/merchant-staff-list-params'
+import { hasMerchantPermission } from '@/lib/permissions/permissions'
 import { staffDisplayName } from '@/lib/util/staff-display'
 import { cn } from '@/lib/utils'
 import {
@@ -38,6 +40,7 @@ import {
   useGetMyEmployeeShiftsQuery,
   useGetMyEmployeesQuery,
 } from '@/store/api/orgApi'
+import { userSelector } from '@/store/authSlice'
 import type { User } from '@/types/user'
 
 import { EditEmployeeModal } from './EditEmployeeModal'
@@ -48,6 +51,8 @@ import { StaffShiftsModal } from './StaffShiftsModal'
 import { getStaffTableColumns } from './StaffTableColumns'
 
 export function MerchantStaffView() {
+  const user = useSelector(userSelector)
+  const canManageStaff = hasMerchantPermission(user?.role, 'merchant:staff:manage')
   const { params, displayParams, setParam, setParams } = useListingParams<
     MerchantStaffListParams,
     typeof MerchantStaffListParamsSchema
@@ -140,12 +145,14 @@ export function MerchantStaffView() {
         onCopyId: handleCopyId,
         copiedId,
         employeeShifts,
-        onManageShifts: (m) => {
-          setSelectedStaffForShift(m.id)
-          setIsShiftsOpen(true)
-        },
+        onManageShifts: canManageStaff
+          ? (m) => {
+              setSelectedStaffForShift(m.id)
+              setIsShiftsOpen(true)
+            }
+          : undefined,
       }),
-    [copiedId, employeeShifts],
+    [canManageStaff, copiedId, employeeShifts],
   )
 
   return (
@@ -159,7 +166,7 @@ export function MerchantStaffView() {
           setSelectedStaffForShift(null)
           setIsShiftsOpen(true)
         }}
-        onAddStaff={() => setIsAddOpen(true)}
+        onAddStaff={canManageStaff ? () => setIsAddOpen(true) : undefined}
       />
 
       {/* Interactive Metric Stat Cards with Quick Filtering */}
@@ -352,15 +359,17 @@ export function MerchantStaffView() {
               <span className="mr-auto text-[11px] font-medium text-slate-500 lg:mr-1">
                 {totalItems} {totalItems === 1 ? 'record' : 'records'}
               </span>
-              <PrimaryButton
-                key="add-staff-grid"
-                title="Add team member"
-                size="sm"
-                fullWidth={false}
-                icon={<Plus className="h-3.5 w-3.5" />}
-                className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
-                onClick={() => setIsAddOpen(true)}
-              />
+              {canManageStaff && (
+                <PrimaryButton
+                  key="add-staff-grid"
+                  title="Add team member"
+                  size="sm"
+                  fullWidth={false}
+                  icon={<Plus className="h-3.5 w-3.5" />}
+                  className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
+                  onClick={() => setIsAddOpen(true)}
+                />
+              )}
             </div>
           </div>
 
@@ -373,12 +382,20 @@ export function MerchantStaffView() {
                   shifts={employeeShifts.filter((es) => es.user_id === member.id)}
                   onCopyId={handleCopyId}
                   isCopied={copiedId === member.id}
-                  onEdit={(m) => setEditingEmployee(m)}
-                  onDelete={member.role !== 'org_owner' ? (m) => setDeleting(m) : undefined}
-                  onManageShifts={(m) => {
-                    setSelectedStaffForShift(m.id)
-                    setIsShiftsOpen(true)
-                  }}
+                  onEdit={canManageStaff ? (m) => setEditingEmployee(m) : undefined}
+                  onDelete={
+                    canManageStaff && member.role !== 'org_owner'
+                      ? (m) => setDeleting(m)
+                      : undefined
+                  }
+                  onManageShifts={
+                    canManageStaff
+                      ? (m) => {
+                          setSelectedStaffForShift(m.id)
+                          setIsShiftsOpen(true)
+                        }
+                      : undefined
+                  }
                 />
               ))}
             </div>

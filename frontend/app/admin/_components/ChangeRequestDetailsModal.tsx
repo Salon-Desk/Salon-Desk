@@ -79,7 +79,7 @@ export function ChangeRequestDetailsModal({
                 Salon Organization
               </span>
               <span className="font-mono text-slate-900 text-xs truncate block font-bold">
-                {request.org_name}
+                {request.org_name || request.org_id}
               </span>
             </div>
           </div>

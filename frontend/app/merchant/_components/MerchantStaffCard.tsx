@@ -21,7 +21,7 @@ interface MerchantStaffCardProps {
   shifts?: ApiOrgEmployeeShift[]
   onCopyId: (id: string) => void
   isCopied?: boolean
-  onEdit: (member: User) => void
+  onEdit?: (member: User) => void
   onDelete?: (member: User) => void
   onManageShifts?: (member: User) => void
 }
@@ -200,16 +200,18 @@ export function MerchantStaffCard({
             </Button>
           )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit(member)}
-            title="Edit team member details"
-            className="h-8 gap-1.5 rounded-xl border-slate-200/90 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900 shadow-2xs transition-all active:scale-95"
-          >
-            <SquarePen className="h-3.5 w-3.5 text-slate-500" />
-            <span>Edit</span>
-          </Button>
+          {onEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(member)}
+              title="Edit team member details"
+              className="h-8 gap-1.5 rounded-xl border-slate-200/90 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900 shadow-2xs transition-all active:scale-95"
+            >
+              <SquarePen className="h-3.5 w-3.5 text-slate-500" />
+              <span>Edit</span>
+            </Button>
+          )}
 
           {!isOwner && onDelete ? (
             <Button

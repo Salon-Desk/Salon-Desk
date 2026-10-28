@@ -2,6 +2,7 @@
 
 import { Building2, LayoutGrid, List, PauseCircle, Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { PrimaryButton } from '@/components/button'
@@ -20,12 +21,14 @@ import {
   type AdminSalonsListParams,
   AdminSalonsListParamsSchema,
 } from '@/lib/listing-params/admin-salons-list-params'
+import { hasPlatformPermission } from '@/lib/permissions/permissions'
 import {
   useApproveOrganizationMutation,
   useGetAdminDashboardQuery,
   useGetAdminOrganizationsQuery,
   useSuspendOrganizationMutation,
 } from '@/store/api/platformApi'
+import { userSelector } from '@/store/authSlice'
 import type { ApiOrganization } from '@/types/api-org'
 import type { SalonCounts } from '@/types/organization'
 
@@ -38,6 +41,8 @@ import { SalonStatusConfirmDialog } from './SalonStatusConfirmDialog'
 import { getSalonTableColumns } from './SalonTableColumns'
 
 export function AdminSalonsView() {
+  const user = useSelector(userSelector)
+  const canManageSalons = hasPlatformPermission(user?.role, 'platform:salons:manage')
   const { skipAdminApi } = useAdminSession()
   const { params, displayParams, setParam, setParams } = useListingParams<
     AdminSalonsListParams,
@@ -261,6 +266,7 @@ export function AdminSalonsView() {
                 approving={approving}
                 suspending={suspending}
                 copiedKey={copiedKey}
+                canManage={canManageSalons}
                 onApprove={requestApprove}
                 onSuspend={requestSuspend}
                 onViewDetail={(item) => setSelectedOrg(item)}
@@ -320,6 +326,7 @@ export function AdminSalonsView() {
         copiedKey={copiedKey}
         approving={approving}
         suspending={suspending}
+        canManage={canManageSalons}
       />
 
       <SalonStatusConfirmDialog

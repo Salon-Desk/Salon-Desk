@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { ConsoleShell } from '@/components/layout/ConsoleShell'
+import { PermissionAccessDenied } from '@/components/layout/PermissionAccessDenied'
 import { PortalGuard } from '@/components/layout/PortalGuard'
 import { toastColor } from '@/constant/toast-color'
 import { useMerchantSession } from '@/hooks/use-merchant-session'
@@ -18,6 +19,10 @@ import {
   buildMerchantLayoutServicesSnapshotApiParams,
 } from '@/lib/listing-params/merchant-dashboard-snapshot-list-params'
 import { mapBookingStatusToHoldState } from '@/lib/mappers/booking'
+import {
+  canAccessMerchantRoute,
+  getDefaultMerchantRouteForRole,
+} from '@/lib/permissions/permissions'
 import type { AppDispatch } from '@/store'
 import {
   useCreateMyChangeRequestMutation,
@@ -48,6 +53,7 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
   const currentTab = getMerchantTabFromPathname(pathname)
   const dispatch = useDispatch<AppDispatch>()
   const user = useSelector(userSelector)
+  const isRouteAllowed = canAccessMerchantRoute(user?.role, pathname)
   const { skipOrgApi } = useMerchantSession()
 
   const { data: org } = useGetMyOrganizationQuery(undefined, { skip: skipOrgApi })
@@ -157,6 +163,7 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
         sidebar={
           <MerchantSidebar
             salon={salon}
+            role={user?.role}
             activeTab={currentTab}
             activeHoldsCount={activeHoldsCount}
             bookingsCount={apiBookings.length}
@@ -178,7 +185,17 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
           />
         }
       >
-        <div className="animate-in fade-in duration-200">{children}</div>
+        {isRouteAllowed ? (
+          <div className="animate-in fade-in duration-200">{children}</div>
+        ) : (
+          <PermissionAccessDenied
+            role={user?.role}
+            returnHref={getDefaultMerchantRouteForRole(user?.role)}
+            returnLabel={user?.role === 'stylist' ? 'Go to Calendar' : 'Go to Dashboard'}
+            title="Merchant Access Restricted"
+            description="Your salon staff account role does not have permission to access this management area."
+          />
+        )}
       </ConsoleShell>
 
       {selectedBooking ? (

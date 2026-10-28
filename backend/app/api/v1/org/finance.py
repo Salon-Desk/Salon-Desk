@@ -107,7 +107,7 @@ async def create_change_request(
 
 @router.get("/me/commission-records", response_model=PageOut[CommissionRecordOut])
 async def list_commission_records(
-    user: OrgMember,
+    user: OrgOwner,
     db: DbSession,
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
@@ -123,7 +123,7 @@ async def list_commission_records(
 
 @router.get("/me/commission-invoices", response_model=PageOut[OrgCommissionInvoiceOut])
 async def list_commission_invoices(
-    user: OrgMember,
+    user: OrgOwner,
     db: DbSession,
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Page size"),

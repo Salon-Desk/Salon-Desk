@@ -2,6 +2,7 @@
 
 import { LayoutGrid, List, Loader2, Plus, Scissors, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { PrimaryButton } from '@/components/button'
@@ -19,8 +20,10 @@ import {
   type MerchantServicesListParams,
   MerchantServicesListParamsSchema,
 } from '@/lib/listing-params/merchant-services-list-params'
+import { hasMerchantPermission } from '@/lib/permissions/permissions'
 import { useGetCatalogCategoriesQuery } from '@/store/api/clientApi'
 import { useGetMyServicesQuery, useUpdateMyServiceMutation } from '@/store/api/orgApi'
+import { userSelector } from '@/store/authSlice'
 import type { ApiOrgService } from '@/types/api-org'
 
 import { MerchantServiceCard } from './MerchantServiceCard'
@@ -28,6 +31,8 @@ import { OrgServiceFormModal } from './OrgServiceFormModal'
 import { getServiceTableColumns } from './ServiceTableColumns'
 
 export function MerchantServicesView() {
+  const user = useSelector(userSelector)
+  const canManageServices = hasMerchantPermission(user?.role, 'merchant:services:manage')
   const { params, displayParams, setParam, setParams } = useListingParams<
     MerchantServicesListParams,
     typeof MerchantServicesListParamsSchema
@@ -127,17 +132,19 @@ export function MerchantServicesView() {
               value={viewMode}
               onChange={(val) => setViewMode(val)}
             />
-            <PrimaryButton
-              title="Add new service"
-              size="sm"
-              fullWidth={false}
-              icon={<Plus className="h-4 w-4" />}
-              className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
-              onClick={() => {
-                setEditing(null)
-                setIsFormOpen(true)
-              }}
-            />
+            {canManageServices && (
+              <PrimaryButton
+                title="Add new service"
+                size="sm"
+                fullWidth={false}
+                icon={<Plus className="h-4 w-4" />}
+                className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
+                onClick={() => {
+                  setEditing(null)
+                  setIsFormOpen(true)
+                }}
+              />
+            )}
           </div>
         }
       />
@@ -248,28 +255,36 @@ export function MerchantServicesView() {
           onSearch={(search) => setParams({ search, page: 1 })}
           showItemsPerPage={true}
           showColumnSelector={true}
-          showActions={true}
-          onEdit={(service) => {
-            setEditing(service)
-            setIsFormOpen(true)
-          }}
-          onDelete={(service) => void handleDeactivate(service)}
+          showActions={canManageServices}
+          onEdit={
+            canManageServices
+              ? (service) => {
+                  setEditing(service)
+                  setIsFormOpen(true)
+                }
+              : undefined
+          }
+          onDelete={canManageServices ? (service) => void handleDeactivate(service) : undefined}
           tableClassName="border-sky-100/80"
           headerClassName="bg-sky-50/45"
-          customButtons={[
-            <PrimaryButton
-              key="add-service"
-              title="Add service"
-              size="sm"
-              fullWidth={false}
-              icon={<Plus className="h-3.5 w-3.5" />}
-              className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
-              onClick={() => {
-                setEditing(null)
-                setIsFormOpen(true)
-              }}
-            />,
-          ]}
+          customButtons={
+            canManageServices
+              ? [
+                  <PrimaryButton
+                    key="add-service"
+                    title="Add service"
+                    size="sm"
+                    fullWidth={false}
+                    icon={<Plus className="h-3.5 w-3.5" />}
+                    className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
+                    onClick={() => {
+                      setEditing(null)
+                      setIsFormOpen(true)
+                    }}
+                  />,
+                ]
+              : []
+          }
         />
       ) : null}
 
@@ -298,18 +313,20 @@ export function MerchantServicesView() {
               <span className="mr-auto text-[11px] font-medium text-slate-500 lg:mr-1">
                 {totalItems} {totalItems === 1 ? 'record' : 'records'}
               </span>
-              <PrimaryButton
-                key="add-service-grid"
-                title="Add service"
-                size="sm"
-                fullWidth={false}
-                icon={<Plus className="h-3.5 w-3.5" />}
-                className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
-                onClick={() => {
-                  setEditing(null)
-                  setIsFormOpen(true)
-                }}
-              />
+              {canManageServices && (
+                <PrimaryButton
+                  key="add-service-grid"
+                  title="Add service"
+                  size="sm"
+                  fullWidth={false}
+                  icon={<Plus className="h-3.5 w-3.5" />}
+                  className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
+                  onClick={() => {
+                    setEditing(null)
+                    setIsFormOpen(true)
+                  }}
+                />
+              )}
             </div>
           </div>
 
@@ -321,6 +338,7 @@ export function MerchantServicesView() {
                   key={service.id}
                   service={service}
                   categoryName={categoryNameById.get(service.service_category_id)}
+                  canManage={canManageServices}
                   onEdit={(s) => {
                     setEditing(s)
                     setIsFormOpen(true)

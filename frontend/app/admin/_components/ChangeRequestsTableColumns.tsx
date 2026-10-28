@@ -64,7 +64,7 @@ export function getChangeRequestsTableColumns({
       header: 'Salon Org',
       cell: (cr) => (
         <span className="font-mono text-xs text-slate-700 font-medium">
-          {cr.org_id.slice(0, 8)}…
+          {cr.org_name || `${cr.org_id.slice(0, 8)}…`}
         </span>
       ),
     },

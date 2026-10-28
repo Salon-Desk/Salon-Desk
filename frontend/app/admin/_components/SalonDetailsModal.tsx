@@ -42,6 +42,7 @@ interface SalonDetailsModalProps {
   copiedKey: string | null
   approving: boolean
   suspending: boolean
+  canManage?: boolean
 }
 
 type TabKey = 'overview' | 'about' | 'services' | 'staff' | 'reviews'
@@ -66,6 +67,7 @@ export function SalonDetailsModal({
   copiedKey,
   approving,
   suspending,
+  canManage = true,
 }: SalonDetailsModalProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('overview')
 
@@ -752,32 +754,34 @@ export function SalonDetailsModal({
             onClick={onClose}
           />
 
-          <div className="flex items-center gap-2">
-            {!isApproved ? (
-              <PrimaryButton
-                title={approving ? 'Activating…' : 'Approve Salon'}
-                size="sm"
-                fullWidth={false}
-                icon={<Sparkles className="h-3.5 w-3.5" />}
-                className="h-9 rounded-xl px-4 text-xs font-bold shadow-xs bg-emerald-600 hover:bg-emerald-700"
-                isLoading={approving}
-                isDisabled={approving}
-                onClick={() => onApprove(org)}
-              />
-            ) : (
-              <PrimaryButton
-                title={suspending ? 'Suspending…' : 'Suspend Salon'}
-                variant="outline"
-                size="sm"
-                fullWidth={false}
-                icon={<PauseCircle className="h-3.5 w-3.5 text-rose-600" />}
-                className="h-9 rounded-xl px-4 text-xs font-bold text-rose-700 hover:bg-rose-50 border-rose-200"
-                isLoading={suspending}
-                isDisabled={suspending}
-                onClick={() => onSuspend(org)}
-              />
-            )}
-          </div>
+          {canManage && (
+            <div className="flex items-center gap-2">
+              {!isApproved ? (
+                <PrimaryButton
+                  title={approving ? 'Activating…' : 'Approve Salon'}
+                  size="sm"
+                  fullWidth={false}
+                  icon={<Sparkles className="h-3.5 w-3.5" />}
+                  className="h-9 rounded-xl px-4 text-xs font-bold shadow-xs bg-emerald-600 hover:bg-emerald-700"
+                  isLoading={approving}
+                  isDisabled={approving}
+                  onClick={() => onApprove(org)}
+                />
+              ) : (
+                <PrimaryButton
+                  title={suspending ? 'Suspending…' : 'Suspend Salon'}
+                  variant="outline"
+                  size="sm"
+                  fullWidth={false}
+                  icon={<PauseCircle className="h-3.5 w-3.5 text-rose-600" />}
+                  className="h-9 rounded-xl px-4 text-xs font-bold text-rose-700 hover:bg-rose-50 border-rose-200"
+                  isLoading={suspending}
+                  isDisabled={suspending}
+                  onClick={() => onSuspend(org)}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
     </CustomResponsiveDialog>

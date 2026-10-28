@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DbSession, PlatformAdmin
+from app.api.deps import DbSession, PlatformAdmin, PlatformAdminOnly
 from app.core.pagination import paginate_query
 from app.models.enums import (
     OrganizationStatus,
@@ -217,7 +217,9 @@ async def get_organization_detail(
 
 
 @router.post("/organizations/{org_id}/approve", response_model=OrganizationOut)
-async def approve_organization(org_id: UUID, user: PlatformAdmin, db: DbSession) -> OrganizationOut:
+async def approve_organization(
+    org_id: UUID, user: PlatformAdminOnly, db: DbSession
+) -> OrganizationOut:
     _ = user
     org = await db.get(Organization, org_id)
     if org is None:
@@ -228,7 +230,9 @@ async def approve_organization(org_id: UUID, user: PlatformAdmin, db: DbSession)
 
 
 @router.post("/organizations/{org_id}/suspend", response_model=OrganizationOut)
-async def suspend_organization(org_id: UUID, user: PlatformAdmin, db: DbSession) -> OrganizationOut:
+async def suspend_organization(
+    org_id: UUID, user: PlatformAdminOnly, db: DbSession
+) -> OrganizationOut:
     _ = user
     org = await db.get(Organization, org_id)
     if org is None:
