@@ -15,7 +15,10 @@ import {
   type AdminTaxonomyListParams,
   AdminTaxonomyListParamsSchema,
 } from '@/lib/listing-params/admin-taxonomy-list-params'
-import { useGetAdminCategoriesQuery } from '@/store/api/platformApi'
+import {
+  useGetAdminCategoriesQuery,
+  useGetAdminTaxonomyMetricsQuery,
+} from '@/store/api/platformApi'
 import type { ApiServiceCategory } from '@/types/api-org'
 
 import { CategoryFormModal } from './CategoryFormModal'
@@ -35,6 +38,11 @@ export function AdminTaxonomyView() {
     refetch,
   } = useGetAdminCategoriesQuery(params, { skip: skipAdminApi })
 
+  const { data: metricsData, refetch: refetchMetrics } = useGetAdminTaxonomyMetricsQuery(
+    undefined,
+    { skip: skipAdminApi },
+  )
+
   const categories = categoriesData?.items ?? []
   const totalItems = categoriesData?.total ?? categories.length
   const currentPage = displayParams.page
@@ -45,6 +53,29 @@ export function AdminTaxonomyView() {
   const [editing, setEditing] = useState<ApiServiceCategory | null>(null)
   const columns = useMemo(() => getTaxonomyTableColumns(), [])
 
+  const activeCategoriesCount = useMemo(() => {
+    return categories.filter((c) => (c.status ?? 'ACTIVE').toUpperCase() === 'ACTIVE').length
+  }, [categories])
+
+  const totalActiveSalons = useMemo(() => {
+    if (metricsData?.total_active_organizations !== undefined) {
+      return metricsData.total_active_organizations
+    }
+    return categories.reduce((sum, c) => sum + (c.active_organizations_count ?? 0), 0)
+  }, [metricsData, categories])
+
+  const totalActiveServices = useMemo(() => {
+    if (metricsData?.total_active_services !== undefined) {
+      return metricsData.total_active_services
+    }
+    return categories.reduce((sum, c) => sum + (c.active_services_count ?? 0), 0)
+  }, [metricsData, categories])
+
+  const handleRefresh = () => {
+    void refetch()
+    void refetchMetrics()
+  }
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 pb-12 animate-in fade-in duration-300 sm:space-y-6">
       {/* Header Banner */}
@@ -53,7 +84,7 @@ export function AdminTaxonomyView() {
         title="Service Taxonomy & Categories"
         badge={`${totalItems} ${totalItems === 1 ? 'Category' : 'Categories'}`}
         description="Manage standardized salon service categories used across the platform for service catalog discovery, client booking menus, and automated commission take-rate mapping."
-        onRefresh={() => void refetch()}
+        onRefresh={handleRefresh}
         refreshTitle="Refresh categories"
         actions={
           <PrimaryButton
@@ -74,7 +105,7 @@ export function AdminTaxonomyView() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         <StatCard
           label="Total Categories"
-          value={totalItems}
+          value={metricsData?.total_categories ?? totalItems}
           icon={Layers}
           tone="amber"
           footnote="Service classifications"
@@ -82,26 +113,26 @@ export function AdminTaxonomyView() {
         />
         <StatCard
           label="Active Catalog"
-          value={totalItems}
+          value={metricsData?.active_categories ?? activeCategoriesCount}
           icon={Sparkles}
           tone="emerald"
           footnote="Universal booking tags"
           className="hover:border-emerald-200 hover:shadow-xs transition-all"
         />
         <StatCard
-          label="Taxonomy State"
-          value="Standardized"
+          label="Active Salons"
+          value={totalActiveSalons}
           icon={CheckCircle2}
           tone="purple"
-          footnote="Multi-tenant salon mapping"
+          footnote="Organizations using categories"
           className="hover:border-purple-200 hover:shadow-xs transition-all"
         />
         <StatCard
-          label="Commission Ready"
-          value="Universal"
+          label="Active Services"
+          value={totalActiveServices}
           icon={Tags}
           tone="sky"
-          footnote="Rule-compatible categories"
+          footnote="Live platform services"
           className="hover:border-sky-200 hover:shadow-xs transition-all"
         />
       </div>
@@ -185,6 +216,7 @@ export function AdminTaxonomyView() {
           setIsOpen(false)
           setEditing(null)
           void refetch()
+          void refetchMetrics()
         }}
       />
     </div>

@@ -16,7 +16,7 @@ from app.models.enums import (
 )
 from app.models.feedback import ClientFeedback
 from app.models.organization import Organization
-from app.models.service import Service, ServiceCategory, ServiceGiving
+from app.models.service import OrgEmployeeCategory, Service, ServiceCategory, ServiceGiving
 from app.models.user import User
 
 _APPROVED = FeedbackModerationStatus.APPROVED
@@ -67,6 +67,16 @@ async def _stylist_specialties(
             specs[user_id].add(str(category_name))
         elif service_name:
             specs[user_id].add(str(service_name))
+
+    cat_result = await db.execute(
+        select(OrgEmployeeCategory.user_id, ServiceCategory.name)
+        .join(ServiceCategory, ServiceCategory.id == OrgEmployeeCategory.service_category_id)
+        .where(OrgEmployeeCategory.user_id.in_(user_ids))
+    )
+    for user_id, category_name in cat_result.all():
+        if category_name:
+            specs[user_id].add(str(category_name))
+
     return {uid: sorted(names)[:5] for uid, names in specs.items()}
 
 

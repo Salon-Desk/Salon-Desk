@@ -9,7 +9,9 @@ import { PrimaryButton } from '@/components/button'
 import { toastColor } from '@/constant/toast-color'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
 import {
+  useCreateMyCancellationPolicyMutation,
   useCreateMyChangeRequestMutation,
+  useCreateMyOrgAccountMutation,
   useGetMyCancellationPoliciesQuery,
   useGetMyChangeRequestsQuery,
   useGetMyOrgAccountQuery,
@@ -45,7 +47,16 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
     refetch,
   } = useGetMyChangeRequestsQuery()
   const changeRequests = changeRequestsData?.items ?? []
-  const [createChangeRequest, { isLoading: submitting }] = useCreateMyChangeRequestMutation()
+  const [createChangeRequest, { isLoading: submittingChangeRequest }] =
+    useCreateMyChangeRequestMutation()
+  const [createOrgAccount, { isLoading: creatingAccount }] = useCreateMyOrgAccountMutation()
+  const [createCancellationPolicy, { isLoading: creatingPolicy }] =
+    useCreateMyCancellationPolicyMutation()
+
+  const submitting = submittingChangeRequest || creatingAccount || creatingPolicy
+
+  const isPaypalFirstTime = !account?.merchant_id || account?.status !== 'approved'
+  const isPolicyFirstTime = !policies.some((p) => p.status?.toLowerCase() === 'active')
 
   const [copied, setCopied] = useState(false)
   const [isPaypalOpen, setIsPaypalOpen] = useState(false)
@@ -101,29 +112,39 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
     },
   ) => {
     try {
-      await createChangeRequest({
-        request_type: 'PAYPAL_ACCOUNT',
-        payload_json: {
+      if (isPaypalFirstTime) {
+        await createOrgAccount({
           merchant_id: nextMerchantId,
+          merchant_email: details?.merchant_email || undefined,
           display_name: details?.display_name || org?.name || nextMerchantId,
           currency: account?.currency || 'USD',
-          merchant_email: details?.merchant_email || account?.merchant_email || null,
-          org_name: org?.name || null,
-        },
-        current_snapshot_json: {
-          merchant_id: account?.merchant_id || null,
-          merchant_email: account?.merchant_email || null,
-          display_name: account?.display_name || org?.name || null,
-          currency: account?.currency || 'USD',
-          status: account?.status || null,
-          org_name: org?.name || null,
-        },
-      }).unwrap()
-      toast.success('PayPal change request submitted for platform review', toastColor.success)
+        }).unwrap()
+        toast.success('PayPal account connected successfully!', toastColor.success)
+      } else {
+        await createChangeRequest({
+          request_type: 'PAYPAL_ACCOUNT',
+          payload_json: {
+            merchant_id: nextMerchantId,
+            display_name: details?.display_name || org?.name || nextMerchantId,
+            currency: account?.currency || 'USD',
+            merchant_email: details?.merchant_email || account?.merchant_email || null,
+            org_name: org?.name || null,
+          },
+          current_snapshot_json: {
+            merchant_id: account?.merchant_id || null,
+            merchant_email: account?.merchant_email || null,
+            display_name: account?.display_name || org?.name || null,
+            currency: account?.currency || 'USD',
+            status: account?.status || null,
+            org_name: org?.name || null,
+          },
+        }).unwrap()
+        toast.success('PayPal change request submitted for platform review', toastColor.success)
+      }
       setIsPaypalOpen(false)
     } catch (err) {
       const message =
-        (err as { data?: { detail?: string } })?.data?.detail || 'Could not submit request'
+        (err as { data?: { detail?: string } })?.data?.detail || 'Could not submit PayPal setup'
       toast.error(String(message), toastColor.error)
     }
   }
@@ -137,31 +158,44 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
     holdPercent: number
   }) => {
     try {
-      await createChangeRequest({
-        request_type: 'CANCELLATION_POLICY',
-        payload_json: {
-          name: next.name || activePolicy?.name || 'Updated policy',
-          policy_id: activePolicy?.id,
-          org_name: org?.name || null,
+      if (isPolicyFirstTime) {
+        await createCancellationPolicy({
+          name: next.name || 'Standard Salon Policy',
           data: {
             free_cancel_hours: next.policyHours,
             no_show_fee_percent: next.noShowFeePercent,
             late_cancel_fee_percent: next.lateCancelFeePercent,
             hold_percent: next.holdPercent,
           },
-        },
-        current_snapshot_json: {
-          policy_id: activePolicy?.id || null,
-          name: activePolicy?.name || null,
-          org_name: activePolicy?.org_name || org?.name || null,
-          data: activePolicy?.data || {},
-        },
-      }).unwrap()
-      toast.success('Policy amendment submitted for platform review', toastColor.success)
+        }).unwrap()
+        toast.success('Cancellation policy created and activated!', toastColor.success)
+      } else {
+        await createChangeRequest({
+          request_type: 'CANCELLATION_POLICY',
+          payload_json: {
+            name: next.name || activePolicy?.name || 'Updated policy',
+            policy_id: activePolicy?.id,
+            org_name: org?.name || null,
+            data: {
+              free_cancel_hours: next.policyHours,
+              no_show_fee_percent: next.noShowFeePercent,
+              late_cancel_fee_percent: next.lateCancelFeePercent,
+              hold_percent: next.holdPercent,
+            },
+          },
+          current_snapshot_json: {
+            policy_id: activePolicy?.id || null,
+            name: activePolicy?.name || null,
+            org_name: activePolicy?.org_name || org?.name || null,
+            data: activePolicy?.data || {},
+          },
+        }).unwrap()
+        toast.success('Policy amendment submitted for platform review', toastColor.success)
+      }
       setIsPolicyOpen(false)
     } catch (err) {
       const message =
-        (err as { data?: { detail?: string } })?.data?.detail || 'Could not submit request'
+        (err as { data?: { detail?: string } })?.data?.detail || 'Could not submit policy'
       toast.error(String(message), toastColor.error)
     }
   }
@@ -213,6 +247,7 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
         {showPaypal ? (
           <MerchantPaypalCard
             account={account}
+            isFirstTime={isPaypalFirstTime}
             orgName={org?.name}
             merchantId={merchantId}
             copied={copied}
@@ -226,6 +261,7 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
           <MerchantPolicyCard
             policies={policies}
             activePolicy={activePolicy}
+            isFirstTime={isPolicyFirstTime}
             orgName={org?.name}
             policyHours={policyHours}
             noShowFeePercent={noShowFeePercent}
@@ -252,6 +288,7 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
       {/* Modals */}
       <PaypalChangeModal
         open={isPaypalOpen}
+        isFirstTime={isPaypalFirstTime}
         currentMerchantId={merchantId}
         currentEmail={account?.merchant_email}
         currentDisplayName={account?.display_name || org?.name}
@@ -262,6 +299,7 @@ export function MerchantFinanceSettings({ mode = 'all' }: MerchantFinanceSetting
 
       <PolicyChangeModal
         open={isPolicyOpen}
+        isFirstTime={isPolicyFirstTime}
         initialName={activePolicy?.name}
         policyHours={policyHours}
         noShowFeePercent={noShowFeePercent}

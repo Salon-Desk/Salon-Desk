@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Shield, ShieldCheck, Users } from 'lucide-react'
+import { KeyRound, Mail, Plus, Shield, ShieldCheck, Trash2, Users } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -10,6 +10,7 @@ import { DeleteConfirmationDialog } from '@/components/dialog'
 import { EmptyState } from '@/components/empty/EmptyState'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
 import { PageHeader } from '@/components/ui'
+import { Button } from '@/components/ui/button'
 import { AdminQueryState } from '@/components/ui/query-state-view'
 import { toastColor } from '@/constant/toast-color'
 import { useAdminSession } from '@/hooks/use-admin-session'
@@ -18,14 +19,20 @@ import {
   type AdminStaffListParams,
   AdminStaffListParamsSchema,
 } from '@/lib/listing-params/admin-staff-list-params'
-import { useDeleteAdminStaffMutation, useGetAdminStaffQuery } from '@/store/api/platformApi'
+import {
+  useDeleteAdminStaffMutation,
+  useGetAdminStaffQuery,
+  useResendAdminStaffInviteMutation,
+  useResetAdminStaffPasswordMutation,
+} from '@/store/api/platformApi'
 import type { User } from '@/types/user'
 
 import { getAdminStaffColumns } from './AdminStaffColumns'
 import { AdminStaffFormModal } from './AdminStaffFormModal'
+import { StaffActionConfirmDialog } from './StaffActionConfirmDialog'
 
 export function AdminStaffView() {
-  const { skipAdminApi } = useAdminSession()
+  const { user, skipAdminApi } = useAdminSession()
   const { params, displayParams, setParam, setParams } = useListingParams<
     AdminStaffListParams,
     typeof AdminStaffListParamsSchema
@@ -39,11 +46,19 @@ export function AdminStaffView() {
   } = useGetAdminStaffQuery(params, { skip: skipAdminApi })
   const { data: allStaffData } = useGetAdminStaffQuery(undefined, { skip: skipAdminApi })
   const [deleteStaff] = useDeleteAdminStaffMutation()
+  const [resendInvite] = useResendAdminStaffInviteMutation()
+  const [resetPassword] = useResetAdminStaffPasswordMutation()
 
   const [isOpen, setIsOpen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [memberToDeactivate, setMemberToDeactivate] = useState<User | null>(null)
   const [isDeactivating, setIsDeactivating] = useState(false)
+
+  const [staffActionTarget, setStaffActionTarget] = useState<User | null>(null)
+  const [staffActionType, setStaffActionType] = useState<'resend_invite' | 'reset_password'>(
+    'resend_invite',
+  )
+  const [isActionLoading, setIsActionLoading] = useState(false)
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -98,8 +113,11 @@ export function AdminStaffView() {
   }, [filteredStaff, displayParams.page, displayParams.limit])
 
   const handleInitiateDeactivate = (member: User) => {
-    if (member.role === 'platform_admin') {
-      toast.error('Platform administrators cannot be removed', toastColor.error)
+    if (user?.id && member.id === user.id) {
+      toast.error(
+        'You cannot delete your own account. Platform admins may only remove other users.',
+        toastColor.error,
+      )
       return
     }
     if (member.status?.toUpperCase() === 'INACTIVE') {
@@ -128,7 +146,33 @@ export function AdminStaffView() {
     }
   }
 
-  const columns = useMemo(() => getAdminStaffColumns(), [])
+  const handleConfirmStaffAction = async () => {
+    if (!staffActionTarget) return
+    setIsActionLoading(true)
+    try {
+      if (staffActionType === 'resend_invite') {
+        const res = await resendInvite(staffActionTarget.id).unwrap()
+        toast.success(
+          res.detail || `Invitation resent to ${staffActionTarget.email}`,
+          toastColor.success,
+        )
+      } else {
+        const res = await resetPassword(staffActionTarget.id).unwrap()
+        toast.success(
+          res.detail || `Temporary password emailed to ${staffActionTarget.email}`,
+          toastColor.success,
+        )
+      }
+      setStaffActionTarget(null)
+    } catch (err) {
+      const message = (err as { data?: { detail?: string } })?.data?.detail || 'Operation failed'
+      toast.error(String(message), toastColor.error)
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  const columns = useMemo(() => getAdminStaffColumns(user?.id), [user?.id])
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 pb-12 animate-in fade-in duration-300">
@@ -260,7 +304,64 @@ export function AdminStaffView() {
             showItemsPerPage={true}
             showColumnSelector={true}
             showActions={true}
-            onDelete={(member) => handleInitiateDeactivate(member)}
+            renderRowActions={(member) => {
+              const isSelf = Boolean(user?.id && member.id === user.id)
+              return (
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-muted-foreground hover:bg-sky-50 hover:text-sky-700 transition-all cursor-pointer"
+                    onClick={() => {
+                      setStaffActionTarget(member)
+                      setStaffActionType('resend_invite')
+                    }}
+                    title={`Resend invitation to ${member.email}`}
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    <span className="sr-only">Resend Invite</span>
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-muted-foreground hover:bg-amber-50 hover:text-amber-700 transition-all cursor-pointer"
+                    onClick={() => {
+                      setStaffActionTarget(member)
+                      setStaffActionType('reset_password')
+                    }}
+                    title={`Reset password for ${member.email}`}
+                  >
+                    <KeyRound className="h-3.5 w-3.5" />
+                    <span className="sr-only">Reset Password</span>
+                  </Button>
+
+                  {isSelf ? (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      disabled
+                      className="h-7 w-7 opacity-30 cursor-not-allowed text-slate-400"
+                      title="You cannot delete your own account"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span className="sr-only">Cannot delete own account</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all cursor-pointer"
+                      onClick={() => handleInitiateDeactivate(member)}
+                      title={`Deactivate ${member.email}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span className="sr-only">Deactivate</span>
+                    </Button>
+                  )}
+                </div>
+              )
+            }}
             refetch={() => void handleRefresh()}
             isFetching={isLoading || isRefreshing}
             customButtons={[
@@ -284,6 +385,15 @@ export function AdminStaffView() {
         open={isOpen}
         onClose={() => setIsOpen(false)}
         onCreated={() => void refetch()}
+      />
+
+      <StaffActionConfirmDialog
+        open={Boolean(staffActionTarget)}
+        onClose={() => setStaffActionTarget(null)}
+        onConfirm={() => void handleConfirmStaffAction()}
+        member={staffActionTarget}
+        actionType={staffActionType}
+        isLoading={isActionLoading}
       />
 
       <DeleteConfirmationDialog

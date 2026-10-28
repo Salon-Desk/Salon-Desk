@@ -16,18 +16,21 @@ import {
 import { Logo } from '@/components/brand'
 import { ConsoleSidebarNav, type SidebarTab } from '@/components/layout/console-sidebar-nav'
 import type { MerchantSalonInfo } from '@/lib/data/merchant'
+import { canAccessMerchantRoute } from '@/lib/permissions/permissions'
 
 import type { MerchantTab } from '../_types/merchant-types'
 import { MERCHANT_TAB_GROUPS, MERCHANT_TAB_ROUTES } from '../_types/merchant-types'
 
 interface MerchantSidebarProps {
   salon: MerchantSalonInfo
+  role?: string
   activeTab: MerchantTab
   activeHoldsCount: number
   bookingsCount: number
   staffCount: number
   servicesCount: number
   pendingChangeRequests: number
+  incompleteSetupCount?: number
   onTabChange?: (tab: MerchantTab) => void
   onOpenCopilot: () => void
   onLockSession: () => void
@@ -36,18 +39,20 @@ interface MerchantSidebarProps {
 
 export function MerchantSidebar({
   salon,
+  role,
   activeTab,
   activeHoldsCount,
   bookingsCount,
   staffCount,
   servicesCount,
   pendingChangeRequests,
+  incompleteSetupCount = 0,
   onTabChange,
   onOpenCopilot,
   onLockSession,
   onCloseMobile,
 }: MerchantSidebarProps) {
-  const tabs: SidebarTab<MerchantTab>[] = [
+  const allTabs: SidebarTab<MerchantTab>[] = [
     {
       id: 'dashboard',
       label: 'Dashboard',
@@ -102,16 +107,28 @@ export function MerchantSidebar({
       label: 'Settings',
       icon: Settings,
       group: 'Salon Configuration',
-      badge: pendingChangeRequests,
-      isAlert: true,
+      badge: incompleteSetupCount + pendingChangeRequests,
+      isAlert: incompleteSetupCount > 0,
       href: MERCHANT_TAB_ROUTES.settings,
     },
   ]
+
+  const tabs = allTabs.filter((tab) => !tab.href || canAccessMerchantRoute(role, tab.href))
 
   const handleNavChange = (tab: MerchantTab) => {
     onTabChange?.(tab)
     onCloseMobile?.()
   }
+
+  const roleLabel = role
+    ? role === 'org_owner'
+      ? 'Owner'
+      : role === 'reception'
+        ? 'Receptionist'
+        : role === 'stylist'
+          ? 'Stylist'
+          : role.replace(/_/g, ' ')
+    : 'Staff'
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#0A0E17] text-slate-200">
@@ -170,7 +187,7 @@ export function MerchantSidebar({
             <div className="min-w-0">
               <div className="truncate text-xs font-semibold text-slate-200">{salon.name}</div>
               <div className="truncate text-[10px] font-medium text-slate-400 mt-0.5">
-                {salon.ownerName} · Owner
+                {salon.ownerName} · {roleLabel}
               </div>
             </div>
           </div>

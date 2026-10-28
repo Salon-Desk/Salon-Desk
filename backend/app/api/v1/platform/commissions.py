@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from app.api.deps import DbSession, PlatformAdmin
+from app.api.deps import DbSession, PlatformAdmin, PlatformAdminOnly
 from app.core.pagination import paginate_query
 from app.models.ledger import PlatformCommission
 from app.schemas.common import PageOut
@@ -43,7 +43,7 @@ async def list_commissions(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_commission(
-    body: PlatformCommissionCreate, user: PlatformAdmin, db: DbSession
+    body: PlatformCommissionCreate, user: PlatformAdminOnly, db: DbSession
 ) -> PlatformCommissionOut:
     _ = user
     from app.models.enums import PlatformCommissionType
@@ -68,7 +68,7 @@ async def create_commission(
 async def update_commission(
     commission_id: UUID,
     body: PlatformCommissionUpdate,
-    user: PlatformAdmin,
+    user: PlatformAdminOnly,
     db: DbSession,
 ) -> PlatformCommissionOut:
     _ = user

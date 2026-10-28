@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import DbSession, PlatformAdmin
+from app.api.deps import DbSession, PlatformAdmin, PlatformAdminOnly
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.core.pagination import paginate_items
 from app.schemas.common import PageOut
@@ -38,7 +38,7 @@ async def list_commission_invoices(
 )
 async def generate_commission_invoice(
     body: GenerateCommissionInvoiceRequest,
-    user: PlatformAdmin,
+    user: PlatformAdminOnly,
     db: DbSession,
 ) -> OrgCommissionInvoiceOut:
     _ = user
@@ -62,7 +62,7 @@ async def generate_commission_invoice(
 )
 async def issue_commission_invoice(
     invoice_id: UUID,
-    user: PlatformAdmin,
+    user: PlatformAdminOnly,
     db: DbSession,
 ) -> OrgCommissionInvoiceOut:
     _ = user
@@ -84,7 +84,7 @@ async def issue_commission_invoice(
 )
 async def void_commission_invoice(
     invoice_id: UUID,
-    user: PlatformAdmin,
+    user: PlatformAdminOnly,
     db: DbSession,
 ) -> OrgCommissionInvoiceOut:
     _ = user

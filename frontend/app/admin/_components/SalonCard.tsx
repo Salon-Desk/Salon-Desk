@@ -15,6 +15,7 @@ interface SalonCardProps {
   approving: boolean
   suspending: boolean
   copiedKey: string | null
+  canManage?: boolean
   onApprove: (org: ApiOrganization) => void
   onSuspend: (org: ApiOrganization) => void
   onViewDetail: (org: ApiOrganization) => void
@@ -27,6 +28,7 @@ export function SalonCard({
   approving,
   suspending,
   copiedKey,
+  canManage = true,
   onApprove,
   onSuspend,
   onViewDetail,
@@ -118,7 +120,7 @@ export function SalonCard({
           <Eye className="h-3.5 w-3.5 text-slate-500" />
           <span>Detail</span>
         </button>
-        {!isApproved && (
+        {canManage && !isApproved && (
           <PrimaryButton
             title={isActioning && approving ? 'Approving…' : 'Approve Salon'}
             size="sm"
@@ -129,7 +131,7 @@ export function SalonCard({
             onClick={() => onApprove(org)}
           />
         )}
-        {!isSuspended && (
+        {canManage && !isSuspended && (
           <PrimaryButton
             title={isActioning && suspending ? 'Suspending…' : 'Suspend'}
             variant="destructive"

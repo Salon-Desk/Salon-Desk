@@ -29,12 +29,18 @@ from app.models.ledger import (
 from app.models.organization import (
     Organization,
     OrgEmployeeShift,
+    OrgEmployeeTimeOff,
     OrgSettings,
     OrgShift,
 )
 from app.models.payment import OrgAccount, PaymentCapture, PaymentHold, PaypalWebhookEvent
 from app.models.policy import ChangeRequest, Consent, OrgCancellationPolicy
-from app.models.service import Service, ServiceCategory, ServiceGiving
+from app.models.service import (
+    OrgEmployeeCategory,
+    Service,
+    ServiceCategory,
+    ServiceGiving,
+)
 from app.models.user import EmailVerificationToken, PasswordResetToken, Profile, User
 
 __all__ = [
@@ -50,11 +56,13 @@ __all__ = [
     "OrgSettings",
     "OrgShift",
     "OrgEmployeeShift",
+    "OrgEmployeeTimeOff",
     "OrgCancellationPolicy",
     "OrgAccount",
     "ChangeRequest",
     "Consent",
     "ServiceCategory",
+    "OrgEmployeeCategory",
     "Service",
     "ServiceGiving",
     "Booking",

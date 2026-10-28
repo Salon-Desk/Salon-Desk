@@ -2,6 +2,7 @@ import type { ClientFeedbackItem } from '@/types/api-feedback'
 import {
   type AdminCuration,
   type AdminDashboard,
+  type AdminOrganizationDetail,
   type ApiChangeRequest,
   type ApiOrganization,
   type ApiPage,
@@ -15,6 +16,7 @@ import {
   type OrgCommissionInvoice,
   type PlatformCommission,
   type PopularSettings,
+  type TaxonomyMetrics,
   type UpdateFeaturedItemRequest,
   type UpdateHeroSettingsRequest,
   type UpdatePopularSettingsRequest,
@@ -48,6 +50,14 @@ export const platformApi = baseApi.injectEndpoints({
       providesTags: ['admin', 'organizations'],
     }),
 
+    getAdminOrganizationDetail: builder.query<AdminOrganizationDetail, string>({
+      query: (orgId) => ({
+        url: `/api/v1/admin/organizations/${orgId}`,
+        method: 'GET',
+      }),
+      providesTags: (_res, _err, id) => [{ type: 'organizations', id }, 'admin'],
+    }),
+
     getPendingSalons: builder.query<
       ApiPage<ApiOrganization>,
       { page?: number; page_size?: number; q?: string } | void
@@ -76,6 +86,11 @@ export const platformApi = baseApi.injectEndpoints({
         method: 'POST',
       }),
       invalidatesTags: ['admin', 'organizations', 'dashboard'],
+    }),
+
+    getAdminTaxonomyMetrics: builder.query<TaxonomyMetrics, void>({
+      query: () => ({ url: '/api/v1/admin/service-categories/metrics', method: 'GET' }),
+      providesTags: ['admin', 'catalog'],
     }),
 
     getAdminCategories: builder.query<
@@ -233,6 +248,22 @@ export const platformApi = baseApi.injectEndpoints({
       invalidatesTags: ['admin', 'user'],
     }),
 
+    resendAdminStaffInvite: builder.mutation<MessageOut, string>({
+      query: (staffId) => ({
+        url: `/api/v1/admin/staff/${staffId}/resend-invite`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['admin', 'user'],
+    }),
+
+    resetAdminStaffPassword: builder.mutation<MessageOut, string>({
+      query: (staffId) => ({
+        url: `/api/v1/admin/staff/${staffId}/reset-password`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['admin', 'user'],
+    }),
+
     getAdminCommissionInvoices: builder.query<
       ApiPage<OrgCommissionInvoice>,
       { page?: number; page_size?: number; status?: string; org_id?: string; q?: string } | void
@@ -382,9 +413,11 @@ export const platformApi = baseApi.injectEndpoints({
 export const {
   useGetAdminDashboardQuery,
   useGetAdminOrganizationsQuery,
+  useGetAdminOrganizationDetailQuery,
   useGetPendingSalonsQuery,
   useApproveOrganizationMutation,
   useSuspendOrganizationMutation,
+  useGetAdminTaxonomyMetricsQuery,
   useGetAdminCategoriesQuery,
   useCreateAdminCategoryMutation,
   useUpdateAdminCategoryMutation,
@@ -397,6 +430,8 @@ export const {
   useGetAdminStaffQuery,
   useCreateAdminStaffMutation,
   useDeleteAdminStaffMutation,
+  useResendAdminStaffInviteMutation,
+  useResetAdminStaffPasswordMutation,
   useGetAdminCommissionInvoicesQuery,
   useCreateAdminCommissionInvoiceMutation,
   useIssueAdminCommissionInvoiceMutation,

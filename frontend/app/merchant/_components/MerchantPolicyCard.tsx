@@ -10,6 +10,7 @@ import type { ApiCancellationPolicy } from '@/types/api-org'
 interface MerchantPolicyCardProps {
   policies: ApiCancellationPolicy[]
   activePolicy?: ApiCancellationPolicy
+  isFirstTime?: boolean
   orgName?: string
   policyHours: number
   noShowFeePercent: number
@@ -23,6 +24,7 @@ interface MerchantPolicyCardProps {
 export function MerchantPolicyCard({
   policies,
   activePolicy,
+  isFirstTime = false,
   orgName,
   policyHours,
   noShowFeePercent,
@@ -47,7 +49,9 @@ export function MerchantPolicyCard({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900">
-                {activePolicy?.name || 'Standard 24h Policy'}
+                {isFirstTime
+                  ? 'No Cancellation Policy Configured'
+                  : activePolicy?.name || 'Standard 24h Policy'}
               </h2>
               <p className="text-xs text-slate-500">
                 Enforced cancellation window &amp; no-show guarantee terms
@@ -56,12 +60,36 @@ export function MerchantPolicyCard({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold capitalize text-emerald-800">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-              {activePolicy?.status || 'active'}
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold capitalize ${
+                isFirstTime
+                  ? 'border-amber-300 bg-amber-50 text-amber-800'
+                  : 'border-emerald-300 bg-emerald-50 text-emerald-800'
+              }`}
+            >
+              <span
+                className={`h-2 w-2 animate-pulse rounded-full ${
+                  isFirstTime ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}
+              />
+              {isFirstTime ? 'Setup Required' : activePolicy?.status || 'active'}
             </span>
           </div>
         </div>
+
+        {isFirstTime && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-200/90 bg-amber-50/70 p-4 text-amber-950">
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold">Cancellation Policy Required</h4>
+              <p className="text-[11.5px] leading-relaxed text-amber-900/90">
+                Define your salon’s cancellation notice window and no-show fee protection to
+                activate online client bookings. Setting your initial policy takes effect
+                immediately without requiring compliance review.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Organization & Policy Meta */}
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200/70 bg-slate-50/80 p-3 text-xs text-slate-600">
@@ -92,7 +120,13 @@ export function MerchantPolicyCard({
               <Clock className="h-3 w-3 text-slate-400" />
               <span>Free Notice</span>
             </div>
-            <div className="font-mono text-base font-bold text-slate-900">≥ {policyHours}h</div>
+            <div
+              className={`text-base font-bold ${
+                isFirstTime ? 'font-sans text-sm italic text-slate-400' : 'font-mono text-slate-900'
+              }`}
+            >
+              {isFirstTime ? 'Not configured' : `≥ ${policyHours}h`}
+            </div>
             <span className="block text-[10px] leading-tight text-slate-500">
               Cutoff for 100% free cancellation
             </span>
@@ -103,8 +137,16 @@ export function MerchantPolicyCard({
               <ShieldAlert className="h-3 w-3 text-rose-500" />
               <span>No-Show Fee</span>
             </div>
-            <div className="font-mono text-base font-bold text-rose-800">
-              {flatNoShowFee ? formatUsd(flatNoShowFee) : `${noShowFeePercent}%`}
+            <div
+              className={`text-base font-bold ${
+                isFirstTime ? 'font-sans text-sm italic text-slate-400' : 'font-mono text-rose-800'
+              }`}
+            >
+              {isFirstTime
+                ? 'Not configured'
+                : flatNoShowFee
+                  ? formatUsd(flatNoShowFee)
+                  : `${noShowFeePercent}%`}
             </div>
             <span className="block text-[10px] leading-tight text-slate-500">
               Retained on unannounced missed slot
@@ -116,8 +158,12 @@ export function MerchantPolicyCard({
               <Sliders className="h-3 w-3 text-amber-600" />
               <span>Late Cancel</span>
             </div>
-            <div className="font-mono text-base font-bold text-amber-900">
-              {lateCancelFeePercent}%
+            <div
+              className={`text-base font-bold ${
+                isFirstTime ? 'font-sans text-sm italic text-slate-400' : 'font-mono text-amber-900'
+              }`}
+            >
+              {isFirstTime ? 'Not configured' : `${lateCancelFeePercent}%`}
             </div>
             <span className="block text-[10px] leading-tight text-slate-500">
               Captured if cancelled past notice window
@@ -129,7 +175,15 @@ export function MerchantPolicyCard({
               <CreditCard className="h-3 w-3 text-emerald-600" />
               <span>Hold Share</span>
             </div>
-            <div className="font-mono text-base font-bold text-emerald-800">{holdPercent}%</div>
+            <div
+              className={`text-base font-bold ${
+                isFirstTime
+                  ? 'font-sans text-sm italic text-slate-400'
+                  : 'font-mono text-emerald-800'
+              }`}
+            >
+              {isFirstTime ? 'Not configured' : `${holdPercent}%`}
+            </div>
             <span className="block text-[10px] leading-tight text-slate-500">
               Zero-debit hold capacity at checkout
             </span>
@@ -142,14 +196,22 @@ export function MerchantPolicyCard({
             <FileText className="h-4 w-4 text-amber-700" />
             <span>Client Checkout Consent Agreement</span>
           </div>
-          <p className="rounded-lg border border-amber-200/60 bg-white/70 p-3 font-serif text-[11px] italic leading-relaxed text-amber-900/90">
-            &ldquo;I authorize a {holdPercent}% zero-debit PayPal hold for this reservation at{' '}
-            {resolvedOrgName}. I understand cancellations made at least {policyHours} hours prior
-            incur no charge. Cancellations within {policyHours} hours incur a {lateCancelFeePercent}
-            % late cancellation fee. Missed appointments incur a{' '}
-            {flatNoShowFee ? formatUsd(flatNoShowFee) : `${noShowFeePercent}%`} no-show fee settled
-            to the salon.&rdquo;
-          </p>
+          {isFirstTime ? (
+            <p className="rounded-lg border border-amber-200/60 bg-white/70 p-3 text-[11px] leading-relaxed text-amber-900/80">
+              Clients booking services at your salon will be required to accept your cancellation
+              policy terms prior to checkout. Complete your policy setup to generate this live
+              consent contract.
+            </p>
+          ) : (
+            <p className="rounded-lg border border-amber-200/60 bg-white/70 p-3 font-serif text-[11px] italic leading-relaxed text-amber-900/90">
+              &ldquo;I authorize a {holdPercent}% zero-debit PayPal hold for this reservation at{' '}
+              {resolvedOrgName}. I understand cancellations made at least {policyHours} hours prior
+              incur no charge. Cancellations within {policyHours} hours incur a{' '}
+              {lateCancelFeePercent}% late cancellation fee. Missed appointments incur a{' '}
+              {flatNoShowFee ? formatUsd(flatNoShowFee) : `${noShowFeePercent}%`} no-show fee
+              settled to the salon.&rdquo;
+            </p>
+          )}
         </div>
 
         {/* All Policies List if multiple exist */}
@@ -187,17 +249,21 @@ export function MerchantPolicyCard({
           </div>
         ) : null}
 
-        <div className="flex flex-col items-center justify-between gap-1 pt-2 md:flex-row">
+        <div className="flex flex-col items-center justify-between gap-2 pt-2 md:flex-row">
           <PrimaryButton
-            title="Request Policy Amendment"
-            variant="outline"
+            title={isFirstTime ? 'Set Up Cancellation Policy' : 'Request Policy Amendment'}
+            variant={isFirstTime ? 'primary' : 'outline'}
             size="sm"
             isDisabled={submitting}
             onClick={onRequestChange}
             icon={<Sliders className="h-3.5 w-3.5" />}
-            className="h-10 rounded-xl text-xs font-semibold w-1/2"
+            className={`h-10 rounded-xl text-xs font-semibold ${isFirstTime ? 'w-full sm:w-auto px-6' : 'w-1/2'}`}
           />
-          <span className="text-[11px] text-slate-400">Requires platform compliance review</span>
+          <span className="text-[11px] text-slate-400">
+            {isFirstTime
+              ? 'Takes effect immediately for your salon'
+              : 'Requires platform compliance review'}
+          </span>
         </div>
       </Card>
     </div>

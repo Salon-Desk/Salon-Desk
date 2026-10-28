@@ -45,6 +45,17 @@ class User(TimestampedModel):
         back_populates="user",
         uselist=False,
     )
+    employee_categories = relationship(
+        "OrgEmployeeCategory",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def category_ids(self) -> list[uuid.UUID]:
+        if "employee_categories" in self.__dict__ and self.employee_categories is not None:
+            return [ec.service_category_id for ec in self.employee_categories]
+        return []
 
 
 class Profile(TimestampedModel):
@@ -61,6 +72,12 @@ class Profile(TimestampedModel):
     middle_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     picture: Mapped[str | None] = mapped_column(String(512), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    handle: Mapped[str | None] = mapped_column(
+        String(64),
+        unique=True,
+        index=True,
+        nullable=True,
+    )
 
     user = relationship("User", back_populates="profile")
 
