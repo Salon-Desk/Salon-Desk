@@ -1,6 +1,5 @@
-'use client'
-
-import { useEffect } from 'react'
+import { Sparkles } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -13,6 +12,8 @@ import RHFTextField from '@/components/forms/RHFTextField'
 import { RHFUploadImage } from '@/components/forms/RHFUploadImage'
 import { toastColor } from '@/constant/toast-color'
 import { zodResolver } from '@/lib/schema/resolver'
+import { cn } from '@/lib/utils'
+import { useGetCatalogCategoriesQuery } from '@/store/api/clientApi'
 import { useUpdateMyEmployeeMutation, useUploadEmployeeAvatarMutation } from '@/store/api/orgApi'
 import type { User } from '@/types/user'
 
@@ -27,6 +28,12 @@ interface EditEmployeeModalProps {
 export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModalProps) {
   const [updateEmployee, { isLoading: isUpdating }] = useUpdateMyEmployeeMutation()
   const [uploadAvatar, { isLoading: isUploading }] = useUploadEmployeeAvatarMutation()
+  const { data: categoriesData } = useGetCatalogCategoriesQuery(
+    { page: 1, page_size: 100 },
+    { skip: !open },
+  )
+  const categories = categoriesData?.items ?? []
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
 
   const isLoading = isUpdating || isUploading
 
@@ -35,10 +42,12 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
     defaultValues: {
       first_name: '',
       last_name: '',
+      handle: '',
       middle_name: '',
       phone: '',
       role: 'stylist',
       picture: null,
+      category_ids: [],
     },
     mode: 'onBlur',
   })
@@ -48,13 +57,22 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
       methods.reset({
         first_name: employee.profile?.first_name || employee.first_name || '',
         last_name: employee.profile?.last_name || employee.last_name || '',
+        handle: employee.profile?.handle || employee.handle || '',
         middle_name: employee.profile?.middle_name || '',
         phone: employee.profile?.phone || employee.phone || '',
         role: employee.role === 'reception' ? 'reception' : 'stylist',
         picture: employee.profile?.picture || null,
+        category_ids: employee.category_ids || [],
       })
+      setSelectedCategoryIds(employee.category_ids || [])
     }
   }, [employee, open, methods])
+
+  const toggleCategory = (catId: string) => {
+    setSelectedCategoryIds((prev) =>
+      prev.includes(catId) ? prev.filter((id) => id !== catId) : [...prev, catId],
+    )
+  }
 
   const onSubmit = async (data: EditEmployeeFormData) => {
     if (!employee) return
@@ -72,15 +90,19 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
         pictureUrl = employee.profile?.picture || null
       }
 
+      const cleanHandle = (data.handle ?? '').trim().replace(/^@/, '').toLowerCase() || null
+
       await updateEmployee({
         employeeId: employee.id,
         data: {
           first_name: (data.first_name ?? '').trim(),
           last_name: (data.last_name ?? '').trim(),
+          handle: cleanHandle,
           middle_name: data.middle_name?.trim() || null,
           phone: data.phone?.trim() || null,
           role: data.role,
           picture: pictureUrl,
+          category_ids: selectedCategoryIds,
         },
       }).unwrap()
       toast.success('Team member updated', toastColor.success)
@@ -132,14 +154,23 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
             <RHFTextField name="last_name" label="Last name" isRequired />
           </div>
 
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <RHFTextField
+              name="handle"
+              label="Staff handle"
+              placeholder="e.g. sarah_cuts"
+              leftIcon="user"
+              isRequired={false}
+            />
+            <RHFPhoneField name="phone" label="Phone number" isRequired={false} />
+          </div>
+
           <RHFTextField
             name="middle_name"
             label="Middle name"
             isRequired={false}
             placeholder="Optional"
           />
-
-          <RHFPhoneField name="phone" label="Phone number" isRequired={false} />
 
           {!isOwner ? (
             <RHFDropeDown
@@ -154,6 +185,43 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
           ) : (
             <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-2 text-xs text-amber-800">
               Role: Organization Owner (Role cannot be changed)
+            </div>
+          )}
+
+          {categories.length > 0 && (
+            <div className="space-y-1.5 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                  Service Categories
+                </label>
+                <span className="text-[10px] text-slate-400">
+                  {selectedCategoryIds.length} selected
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Staff member will be matched for bookings in these service categories.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {categories.map((cat) => {
+                  const isSelected = selectedCategoryIds.includes(cat.id)
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => toggleCategory(cat.id)}
+                      className={cn(
+                        'cursor-pointer rounded-lg border px-2.5 py-1 text-xs font-medium transition-all select-none',
+                        isSelected
+                          ? 'border-amber-400 bg-amber-500/15 text-amber-900 font-bold shadow-2xs'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900',
+                      )}
+                    >
+                      {cat.name}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )}
 

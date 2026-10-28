@@ -1,6 +1,8 @@
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession
+from app.models.user import Profile
 from app.schemas.auth import ChangePasswordRequest, MeResponse
 from app.schemas.common import MessageOut
 from app.schemas.user import ProfileOut, ProfileUpdate, UserOut
@@ -32,6 +34,23 @@ async def update_profile(body: ProfileUpdate, user: CurrentUser, db: DbSession) 
     if user.profile is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Profile not found")
     data = body.model_dump(exclude_unset=True)
+    if "handle" in data:
+        raw_handle = data.pop("handle")
+        if raw_handle:
+            cleaned_handle = raw_handle.strip().lstrip("@").lower()
+            stmt = select(Profile).where(
+                Profile.handle == cleaned_handle, Profile.user_id != user.id
+            )
+            existing = await db.execute(stmt)
+            if existing.scalar_one_or_none():
+                raise HTTPException(
+                    status.HTTP_409_CONFLICT,
+                    detail=f"Handle '@{cleaned_handle}' is already in use",
+                )
+            user.profile.handle = cleaned_handle
+        else:
+            user.profile.handle = None
+
     for key, value in data.items():
         setattr(user.profile, key, value)
     await db.flush()

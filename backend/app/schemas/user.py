@@ -18,6 +18,7 @@ class ProfileOut(ORMModel):
     middle_name: str | None = None
     picture: str | None = None
     phone: str | None = None
+    handle: str | None = None
 
 
 class ProfileUpdate(BaseModel):
@@ -26,6 +27,7 @@ class ProfileUpdate(BaseModel):
     middle_name: str | None = None
     picture: str | None = None
     phone: str | None = None
+    handle: str | None = None
 
 
 class UserOut(ORMModel):
@@ -37,6 +39,7 @@ class UserOut(ORMModel):
     email_verified_at: datetime | None = None
     created_at: datetime
     profile: ProfileOut | None = None
+    category_ids: list[UUID] = []
 
 
 class EmployeeCreate(BaseModel):
@@ -47,6 +50,8 @@ class EmployeeCreate(BaseModel):
     middle_name: str | None = None
     phone: str | None = None
     role: str = Field(description="reception or stylist")
+    handle: str | None = None
+    category_ids: list[UUID] | None = None
 
 
 class EmployeeUpdate(BaseModel):
@@ -56,6 +61,18 @@ class EmployeeUpdate(BaseModel):
     phone: str | None = None
     role: str | None = Field(default=None, description="reception or stylist")
     picture: str | None = None
+    handle: str | None = None
+    category_ids: list[UUID] | None = None
+
+
+class EmployeeCategoriesUpdate(BaseModel):
+    category_ids: list[UUID]
+
+
+class EmployeeCategoryOut(ORMModel):
+    id: UUID
+    name: str
+    description: str | None = None
 
 
 class StaffCreate(BaseModel):

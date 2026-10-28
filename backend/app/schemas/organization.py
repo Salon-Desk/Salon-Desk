@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -67,17 +67,48 @@ class OrgShiftOut(ORMModel):
 class OrgEmployeeShiftCreate(BaseModel):
     user_id: UUID
     org_shift_id: UUID
+    days: list[str] | None = None
+
+
+class OrgEmployeeShiftUpdate(BaseModel):
+    org_shift_id: UUID | None = None
+    days: list[str] | None = None
 
 
 class OrgEmployeeShiftOut(ORMModel):
     id: UUID
     user_id: UUID
     org_shift_id: UUID
+    days: list[str] = ["monday", "tuesday", "wednesday", "thursday", "friday"]
     created_at: datetime
     employee_name: str | None = None
     employee_email: str | None = None
     shift_name: str | None = None
     shift_data: dict | None = None
+
+
+class OrgEmployeeTimeOffCreate(BaseModel):
+    user_id: UUID
+    start_date: date
+    end_date: date
+    reason: str | None = None
+
+
+class OrgEmployeeTimeOffOut(ORMModel):
+    id: UUID
+    org_id: UUID
+    user_id: UUID
+    start_date: date
+    end_date: date
+    reason: str | None = None
+    created_at: datetime
+    employee_name: str | None = None
+    employee_email: str | None = None
+
+
+class CancellationPolicyCreate(BaseModel):
+    name: str = "Standard Cancellation Policy"
+    data: dict
 
 
 class CancellationPolicyOut(ORMModel):
@@ -89,6 +120,13 @@ class CancellationPolicyOut(ORMModel):
     org_name: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+class OrgAccountCreate(BaseModel):
+    merchant_id: str
+    merchant_email: str | None = None
+    display_name: str | None = None
+    currency: str = "USD"
 
 
 class OrgAccountOut(ORMModel):

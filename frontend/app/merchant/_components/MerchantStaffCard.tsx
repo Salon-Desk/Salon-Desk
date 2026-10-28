@@ -1,6 +1,17 @@
 'use client'
 
-import { CheckCircle2, Clock, Copy, Mail, Phone, SquarePen, Trash2, UserRound } from 'lucide-react'
+import {
+  CheckCircle2,
+  Clock,
+  Copy,
+  KeyRound,
+  Mail,
+  Phone,
+  Sparkles,
+  SquarePen,
+  Trash2,
+  UserRound,
+} from 'lucide-react'
 
 import { StatusBadge } from '@/components/badge/StatusBadge'
 import { Badge, Card } from '@/components/ui'
@@ -24,6 +35,8 @@ interface MerchantStaffCardProps {
   onEdit?: (member: User) => void
   onDelete?: (member: User) => void
   onManageShifts?: (member: User) => void
+  onResendInvite?: (member: User) => void
+  onResetPassword?: (member: User) => void
 }
 
 export function MerchantStaffCard({
@@ -34,6 +47,8 @@ export function MerchantStaffCard({
   onEdit,
   onDelete,
   onManageShifts,
+  onResendInvite,
+  onResetPassword,
 }: MerchantStaffCardProps) {
   const name = staffDisplayName(member)
   const initials = staffInitials(name)
@@ -93,10 +108,17 @@ export function MerchantStaffCard({
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-1.5">
-              <h3 className="font-bold text-base text-slate-900 tracking-tight transition-colors group-hover:text-amber-800 truncate">
-                {name}
-              </h3>
+            <div className="flex items-start justify-between gap-1.5">
+              <div className="min-w-0">
+                <h3 className="font-bold text-base text-slate-900 tracking-tight transition-colors group-hover:text-amber-800 truncate">
+                  {name}
+                </h3>
+                {(member.profile?.handle || member.handle) && (
+                  <p className="font-mono text-[11px] text-amber-700/90 font-medium">
+                    @{member.profile?.handle || member.handle}
+                  </p>
+                )}
+              </div>
               <StatusBadge tone={isActive ? 'emerald' : 'slate'} size="sm" dot>
                 {member.status || 'Active'}
               </StatusBadge>
@@ -154,20 +176,48 @@ export function MerchantStaffCard({
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             {shifts.length > 0 ? (
-              shifts.map((s) => (
-                <span
-                  key={s.id}
-                  className="inline-flex items-center gap-1 rounded-lg border border-amber-200/90 bg-white px-2 py-0.5 text-[10.5px] font-semibold text-amber-900 shadow-2xs"
-                >
-                  <Clock className="h-2.5 w-2.5 text-amber-600" />
-                  <span>{s.shift_name || 'Shift'}</span>
-                </span>
-              ))
+              shifts.map((s) => {
+                const daysLabel =
+                  s.days && s.days.length > 0
+                    ? s.days.map((d) => d.slice(0, 3).toUpperCase()).join(', ')
+                    : null
+                return (
+                  <span
+                    key={s.id}
+                    className="inline-flex items-center gap-1 rounded-lg border border-amber-200/90 bg-white px-2 py-0.5 text-[10.5px] font-semibold text-amber-900 shadow-2xs"
+                  >
+                    <Clock className="h-2.5 w-2.5 text-amber-600" />
+                    <span>{s.shift_name || 'Shift'}</span>
+                    {daysLabel && (
+                      <span className="text-[9.5px] text-amber-700/80 font-normal">
+                        ({daysLabel})
+                      </span>
+                    )}
+                  </span>
+                )
+              })
             ) : (
               <span className="text-[11px] text-slate-400 italic">Default salon hours</span>
             )}
           </div>
         </div>
+
+        {member.category_ids && member.category_ids.length > 0 && (
+          <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Capabilities
+            </div>
+            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+              <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 text-amber-800 border border-amber-300/40 px-2 py-0.5 text-[10.5px] font-semibold">
+                <Sparkles className="h-2.5 w-2.5 text-amber-600" />
+                <span>
+                  {member.category_ids.length} service{' '}
+                  {member.category_ids.length === 1 ? 'category' : 'categories'} assigned
+                </span>
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer Actions: Prevents collision with responsive flex-wrap and premium button styling */}
@@ -210,6 +260,32 @@ export function MerchantStaffCard({
             >
               <SquarePen className="h-3.5 w-3.5 text-slate-500" />
               <span>Edit</span>
+            </Button>
+          )}
+
+          {!isOwner && onResendInvite && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onResendInvite(member)}
+              title="Resend invitation email with temporary credentials"
+              className="h-8 gap-1 rounded-xl border-slate-200/90 bg-white px-2 text-xs font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900 shadow-2xs transition-all active:scale-95"
+            >
+              <Mail className="h-3.5 w-3.5 text-sky-600" />
+              <span>Invite</span>
+            </Button>
+          )}
+
+          {!isOwner && onResetPassword && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onResetPassword(member)}
+              title="Reset password and email new temporary credentials"
+              className="h-8 gap-1 rounded-xl border-slate-200/90 bg-white px-2 text-xs font-semibold text-slate-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900 shadow-2xs transition-all active:scale-95"
+            >
+              <KeyRound className="h-3.5 w-3.5 text-amber-600" />
+              <span>Reset</span>
             </Button>
           )}
 

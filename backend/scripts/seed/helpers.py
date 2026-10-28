@@ -266,6 +266,7 @@ def build_user(
     org_id=None,
     phone: str | None = None,
     picture: str | None = None,
+    handle: str | None = None,
 ) -> User:
     user = User(
         email=email.lower(),
@@ -274,11 +275,15 @@ def build_user(
         status=UserStatus.ACTIVE,
         org_id=org_id,
     )
+    clean_handle = (
+        handle or email.split("@")[0].replace(".", "_").replace("+", "_").replace("-", "_")
+    ).lower()
     user.profile = Profile(
         first_name=first_name,
         last_name=last_name,
         phone=phone,
         picture=picture,
+        handle=clean_handle,
     )
     return user
 

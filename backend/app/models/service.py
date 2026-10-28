@@ -82,3 +82,23 @@ class ServiceGiving(BaseModel):
 
     service = relationship("Service", back_populates="givers")
     user = relationship("User")
+
+
+class OrgEmployeeCategory(BaseModel):
+    __tablename__ = "org_employee_category"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("user.id"),
+        nullable=False,
+        index=True,
+    )
+    service_category_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("service_category.id"),
+        nullable=False,
+        index=True,
+    )
+
+    user = relationship("User", back_populates="employee_categories")
+    service_category = relationship("ServiceCategory")

@@ -19,6 +19,7 @@ import {
   buildMerchantLayoutServicesSnapshotApiParams,
 } from '@/lib/listing-params/merchant-dashboard-snapshot-list-params'
 import { mapBookingStatusToHoldState } from '@/lib/mappers/booking'
+import { computeMerchantOnboardingStatus } from '@/lib/onboarding/merchant-onboarding'
 import {
   canAccessMerchantRoute,
   getDefaultMerchantRouteForRole,
@@ -26,11 +27,13 @@ import {
 import type { AppDispatch } from '@/store'
 import {
   useCreateMyChangeRequestMutation,
+  useGetMyCancellationPoliciesQuery,
   useGetMyChangeRequestsQuery,
   useGetMyEmployeesQuery,
   useGetMyOrgAccountQuery,
   useGetMyOrganizationQuery,
   useGetMyOrgBookingsQuery,
+  useGetMyOrgSettingsQuery,
   useGetMyServicesQuery,
 } from '@/store/api/orgApi'
 import { logout, userSelector } from '@/store/authSlice'
@@ -74,6 +77,8 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
     buildMerchantLayoutChangeRequestsSnapshotApiParams(),
     { skip: skipOrgApi },
   )
+  const { data: orgSettings } = useGetMyOrgSettingsQuery(undefined, { skip: skipOrgApi })
+  const { data: policiesData } = useGetMyCancellationPoliciesQuery(undefined, { skip: skipOrgApi })
 
   const apiBookings = apiBookingsData?.items ?? []
   const employees = employeesData?.items ?? []
@@ -92,6 +97,10 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
   const pendingChangeRequests = useMemo(
     () => changeRequests.filter((cr) => cr.status.toUpperCase() === 'PENDING').length,
     [changeRequests],
+  )
+  const incompleteSetupCount = useMemo(
+    () => computeMerchantOnboardingStatus(account, orgSettings, policiesData).incompleteCount,
+    [account, orgSettings, policiesData],
   )
 
   const {
@@ -170,6 +179,7 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
             staffCount={employees.length}
             servicesCount={services.length}
             pendingChangeRequests={pendingChangeRequests}
+            incompleteSetupCount={incompleteSetupCount}
             onOpenCopilot={() => openAgentChat('chat')}
             onLockSession={handleLockSession}
             onCloseMobile={() => setIsMobileSidebarOpen(false)}

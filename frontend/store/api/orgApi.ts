@@ -2,9 +2,11 @@ import type { ApiBooking, PaymentCapture, PaymentHold } from '@/types/api-bookin
 import {
   type ApiCancellationPolicy,
   type ApiChangeRequest,
+  type ApiEmployeeCategory,
   type ApiOrgAccount,
   type ApiOrganization,
   type ApiOrgEmployeeShift,
+  type ApiOrgEmployeeTimeOff,
   type ApiOrgService,
   type ApiOrgSettings,
   type ApiOrgShift,
@@ -132,6 +134,22 @@ export const orgApi = baseApi.injectEndpoints({
       invalidatesTags: ['user', 'organizations'],
     }),
 
+    resendMyEmployeeInvite: builder.mutation<MessageOut, string>({
+      query: (employeeId) => ({
+        url: `/api/v1/organizations/me/employees/${employeeId}/resend-invite`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['user', 'organizations'],
+    }),
+
+    resetMyEmployeePassword: builder.mutation<MessageOut, string>({
+      query: (employeeId) => ({
+        url: `/api/v1/organizations/me/employees/${employeeId}/reset-password`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['user', 'organizations'],
+    }),
+
     uploadEmployeeAvatar: builder.mutation<User, { employeeId: string; file: FormData }>({
       query: ({ employeeId, file }) => ({
         url: `/api/v1/organizations/me/employees/${employeeId}/avatar`,
@@ -218,12 +236,44 @@ export const orgApi = baseApi.injectEndpoints({
       providesTags: ['organizations'],
     }),
 
+    createMyOrgAccount: builder.mutation<
+      ApiOrgAccount,
+      {
+        merchant_id: string
+        merchant_email?: string | null
+        display_name?: string | null
+        currency?: string
+      }
+    >({
+      query: (data) => ({
+        url: '/api/v1/organizations/me/account',
+        method: 'POST',
+        data,
+      }),
+      invalidatesTags: ['organizations'],
+    }),
+
     getMyCancellationPolicies: builder.query<ApiCancellationPolicy[], void>({
       query: () => ({
         url: '/api/v1/organizations/me/cancellation-policies',
         method: 'GET',
       }),
       providesTags: ['organizations'],
+    }),
+
+    createMyCancellationPolicy: builder.mutation<
+      ApiCancellationPolicy,
+      {
+        name?: string
+        data: Record<string, unknown>
+      }
+    >({
+      query: (data) => ({
+        url: '/api/v1/organizations/me/cancellation-policies',
+        method: 'POST',
+        data,
+      }),
+      invalidatesTags: ['organizations'],
     }),
 
     getMyOrgBookings: builder.query<
@@ -296,12 +346,24 @@ export const orgApi = baseApi.injectEndpoints({
 
     assignEmployeeShift: builder.mutation<
       ApiOrgEmployeeShift,
-      { user_id: string; org_shift_id: string }
+      { user_id: string; org_shift_id: string; days?: string[] }
     >({
       query: (data) => ({
         url: '/api/v1/organizations/me/employee-shifts',
         method: 'POST',
         data,
+      }),
+      invalidatesTags: ['organizations', 'user'],
+    }),
+
+    updateEmployeeShift: builder.mutation<
+      ApiOrgEmployeeShift,
+      { assignmentId: string; body: { org_shift_id?: string; days?: string[] } }
+    >({
+      query: ({ assignmentId, body }) => ({
+        url: `/api/v1/organizations/me/employee-shifts/${assignmentId}`,
+        method: 'PATCH',
+        data: body,
       }),
       invalidatesTags: ['organizations', 'user'],
     }),
@@ -312,6 +374,55 @@ export const orgApi = baseApi.injectEndpoints({
         method: 'DELETE',
       }),
       invalidatesTags: ['organizations', 'user'],
+    }),
+
+    getMyTimeOff: builder.query<ApiOrgEmployeeTimeOff[], { user_id?: string } | void>({
+      query: (params) => ({
+        url: '/api/v1/organizations/me/time-off',
+        method: 'GET',
+        params: params || undefined,
+      }),
+      providesTags: ['organizations', 'user'],
+    }),
+
+    createMyTimeOff: builder.mutation<
+      ApiOrgEmployeeTimeOff,
+      { user_id: string; start_date: string; end_date: string; reason?: string }
+    >({
+      query: (data) => ({
+        url: '/api/v1/organizations/me/time-off',
+        method: 'POST',
+        data,
+      }),
+      invalidatesTags: ['organizations', 'user'],
+    }),
+
+    deleteMyTimeOff: builder.mutation<MessageOut, string>({
+      query: (timeOffId) => ({
+        url: `/api/v1/organizations/me/time-off/${timeOffId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['organizations', 'user'],
+    }),
+
+    getEmployeeCategories: builder.query<ApiEmployeeCategory[], string>({
+      query: (employeeId) => ({
+        url: `/api/v1/organizations/me/employees/${employeeId}/categories`,
+        method: 'GET',
+      }),
+      providesTags: ['organizations', 'catalog', 'user'],
+    }),
+
+    updateEmployeeCategories: builder.mutation<
+      ApiEmployeeCategory[],
+      { employeeId: string; category_ids: string[] }
+    >({
+      query: ({ employeeId, category_ids }) => ({
+        url: `/api/v1/organizations/me/employees/${employeeId}/categories`,
+        method: 'PUT',
+        data: { category_ids },
+      }),
+      invalidatesTags: ['organizations', 'catalog', 'user'],
     }),
 
     markBookingShow: builder.mutation<PaymentCapture, string>({
@@ -399,6 +510,8 @@ export const {
   useCreateMyEmployeeMutation,
   useUpdateMyEmployeeMutation,
   useDeleteMyEmployeeMutation,
+  useResendMyEmployeeInviteMutation,
+  useResetMyEmployeePasswordMutation,
   useUploadEmployeeAvatarMutation,
   useGetMyServicesQuery,
   useCreateMyServiceMutation,
@@ -407,7 +520,9 @@ export const {
   useGetMyChangeRequestsQuery,
   useCreateMyChangeRequestMutation,
   useGetMyOrgAccountQuery,
+  useCreateMyOrgAccountMutation,
   useGetMyCancellationPoliciesQuery,
+  useCreateMyCancellationPolicyMutation,
   useGetMyOrgBookingsQuery,
   useGetMyShiftsQuery,
   useCreateMyShiftMutation,
@@ -415,7 +530,13 @@ export const {
   useDeleteMyShiftMutation,
   useGetMyEmployeeShiftsQuery,
   useAssignEmployeeShiftMutation,
+  useUpdateEmployeeShiftMutation,
   useDeleteEmployeeShiftMutation,
+  useGetMyTimeOffQuery,
+  useCreateMyTimeOffMutation,
+  useDeleteMyTimeOffMutation,
+  useGetEmployeeCategoriesQuery,
+  useUpdateEmployeeCategoriesMutation,
   useMarkBookingShowMutation,
   useMarkBookingNoShowMutation,
   useGetSettlementBookingQuery,

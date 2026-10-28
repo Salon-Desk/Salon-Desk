@@ -402,11 +402,30 @@ export interface ApiOrgEmployeeShift {
   id: string
   user_id: string
   org_shift_id: string
+  days?: string[]
   created_at: string
   employee_name?: string | null
   employee_email?: string | null
   shift_name?: string | null
   shift_data?: Record<string, unknown> | null
+}
+
+export interface ApiOrgEmployeeTimeOff {
+  id: string
+  org_id: string
+  user_id: string
+  start_date: string
+  end_date: string
+  reason?: string | null
+  created_at: string
+  employee_name?: string | null
+  employee_email?: string | null
+}
+
+export interface ApiEmployeeCategory {
+  id: string
+  name: string
+  description?: string | null
 }
 
 export interface HeroSettings {

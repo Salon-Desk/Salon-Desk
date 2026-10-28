@@ -30,6 +30,7 @@ interface MerchantSidebarProps {
   staffCount: number
   servicesCount: number
   pendingChangeRequests: number
+  incompleteSetupCount?: number
   onTabChange?: (tab: MerchantTab) => void
   onOpenCopilot: () => void
   onLockSession: () => void
@@ -45,6 +46,7 @@ export function MerchantSidebar({
   staffCount,
   servicesCount,
   pendingChangeRequests,
+  incompleteSetupCount = 0,
   onTabChange,
   onOpenCopilot,
   onLockSession,
@@ -105,8 +107,8 @@ export function MerchantSidebar({
       label: 'Settings',
       icon: Settings,
       group: 'Salon Configuration',
-      badge: pendingChangeRequests,
-      isAlert: true,
+      badge: incompleteSetupCount + pendingChangeRequests,
+      isAlert: incompleteSetupCount > 0,
       href: MERCHANT_TAB_ROUTES.settings,
     },
   ]
