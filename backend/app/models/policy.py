@@ -124,5 +124,5 @@ class Consent(BaseModel):
     signature_b64: Mapped[str] = mapped_column(Text, nullable=False)
     signed_payload: Mapped[str] = mapped_column(Text, nullable=False)
 
-    booking = relationship("Booking")
+    booking = relationship("Booking", back_populates="consents")
     client = relationship("User")

@@ -36,6 +36,17 @@ export interface ApiBooking {
   service_name?: string | null
   organization_name?: string | null
   organization_timezone?: string | null
+  paypal_auth_id?: string | null
+  paypal_order_id?: string | null
+  hold_status?: string | null
+  hold_amount?: string | number | null
+  captured_amount?: string | number | null
+  honor_expires_at?: string | null
+  reauthorization_count?: number | null
+  idempotency_key?: string | null
+  consent_hash?: string | null
+  consent_terms_version?: string | null
+  consent_signed_at?: string | null
 }
 
 export interface OrgBookingsQuery {

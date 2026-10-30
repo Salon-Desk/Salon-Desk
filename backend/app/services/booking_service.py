@@ -53,6 +53,8 @@ _BOOKING_LOAD_OPTIONS = (
     selectinload(Booking.client).selectinload(User.profile),
     selectinload(Booking.stylist).selectinload(User.profile),
     selectinload(Booking.booking_services).selectinload(BookingService.service),
+    selectinload(Booking.payment_holds),
+    selectinload(Booking.consents),
 )
 
 _DEFAULT_POLICY = {

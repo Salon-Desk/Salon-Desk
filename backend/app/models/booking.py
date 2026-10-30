@@ -62,6 +62,18 @@ class Booking(TimestampedModel):
     client = relationship("User", foreign_keys=[client_id])
     stylist = relationship("User", foreign_keys=[stylist_id])
     booking_services = relationship("BookingService", back_populates="booking")
+    payment_holds = relationship(
+        "PaymentHold", back_populates="booking", order_by="desc(PaymentHold.created_at)"
+    )
+    consents = relationship(
+        "Consent", back_populates="booking", order_by="desc(Consent.created_at)"
+    )
+    payment_holds = relationship(
+        "PaymentHold", back_populates="booking", order_by="desc(PaymentHold.created_at)"
+    )
+    consents = relationship(
+        "Consent", back_populates="booking", order_by="desc(Consent.created_at)"
+    )
 
 
 class BookingService(BaseModel):

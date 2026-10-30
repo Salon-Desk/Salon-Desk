@@ -55,6 +55,8 @@ export function mapApiBookingToUi(
     honorExpiresAt?: string | null
     reauthorizationCount?: number
     holdStatus?: string | null
+    idempotencyKey?: string | null
+    consentHash?: string | null
   },
 ): Booking {
   const price = Number(booking.total_price) || 0
@@ -74,12 +76,15 @@ export function mapApiBookingToUi(
   const ends = new Date(booking.ends_at)
   const durationMin = Math.max(15, Math.round((ends.getTime() - starts.getTime()) / 60000))
   const freeCancelDeadlineLabel = formatDeadlineLabel(booking.free_cancel_deadline_at)
-  const honorExpiresLabel = extras?.honorExpiresAt
-    ? formatDeadlineLabel(extras.honorExpiresAt)
-    : undefined
+  const honorExpiresLabel = booking.honor_expires_at
+    ? formatDeadlineLabel(booking.honor_expires_at)
+    : extras?.honorExpiresAt
+      ? formatDeadlineLabel(extras.honorExpiresAt)
+      : undefined
 
   let status = mapBookingStatusToHoldState(booking.status)
-  if (extras?.holdStatus?.toUpperCase() === 'REAUTHORIZED' && status === 'HELD') {
+  const effectiveHoldStatus = booking.hold_status || extras?.holdStatus
+  if (effectiveHoldStatus?.toUpperCase() === 'REAUTHORIZED' && status === 'HELD') {
     status = 'REAUTHORIZED'
   }
 
@@ -114,17 +119,22 @@ export function mapApiBookingToUi(
     cancellationFeeCharged: cancellationFeeCharged > 0 ? cancellationFeeCharged : null,
     cancellationFeeReason,
     status,
-    paypalAuthId: extras?.paypalAuthId || '—',
+    paypalAuthId: extras?.paypalAuthId || booking.paypal_auth_id || '',
+    paypalOrderId: booking.paypal_order_id || null,
+    holdStatus: effectiveHoldStatus || null,
+    capturedAmount: booking.captured_amount != null ? Number(booking.captured_amount) : null,
     authExpiresAt: freeCancelDeadlineLabel,
     freeCancelDeadlineLabel,
     honorExpiresLabel,
     policySnapshot: booking.policy_snapshot_json || undefined,
     commissionSnapshot: booking.commission_snapshot || undefined,
-    idempotencyKey: booking.id,
-    consentHash: '—',
+    idempotencyKey: booking.idempotency_key || extras?.idempotencyKey || booking.id,
+    consentHash: booking.consent_hash || extras?.consentHash || '',
+    consentTermsVersion: booking.consent_terms_version || null,
+    consentSignedAt: booking.consent_signed_at || null,
     createdAt: new Date(booking.created_at).toLocaleString(),
     settlementNote: booking.cancellation_reason || undefined,
-    reauthorizationCount: extras?.reauthorizationCount,
+    reauthorizationCount: booking.reauthorization_count ?? extras?.reauthorizationCount ?? 0,
     organizationTimezone: booking.organization_timezone || null,
   }
 }

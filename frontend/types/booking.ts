@@ -37,6 +37,9 @@ export interface Booking {
   cancellationFeeReason?: string | null
   status: HoldState
   paypalAuthId: string
+  paypalOrderId?: string | null
+  holdStatus?: string | null
+  capturedAmount?: number | null
   /** @deprecated Prefer freeCancelDeadlineLabel / honorExpiresLabel */
   authExpiresAt: string
   /** Human-readable free-cancel deadline (from free_cancel_deadline_at) */
@@ -47,6 +50,8 @@ export interface Booking {
   commissionSnapshot?: Record<string, unknown>
   idempotencyKey: string
   consentHash: string
+  consentTermsVersion?: string | null
+  consentSignedAt?: string | null
   createdAt: string
   settledAt?: string
   settlementNote?: string

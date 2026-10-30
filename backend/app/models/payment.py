@@ -95,7 +95,7 @@ class PaymentHold(TimestampedModel):
     reauthorization_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     idempotency_key: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
 
-    booking = relationship("Booking")
+    booking = relationship("Booking", back_populates="payment_holds")
     organization = relationship("Organization")
     captures = relationship("PaymentCapture", back_populates="hold")
 

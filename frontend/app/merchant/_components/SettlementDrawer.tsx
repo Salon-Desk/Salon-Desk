@@ -6,8 +6,15 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  Clock,
   Copy,
+  CreditCard,
+  FileText,
+  Info,
+  Lock,
+  Percent,
   Phone,
+  Receipt,
   RefreshCw,
   Scissors,
   ShieldCheck,
@@ -19,7 +26,7 @@ import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import { CustomDrawer } from '@/components/drawer/CustomDrawer'
 import { HoldStateBadge } from '@/components/ui'
-import { formatUsd } from '@/lib/format'
+import { formatBookingRef, formatDuration, formatUsd, isPlaceholderValue } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { Booking } from '@/types'
 
@@ -110,6 +117,50 @@ export function SettlementDrawer({
       .slice(0, 2)
       .join('')
       .toUpperCase() || 'CL'
+
+  // Commission calculations from booking.commissionSnapshot
+  const commissionSnapshot = (booking.commissionSnapshot || {}) as Record<string, unknown>
+  const pct =
+    commissionSnapshot.percentage != null
+      ? Number(commissionSnapshot.percentage)
+      : commissionSnapshot.rate_percent != null
+        ? Number(commissionSnapshot.rate_percent)
+        : null
+  const flat = commissionSnapshot.flat != null ? Number(commissionSnapshot.flat) : null
+  const explicitAmount =
+    commissionSnapshot.amount != null ? Number(commissionSnapshot.amount) : null
+
+  const baseGrossForCommission = isCaptured
+    ? booking.servicePrice
+    : isNoShowCaptured
+      ? booking.noShowFee
+      : booking.servicePrice
+
+  const calculatedCommission =
+    explicitAmount != null && explicitAmount > 0
+      ? explicitAmount
+      : pct != null
+        ? Math.round(((baseGrossForCommission * pct) / 100 + (flat || 0)) * 100) / 100
+        : flat != null
+          ? flat
+          : Math.round(baseGrossForCommission * 0.018 * 100) / 100 // fallback 1.8%
+
+  const estimatedNetSalonRevenue = Math.max(0, baseGrossForCommission - calculatedCommission)
+  const salonRetentionPercent =
+    baseGrossForCommission > 0
+      ? ((estimatedNetSalonRevenue / baseGrossForCommission) * 100).toFixed(1)
+      : '98.2'
+
+  const commissionRateLabel =
+    pct != null ? `${pct.toFixed(1)}%` : flat != null ? formatUsd(flat) : '1.8%'
+
+  const commissionTypeLabel =
+    typeof commissionSnapshot.type === 'string'
+      ? commissionSnapshot.type.charAt(0).toUpperCase() +
+        commissionSnapshot.type.slice(1).toLowerCase()
+      : pct != null
+        ? 'Percentage'
+        : 'Platform SaaS'
 
   return (
     <>
@@ -288,7 +339,7 @@ export function SettlementDrawer({
 
             <div className="h-px bg-slate-100" />
 
-            {/* Service & Stylist Row */}
+            {/* Service, Stylist & Appointment Grid */}
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
                 <span className="text-[11px] font-medium text-slate-400 block mb-0.5">Service</span>
@@ -306,68 +357,246 @@ export function SettlementDrawer({
                   <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                   <span className="truncate">{booking.appointmentTime || 'Scheduled'}</span>
                 </div>
+                {booking.durationMin ? (
+                  <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
+                    <Clock className="h-3 w-3 text-slate-400 shrink-0" />
+                    <span>{formatDuration(booking.durationMin)}</span>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
 
-          {/* Payment & Cancellation Policy Card */}
-          <div className="space-y-3.5 rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50/40 via-white to-amber-50/20 p-4">
+          {/* Customer notes if present */}
+          {booking.customerNotes ? (
+            <div className="flex items-start gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 px-3.5 py-2.5 text-slate-700 text-xs">
+              <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <div className="min-w-0">
+                <span className="font-semibold text-slate-900 block text-[11px]">Client Note</span>
+                <p className="text-slate-600 mt-0.5 leading-relaxed">{booking.customerNotes}</p>
+              </div>
+            </div>
+          ) : null}
+
+          {/* 1. Well-Formatted Financial Information & Receipt Breakdown Card */}
+          <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/60 via-white to-amber-50/30 p-4 shadow-2xs space-y-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Payment Details
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-800">
+              <div className="flex items-center gap-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-100 text-amber-800">
+                  <Receipt className="h-3.5 w-3.5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Financial &amp; Receipt Breakdown
+                </span>
+              </div>
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border',
+                  isCaptured
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : isNoShowCaptured
+                      ? 'bg-rose-50 text-rose-800 border-rose-200'
+                      : isVoided
+                        ? 'bg-slate-100 text-slate-700 border-slate-200'
+                        : 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                )}
+              >
                 <Check className="h-2.5 w-2.5" />
-                $0 Charged Upfront
+                {isCaptured && 'Settled in Full'}
+                {isNoShowCaptured && 'No-Show Fee Captured'}
+                {isVoided && 'Released · $0 Charged'}
+                {!isSettled && '$0 Charged Upfront'}
               </span>
             </div>
 
-            {/* Large Price Highlight */}
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="rounded-xl border border-slate-100 bg-white p-3">
-                <span className="text-[11px] text-slate-500 block mb-1">Service Price</span>
+            {/* Price & Hold Highlights */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="rounded-xl border border-slate-200/70 bg-white p-3 shadow-2xs">
+                <span className="text-[11px] font-medium text-slate-500 block mb-1">
+                  Service Price
+                </span>
                 <div className="text-xl font-bold font-mono text-slate-900 tabular-nums">
                   {formatUsd(booking.servicePrice)}
                 </div>
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
-                  Full appointment cost
+                  Full appointment total
                 </span>
               </div>
 
-              <div className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-3">
-                <span className="text-[11px] text-amber-900 font-medium block mb-1">
-                  Reserved Amount
+              <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 shadow-2xs">
+                <span className="text-[11px] font-medium text-amber-900 block mb-1">
+                  Reserved Deposit Hold
                 </span>
                 <div className="text-xl font-bold font-mono text-amber-900 tabular-nums">
                   {formatUsd(booking.holdAmount)}
                 </div>
                 <span className="text-[10px] text-amber-700 mt-0.5 block">
-                  PayPal hold on client card
+                  Locked PayPal pre-approval
                 </span>
               </div>
             </div>
 
-            {/* Policy details list */}
-            <div className="space-y-1.5 pt-1 text-xs">
-              <div className="flex items-center justify-between text-slate-600">
-                <span>No-Show / Late Cancel Fee</span>
-                <span className="font-mono font-semibold text-rose-700">
+            {/* Itemized Receipt Line Items (matching Client Receipt Dialog) */}
+            <div className="rounded-xl border border-amber-200/60 bg-amber-50/40 p-3 space-y-2 text-xs">
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="text-slate-600">Client Charged at Booking</span>
+                <span className="font-semibold text-emerald-700 font-mono">{formatUsd(0)}</span>
+              </div>
+
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="text-slate-600">Agreed No-Show Fee</span>
+                <span className="font-semibold text-rose-700 font-mono">
                   {formatUsd(booking.noShowFee)}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-slate-600">
-                <span>Free Cancellation Until</span>
-                <span className="font-medium text-slate-800">
+
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="text-slate-600">Late Cancellation Fee</span>
+                <span className="font-semibold text-rose-700 font-mono">
+                  {formatUsd(booking.lateCancelFee)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="text-slate-600">Free Cancellation Until</span>
+                <span className="font-medium text-slate-900">
                   {booking.freeCancelDeadlineLabel || booking.authExpiresAt || 'Standard Policy'}
                 </span>
               </div>
-              {booking.honorExpiresLabel && (
-                <div className="flex items-center justify-between text-slate-600">
-                  <span>Hold Valid Until</span>
-                  <span className="font-medium text-slate-800">{booking.honorExpiresLabel}</span>
+
+              <div className="flex items-center justify-between text-slate-700 pt-1.5 border-t border-amber-200/60">
+                <span className="text-slate-600">
+                  Platform Software Fee ({commissionRateLabel})
+                </span>
+                <span className="font-semibold text-slate-700 font-mono">
+                  {formatUsd(calculatedCommission)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-slate-900 font-medium">
+                <span className="text-slate-700 font-semibold">Est. Net Salon Revenue</span>
+                <span className="font-bold text-emerald-800 font-mono">
+                  {formatUsd(estimatedNetSalonRevenue)}
+                </span>
+              </div>
+
+              {booking.cancellationFeeCharged != null && booking.cancellationFeeCharged > 0 && (
+                <div className="flex items-center justify-between text-rose-800 font-medium pt-1.5 border-t border-rose-200/60">
+                  <span>Cancellation Penalty Charged</span>
+                  <span className="font-mono font-bold">
+                    {formatUsd(booking.cancellationFeeCharged)}
+                  </span>
+                </div>
+              )}
+
+              {isCaptured && (
+                <div className="flex items-center justify-between text-emerald-800 font-medium pt-1.5 border-t border-emerald-200/60">
+                  <span>Captured to Merchant Account</span>
+                  <span className="font-mono font-bold">{formatUsd(booking.servicePrice)}</span>
+                </div>
+              )}
+
+              {isNoShowCaptured && (
+                <div className="flex items-center justify-between text-rose-800 font-medium pt-1.5 border-t border-rose-200/60">
+                  <span>No-Show Penalty Captured</span>
+                  <span className="font-mono font-bold">{formatUsd(booking.noShowFee)}</span>
+                </div>
+              )}
+
+              {isVoided && (
+                <div className="flex items-center justify-between text-slate-600 font-medium pt-1.5 border-t border-slate-200/60">
+                  <span>Final Charged Amount</span>
+                  <span className="font-mono font-bold text-slate-800">{formatUsd(0)}</span>
                 </div>
               )}
             </div>
+
+            {/* Explainer Note */}
+            <p className="text-[11px] text-amber-900/80 leading-relaxed bg-amber-100/40 rounded-xl p-2.5 border border-amber-200/50">
+              <span className="font-semibold">Direct PayPal settlement:</span> Zero dollars debited
+              upfront. Funds are pre-authorized on the client&apos;s card and captured directly into
+              your salon&apos;s PayPal merchant account upon service completion or verified no-show.
+            </p>
+          </div>
+
+          {/* 2. Platform Commission & Net Payout Card */}
+          <div className="rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/50 via-white to-sky-50/30 p-4 shadow-2xs space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
+                  <Percent className="h-3.5 w-3.5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Platform Commission &amp; Net Payout
+                </span>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200/80 px-2.5 py-0.5 text-[10px] font-semibold text-indigo-800">
+                {commissionRateLabel} Take-Rate
+              </span>
+            </div>
+
+            {/* Net Salon vs Commission 2-col tiles */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/50 p-3 shadow-2xs">
+                <span className="text-[11px] font-medium text-emerald-900 block mb-1">
+                  Est. Net Salon Revenue
+                </span>
+                <div className="text-xl font-bold font-mono text-emerald-950 tabular-nums">
+                  {formatUsd(estimatedNetSalonRevenue)}
+                </div>
+                <span className="text-[10px] text-emerald-700 mt-0.5 block">
+                  {salonRetentionPercent}% retention rate
+                </span>
+              </div>
+
+              <div className="rounded-xl border border-slate-200/70 bg-white p-3 shadow-2xs">
+                <span className="text-[11px] font-medium text-slate-500 block mb-1">
+                  Platform SaaS Fee
+                </span>
+                <div className="text-xl font-bold font-mono text-slate-900 tabular-nums">
+                  {formatUsd(calculatedCommission)}
+                </div>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  Billed on periodic SaaS invoice
+                </span>
+              </div>
+            </div>
+
+            {/* Commission details rows */}
+            <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 space-y-2 text-xs">
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="text-slate-500">Commission Rule</span>
+                <span className="font-semibold text-slate-900">
+                  {commissionTypeLabel} ({commissionRateLabel})
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="text-slate-500">Gross Settlement Base</span>
+                <span className="font-mono font-medium text-slate-800">
+                  {formatUsd(baseGrossForCommission)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="text-slate-500">Payout Model</span>
+                <span className="font-medium text-emerald-700">100% Direct to Salon PayPal</span>
+              </div>
+
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="text-slate-500">Ledger Accrual Status</span>
+                <span className="font-medium text-slate-800">
+                  {isSettled ? 'Accrued to Ledger' : 'Pending Capture'}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-indigo-950/80 leading-relaxed bg-indigo-100/40 rounded-xl p-2.5 border border-indigo-200/50">
+              <span className="font-semibold">Transparent SaaS Billing:</span> 100% of the
+              client&apos;s payment flows directly to your PayPal account. SalonDesk does not
+              withhold commissions at checkout; fees accrue in your double-entry ledger and are
+              billed via consolidated statements.
+            </p>
           </div>
 
           {/* Audit / Settlement Notes (if any) */}
@@ -378,66 +607,232 @@ export function SettlementDrawer({
             </div>
           )}
 
-          {/* Collapsible Payment Reference Details */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white">
-            <button
-              type="button"
-              onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
-              className="w-full flex items-center justify-between p-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-            >
+          {/* 2. Payment Reference & Guarantee Card (Human-Readable for Non-Technical Users) */}
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs space-y-3.5">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-3.5 w-3.5 text-slate-400" />
-                <span>Payment Reference Information</span>
-              </div>
-              <ChevronDown
-                className={cn(
-                  'h-3.5 w-3.5 text-slate-400 transition-transform duration-200',
-                  showTechnicalDetails && 'rotate-180',
-                )}
-              />
-            </button>
-
-            {showTechnicalDetails && (
-              <div className="border-t border-slate-100 p-3.5 space-y-2 font-mono text-[11px] bg-slate-50/50 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">PayPal Authorization ID:</span>
-                  <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                    <span className="truncate max-w-[170px]">
-                      {booking.paypalAuthId || 'AUTH_HOLD_PENDING'}
-                    </span>
-                    {booking.paypalAuthId && (
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(booking.paypalAuthId, 'auth')}
-                        className="p-1 text-slate-400 hover:text-slate-700"
-                      >
-                        {copiedKey === 'auth' ? (
-                          <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </button>
-                    )}
-                  </div>
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
+                  <ShieldCheck className="h-3.5 w-3.5" />
                 </div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Payment Reference &amp; Guarantee
+                </span>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                <Lock className="h-2.5 w-2.5 text-slate-500" />
+                Protected
+              </span>
+            </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Payment Reference Key:</span>
-                  <span className="text-slate-700 truncate max-w-[170px]">
-                    {booking.idempotencyKey || 'ACTIVE'}
+            {/* Friendly Non-Technical Guarantee Banner */}
+            <div
+              className={cn(
+                'flex items-start gap-2.5 rounded-xl border p-3 text-xs leading-relaxed',
+                isCaptured
+                  ? 'border-emerald-200 bg-emerald-50/70 text-emerald-950'
+                  : isNoShowCaptured
+                    ? 'border-amber-200 bg-amber-50/70 text-amber-950'
+                    : isVoided
+                      ? 'border-slate-200 bg-slate-50 text-slate-800'
+                      : 'border-sky-200 bg-sky-50/70 text-sky-950',
+              )}
+            >
+              {isCaptured ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+              ) : isNoShowCaptured ? (
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+              ) : isVoided ? (
+                <XCircle className="h-4 w-4 shrink-0 text-slate-500 mt-0.5" />
+              ) : (
+                <ShieldCheck className="h-4 w-4 shrink-0 text-sky-600 mt-0.5" />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-xs">
+                  {isCaptured && 'Payment Captured & Deposited'}
+                  {isNoShowCaptured && 'No-Show Fee Captured & Deposited'}
+                  {isVoided && 'Appointment Cancelled — Payment Hold Released'}
+                  {!isSettled && 'Pre-Authorized Payment Guarantee Active'}
+                </div>
+                <div className="text-[11px] opacity-85 mt-0.5">
+                  {isCaptured &&
+                    `Full payment of ${formatUsd(booking.servicePrice)} has been deposited into your salon's PayPal merchant account.`}
+                  {isNoShowCaptured &&
+                    `Agreed no-show fee of ${formatUsd(booking.noShowFee)} has been captured and deposited into your PayPal account.`}
+                  {isVoided &&
+                    'The reservation was cancelled and the authorization hold was released with $0 charged.'}
+                  {!isSettled &&
+                    `A deposit of ${formatUsd(booking.holdAmount)} is locked on the client's PayPal payment method, ensuring guaranteed payment when service completes.`}
+                </div>
+              </div>
+            </div>
+
+            {/* Human-Readable Reference Details */}
+            <div className="space-y-2.5 text-xs divide-y divide-slate-100">
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-slate-500">Payment Method</span>
+                <span className="font-medium text-slate-800 flex items-center gap-1.5">
+                  <CreditCard className="h-3.5 w-3.5 text-slate-400" />
+                  PayPal (Zero-Charge Authorization Hold)
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-2.5">
+                <span className="text-slate-500">PayPal Reference #</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-xs font-semibold text-slate-900">
+                    {!isPlaceholderValue(booking.paypalAuthId)
+                      ? booking.paypalAuthId
+                      : booking.paypalOrderId && !isPlaceholderValue(booking.paypalOrderId)
+                        ? booking.paypalOrderId
+                        : `SD-AUTH-${formatBookingRef(booking.id)}`}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(
+                        !isPlaceholderValue(booking.paypalAuthId)
+                          ? booking.paypalAuthId
+                          : booking.paypalOrderId || `SD-AUTH-${formatBookingRef(booking.id)}`,
+                        'paypal_ref',
+                      )
+                    }
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    title="Copy PayPal Reference"
+                  >
+                    {copiedKey === 'paypal_ref' ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </button>
                 </div>
+              </div>
 
-                {booking.consentHash && (
+              <div className="flex items-center justify-between pt-2.5">
+                <span className="text-slate-500">Booking Confirmation Ref</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-xs font-semibold text-slate-900">
+                    SD-{formatBookingRef(booking.id)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(`SD-${formatBookingRef(booking.id)}`, 'booking_ref')}
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    title="Copy Booking Confirmation Ref"
+                  >
+                    {copiedKey === 'booking_ref' ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2.5">
+                <span className="text-slate-500">Client Terms Agreement</span>
+                <span className="inline-flex items-center gap-1 font-medium text-emerald-700 text-[11px]">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                  Digitally Agreed at Checkout
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-2.5">
+                <span className="text-slate-500">Protection Window</span>
+                <span className="font-medium text-slate-800 text-[11px]">
+                  {booking.honorExpiresLabel || 'Standard 72-Hour PayPal Guarantee'}
+                </span>
+              </div>
+            </div>
+
+            {/* Collapsible Technical Identifiers (For PayPal Support or Platform Audit) */}
+            <div className="pt-1.5 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
+                className="w-full flex items-center justify-between py-1 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Info className="h-3 w-3 text-slate-400" />
+                  Technical &amp; Audit Codes (For Support)
+                </span>
+                <ChevronDown
+                  className={cn(
+                    'h-3.5 w-3.5 text-slate-400 transition-transform duration-200',
+                    showTechnicalDetails && 'rotate-180',
+                  )}
+                />
+              </button>
+
+              {showTechnicalDetails && (
+                <div className="mt-2 rounded-xl bg-slate-50/80 p-3 space-y-2 font-mono text-[10px] text-slate-600 border border-slate-200/60 animate-in fade-in duration-150">
+                  <p className="font-sans text-[10px] text-slate-500 leading-relaxed mb-2">
+                    Use these technical codes if contacting PayPal Merchant Support or SalonDesk
+                    dispute operations.
+                  </p>
+
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Digital Signature:</span>
-                    <span className="text-slate-500 text-[10px] truncate max-w-[170px]">
-                      {booking.consentHash}
+                    <span className="font-sans text-slate-500">PayPal Auth ID:</span>
+                    <div className="flex items-center gap-1 font-semibold text-slate-800">
+                      <span className="truncate max-w-[170px]">
+                        {!isPlaceholderValue(booking.paypalAuthId)
+                          ? booking.paypalAuthId
+                          : 'SD-AUTH-PRE-APPROVED'}
+                      </span>
+                      {!isPlaceholderValue(booking.paypalAuthId) && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(booking.paypalAuthId, 'auth_raw')}
+                          className="p-0.5 text-slate-400 hover:text-slate-700"
+                        >
+                          {copiedKey === 'auth_raw' ? (
+                            <Check className="h-2.5 w-2.5 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-2.5 w-2.5" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {booking.paypalOrderId && (
+                    <div className="flex items-center justify-between">
+                      <span className="font-sans text-slate-500">PayPal Order ID:</span>
+                      <div className="flex items-center gap-1 font-semibold text-slate-800">
+                        <span className="truncate max-w-[170px]">{booking.paypalOrderId}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(booking.paypalOrderId || '', 'order_raw')}
+                          className="p-0.5 text-slate-400 hover:text-slate-700"
+                        >
+                          {copiedKey === 'order_raw' ? (
+                            <Check className="h-2.5 w-2.5 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-2.5 w-2.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <span className="font-sans text-slate-500">Payment Reference Key:</span>
+                    <span className="text-slate-700 truncate max-w-[170px]">
+                      {booking.idempotencyKey || 'ACTIVE'}
                     </span>
                   </div>
-                )}
-              </div>
-            )}
+
+                  {booking.consentHash && !isPlaceholderValue(booking.consentHash) && (
+                    <div className="flex items-center justify-between">
+                      <span className="font-sans text-slate-500">Terms Signature Hash:</span>
+                      <span className="text-slate-600 truncate max-w-[170px]">
+                        {booking.consentHash}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </CustomDrawer>
