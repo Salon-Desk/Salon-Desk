@@ -114,16 +114,27 @@ export const ClientSignUpForm: FC = () => {
           name="phone"
           label="Phone Number"
           placeholder="+1 (555) 000-0000"
-          className="rounded-xl border-slate-200"
-        />
-
-        <RHFPasswordField
-          name="password"
-          label="Password"
-          placeholder="At least 8 characters"
           isRequired
           className="rounded-xl border-slate-200"
         />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <RHFPasswordField
+            name="password"
+            label="Password"
+            placeholder="At least 8 characters"
+            isRequired
+            className="rounded-xl border-slate-200"
+          />
+
+          <RHFPasswordField
+            name="confirm_password"
+            label="Confirm Password"
+            placeholder="Re-enter password"
+            isRequired
+            className="rounded-xl border-slate-200"
+          />
+        </div>
 
         <div className="pt-2">
           <PrimaryButton

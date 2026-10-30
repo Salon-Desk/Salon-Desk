@@ -89,6 +89,13 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
 
   const services = useMemo(() => servicesPage?.items ?? [], [servicesPage?.items])
   const staff = useMemo(() => staffPage?.items ?? [], [staffPage?.items])
+  const eligibleStylists = useMemo(
+    () => staff.filter((s) => !s.role?.toLowerCase().includes('owner')),
+    [staff],
+  )
+
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
+  const [selectedStylistId, setSelectedStylistId] = useState<string>('all')
 
   // Extract unique category names
   const categories = useMemo(() => {
@@ -104,9 +111,48 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
       const matchesCat =
         selectedCategory === 'all' ||
         s.category_name?.toLowerCase() === selectedCategory.toLowerCase()
-      return matchesCat
+      if (!matchesCat) return false
+      if (selectedStylistId === 'all') return true
+      const stylist = eligibleStylists.find((st) => st.id === selectedStylistId)
+      if (!stylist) return true
+      if (!stylist.specialties || stylist.specialties.length === 0) return true
+      return stylist.specialties.some(
+        (sp) =>
+          sp.toLowerCase().includes(s.name.toLowerCase()) ||
+          s.name.toLowerCase().includes(sp.toLowerCase()) ||
+          (s.category_name && sp.toLowerCase().includes(s.category_name.toLowerCase())),
+      )
     })
-  }, [services, selectedCategory])
+  }, [services, selectedCategory, selectedStylistId, eligibleStylists])
+
+  const selectedServices = useMemo(
+    () => services.filter((s) => selectedServiceIds.includes(s.id)),
+    [services, selectedServiceIds],
+  )
+  const totalSelectedPrice = useMemo(
+    () => selectedServices.reduce((acc, s) => acc + (Number(s.base_price) || 0), 0),
+    [selectedServices],
+  )
+  const totalSelectedDuration = useMemo(
+    () => selectedServices.reduce((acc, s) => acc + (s.duration_minutes || 0), 0),
+    [selectedServices],
+  )
+
+  const handleToggleSelectService = (serviceId: string) => {
+    setSelectedServiceIds((prev) =>
+      prev.includes(serviceId) ? prev.filter((id) => id !== serviceId) : [...prev, serviceId],
+    )
+  }
+
+  const handleBookSelectedServices = () => {
+    if (selectedServiceIds.length === 0) return
+    const primaryId = selectedServiceIds[0]
+    const extras = selectedServiceIds.slice(1).join(',')
+    const extraParam = extras ? `&services=${extras}` : ''
+    const stylistParam = selectedStylistId !== 'all' ? `&stylist=${selectedStylistId}` : ''
+    const fullParams = `${extraParam}${stylistParam}`
+    router.push(`/client/book/${primaryId}${fullParams ? `?${fullParams.replace(/^&/, '')}` : ''}`)
+  }
 
   const handleOpenDetail = (service: CatalogService) => {
     setSelectedService(service)
@@ -114,8 +160,13 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
   }
 
   const handleBookService = (serviceId: string, stylistId?: string) => {
-    const url = stylistId
-      ? `/client/book/${serviceId}?stylist=${stylistId}`
+    const activeStylist = stylistId || (selectedStylistId !== 'all' ? selectedStylistId : undefined)
+    if (selectedServiceIds.includes(serviceId) && selectedServiceIds.length > 1) {
+      handleBookSelectedServices()
+      return
+    }
+    const url = activeStylist
+      ? `/client/book/${serviceId}?stylist=${activeStylist}`
       : `/client/book/${serviceId}`
     router.push(url)
   }
@@ -455,6 +506,45 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
               </div>
             </div>
 
+            {/* Stylist Filter Bar */}
+            {eligibleStylists.length > 0 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                <span className="shrink-0 text-stone-400 font-semibold text-[11px] uppercase tracking-wider flex items-center gap-1">
+                  <User className="h-3 w-3" /> Stylist:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStylistId('all')}
+                  className={`cursor-pointer rounded-full px-3 py-1 font-medium text-xs transition-all ${
+                    selectedStylistId === 'all'
+                      ? 'bg-amber-100 text-amber-900 border border-amber-300 font-semibold'
+                      : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200'
+                  }`}
+                >
+                  Any Stylist
+                </button>
+                {eligibleStylists.map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => setSelectedStylistId(st.id)}
+                    className={`cursor-pointer rounded-full px-3 py-1 font-medium text-xs transition-all flex items-center gap-1.5 ${
+                      selectedStylistId === st.id
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300 font-semibold'
+                        : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200'
+                    }`}
+                  >
+                    <span>{st.display_name}</span>
+                    {st.rating_avg > 0 && (
+                      <span className="text-[10px] text-amber-700">
+                        ★ {st.rating_avg.toFixed(1)}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Services Grid */}
             {servicesLoading ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -487,6 +577,7 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredServices.map((svc) => {
+                  const isSelected = selectedServiceIds.includes(svc.id)
                   const svcPrice = Number(svc.base_price) || 0
                   const svcHold =
                     Number(svc.authorization_hold_amount || svc.base_price) || svcPrice
@@ -498,7 +589,11 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                   return (
                     <article
                       key={svc.id}
-                      className="group flex flex-col justify-between overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-2xs transition-all hover:border-amber-300 hover:shadow-md"
+                      className={`group flex flex-col justify-between overflow-hidden rounded-3xl border bg-white shadow-2xs transition-all ${
+                        isSelected
+                          ? 'border-amber-400 ring-2 ring-amber-300/60 shadow-md'
+                          : 'border-stone-200 hover:border-amber-300 hover:shadow-md'
+                      }`}
                     >
                       <div className="relative aspect-[16/10] w-full overflow-hidden bg-stone-100">
                         <Image
@@ -549,18 +644,29 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSelectService(svc.id)}
+                              className={`inline-flex h-8 cursor-pointer items-center rounded-full px-3 text-xs font-semibold transition-all active:scale-[0.98] ${
+                                isSelected
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs'
+                                  : 'border border-stone-200 text-stone-700 hover:border-amber-300 hover:bg-stone-50'
+                              }`}
+                            >
+                              {isSelected ? '✓ Added' : '+ Add'}
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleOpenDetail(svc)}
-                              className="inline-flex h-8 cursor-pointer items-center rounded-full border border-stone-200 px-3.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
+                              className="inline-flex h-8 cursor-pointer items-center rounded-full border border-stone-200 px-3 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
                             >
                               Details
                             </button>
                             <button
                               type="button"
                               onClick={() => handleBookService(svc.id)}
-                              className="inline-flex h-8 cursor-pointer items-center rounded-full bg-stone-950 px-4 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-amber-600 active:scale-[0.98]"
+                              className="inline-flex h-8 cursor-pointer items-center rounded-full bg-stone-950 px-3.5 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-amber-600 active:scale-[0.98]"
                             >
                               Book Now
                             </button>
@@ -598,6 +704,45 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
           </section>
         )}
       </div>
+
+      {/* Sticky Bottom Bar for Multiple Selected Services */}
+      {selectedServiceIds.length > 0 && activeTab === 'services' && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-amber-300/40 bg-stone-950/95 px-4 py-3.5 text-white shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-4 duration-200">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-xs font-semibold text-amber-400">
+                <span>
+                  {selectedServiceIds.length} service{selectedServiceIds.length > 1 ? 's' : ''}{' '}
+                  selected
+                </span>
+                <span>·</span>
+                <span className="text-white">{formatUsd(totalSelectedPrice)}</span>
+                <span>·</span>
+                <span className="text-stone-300">{formatDuration(totalSelectedDuration)}</span>
+              </p>
+              <p className="truncate text-[11px] text-stone-400">
+                {selectedServices.map((s) => s.name).join(', ')}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedServiceIds([])}
+                className="cursor-pointer rounded-full border border-stone-700 px-3 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:bg-stone-800 hover:text-white"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={handleBookSelectedServices}
+                className="cursor-pointer rounded-full bg-amber-500 px-5 py-1.5 text-xs font-bold text-stone-950 shadow-md transition-colors hover:bg-amber-400"
+              >
+                Book {selectedServiceIds.length} Service{selectedServiceIds.length > 1 ? 's' : ''} →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Service Detail Modal */}
       <ServiceDetailModal

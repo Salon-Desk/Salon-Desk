@@ -89,7 +89,7 @@ export function ClientHeader({
             <Sparkles
               className={`h-3.5 w-3.5 ${conciergeOpen ? 'text-white' : 'text-amber-400'}`}
             />
-            <span>AI Chat</span>
+            <span>Concierge</span>
           </button>
 
           <UserMenu portal="client" />

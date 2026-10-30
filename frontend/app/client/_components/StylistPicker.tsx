@@ -2,7 +2,7 @@
 
 import { Check, Loader2, Sparkles, Star } from 'lucide-react'
 import Image from 'next/image'
-import React from 'react'
+import React, { useMemo } from 'react'
 
 import { ANY_AVAILABLE_STYLIST } from '@/lib/data/catalog'
 import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
@@ -17,7 +17,11 @@ export interface StylistPickerProps {
 }
 
 export function StylistPicker({ stylist, staffOptions, isLoading, onSelect }: StylistPickerProps) {
-  const choices = [ANY_AVAILABLE_STYLIST, ...staffOptions]
+  const eligibleStaff = useMemo(
+    () => staffOptions.filter((s) => !s.role?.toLowerCase().includes('owner')),
+    [staffOptions],
+  )
+  const choices = [ANY_AVAILABLE_STYLIST, ...eligibleStaff]
 
   return (
     <div className="animate-in fade-in slide-in-from-right-2 duration-200">

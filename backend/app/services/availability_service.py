@@ -34,6 +34,8 @@ async def check_slot_available(
     exclude_booking_id: UUID | None = None,
 ) -> bool:
     now = datetime.now(UTC)
+    if starts_at <= now:
+        return False
     if stylist_id:
         stylist_conditions = [
             Booking.stylist_id == stylist_id,
@@ -86,6 +88,7 @@ async def get_availability(
     day: date,
     slot_minutes: int = 30,
     stylist_id: UUID | None = None,
+    duration_minutes: int | None = None,
 ) -> AvailabilityOut:
     """
     Build slots from org working_hours (and stylist shifts if specified) for the given calendar day.
@@ -140,7 +143,12 @@ async def get_availability(
         )
 
     slots: list[TimeSlot] = []
-    duration = timedelta(minutes=service.duration_minutes)
+    effective_duration_minutes = (
+        duration_minutes
+        if (duration_minutes and duration_minutes > 0)
+        else service.duration_minutes
+    )
+    duration = timedelta(minutes=effective_duration_minutes)
     step = timedelta(minutes=slot_minutes)
     now_utc = datetime.now(UTC)
 

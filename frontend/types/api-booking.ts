@@ -43,11 +43,18 @@ export interface OrgBookingsQuery {
   ends_at?: string
 }
 
+export interface ServiceStylistSelection {
+  service_id: string
+  stylist_id?: string | null
+}
+
 export interface CreateBookingRequest {
   org_id: string
   starts_at: string
   service_ids: string[]
   stylist_id?: string | null
+  service_stylists?: ServiceStylistSelection[]
+  party_size?: number
   customer_notes?: string | null
 }
 

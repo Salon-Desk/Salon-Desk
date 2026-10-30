@@ -32,14 +32,24 @@ export function ClientBookPage() {
       router.replace(`${lastCheckout}${sep}paypal=cancelled`)
       return
     }
-    const serviceId = draft.serviceIds[0]
+    const servicesFromQuery = params.get('services')?.split(',').filter(Boolean)
+    const effectiveServiceIds =
+      servicesFromQuery && servicesFromQuery.length > 0 ? servicesFromQuery : draft.serviceIds
+    const serviceId = effectiveServiceIds[0]
+    const extraServices = effectiveServiceIds.slice(1).join(',')
+    const guests = params.get('guests')
+    const stylistId = params.get('stylist') || draft.stylistId
+
     if (serviceId) {
-      router.replace(
-        checkoutPath(serviceId, {
-          slot: draft.startsAt,
-          stylist: draft.stylistId ?? undefined,
-        }),
-      )
+      const base = checkoutPath(serviceId, {
+        slot: draft.startsAt,
+        stylist: stylistId ?? undefined,
+      })
+      const extraQuery = extraServices ? `&services=${extraServices}` : ''
+      const guestQuery = guests ? `&guests=${guests}` : ''
+      const sep = base.includes('?') ? '&' : '?'
+      const fullUrl = `${base}${extraQuery || guestQuery ? sep : ''}${extraQuery ? extraQuery.replace(/^&/, '') : ''}${guestQuery ? (extraQuery ? guestQuery : guestQuery.replace(/^&/, '')) : ''}`
+      router.replace(fullUrl)
       return
     }
     router.replace(ROUTES.client)

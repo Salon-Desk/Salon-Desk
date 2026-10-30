@@ -36,9 +36,11 @@ async def create_booking(body: BookingCreate, user: ClientUser, db: DbSession) -
             client_id=user.id,
             org_id=body.org_id,
             service_ids=body.service_ids,
+            service_stylists=body.service_stylists,
             starts_at=body.starts_at,
             stylist_id=body.stylist_id,
             customer_notes=body.customer_notes,
+            party_size=body.party_size,
         )
     except (ForbiddenError, NotFoundError) as exc:
         # Slot conflicts are client errors, not auth failures.
@@ -97,6 +99,12 @@ async def availability(
     day: date = Query(..., description="Calendar day in the salon's timezone (YYYY-MM-DD)"),
     slot_minutes: int = Query(default=30, ge=5, le=120),
     stylist_id: UUID | None = Query(default=None, description="Optional stylist filter"),
+    duration_minutes: int | None = Query(
+        default=None,
+        ge=5,
+        le=600,
+        description="Optional total duration in minutes for multiple selected services",
+    ),
 ) -> AvailabilityOut:
     try:
         return await booking_service.get_availability(
@@ -105,6 +113,7 @@ async def availability(
             day=day,
             slot_minutes=slot_minutes,
             stylist_id=stylist_id,
+            duration_minutes=duration_minutes,
         )
     except NotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=exc.message) from exc

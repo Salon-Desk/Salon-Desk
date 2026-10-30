@@ -15,6 +15,8 @@ from app.models.enums import (
     PaymentCaptureType,
     PaymentHoldStatus,
     ServiceStatus,
+    UserRole,
+    UserStatus,
 )
 from app.models.organization import Organization
 from app.models.payment import PaymentHold
@@ -77,6 +79,18 @@ async def _load_active_policy(db: AsyncSession, org_id: UUID) -> dict:
     }
 
 
+def _get_user_display_name(user: User | None) -> str:
+    if not user:
+        return "Assigned stylist"
+    if hasattr(user, "profile") and user.profile:
+        name = getattr(user.profile, "full_name", None)
+        if callable(name):
+            name = name()
+        if name:
+            return str(name)
+    return getattr(user, "email", "Assigned stylist")
+
+
 async def create_booking(
     db: AsyncSession,
     *,
@@ -86,10 +100,21 @@ async def create_booking(
     starts_at: datetime,
     stylist_id: UUID | None,
     customer_notes: str | None,
+    party_size: int = 1,
+    service_stylists: list | None = None,
 ) -> Booking:
     org = await db.get(Organization, org_id)
     if org is None or org.status != OrganizationStatus.APPROVED:
         raise ForbiddenError("Organization is not available for booking")
+
+    now_utc = datetime.now(UTC)
+    if starts_at <= now_utc:
+        raise ForbiddenError("Cannot book an appointment in the past")
+
+    if not service_ids:
+        raise ForbiddenError("At least one service must be selected")
+
+    party_size = max(1, min(10, party_size))
 
     result = await db.execute(
         select(Service).where(
@@ -100,11 +125,47 @@ async def create_booking(
     )
     services = list(result.scalars().all())
     if len(services) != len(set(service_ids)):
-        raise NotFoundError("One or more services not found")
+        raise NotFoundError("One or more services not found or inactive")
+
+    # Map per-service stylist selections
+    service_stylist_map: dict[UUID, UUID | None] = {}
+    if service_stylists:
+        for ss in service_stylists:
+            sid = getattr(ss, "service_id", None) or (
+                ss.get("service_id") if isinstance(ss, dict) else None
+            )
+            stid = (
+                getattr(ss, "stylist_id", None)
+                if hasattr(ss, "stylist_id")
+                else (ss.get("stylist_id") if isinstance(ss, dict) else None)
+            )
+            if sid:
+                service_stylist_map[UUID(str(sid))] = UUID(str(stid)) if stid else None
+
+    # Collect and validate all unique stylists
+    all_stylist_ids: set[UUID] = set()
+    if stylist_id is not None:
+        all_stylist_ids.add(stylist_id)
+    for stid in service_stylist_map.values():
+        if stid is not None:
+            all_stylist_ids.add(stid)
+
+    stylist_users: dict[UUID, User] = {}
+    for stid in all_stylist_ids:
+        st = await db.get(User, stid)
+        if st is None or st.org_id != org_id or st.status != UserStatus.ACTIVE:
+            raise ForbiddenError("Selected stylist is not available at this salon")
+        if st.role != UserRole.STYLIST:
+            raise ForbiddenError("Selected staff member is not an active stylist")
+        stylist_users[stid] = st
+
+    # Fallback overall stylist_id to first service's stylist if not provided
+    if stylist_id is None and services:
+        stylist_id = service_stylist_map.get(services[0].id)
 
     total_duration = sum(s.duration_minutes for s in services)
     ends_at = starts_at + timedelta(minutes=total_duration)
-    total_price = sum((s.base_price for s in services), Decimal("0"))
+    total_price = sum((s.base_price for s in services), Decimal("0")) * party_size
 
     # Supersede any previous incomplete pending bookings for this client on the same slot
     stale_user_pending_q = select(Booking).where(
@@ -135,29 +196,71 @@ async def create_booking(
     if stale_user_pending:
         await db.flush()
 
-    primary = services[0]
-    available = await check_slot_available(
-        db,
-        service=primary,
-        starts_at=starts_at,
-        ends_at=ends_at,
-        stylist_id=stylist_id,
-    )
-    if not available:
-        raise ForbiddenError("Selected time slot is not available")
+    # Verify slot availability: either segmented per service if specific stylists differ, or across the full session
+    has_varying_stylists = bool(service_stylist_map and len(set(service_stylist_map.values())) > 1)
+    if has_varying_stylists:
+        curr_start = starts_at
+        for s in services:
+            curr_end = curr_start + timedelta(minutes=s.duration_minutes)
+            s_stylist = service_stylist_map.get(s.id, stylist_id)
+            slot_ok = await check_slot_available(
+                db,
+                service=s,
+                starts_at=curr_start,
+                ends_at=curr_end,
+                stylist_id=s_stylist,
+            )
+            if not slot_ok:
+                raise ForbiddenError(f"Selected time slot is not available for {s.name}")
+            curr_start = curr_end
+    else:
+        primary = services[0]
+        common_stylist = service_stylist_map.get(primary.id, stylist_id)
+        available = await check_slot_available(
+            db,
+            service=primary,
+            starts_at=starts_at,
+            ends_at=ends_at,
+            stylist_id=common_stylist,
+        )
+        if not available:
+            raise ForbiddenError("Selected time slot is not available")
 
     policy_snapshot = await _load_active_policy(db, org_id)
+    policy_snapshot["party_size"] = party_size
     no_show_fee = agreed_no_show_fee(total_price=total_price, policy_data=policy_snapshot)
     late_cancel_fee = agreed_late_cancel_fee(total_price=total_price, policy_data=policy_snapshot)
     deadline = free_cancel_deadline_at(starts_at=starts_at, policy_data=policy_snapshot)
 
-    platform_commission = await total_platform_commission_for_services(db, services)
+    platform_commission = (await total_platform_commission_for_services(db, services)) * party_size
+    primary = services[0]
     primary_rule = await commission_rule_for_service(db, primary)
     commission_snapshot = {
         **primary_rule,
         "amount": str(platform_commission),
     }
     agreed_hold = (total_price + platform_commission).quantize(Decimal("0.01"))
+
+    # Format notes
+    note_segments: list[str] = []
+    if party_size > 1:
+        note_segments.append(f"Party size: {party_size} guests")
+    if customer_notes:
+        note_segments.append(customer_notes)
+    if service_stylist_map:
+        stylist_details = []
+        for s in services:
+            st_id = service_stylist_map.get(s.id)
+            st_user = stylist_users.get(st_id) if st_id else None
+            st_name = (
+                _get_user_display_name(st_user)
+                if st_user
+                else ("Any available stylist" if not st_id else "Assigned stylist")
+            )
+            stylist_details.append(f"{s.name}: {st_name}")
+        note_segments.append("Stylists: " + " · ".join(stylist_details))
+
+    final_notes = "\n".join(note_segments) if note_segments else None
 
     booking = Booking(
         org_id=org_id,
@@ -173,19 +276,25 @@ async def create_booking(
         free_cancel_deadline_at=deadline,
         policy_snapshot_json=policy_snapshot,
         commission_snapshot=commission_snapshot,
-        customer_notes=customer_notes,
+        customer_notes=final_notes,
     )
     db.add(booking)
     await db.flush()
 
     for service in services:
         line_rule = await commission_rule_for_service(db, service)
+        svc_stylist_id = service_stylist_map.get(service.id, stylist_id)
+        svc_policy = dict(policy_snapshot)
+        if svc_stylist_id and svc_stylist_id in stylist_users:
+            st_user = stylist_users[svc_stylist_id]
+            svc_policy["stylist_id"] = str(svc_stylist_id)
+            svc_policy["stylist_name"] = _get_user_display_name(st_user)
         db.add(
             BookingService(
                 booking_id=booking.id,
                 service_id=service.id,
                 base_price=service.base_price,
-                service_policy_snapshot_json=policy_snapshot,
+                service_policy_snapshot_json=svc_policy,
                 commission_rule_snapshot_json=line_rule,
             )
         )

@@ -5,12 +5,13 @@ import React from 'react'
 
 import { cn } from '@/lib/utils'
 
-export type CheckoutWizardStep = 1 | 2 | 3
+export type CheckoutWizardStep = 1 | 2 | 3 | 4
 
 export const WIZARD_STEPS = [
-  { id: 1 as const, label: 'Stylist' },
-  { id: 2 as const, label: 'Date & time' },
-  { id: 3 as const, label: 'Review & agree' },
+  { id: 1 as const, label: 'Guests & Services' },
+  { id: 2 as const, label: 'Stylists' },
+  { id: 3 as const, label: 'Date & time' },
+  { id: 4 as const, label: 'Review & agree' },
 ]
 
 export function BookingStepper({

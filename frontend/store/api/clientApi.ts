@@ -260,9 +260,15 @@ export const clientApi = baseApi.injectEndpoints({
 
     getBookingAvailability: builder.query<
       AvailabilityResponse,
-      { service_id: string; day: string; slot_minutes?: number; stylist_id?: string | null }
+      {
+        service_id: string
+        day: string
+        slot_minutes?: number
+        stylist_id?: string | null
+        duration_minutes?: number | null
+      }
     >({
-      query: ({ service_id, day, slot_minutes, stylist_id }) => ({
+      query: ({ service_id, day, slot_minutes, stylist_id, duration_minutes }) => ({
         url: '/api/v1/bookings/availability',
         method: 'GET',
         params: {
@@ -270,6 +276,7 @@ export const clientApi = baseApi.injectEndpoints({
           day,
           ...(slot_minutes ? { slot_minutes } : {}),
           ...(stylist_id ? { stylist_id } : {}),
+          ...(duration_minutes ? { duration_minutes } : {}),
         },
       }),
     }),

@@ -9,6 +9,7 @@ import {
   MapPin,
   ShieldCheck,
   User,
+  Users,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -34,7 +35,7 @@ export interface CheckoutQuote {
 }
 
 export function buildCheckoutQuote(
-  service: SalonService,
+  serviceOrServices: SalonService | SalonService[],
   policy:
     | {
         name?: string | null
@@ -44,25 +45,32 @@ export function buildCheckoutQuote(
       }
     | undefined,
   startsAt: string | null,
+  partySize = 1,
 ): CheckoutQuote {
+  const services = Array.isArray(serviceOrServices) ? serviceOrServices : [serviceOrServices]
   const round = (n: number) => Math.round(n * 100) / 100
   const freeCancelHours = policy?.free_cancel_hours ?? 24
   const noShowPct = policy?.no_show_fee_percent ?? 50
   const lateCancelPct = policy?.late_cancel_fee_percent ?? noShowPct
   const startMs = startsAt ? Date.parse(startsAt) : Number.NaN
-  const platformCommission =
-    service.platformCommission ??
-    Math.max(0, (service.holdDeposit || service.price) - service.price)
+  const multiplier = Math.max(1, partySize)
+  const baseServicePrice = services.reduce((sum, s) => sum + s.price, 0)
+  const baseCommission = services.reduce(
+    (sum, s) => sum + (s.platformCommission ?? Math.max(0, (s.holdDeposit || s.price) - s.price)),
+    0,
+  )
+  const totalPrice = baseServicePrice * multiplier
+  const totalCommission = baseCommission * multiplier
   return {
-    price: service.price,
-    platformCommission,
-    hold: service.holdDeposit || service.price + platformCommission,
+    price: totalPrice,
+    platformCommission: totalCommission,
+    hold: totalPrice + totalCommission,
     policyName: policy?.name ?? null,
     freeCancelHours,
     lateCancelPct,
-    lateCancelFee: round(service.price * (lateCancelPct / 100)),
+    lateCancelFee: round(totalPrice * (lateCancelPct / 100)),
     noShowPct,
-    noShowFee: round(service.price * (noShowPct / 100)),
+    noShowFee: round(totalPrice * (noShowPct / 100)),
     freeCancelUntil: Number.isFinite(startMs)
       ? new Date(startMs - freeCancelHours * 3_600_000).toISOString()
       : null,
@@ -73,6 +81,7 @@ import { SummaryRow } from './SummaryRow'
 
 export interface CheckoutSummaryProps {
   service: SalonService
+  services?: SalonService[]
   coverSrc: string
   salonName?: string
   orgId?: string
@@ -81,12 +90,14 @@ export interface CheckoutSummaryProps {
   startsAt: string | null
   displayTz: string
   quote: CheckoutQuote
+  partySize?: number
   onOpenDetails?: () => void
   children?: ReactNode
 }
 
 export function CheckoutSummary({
   service,
+  services,
   coverSrc,
   salonName,
   orgId,
@@ -95,11 +106,14 @@ export function CheckoutSummary({
   startsAt,
   displayTz,
   quote,
+  partySize = 1,
   onOpenDetails,
   children,
 }: CheckoutSummaryProps) {
+  const allServices = services && services.length > 0 ? services : [service]
+  const totalDurationMin = allServices.reduce((acc, s) => acc + s.durationMin, 0)
   const endsAt = startsAt
-    ? new Date(Date.parse(startsAt) + service.durationMin * 60_000).toISOString()
+    ? new Date(Date.parse(startsAt) + totalDurationMin * 60_000).toISOString()
     : null
 
   return (
@@ -168,6 +182,27 @@ export function CheckoutSummary({
           </button>
         )}
 
+        {allServices.length > 1 ? (
+          <div className="rounded-2xl border border-stone-200/80 bg-stone-50/70 p-3 text-xs space-y-2">
+            <p className="font-bold text-stone-900 text-[11px] uppercase tracking-wider">
+              Selected Services ({allServices.length})
+            </p>
+            <div className="space-y-1.5 divide-y divide-stone-200/40">
+              {allServices.map((s) => (
+                <div key={s.id} className="flex items-center justify-between pt-1 text-stone-700">
+                  <div className="truncate max-w-[190px]">
+                    <span className="font-medium text-stone-900 block truncate">{s.name}</span>
+                    <span className="text-[10px] text-stone-500">
+                      {formatDuration(s.durationMin)}
+                    </span>
+                  </div>
+                  <span className="font-semibold text-stone-900">{formatUsd(s.price)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <SummaryRow icon={<User className="h-4 w-4" />} label="Stylist">
           {stylistLabel}
         </SummaryRow>
@@ -197,12 +232,18 @@ export function CheckoutSummary({
         </SummaryRow>
 
         <SummaryRow icon={<Clock className="h-4 w-4" />} label="Duration">
-          {formatDuration(service.durationMin)}
+          {formatDuration(totalDurationMin)}
         </SummaryRow>
+
+        {partySize > 1 ? (
+          <SummaryRow icon={<Users className="h-4 w-4" />} label="Party Size">
+            {partySize} guests
+          </SummaryRow>
+        ) : null}
 
         <div className="space-y-2 rounded-2xl bg-stone-50 p-4 text-sm">
           <div className="flex justify-between text-stone-600">
-            <span>Service price</span>
+            <span>Service price{partySize > 1 ? ` (${partySize} guests)` : ''}</span>
             <span className="font-medium text-stone-900">{formatUsd(quote.price)}</span>
           </div>
           {quote.platformCommission > 0 ? (

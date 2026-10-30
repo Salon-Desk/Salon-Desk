@@ -22,9 +22,11 @@ import {
   useCreatePaymentHoldMutation,
   useGetCatalogOrgStaffQuery,
   useGetCatalogServiceQuery,
+  useGetCatalogServicesQuery,
 } from '@/store/api/clientApi'
+import { useUpdateProfileMutation } from '@/store/api/sharedApi'
 import { isAuthenticatedSelector, isClientUser, userSelector } from '@/store/authSlice'
-import type { Booking, StaffMember } from '@/types'
+import type { Booking, SalonService, StaffMember } from '@/types'
 
 import { CHECKOUT_TERMS_VERSION } from '../_constants/checkout-legal'
 import { type AuthStep, PayPalHoldCheckout } from './PayPalHoldCheckout'
@@ -55,15 +57,19 @@ function findStylist(id: string | null | undefined, staff: StaffMember[]): Staff
 
 export interface ClientCheckoutPageProps {
   serviceId: string
+  extraServiceIds?: string[]
   initialSlot?: string
   initialStylistId?: string
+  initialPartySize?: number
   paypalCancelled?: boolean
 }
 
 export function ClientCheckoutPage({
   serviceId,
+  extraServiceIds = [],
   initialSlot,
   initialStylistId,
+  initialPartySize = 1,
   paypalCancelled = false,
 }: ClientCheckoutPageProps) {
   const router = useRouter()
@@ -75,6 +81,10 @@ export function ClientCheckoutPage({
 
   const { data: catalog, isLoading, isError, refetch } = useGetCatalogServiceQuery(serviceId)
   const orgId = catalog?.organization_id ?? ''
+  const { data: orgServicesPage } = useGetCatalogServicesQuery(
+    { org_id: orgId, page_size: 100 },
+    { skip: !orgId },
+  )
   const { data: staffPage, isLoading: staffLoading } = useGetCatalogOrgStaffQuery(
     buildClientOrgStaffQueryArg(orgId),
     {
@@ -82,7 +92,10 @@ export function ClientCheckoutPage({
     },
   )
   const staffOptions = useMemo(
-    () => (staffPage?.items ?? []).map(mapCatalogStaffToUi),
+    () =>
+      (staffPage?.items ?? [])
+        .map(mapCatalogStaffToUi)
+        .filter((s) => !s.role?.toLowerCase().includes('owner')),
     [staffPage?.items],
   )
   const service = useMemo(
@@ -90,9 +103,44 @@ export function ClientCheckoutPage({
     [catalog],
   )
 
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(() => {
+    const initial = [serviceId, ...(extraServiceIds || [])]
+    return Array.from(new Set(initial))
+  })
+
+  const availableOrgServices = useMemo(
+    () => (orgServicesPage?.items ?? []).map(mapCatalogServiceToSalonService),
+    [orgServicesPage?.items],
+  )
+
+  const selectedServices = useMemo(() => {
+    if (!service) return []
+    if (selectedServiceIds.length <= 1) return [service]
+    const extras = availableOrgServices.filter(
+      (s) => selectedServiceIds.includes(s.id) && s.id !== service.id,
+    )
+    return [service, ...extras]
+  }, [service, selectedServiceIds, availableOrgServices])
+
+  const handleToggleService = (s: SalonService) => {
+    setSelectedServiceIds((prev) => {
+      if (prev.includes(s.id)) {
+        if (prev.length <= 1) return prev
+        return prev.filter((id) => id !== s.id)
+      }
+      return [...prev, s.id]
+    })
+    setStartsAt(null)
+  }
+
   const [pickedStylist, setPickedStylist] = useState<StaffMember>(ANY_AVAILABLE_STYLIST)
+  const [serviceStylistMap, setServiceStylistMap] = useState<Record<string, StaffMember>>({})
   const [startsAt, setStartsAt] = useState<string | null>(() =>
     initialSlot && !Number.isNaN(Date.parse(initialSlot)) ? initialSlot : null,
+  )
+  const [partySize, setPartySize] = useState<number>(() => Math.max(1, initialPartySize ?? 1))
+  const [clientPhone, setClientPhone] = useState<string>(
+    () => user?.profile?.phone || user?.phone || '',
   )
   const [step, setStep] = useState<AuthStep>('review')
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null)
@@ -100,8 +148,42 @@ export function ClientCheckoutPage({
   const [createBooking] = useCreateBookingMutation()
   const [createConsent] = useCreateBookingConsentMutation()
   const [createHold] = useCreatePaymentHoldMutation()
+  const [updateProfile] = useUpdateProfileMutation()
 
   const stylist = pickedStylist
+
+  const handleSelectServiceStylist = (serviceId: string, s: StaffMember) => {
+    setServiceStylistMap((prev) => ({
+      ...prev,
+      [serviceId]: s,
+    }))
+    setStartsAt(null)
+  }
+
+  const handleApplyStylistToAll = (s: StaffMember) => {
+    setPickedStylist(s)
+    const newMap: Record<string, StaffMember> = {}
+    for (const svc of selectedServices) {
+      newMap[svc.id] = s
+    }
+    setServiceStylistMap(newMap)
+    setStartsAt(null)
+  }
+
+  useEffect(() => {
+    if (user?.profile?.phone && !clientPhone) {
+      setClientPhone(user.profile.phone)
+    } else if (user?.phone && !clientPhone) {
+      setClientPhone(user.phone)
+    }
+  }, [user?.profile?.phone, user?.phone, clientPhone])
+
+  const phoneDigits = (clientPhone ?? '').replace(/\D/g, '')
+  const phoneError = !phoneDigits
+    ? 'Phone number is required for booking'
+    : phoneDigits.length < 8 || phoneDigits.length > 15
+      ? 'Please enter a valid phone number'
+      : undefined
 
   useEffect(() => {
     if (!initialStylistId) return
@@ -114,14 +196,37 @@ export function ClientCheckoutPage({
       return
     }
 
+    if (new Date(startsAt).getTime() <= Date.now()) {
+      toast.error(
+        'Selected slot has already passed. Please choose a future slot.',
+        toastColor.error,
+      )
+      setStartsAt(null)
+      return
+    }
+
+    if (phoneError || !clientPhone.trim()) {
+      toast.error('Please enter a valid phone number before proceeding', toastColor.error)
+      return
+    }
+
+    if (partySize < 1 || partySize > 10) {
+      toast.error('Party size must be between 1 and 10 guests', toastColor.error)
+      return
+    }
+
+    const allServiceIds = selectedServices.map((s) => s.id)
     const returnPath = checkoutPath(serviceId, { slot: startsAt, stylist: stylist.id })
     if (!canCheckout) {
       saveDraft({
         orgId: catalog.organization_id,
-        serviceIds: [catalog.id],
+        serviceIds: allServiceIds,
         startsAt,
         stylistId: stylist.id,
-        selectedServiceName: service.name,
+        selectedServiceName:
+          selectedServices.length > 1
+            ? `${service.name} (+${selectedServices.length - 1} more)`
+            : service.name,
       })
       pauseForAuth(returnPath)
       openAuthModal('sign-in', 'client')
@@ -129,14 +234,50 @@ export function ClientCheckoutPage({
       return
     }
 
+    if (!user?.profile?.phone && clientPhone.trim()) {
+      void updateProfile({ phone: clientPhone.trim() })
+    }
+
     setStep('authorizing')
     try {
+      const serviceStylistsPayload = selectedServices.map((s) => {
+        const st = serviceStylistMap[s.id] ?? pickedStylist
+        return {
+          service_id: s.id,
+          stylist_id: !st || st.id === ANY_AVAILABLE_STYLIST.id ? null : st.id,
+        }
+      })
+
+      const primaryStylist = serviceStylistMap[service.id] ?? pickedStylist
+      const primaryStylistId =
+        !primaryStylist || primaryStylist.id === ANY_AVAILABLE_STYLIST.id ? null : primaryStylist.id
+
+      const stylistSummary = selectedServices
+        .map((s) => {
+          const st = serviceStylistMap[s.id] ?? pickedStylist
+          return `${s.name}: ${!st || st.id === ANY_AVAILABLE_STYLIST.id ? 'Any available' : st.name}`
+        })
+        .join(' · ')
+
       const booking = await createBooking({
         org_id: catalog.organization_id,
         starts_at: startsAt,
-        service_ids: [catalog.id],
-        stylist_id: stylist.id === ANY_AVAILABLE_STYLIST.id ? null : stylist.id,
-        customer_notes: `Booked via client portal · ${stylist.name}`,
+        service_ids: allServiceIds,
+        service_stylists: serviceStylistsPayload,
+        party_size: partySize,
+        stylist_id: primaryStylistId,
+        customer_notes: [
+          partySize > 1 ? `Party of ${partySize} guests (family / group)` : null,
+          `Client Phone: ${clientPhone.trim()}`,
+          selectedServices.length > 1
+            ? `Stylists: ${stylistSummary}`
+            : `Stylist: ${primaryStylist.name}`,
+          selectedServices.length > 1
+            ? `Services: ${selectedServices.map((s) => s.name).join(', ')}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' · '),
       }).unwrap()
 
       const holdAmount = Number(booking.agreed_hold_amount ?? booking.total_price) || 0
@@ -193,12 +334,32 @@ export function ClientCheckoutPage({
         `Booking confirmed with a PayPal hold of $${holdAmount.toFixed(2)}. $0 charged today.`,
         toastColor.success,
       )
-    } catch (err) {
+    } catch (err: unknown) {
       setStep('review')
-      const message =
-        (err as { data?: { detail?: string } })?.data?.detail ||
-        'Could not create booking hold. Please try again.'
-      toast.error(String(message), toastColor.error)
+      const errorObj = err as {
+        status?: number
+        data?: { detail?: string | { msg?: string }[] }
+      }
+      let message = 'Could not create booking hold. Please try again.'
+      if (typeof errorObj?.data?.detail === 'string') {
+        message = errorObj.data.detail
+      } else if (Array.isArray(errorObj?.data?.detail) && errorObj.data.detail[0]?.msg) {
+        message = errorObj.data.detail[0].msg
+      }
+
+      if (
+        errorObj?.status === 409 ||
+        message.toLowerCase().includes('not available') ||
+        message.toLowerCase().includes('conflict')
+      ) {
+        toast.error(
+          'This time slot is no longer available. Please select another time.',
+          toastColor.error,
+        )
+        setStartsAt(null)
+      } else {
+        toast.error(message, toastColor.error)
+      }
     }
   }
 
@@ -243,13 +404,24 @@ export function ClientCheckoutPage({
   return (
     <PayPalHoldCheckout
       service={service}
+      services={selectedServices}
+      availableOrgServices={availableOrgServices}
+      onToggleService={handleToggleService}
       stylist={stylist}
+      serviceStylistMap={serviceStylistMap}
+      onSelectServiceStylist={handleSelectServiceStylist}
+      onApplyStylistToAll={handleApplyStylistToAll}
       staffOptions={staffOptions}
       staffLoading={staffLoading}
       startsAt={startsAt}
       step={step}
       confirmedBooking={confirmedBooking}
       initialWizardStep={startsAt ? 3 : 1}
+      partySize={partySize}
+      onPartySizeChange={setPartySize}
+      clientPhone={clientPhone}
+      onClientPhoneChange={setClientPhone}
+      phoneError={phoneError}
       notice={
         paypalCancelled ? (
           <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

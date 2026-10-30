@@ -11,11 +11,18 @@ class BookingServiceItem(BaseModel):
     service_id: UUID
 
 
+class ServiceStylistSelection(BaseModel):
+    service_id: UUID
+    stylist_id: UUID | None = None
+
+
 class BookingCreate(BaseModel):
     org_id: UUID
     stylist_id: UUID | None = None
     starts_at: datetime
     service_ids: list[UUID] = Field(min_length=1)
+    service_stylists: list[ServiceStylistSelection] = []
+    party_size: int = Field(default=1, ge=1, le=10)
     customer_notes: str | None = None
 
 

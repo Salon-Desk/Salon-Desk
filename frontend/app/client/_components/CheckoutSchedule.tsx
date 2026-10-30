@@ -44,6 +44,7 @@ function groupSlots(slots: TimeSlot[], timeZone: string) {
 export interface CheckoutScheduleProps {
   serviceId: string
   durationMin: number
+  stylistId?: string | null
   salonTz: string
   displayTz: string
   timezoneOptions: { value: string; label: string }[]
@@ -58,6 +59,7 @@ export interface CheckoutScheduleProps {
 export function CheckoutSchedule({
   serviceId,
   durationMin,
+  stylistId,
   salonTz,
   displayTz,
   timezoneOptions,
@@ -74,7 +76,12 @@ export function CheckoutSchedule({
     isError,
     refetch,
   } = useGetBookingAvailabilityQuery(
-    { service_id: serviceId, day: selectedDay },
+    {
+      service_id: serviceId,
+      day: selectedDay,
+      stylist_id: stylistId || undefined,
+      duration_minutes: durationMin > 0 ? durationMin : undefined,
+    },
     { skip: !serviceId || !selectedDay },
   )
 
