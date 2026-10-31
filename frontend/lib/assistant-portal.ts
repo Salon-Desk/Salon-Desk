@@ -7,10 +7,9 @@ import {
   HelpCircle,
   LayoutDashboard,
   MapPin,
-  Settings2,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
-  Users,
 } from 'lucide-react'
 
 import type { AssistantPortal } from '@/types/api-booking'
@@ -133,18 +132,18 @@ const CLIENT: PortalChrome = {
 
 const MERCHANT: PortalChrome = {
   portal: 'merchant',
-  title: 'Merchant Help',
-  subtitleChat: 'How to use your org console',
+  title: 'AI Copilot',
+  subtitleChat: 'Owner Copilot & Dispute Counsel',
   subtitleVoice: 'Ask how something works',
-  fabLabel: 'Open merchant help',
-  fabTitle: 'Merchant help',
-  placeholder: 'Ask how to use the merchant console…',
-  thinkingLabel: 'Checking the guide…',
+  fabLabel: 'Open AI Copilot',
+  fabTitle: 'AI Copilot',
+  placeholder: 'Ask copilot or type e.g. "Draft a $15 goodwill refund for Hana"…',
+  thinkingLabel: 'Copilot executing toolkit action…',
   voicePlaceholder: 'Ask about services, staff, settlements…',
-  voiceConnecting: 'Connecting to merchant help…',
-  voiceListening: 'Listening — ask how to use the console',
+  voiceConnecting: 'Connecting to AI Copilot…',
+  voiceListening: 'Listening — ask owner copilot or console help',
   voiceIdle: 'Ready — ask about your org console',
-  modeToggleLabel: 'Help mode',
+  modeToggleLabel: 'Copilot mode',
   Icon: Building2,
   fabButton:
     'border-teal-900/70 bg-gradient-to-b from-teal-950 via-stone-950 to-stone-950 hover:border-teal-400/50 hover:shadow-[0_15px_30px_-5px_rgba(45,212,191,0.22)]',
@@ -164,16 +163,22 @@ const MERCHANT: PortalChrome = {
   typingDot: 'bg-teal-500',
   welcomeSuggestions: [
     {
-      label: 'Add staff',
-      hint: 'Create a team member',
-      prompt: 'How do I create staff step by step?',
-      icon: Users,
+      label: 'Goodwill Refund',
+      hint: 'Draft $15 for Hana',
+      prompt: 'Draft a $15 goodwill refund for Hana.',
+      icon: CircleDollarSign,
     },
     {
-      label: 'Add service',
-      hint: 'Price, duration, capacity',
-      prompt: 'How do I add a new service step by step?',
-      icon: ClipboardList,
+      label: 'Disputes',
+      hint: 'Chargeback defense',
+      prompt: 'Review open disputes and AI win probability',
+      icon: ShieldAlert,
+    },
+    {
+      label: 'Slot Rescue',
+      hint: 'Refill waitlist',
+      prompt: 'Check slot rescue waitlist for cancelled chairs',
+      icon: Sparkles,
     },
     {
       label: 'Mark show',
@@ -181,25 +186,22 @@ const MERCHANT: PortalChrome = {
       prompt: 'How do I mark show or no-show on an appointment?',
       icon: CircleDollarSign,
     },
-    {
-      label: 'Commissions',
-      hint: 'Fees & invoices',
-      prompt: 'How do platform commissions and invoices work for my salon?',
-      icon: Settings2,
-    },
   ],
   chips: [
+    'Draft a $15 goodwill refund for Hana.',
+    'Review open disputes',
+    'Check slot rescue waitlist',
+    'Simulate PayPal chargeback defense',
+    'How do I mark show or no-show?',
     'How do I create staff?',
     'How do commissions work for my salon?',
-    'How do I mark show or no-show?',
-    'How do I change PayPal?',
-    'How do I pay a commission invoice?',
   ],
   voiceSuggestions: [
-    'How do I create staff?',
-    'How do platform commissions work for merchants?',
+    'Review open disputes',
+    'Check slot rescue waitlist',
+    'Simulate PayPal chargeback defense',
     'How do I mark show or no-show?',
-    'How do I submit a PayPal change request?',
+    'How do I create staff?',
   ],
 }
 
@@ -293,7 +295,7 @@ export function portalChrome(portal: AssistantPortal): PortalChrome {
 
 export function welcomeMessageForPortal(portal: AssistantPortal): string {
   if (portal === 'merchant') {
-    return 'Hi — merchant help here. Ask how to run the console: staff, services, calendar, settlements, PayPal, policies — or how commissions and invoices work (captures go to your PayPal; SalonDesk bills SaaS fees separately). What do you want to do?'
+    return 'Hi Selam — Owner AI Copilot here. I can draft goodwill refunds with strict PayPal safety limits, review dispute defense dossiers, coordinate slot rescue waitlists, or assist with salon operations. How can I help you today?'
   }
   if (portal === 'admin') {
     return 'Hi — admin help here. I can guide approvals, salon status, commission rules and SaaS billing, taxonomy, or platform staff. What do you want to do?'

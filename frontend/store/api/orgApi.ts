@@ -1,4 +1,9 @@
-import type { ApiBooking, PaymentCapture, PaymentHold } from '@/types/api-booking'
+import type {
+  ApiBooking,
+  PaymentCapture,
+  PaymentHold,
+  RescheduleBookingRequest,
+} from '@/types/api-booking'
 import {
   type ApiCancellationPolicy,
   type ApiChangeRequest,
@@ -346,6 +351,18 @@ export const orgApi = baseApi.injectEndpoints({
       invalidatesTags: ['payments', 'bookings', 'organizations'],
     }),
 
+    rescheduleOrgBooking: builder.mutation<
+      ApiBooking,
+      { bookingId: string; body: RescheduleBookingRequest }
+    >({
+      query: ({ bookingId, body }) => ({
+        url: `/api/v1/settlements/${bookingId}/reschedule`,
+        method: 'PATCH',
+        data: body,
+      }),
+      invalidatesTags: ['payments', 'bookings', 'organizations'],
+    }),
+
     getMyCommissionRecords: builder.query<
       ApiPage<CommissionRecord>,
       { page?: number; page_size?: number; status?: string } | void
@@ -420,6 +437,7 @@ export const {
   useMarkBookingNoShowMutation,
   useGetSettlementBookingQuery,
   useReauthorizeBookingHoldMutation,
+  useRescheduleOrgBookingMutation,
   useGetMyCommissionRecordsQuery,
   useGetMyCommissionInvoicesQuery,
   usePayMyCommissionInvoiceMutation,

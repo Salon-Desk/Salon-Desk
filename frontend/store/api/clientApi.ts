@@ -7,11 +7,14 @@ import type {
   ClientChatResponse,
   CompleteHoldRequest,
   ConsentRequest,
+  CopilotRefundApprovalRequest,
+  CopilotRefundApprovalResponse,
   CreateBookingRequest,
   CreateHoldRequest,
   LiveKitTokenRequest,
   LiveKitTokenResponse,
   PaymentHold,
+  RescheduleBookingRequest,
 } from '@/types/api-booking'
 import type {
   CatalogStaffMember,
@@ -313,11 +316,11 @@ export const clientApi = baseApi.injectEndpoints({
 
     rescheduleBooking: builder.mutation<
       ApiBooking,
-      { bookingId: string; body: { starts_at: string; stylist_id?: string | null } }
+      { bookingId: string; body: RescheduleBookingRequest }
     >({
       query: ({ bookingId, body }) => ({
         url: `/api/v1/bookings/${bookingId}/reschedule`,
-        method: 'POST',
+        method: 'PATCH',
         data: body,
       }),
       invalidatesTags: ['bookings'],
@@ -359,6 +362,18 @@ export const clientApi = baseApi.injectEndpoints({
         data: body,
       }),
     }),
+
+    approveCopilotRefund: builder.mutation<
+      CopilotRefundApprovalResponse,
+      CopilotRefundApprovalRequest
+    >({
+      query: (body) => ({
+        url: '/api/v1/ai/owner-copilot/refund',
+        method: 'POST',
+        data: body,
+      }),
+      invalidatesTags: ['payments', 'bookings'],
+    }),
   }),
 })
 
@@ -388,6 +403,7 @@ export const {
   useCompletePaymentHoldMutation,
   useClientConciergeChatMutation,
   useCreateLiveKitTokenMutation,
+  useApproveCopilotRefundMutation,
 } = clientApi
 
 /** @deprecated Use `clientApi` — kept for existing imports. */

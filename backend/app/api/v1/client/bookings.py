@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import ClientUser, CurrentUser, DbSession
-from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.exceptions import ForbiddenError, NotFoundError, PolicyViolationException
 from app.core.pagination import paginate_items
 from app.models.enums import UserRole
 from app.schemas.booking import (
@@ -199,35 +199,44 @@ async def cancel_booking(
 
 
 @router.post("/{booking_id}/reschedule", response_model=BookingOut)
+@router.patch("/{booking_id}/reschedule", response_model=BookingOut)
 async def reschedule_booking(
     booking_id: UUID,
     body: BookingRescheduleRequest,
     user: CurrentUser,
     db: DbSession,
 ) -> BookingOut:
+    """Reschedule an existing booking (new starts_at, ends_at, and/or stylist_id)."""
     try:
         booking = await booking_service.get_booking(db, booking_id)
         is_org = user.org_id == booking.org_id and user.role in {
             UserRole.ORG_OWNER,
             UserRole.RECEPTION,
+            UserRole.PLATFORM_ADMIN,
+            UserRole.PLATFORM_STAFF,
         }
-        booking = await booking_service.reschedule_booking(
+        rescheduled = await booking_service.reschedule_booking(
             db,
             booking=booking,
-            starts_at=body.starts_at,
-            stylist_id=body.stylist_id,
             actor_id=user.id,
+            starts_at=body.starts_at,
+            ends_at=body.ends_at,
+            stylist_id=body.stylist_id,
             is_org=is_org,
         )
-    except (ForbiddenError, NotFoundError) as exc:
+    except (ForbiddenError, NotFoundError, PolicyViolationException) as exc:
         code = (
             status.HTTP_409_CONFLICT
             if isinstance(exc, ForbiddenError) and "not available" in exc.message.lower()
             else (
                 status.HTTP_403_FORBIDDEN
                 if isinstance(exc, ForbiddenError)
-                else status.HTTP_404_NOT_FOUND
+                else (
+                    status.HTTP_404_NOT_FOUND
+                    if isinstance(exc, NotFoundError)
+                    else status.HTTP_400_BAD_REQUEST
+                )
             )
         )
         raise HTTPException(code, detail=exc.message) from exc
-    return booking_to_out(booking)
+    return booking_to_out(rescheduled)

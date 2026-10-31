@@ -2,12 +2,12 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, Text
+from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel, TimestampedModel
-from app.models.enums import BookingStatus
+from app.models.enums import BookingStatus, WaitlistStatus
 
 
 class Booking(TimestampedModel):
@@ -97,3 +97,59 @@ class BookingService(BaseModel):
 
     booking = relationship("Booking", back_populates="booking_services")
     service = relationship("Service")
+
+
+class WaitlistEntry(BaseModel):
+    __tablename__ = "waitlist_entry"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organization.id"),
+        nullable=False,
+        index=True,
+    )
+    service_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("service.id"),
+        nullable=False,
+        index=True,
+    )
+    client_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("user.id"),
+        nullable=True,
+        index=True,
+    )
+    client_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    client_email: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    preferred_starts_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    status: Mapped[WaitlistStatus] = mapped_column(
+        Enum(
+            WaitlistStatus,
+            name="waitlist_status",
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        default=WaitlistStatus.WAITING,
+        nullable=False,
+        index=True,
+    )
+    rescued_booking_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("booking.id"),
+        nullable=True,
+        index=True,
+    )
+
+    organization = relationship("Organization")
+    service = relationship("Service")
+    client = relationship("User", foreign_keys=[client_id])
+    rescued_booking = relationship("Booking", foreign_keys=[rescued_booking_id])

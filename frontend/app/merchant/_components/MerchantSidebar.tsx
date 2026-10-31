@@ -8,6 +8,7 @@ import {
   Receipt,
   Scissors,
   Settings,
+  ShieldAlert,
   Sparkles,
   Users,
   X,
@@ -73,6 +74,13 @@ export function MerchantSidebar({
       group: 'Salon Operations',
       badge: bookingsCount,
       href: MERCHANT_TAB_ROUTES.appointments,
+    },
+    {
+      id: 'disputes',
+      label: 'Dispute Counsel',
+      icon: ShieldAlert,
+      group: 'Salon Operations',
+      href: MERCHANT_TAB_ROUTES.disputes,
     },
     {
       id: 'staff',

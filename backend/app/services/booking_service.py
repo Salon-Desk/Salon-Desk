@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.exceptions import ForbiddenError, NotFoundError, PolicyViolationException
 from app.models.booking import Booking, BookingService
 from app.models.enums import (
     BookingStatus,
@@ -33,6 +33,7 @@ from app.services.payment_service import capture_hold, void_hold
 from app.services.policy_engine import (
     agreed_late_cancel_fee,
     agreed_no_show_fee,
+    assert_can_reschedule,
     free_cancel_deadline_at,
     is_within_free_cancel_window,
 )
@@ -407,11 +408,13 @@ async def reschedule_booking(
     db: AsyncSession,
     *,
     booking: Booking,
-    starts_at: datetime,
-    stylist_id: UUID | None = None,
     actor_id: UUID,
+    starts_at: datetime | None = None,
+    ends_at: datetime | None = None,
+    stylist_id: UUID | None = None,
     is_org: bool = False,
 ) -> Booking:
+    """Reschedule an appointment time and/or reassign stylist with policy cutoff and availability checks."""
     if booking.status in {
         BookingStatus.CANCELLED,
         BookingStatus.COMPLETED,
@@ -422,53 +425,117 @@ async def reschedule_booking(
     if not is_org and booking.client_id != actor_id:
         raise ForbiddenError("Not your booking")
 
-    if starts_at.tzinfo is None:
-        starts_at = starts_at.replace(tzinfo=UTC)
+    if starts_at is None and stylist_id is None:
+        raise PolicyViolationException(
+            "At least one modification (starts_at or stylist_id) must be specified"
+        )
 
-    if starts_at <= datetime.now(UTC):
-        raise ForbiddenError("Cannot reschedule to a past time")
+    # Time restriction check: clients cannot reschedule within the salon's cutoff window (e.g. 4 hours)
+    assert_can_reschedule(
+        starts_at=booking.starts_at,
+        policy_data=booking.policy_snapshot_json,
+        is_org=is_org,
+    )
 
-    original_duration = booking.ends_at - booking.starts_at
-    ends_at = starts_at + original_duration
+    now = datetime.now(UTC)
 
+    # Determine target time range
+    if starts_at is not None:
+        target_starts_at = (
+            starts_at if starts_at.tzinfo is not None else starts_at.replace(tzinfo=UTC)
+        )
+        if target_starts_at <= now:
+            raise ForbiddenError("Cannot reschedule to a past time")
+
+        if ends_at is not None:
+            target_ends_at = ends_at if ends_at.tzinfo is not None else ends_at.replace(tzinfo=UTC)
+            if target_ends_at <= target_starts_at:
+                raise PolicyViolationException("Appointment end time must be after start time")
+        else:
+            orig_duration = booking.ends_at - booking.starts_at
+            target_ends_at = target_starts_at + orig_duration
+    else:
+        target_starts_at = booking.starts_at
+        target_ends_at = booking.ends_at
+
+    # Determine target stylist
     target_stylist_id = stylist_id if stylist_id is not None else booking.stylist_id
+    if stylist_id is not None and stylist_id != booking.stylist_id:
+        stylist_user = await db.get(User, stylist_id)
+        if stylist_user is None or stylist_user.org_id != booking.org_id:
+            raise NotFoundError("Stylist not found in this organization")
 
-    # Verify availability for all services in this booking
+    # Slot availability check
     for bs in booking.booking_services:
-        service = await db.get(Service, bs.service_id)
-        if service is None or service.status != ServiceStatus.ACTIVE:
+        service = getattr(bs, "service", None)
+        if not isinstance(service, Service):
+            service = await db.get(Service, bs.service_id)
+        if service is None or (
+            getattr(service, "status", None) is not None and service.status != ServiceStatus.ACTIVE
+        ):
             raise NotFoundError("Service not available")
         available = await check_slot_available(
             db,
             service=service,
-            starts_at=starts_at,
-            ends_at=ends_at,
+            starts_at=target_starts_at,
+            ends_at=target_ends_at,
+            stylist_id=target_stylist_id,
             exclude_booking_id=booking.id,
         )
         if not available:
             raise ForbiddenError("Selected time slot is not available")
 
-    old_starts = booking.starts_at
-    booking.starts_at = starts_at
-    booking.ends_at = ends_at
-    if stylist_id is not None:
-        booking.stylist_id = target_stylist_id
+    # Guardrail: Total price cannot exceed authorized hold ceiling without new approval
+    agreed_hold = getattr(booking, "agreed_hold_amount", None)
+    total_price = getattr(booking, "total_price", None)
+    if (
+        isinstance(agreed_hold, (Decimal, int, float))
+        and isinstance(total_price, (Decimal, int, float))
+        and total_price > agreed_hold
+    ):
+        raise PolicyViolationException(
+            f"Rescheduled total price ({total_price}) exceeds authorized deposit hold "
+            f"({agreed_hold}). Supplementary authorization or in-person settlement required."
+        )
 
-    # Recalculate free cancellation deadline
-    deadline = free_cancel_deadline_at(
-        starts_at=starts_at, policy_data=booking.policy_snapshot_json
+    prev_starts = booking.starts_at
+    prev_ends = booking.ends_at
+    prev_stylist = booking.stylist_id
+
+    booking.starts_at = target_starts_at
+    booking.ends_at = target_ends_at
+    booking.stylist_id = target_stylist_id
+
+    # Recompute free cancellation deadline based on new starts_at
+    booking.free_cancel_deadline_at = free_cancel_deadline_at(
+        starts_at=target_starts_at,
+        policy_data=booking.policy_snapshot_json,
     )
-    booking.free_cancel_deadline_at = deadline
+    if hasattr(booking, "reminder_sent_at"):
+        booking.reminder_sent_at = None
+
+    await db.flush()
 
     await append_ledger(
         db,
         event_type="BOOKING_RESCHEDULED",
         payload={
             "booking_id": str(booking.id),
-            "old_starts_at": old_starts.isoformat(),
-            "new_starts_at": starts_at.isoformat(),
-            "new_ends_at": ends_at.isoformat(),
+            "old_starts_at": prev_starts.isoformat(),
+            "previous_starts_at": prev_starts.isoformat(),
+            "previous_ends_at": prev_ends.isoformat(),
+            "previous_stylist_id": str(prev_stylist) if prev_stylist else None,
+            "new_starts_at": target_starts_at.isoformat(),
+            "new_ends_at": target_ends_at.isoformat(),
             "stylist_id": str(target_stylist_id) if target_stylist_id else None,
+            "new_stylist_id": str(target_stylist_id) if target_stylist_id else None,
+            "free_cancel_deadline_at": (
+                booking.free_cancel_deadline_at.isoformat()
+                if booking.free_cancel_deadline_at
+                else None
+            ),
+            "actor_id": str(actor_id),
+            "is_org": is_org,
         },
         org_id=booking.org_id,
         booking_id=booking.id,

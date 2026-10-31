@@ -116,3 +116,27 @@ class KnowledgeEntityType(str, enum.Enum):
     # How-to / support docs for merchant console and platform admin (not booking catalog)
     ORG_GUIDE = "org_guide"
     ADMIN_GUIDE = "admin_guide"
+
+
+class DisputeCaseStatus(str, enum.Enum):
+    OPEN = "OPEN"
+    INVESTIGATING = "INVESTIGATING"
+    EVIDENCE_READY = "EVIDENCE_READY"
+    WAITING_FOR_SELLER_RESPONSE = "WAITING_FOR_SELLER_RESPONSE"
+    EVIDENCE_SUBMITTED = "EVIDENCE_SUBMITTED"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    OFFER_MADE = "OFFER_MADE"
+    RESOLVED_SELLER_FAVOR = "RESOLVED_SELLER_FAVOR"
+    RESOLVED_BUYER_FAVOR = "RESOLVED_BUYER_FAVOR"
+
+
+class DisputeRecommendation(str, enum.Enum):
+    FILE_EVIDENCE = "FILE_EVIDENCE"
+    MAKE_OFFER = "MAKE_OFFER"
+
+
+class WaitlistStatus(str, enum.Enum):
+    WAITING = "WAITING"
+    OFFERED = "OFFERED"
+    RESCUED_FILLED = "RESCUED_FILLED"
+    EXPIRED = "EXPIRED"

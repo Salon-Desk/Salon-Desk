@@ -1,11 +1,14 @@
 from app.models.base import BaseModel, TimestampedModel
-from app.models.booking import Booking, BookingService
+from app.models.booking import Booking, BookingService, WaitlistEntry
 from app.models.curation import FeaturedItem, PlatformCurationSetting
+from app.models.dispute import DisputeCase
 from app.models.enums import (
     BookingStatus,
     ChangeRequestStatus,
     ChangeRequestType,
     CommissionRecordStatus,
+    DisputeCaseStatus,
+    DisputeRecommendation,
     KnowledgeEntityType,
     OrgAccountStatus,
     OrganizationStatus,
@@ -17,6 +20,7 @@ from app.models.enums import (
     ServiceStatus,
     UserRole,
     UserStatus,
+    WaitlistStatus,
 )
 from app.models.feedback import ClientFeedback
 from app.models.knowledge import KnowledgeChunk
@@ -59,6 +63,8 @@ __all__ = [
     "ServiceGiving",
     "Booking",
     "BookingService",
+    "WaitlistEntry",
+    "DisputeCase",
     "PaymentHold",
     "PaymentCapture",
     "PaypalWebhookEvent",
@@ -83,4 +89,7 @@ __all__ = [
     "PlatformCommissionType",
     "CommissionRecordStatus",
     "OrgCommissionInvoiceStatus",
+    "DisputeCaseStatus",
+    "DisputeRecommendation",
+    "WaitlistStatus",
 ]

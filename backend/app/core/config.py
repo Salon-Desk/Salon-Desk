@@ -2,7 +2,7 @@ import json
 from functools import lru_cache
 from typing import Annotated, Literal, Self
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, ValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from app.core.database_url import resolve_database_url
@@ -190,6 +190,16 @@ class Settings(BaseSettings):
     def normalize_llm_provider(cls, value: object) -> object:
         if isinstance(value, str):
             return value.strip().lower()
+        return value
+
+    @field_validator("paypal_api_base")
+    @classmethod
+    def validate_paypal_api_base(cls, value: str, info: ValidationInfo) -> str:
+        env = (info.data.get("environment") or "development").strip().lower()
+        if env != "production" and "sandbox.paypal.com" not in value:
+            raise ValueError(
+                f"paypal_api_base must point to sandbox.paypal.com in non-production environments (got {value})"
+            )
         return value
 
     @property

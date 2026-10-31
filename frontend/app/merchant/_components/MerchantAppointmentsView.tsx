@@ -63,6 +63,16 @@ export function MerchantAppointmentsView() {
     onFilterHolds: () => setParams({ holdStatus: 'HELD', page: 1 }),
     onFilterCaptured: () => setParams({ holdStatus: 'CAPTURED', page: 1 }),
     onFilterVoided: () => setParams({ holdStatus: 'VOIDED', page: 1 }),
+    onExecuteSlotRescue: (bookingId) => {
+      const candidates = (tableData?.items ?? []).map((b) => mapApiBookingToUi(b))
+      const target = bookingId
+        ? candidates.find((b) => b.id === bookingId)
+        : candidates.find((b) => b.status === 'NO_SHOW_CAPTURED' || b.status === 'VOIDED') ||
+          candidates[0]
+      if (target) {
+        setSelectedBooking(target)
+      }
+    },
   })
 
   const { filterCounts } = useAppointmentsFilter(bookings, '', 'ALL')

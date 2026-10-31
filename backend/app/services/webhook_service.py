@@ -1,12 +1,13 @@
-"""Inbound PayPal webhook events applied to local holds."""
-
+import contextlib
 from datetime import UTC, datetime
+from decimal import Decimal
+from uuid import UUID
 
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enums import PaymentHoldStatus
-from app.models.payment import PaymentHold, PaypalWebhookEvent
+from app.models.payment import PaymentCapture, PaymentHold, PaypalWebhookEvent
 from app.services.ledger_service import append_ledger
 
 _HOLD_EVENT_TYPES = {
@@ -86,6 +87,45 @@ async def ingest_webhook(
             event_type=f"WEBHOOK_{event_type.replace('.', '_')}",
             payload=resource,
         )
+        if event_type == "CUSTOMER.DISPUTE.CREATED":
+            dispute_id = resource.get("dispute_id")
+            reason = resource.get("reason", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED")
+            dispute_amt_dict = resource.get("dispute_amount") or {}
+            amt_val = None
+            if dispute_amt_dict.get("value"):
+                with contextlib.suppress(Exception):
+                    amt_val = Decimal(str(dispute_amt_dict["value"]))
+
+            booking_match: UUID | None = None
+            tx_ids = []
+            for tx in resource.get("disputed_transactions", []):
+                if tx.get("seller_transaction_id"):
+                    tx_ids.append(tx["seller_transaction_id"])
+                if tx.get("buyer_transaction_id"):
+                    tx_ids.append(tx["buyer_transaction_id"])
+
+            if tx_ids:
+                stmt = select(PaymentCapture).where(PaymentCapture.paypal_capture_id.in_(tx_ids))
+                cap = (await db.execute(stmt)).scalars().first()
+                if cap and cap.booking_id:
+                    booking_match = cap.booking_id
+
+            if not booking_match and resource.get("custom_id"):
+                with contextlib.suppress(Exception):
+                    booking_match = UUID(resource["custom_id"])
+
+            if booking_match:
+                from app.services.dispute_service import DisputeService
+
+                ds = DisputeService()
+                with contextlib.suppress(Exception):
+                    await ds.run_dispute_counsel_analysis(
+                        db,
+                        booking_id=booking_match,
+                        paypal_dispute_id=dispute_id,
+                        reason=reason,
+                        dispute_amount=amt_val,
+                    )
 
     event.processed_at = datetime.now(UTC)
     await db.flush()

@@ -34,6 +34,7 @@ interface BookingsPanelProps {
   onCancel: (booking: Booking) => void
   onViewReceipt: (booking: Booking) => void
   onCompletePayment?: (booking: Booking) => void
+  onReschedule?: (booking: Booking) => void
   searchQuery: string
   onSearchChange: (value: string) => void
   sortBy:
@@ -62,6 +63,7 @@ export function BookingsPanel({
   onCancel,
   onViewReceipt,
   onCompletePayment,
+  onReschedule,
   searchQuery,
   onSearchChange,
   sortBy,
@@ -242,7 +244,9 @@ export function BookingsPanel({
                 booking={booking}
                 onCancel={() => onCancel(booking)}
                 onViewReceipt={onViewReceipt}
-                onReschedule={() => setRescheduleTarget(booking)}
+                onReschedule={() =>
+                  onReschedule ? onReschedule(booking) : setRescheduleTarget(booking)
+                }
               />
             ))}
           </div>

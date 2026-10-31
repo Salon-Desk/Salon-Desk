@@ -80,6 +80,25 @@ export interface AgentConfirmedBooking {
   paymentLink?: string | null
 }
 
+export interface AgentProposedAction {
+  actionType: string
+  confidence: number
+  payload: {
+    clientName?: string
+    refundAmount?: string | number
+    securityCeiling?: string | number
+    currency?: string
+    orderId?: string
+    captureId?: string
+    paypalCaptureId?: string
+    bookingId?: string
+    reason?: string
+    status?: string
+    toolkitVerified?: boolean
+    toolkitAction?: string
+  }
+}
+
 export interface AgentChatMessage {
   id: string
   sender: 'user' | 'assistant'
@@ -89,6 +108,7 @@ export interface AgentChatMessage {
   organizations?: AgentOrganizationRecommendation[]
   stylists?: AgentStylistRecommendation[]
   confirmedBooking?: AgentConfirmedBooking | null
+  proposedAction?: AgentProposedAction | null
   navigation?: {
     target: string
     tab?: string | null
@@ -182,6 +202,26 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         : query
 
       try {
+        // Merchant portal instant action assist
+        if (portal === 'merchant') {
+          const lower = query.toLowerCase()
+          if (lower.includes('dispute') || lower.includes('chargeback')) {
+            if (
+              typeof window !== 'undefined' &&
+              !window.location.pathname.startsWith('/merchant/disputes')
+            ) {
+              router.push('/merchant/disputes')
+            }
+            if (lower.includes('simulate')) {
+              highlightElement('#agent-simulate-dispute-btn')
+            } else {
+              highlightElement('#agent-dispute-btn')
+            }
+          } else if (lower.includes('slot rescue') || lower.includes('waitlist')) {
+            highlightElement('#agent-slot-rescue-btn')
+          }
+        }
+
         const data = await clientConciergeChat({
           message: outgoingMessage,
           language: features.defaultLanguage,
@@ -380,6 +420,27 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           }
         }
 
+        const proposedAction: AgentProposedAction | null = data.proposed_action
+          ? {
+              actionType: data.proposed_action.action_type,
+              confidence: data.proposed_action.confidence,
+              payload: {
+                clientName: data.proposed_action.payload?.client_name,
+                refundAmount: data.proposed_action.payload?.refund_amount,
+                securityCeiling: data.proposed_action.payload?.security_ceiling,
+                currency: data.proposed_action.payload?.currency,
+                orderId: data.proposed_action.payload?.order_id,
+                captureId: data.proposed_action.payload?.capture_id,
+                paypalCaptureId: data.proposed_action.payload?.paypal_capture_id,
+                bookingId: data.proposed_action.payload?.booking_id,
+                reason: data.proposed_action.payload?.reason,
+                status: data.proposed_action.payload?.status,
+                toolkitVerified: data.proposed_action.payload?.toolkit_verified,
+                toolkitAction: data.proposed_action.payload?.toolkit_action,
+              },
+            }
+          : null
+
         dispatch(
           appendChatMessage({
             id: createSequentialId('ast'),
@@ -390,6 +451,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
             organizations: organizations.length > 0 ? organizations : undefined,
             stylists: stylists.length > 0 ? stylists : undefined,
             confirmedBooking,
+            proposedAction,
             navigation: data.navigation,
             uiAction: data.ui_action,
           }),

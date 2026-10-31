@@ -51,6 +51,21 @@ async def chat(
     portal = normalize_portal(body.portal)
     language = body.language or "en"
 
+    # Owner Copilot & Goodwill Refund assistance (Merchant & Admin or explicit intent)
+    from app.ai.copilot_refund import handle_copilot_goodwill_refund
+
+    copilot_handled, copilot_reply, proposed_act = await handle_copilot_goodwill_refund(
+        db, body.message, user=user, org_id=body.org_id
+    )
+    if copilot_handled:
+        return chat_response(
+            llm,
+            reply=copilot_reply,
+            detected_language=language,
+            intent="goodwill_refund_proposed",
+            proposed_action=proposed_act,
+        )
+
     # Booking auth / hold confirmation only for the client concierge
     if not is_support_portal(portal):
         auth_res = await try_handle_chat_auth(db, llm, body.message, body.history)

@@ -31,7 +31,8 @@ class BookingCancelRequest(BaseModel):
 
 
 class BookingRescheduleRequest(BaseModel):
-    starts_at: datetime
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
     stylist_id: UUID | None = None
 
 

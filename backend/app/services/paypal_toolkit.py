@@ -23,6 +23,17 @@ logger = logging.getLogger("salondesk.paypal_toolkit")
 MIN_TRANSACTION_AMOUNT = Decimal("0.50")
 MAX_TRANSACTION_AMOUNT = Decimal("250.00")
 ALLOWED_CURRENCIES = frozenset({"USD"})
+BLOCKED_AGENT_TOOLS = frozenset({"accept_dispute_claim"})
+
+
+def assert_tool_allowed(tool_name: str) -> None:
+    """Validate that an agent is not attempting to invoke a prohibited autonomous tool."""
+    clean_tool = (tool_name or "").strip().lower()
+    if clean_tool in BLOCKED_AGENT_TOOLS:
+        raise PolicyViolationException(
+            f"Autonomous execution of '{tool_name}' is prohibited by SalonDesk policy. "
+            "Dispute claims cannot be accepted without Human-in-the-Loop staff authorization."
+        )
 
 
 class PayPalToolkitRunner:
@@ -186,6 +197,69 @@ class PayPalToolkitRunner:
 
         return res
 
+    async def create_refund(
+        self,
+        *,
+        capture_id: str,
+        amount: Decimal | None = None,
+        reason: str | None = None,
+        staff_id: UUID | None = None,
+        db: AsyncSession | None = None,
+    ) -> dict[str, Any]:
+        """T2/T9 Refund helper: issues partial or full refund on a capture."""
+        return await self.refund_order(
+            capture_id=capture_id,
+            amount=amount,
+            reason=reason,
+            staff_id=staff_id,
+            db=db,
+        )
+
+    async def list_disputes(
+        self,
+        *,
+        page_size: int = 10,
+        db: AsyncSession | None = None,
+    ) -> dict[str, Any]:
+        """T9 Agent list_disputes: inspect sandbox/live PayPal disputes."""
+        assert_tool_allowed("list_disputes")
+        res = await self.client.list_disputes(page_size=page_size)
+        if db is not None:
+            await append_ledger(
+                db,
+                event_type="T9_AGENT_DISPUTE_INSPECTED",
+                payload={
+                    "action": "list_disputes",
+                    "page_size": page_size,
+                    "count": len(res.get("items", [])),
+                },
+            )
+        return res
+
+    async def get_dispute(
+        self,
+        *,
+        dispute_id: str,
+        db: AsyncSession | None = None,
+    ) -> dict[str, Any]:
+        """T9 Agent get_dispute: inspect a specific PayPal dispute."""
+        assert_tool_allowed("get_dispute")
+        dispute_id_clean = str(dispute_id).strip()
+        if not dispute_id_clean:
+            raise PolicyViolationException("Valid dispute_id is required")
+        res = await self.client.get_dispute(dispute_id=dispute_id_clean)
+        if db is not None:
+            await append_ledger(
+                db,
+                event_type="T9_AGENT_DISPUTE_INSPECTED",
+                payload={
+                    "action": "get_dispute",
+                    "dispute_id": dispute_id_clean,
+                    "status": res.get("status"),
+                },
+            )
+        return res
+
     async def run(
         self,
         prompt: str,
@@ -204,6 +278,13 @@ class PayPalToolkitRunner:
                 "status": "error",
                 "message": "You must be signed in to execute PayPal checkout actions.",
             }
+
+        lower = prompt_clean.lower()
+        if any(w in lower for w in ("accept dispute", "accept claim", "concede dispute")):
+            try:
+                assert_tool_allowed("accept_dispute_claim")
+            except PolicyViolationException as exc:
+                return {"status": "error", "message": exc.message}
 
         # 1. Parse amount with safety regex
         amt_match = re.search(r"\$\s*(\d+(\.\d{1,2})?)", prompt_clean) or re.search(

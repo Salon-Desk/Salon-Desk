@@ -1,7 +1,10 @@
 """Deterministic booking/deposit/cancel policy state machine."""
 
+from __future__ import annotations
+
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from app.core.exceptions import ForbiddenError, PolicyViolationException
@@ -98,6 +101,20 @@ def assert_deposit_within_ceiling(service_price: Decimal, deposit_amount: Decima
         raise PolicyViolationException(f"Deposit {deposit_amount} exceeds ceiling {ceiling}")
 
 
+def assert_capture_within_ceiling(
+    hold_amount: Decimal, already_captured: Decimal, capture_amount: Decimal
+) -> None:
+    """Ensure capture amount is positive and does not exceed remaining authorized ceiling."""
+    if capture_amount <= Decimal("0"):
+        raise PolicyViolationException("Capture amount must be greater than zero")
+    remaining = hold_amount - already_captured
+    if capture_amount > remaining:
+        raise PolicyViolationException(
+            f"Capture {capture_amount} would exceed authorized ceiling "
+            f"(remaining {remaining} of {hold_amount})"
+        )
+
+
 def can_self_cancel(*, hours_until_start: float, free_cancel_hours: float) -> bool:
     return hours_until_start >= free_cancel_hours
 
@@ -141,3 +158,107 @@ def is_within_free_cancel_window(
     if current.tzinfo is None:
         current = current.replace(tzinfo=UTC)
     return current <= deadline
+
+
+DEFAULT_RESCHEDULE_CUTOFF_HOURS = 4.0
+
+
+def can_reschedule(
+    *,
+    starts_at: datetime,
+    now: datetime | None = None,
+    cutoff_hours: float = DEFAULT_RESCHEDULE_CUTOFF_HOURS,
+    is_org: bool = False,
+) -> bool:
+    """Evaluate whether client self-service rescheduling is permitted based on the cutoff window.
+
+    Salon staff (is_org=True) can bypass cutoff limits.
+    Clients are restricted if the appointment is fewer than cutoff_hours away.
+    """
+    if is_org:
+        return True
+    current = now or datetime.now(UTC)
+    s_at = starts_at if starts_at.tzinfo is not None else starts_at.replace(tzinfo=UTC)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=UTC)
+    hours_until_start = (s_at - current).total_seconds() / 3600.0
+    return hours_until_start >= cutoff_hours
+
+
+def assert_can_reschedule(
+    *,
+    starts_at: datetime,
+    now: datetime | None = None,
+    policy_data: dict | None = None,
+    is_org: bool = False,
+) -> None:
+    """Raise PolicyViolationException if client attempts to reschedule within the cutoff window."""
+    if is_org:
+        return
+    policy = policy_data or {}
+    cutoff_hours = float(policy.get("reschedule_cutoff_hours", DEFAULT_RESCHEDULE_CUTOFF_HOURS))
+    if not can_reschedule(starts_at=starts_at, now=now, cutoff_hours=cutoff_hours, is_org=is_org):
+        display_cutoff = int(cutoff_hours) if cutoff_hours.is_integer() else cutoff_hours
+        raise PolicyViolationException(
+            f"Rescheduling is not permitted within {display_cutoff} hours of appointment start time."
+        )
+
+
+def evaluate_slot_rescue(
+    original_booking_status: BookingStatus,
+    hold_status: PaymentHoldStatus | None,
+    agreed_no_show_fee: Decimal,
+    captured_amount: Decimal,
+) -> dict[str, Any]:
+    """Deterministic referee deciding whether to void authorization hold or refund captured fee on slot rescue."""
+    if captured_amount > Decimal("0.00") and (
+        original_booking_status in {BookingStatus.NO_SHOW, BookingStatus.CANCELLED}
+        or hold_status in {PaymentHoldStatus.CAPTURED, PaymentHoldStatus.PARTIALLY_CAPTURED}
+    ):
+        return {
+            "action": "REFUND_CAPTURE",
+            "waived_amount": captured_amount,
+            "refund_amount": captured_amount,
+        }
+
+    if hold_status in {
+        PaymentHoldStatus.AUTHORIZED,
+        PaymentHoldStatus.REAUTHORIZED,
+    } and captured_amount == Decimal("0.00"):
+        return {
+            "action": "VOID_HOLD",
+            "waived_amount": agreed_no_show_fee,
+            "refund_amount": Decimal("0.00"),
+        }
+
+    return {
+        "action": "NOOP",
+        "waived_amount": Decimal("0.00"),
+        "refund_amount": Decimal("0.00"),
+    }
+
+
+def is_slot_rescued(
+    cancelled_starts_at: datetime,
+    cancelled_ends_at: datetime,
+    replacement_starts_at: datetime,
+) -> bool:
+    """Check if replacement booking overlaps or refills the vacated appointment slot."""
+    c_start = (
+        cancelled_starts_at
+        if cancelled_starts_at.tzinfo is not None
+        else cancelled_starts_at.replace(tzinfo=UTC)
+    )
+    c_end = (
+        cancelled_ends_at
+        if cancelled_ends_at.tzinfo is not None
+        else cancelled_ends_at.replace(tzinfo=UTC)
+    )
+    r_start = (
+        replacement_starts_at
+        if replacement_starts_at.tzinfo is not None
+        else replacement_starts_at.replace(tzinfo=UTC)
+    )
+
+    # Valid if replacement falls on the same calendar block (from start up to end, with 60-min grace tolerance)
+    return (c_start - timedelta(minutes=30)) <= r_start <= (c_end + timedelta(minutes=30))

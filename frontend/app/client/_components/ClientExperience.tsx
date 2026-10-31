@@ -58,6 +58,7 @@ import { ClientHeader, type ClientTab } from './ClientHeader'
 import { ClientMyBookingsReviews } from './ClientMyBookingsReviews'
 import { ClientSalonFeedbackSection } from './ClientSalonFeedbackSection'
 import { ProtocolModal } from './ProtocolModal'
+import { RescheduleBookingDialog } from './RescheduleBookingDialog'
 import { ServiceCard } from './ServiceCard'
 
 const PAGE_SIZE = 6
@@ -152,6 +153,7 @@ export function ClientExperience({
   const [protocolService, setProtocolService] = useState<SalonService | null>(null)
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null)
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null)
+  const [rescheduleTarget, setRescheduleTarget] = useState<Booking | null>(null)
   const [cancelSubmitting, setCancelSubmitting] = useState(false)
   const [isInputFocused, setIsInputFocused] = useState(false)
 
@@ -822,6 +824,7 @@ export function ClientExperience({
                       }),
                     )
                   }}
+                  onReschedule={setRescheduleTarget}
                   searchQuery={myBookingsListing.displayParams.q}
                   onSearchChange={(value) => myBookingsListing.setParam('q', value)}
                   sortBy={myBookingsListing.displayParams.sort}
@@ -884,6 +887,15 @@ export function ClientExperience({
             if (!cancelSubmitting) setCancelTarget(null)
           }}
           onConfirm={() => void handleConfirmCancelBooking()}
+        />
+      ) : null}
+
+      {rescheduleTarget ? (
+        <RescheduleBookingDialog
+          booking={rescheduleTarget}
+          isOpen={Boolean(rescheduleTarget)}
+          onClose={() => setRescheduleTarget(null)}
+          onSuccess={() => void refetchBookings()}
         />
       ) : null}
     </div>
