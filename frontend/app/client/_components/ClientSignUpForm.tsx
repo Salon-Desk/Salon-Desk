@@ -18,6 +18,7 @@ import { toApiPhoneDigits } from '@/lib/util/phone'
 import type { AppDispatch } from '@/store'
 import { useSignUpMutation } from '@/store/api/sharedApi'
 import { setActiveApp, setAuthData } from '@/store/authSlice'
+import { API_TAG_TYPES, baseApi } from '@/store/baseApi'
 import type { ApiResponse } from '@/types/api'
 import type { SignUpRequest, TokenResponse } from '@/types/auth'
 
@@ -53,8 +54,18 @@ export const ClientSignUpForm: FC = () => {
       }),
     )
     dispatch(setActiveApp('client'))
+    dispatch(baseApi.util.invalidateTags([...API_TAG_TYPES]))
     closeAuthModal()
+
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname
+      if (currentPath.startsWith('/client') || currentPath === '/') {
+        router.refresh()
+        return
+      }
+    }
     router.push('/client')
+    router.refresh()
   }
 
   const submitHandler = useFormSubmitHandler<SignUpRequest, TokenResponse>(

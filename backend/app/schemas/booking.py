@@ -64,6 +64,11 @@ class AvailabilityOut(BaseModel):
     day: str
     open_windows: list[list[str]] = []
     slots: list[TimeSlot] = []
+    salon_hours: list[list[str]] = []
+    shift_windows: list[list[str]] = []
+    stylist_name: str | None = None
+    simultaneous_capacity: int = 1
+    service_duration_minutes: int | None = None
 
 
 class BookingServiceOut(ORMModel):

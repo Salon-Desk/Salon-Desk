@@ -375,11 +375,13 @@ async def _get_active_service_cards(db: AsyncSession, limit: int = 4) -> list[di
             Organization.status == OrganizationStatus.APPROVED,
             Service.status == ServiceStatus.ACTIVE,
         )
+        .options(selectinload(Organization.settings))
         .order_by(Service.name)
         .limit(limit)
     )
     cards = []
     for srv, org in result.all():
+        settings = org.settings
         cards.append(
             {
                 "service_id": str(srv.id),
@@ -387,11 +389,11 @@ async def _get_active_service_cards(db: AsyncSession, limit: int = 4) -> list[di
                 "name": srv.name,
                 "organization_name": org.name,
                 "organization_picture": org.picture,
-                "image_url": srv.image_url,
+                "image_url": (srv.images or {}).get("cover"),
                 "base_price": str(srv.base_price),
                 "duration_minutes": srv.duration_minutes,
                 "description": srv.description,
-                "physical_address": org.physical_address,
+                "physical_address": settings.physical_address if settings else None,
             }
         )
     return cards
@@ -665,7 +667,11 @@ async def try_handle_chat_booking(
         if parsed.get("service_query"):
             matched_svc = await _resolve_requested_service(db, parsed.get("service_query") or "")
             if matched_svc:
-                m_org = await db.get(Organization, matched_svc.organization_id)
+                m_org = await db.get(
+                    Organization,
+                    matched_svc.organization_id,
+                    options=[selectinload(Organization.settings)],
+                )
                 rec_cards.append(
                     {
                         "service_id": str(matched_svc.id),
@@ -673,11 +679,13 @@ async def try_handle_chat_booking(
                         "name": matched_svc.name,
                         "organization_name": m_org.name if m_org else "Salon",
                         "organization_picture": m_org.picture if m_org else None,
-                        "image_url": matched_svc.image_url,
+                        "image_url": (matched_svc.images or {}).get("cover"),
                         "base_price": str(matched_svc.base_price),
                         "duration_minutes": matched_svc.duration_minutes,
                         "description": matched_svc.description,
-                        "physical_address": m_org.physical_address if m_org else None,
+                        "physical_address": m_org.settings.physical_address
+                        if (m_org and m_org.settings)
+                        else None,
                     }
                 )
         if client_email:

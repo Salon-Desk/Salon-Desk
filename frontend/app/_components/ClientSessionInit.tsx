@@ -4,10 +4,17 @@ import React, { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 
 import { getPortalAuthToken, getPortalAuthUser } from '@/lib/authSession'
+import { detectPortal } from '@/lib/axios'
 import type { AppDispatch } from '@/store'
 import { hydrateAdminDemo, readAdminDemoFromStorage } from '@/store/adminDemoSlice'
 import { hydrateFabPositionFromStorage } from '@/store/agentChatSlice'
-import { type AppPortal, fetchAuthData, hydratePortalSession, logout } from '@/store/authSlice'
+import {
+  type AppPortal,
+  fetchAuthData,
+  hydratePortalSession,
+  logout,
+  setActiveApp,
+} from '@/store/authSlice'
 import { hydrateClientDemo, readClientDemoFromStorage } from '@/store/clientDemoSlice'
 import { hydrateMerchantDemo, readMerchantDemoFromStorage } from '@/store/merchantDemoSlice'
 
@@ -20,6 +27,9 @@ export function ClientSessionInit({ children }: { children: React.ReactNode }) {
     dispatch(hydrateAdminDemo(readAdminDemoFromStorage()))
     dispatch(hydrateClientDemo(readClientDemoFromStorage()))
     dispatch(hydrateFabPositionFromStorage())
+
+    const currentPortal = detectPortal()
+    dispatch(setActiveApp(currentPortal))
 
     // Restore sessions for each of the 3 apps independently if tokens exist
     const portals: AppPortal[] = ['client', 'merchant', 'admin']

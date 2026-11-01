@@ -14,6 +14,9 @@ interface ServiceCardProps {
   onAskAi: (service: SalonService) => void
   onQuickBook: (service: SalonService) => void
   onOpenProtocol: (service: SalonService) => void
+  canSelectMultiple?: boolean
+  isSelected?: boolean
+  onToggleSelect?: (service: SalonService) => void
 }
 
 export function ServiceCard({
@@ -22,6 +25,9 @@ export function ServiceCard({
   onAskAi,
   onQuickBook,
   onOpenProtocol,
+  canSelectMultiple = false,
+  isSelected = false,
+  onToggleSelect,
 }: ServiceCardProps) {
   const coverSrc = service.imageUrl || serviceImage(service.id)
   const distanceLabel =
@@ -37,7 +43,13 @@ export function ServiceCard({
 
   if (viewMode === 'list') {
     return (
-      <article className="group flex flex-col sm:flex-row items-stretch gap-4 rounded-3xl border border-stone-200/80 bg-white p-3.5 shadow-xs transition-all hover:border-amber-300 hover:shadow-md">
+      <article
+        className={`group flex flex-col sm:flex-row items-stretch gap-4 rounded-3xl border bg-white p-3.5 shadow-xs transition-all ${
+          isSelected
+            ? 'border-amber-400 ring-2 ring-amber-300/70 shadow-md bg-amber-50/20'
+            : 'border-stone-200/80 hover:border-amber-300 hover:shadow-md'
+        }`}
+      >
         {/* Thumbnail on left */}
         <div className="relative aspect-[16/10] sm:aspect-square w-full sm:w-44 shrink-0 overflow-hidden rounded-2xl bg-stone-100">
           <Image
@@ -144,6 +156,19 @@ export function ServiceCard({
           </div>
 
           <div className="flex items-center gap-2">
+            {canSelectMultiple && (
+              <button
+                type="button"
+                onClick={() => onToggleSelect?.(service)}
+                className={`h-9 cursor-pointer rounded-full px-3.5 text-xs font-semibold transition-all active:scale-[0.98] ${
+                  isSelected
+                    ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold shadow-2xs'
+                    : 'border border-stone-200 text-stone-700 hover:border-amber-300 hover:bg-stone-50'
+                }`}
+              >
+                {isSelected ? '✓ Added' : '+ Add'}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onAskAi(service)}
@@ -166,7 +191,13 @@ export function ServiceCard({
   }
 
   return (
-    <article className="group flex flex-col">
+    <article
+      className={`group flex flex-col rounded-3xl p-3 bg-white border transition-all ${
+        isSelected
+          ? 'border-amber-400 ring-2 ring-amber-300/70 shadow-md bg-amber-50/20'
+          : 'border-transparent hover:border-stone-200/80 hover:shadow-xs'
+      }`}
+    >
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl bg-stone-100 sm:aspect-[16/11]">
         <Image
           src={coverSrc}
@@ -180,10 +211,16 @@ export function ServiceCard({
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950/40 via-transparent to-transparent" />
 
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 font-bold text-[11px] text-stone-950 backdrop-blur-md">
-            <Lock className="h-3 w-3 text-amber-600" />
-            <span>${service.holdDeposit} Hold • $0 Today</span>
-          </span>
+          {canSelectMultiple && isSelected ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-1 font-extrabold text-[10px] text-stone-950 uppercase tracking-wider shadow-xs">
+              ✓ Added
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 font-bold text-[11px] text-stone-950 backdrop-blur-md">
+              <Lock className="h-3 w-3 text-amber-600" />
+              <span>${service.holdDeposit} Hold • $0 Today</span>
+            </span>
+          )}
 
           {service.isFeatured && (
             <span className="inline-flex items-center gap-1 rounded-full bg-purple-600/90 px-2.5 py-0.5 font-extrabold text-[10px] text-white uppercase tracking-wider backdrop-blur-md">
@@ -262,6 +299,20 @@ export function ServiceCard({
         </div>
 
         <div className="mt-4 flex items-center gap-2 pt-2">
+          {canSelectMultiple && (
+            <button
+              type="button"
+              onClick={() => onToggleSelect?.(service)}
+              className={`flex h-10 cursor-pointer items-center justify-center gap-1 rounded-full px-3.5 text-xs font-semibold transition-all active:scale-[0.98] ${
+                isSelected
+                  ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold shadow-2xs'
+                  : 'border border-stone-200 text-stone-700 hover:border-amber-300 hover:bg-stone-50'
+              }`}
+            >
+              <span>{isSelected ? '✓ Added' : '+ Add'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => onQuickBook(service)}

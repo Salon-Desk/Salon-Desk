@@ -14,6 +14,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { type AppPortal, logout, portalUserSelector, userSelector } from '@/store/authSlice'
+import { API_TAG_TYPES, baseApi } from '@/store/baseApi'
 
 import { useAuthModal } from './auth-context'
 
@@ -45,9 +46,11 @@ export const UserMenu: React.FC<UserMenuProps> = ({ portal, compact = false }) =
 
   const handleSignOut = () => {
     dispatch(logout(portal))
+    dispatch(baseApi.util.invalidateTags([...API_TAG_TYPES]))
     setIsOpen(false)
     toast.success('Signed out successfully')
     router.push('/')
+    router.refresh()
   }
 
   // Not signed in

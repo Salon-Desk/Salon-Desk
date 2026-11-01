@@ -105,6 +105,11 @@ export interface AvailabilityResponse {
   day: string
   open_windows: [string, string][] | string[][]
   slots: TimeSlot[]
+  salon_hours?: [string, string][] | string[][]
+  shift_windows?: [string, string][] | string[][]
+  stylist_name?: string | null
+  simultaneous_capacity?: number
+  service_duration_minutes?: number | null
 }
 
 export interface CreateHoldRequest {

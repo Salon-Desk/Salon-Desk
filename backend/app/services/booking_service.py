@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -85,12 +86,24 @@ async def _load_active_policy(db: AsyncSession, org_id: UUID) -> dict:
 def _get_user_display_name(user: User | None) -> str:
     if not user:
         return "Assigned stylist"
-    if hasattr(user, "profile") and user.profile:
-        name = getattr(user.profile, "full_name", None)
-        if callable(name):
-            name = name()
-        if name:
-            return str(name)
+    insp = sa_inspect(user, raiseerr=False)
+    if insp is not None:
+        if "profile" in insp.attrs and insp.attrs.profile.loaded_value is not sa_inspect.NO_VALUE:
+            prof = insp.attrs.profile.loaded_value
+            if prof:
+                name = getattr(prof, "full_name", None)
+                if callable(name):
+                    name = name()
+                if name:
+                    return str(name)
+    else:
+        prof = getattr(user, "profile", None)
+        if prof:
+            name = getattr(prof, "full_name", None)
+            if callable(name):
+                name = name()
+            if name:
+                return str(name)
     return getattr(user, "email", "Assigned stylist")
 
 

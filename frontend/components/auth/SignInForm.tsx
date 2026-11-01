@@ -24,6 +24,7 @@ import {
   setActiveApp,
   setAuthData,
 } from '@/store/authSlice'
+import { API_TAG_TYPES, baseApi } from '@/store/baseApi'
 import type { ApiResponse } from '@/types/api'
 import type { TokenResponse } from '@/types/auth'
 import type { User } from '@/types/user'
@@ -73,10 +74,25 @@ export const SignInForm: FC<SignInFormProps> = ({
       }),
     )
     dispatch(setActiveApp(portal))
+    dispatch(baseApi.util.invalidateTags([...API_TAG_TYPES]))
     closeAuthModal()
 
     if (bookingPending && portal === 'client' && resumeAfterAuth()) {
+      router.refresh()
       return
+    }
+
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname
+      // Stay on page if user is already within their portal (e.g. /client/book, /merchant/calendar, /admin/staff)
+      const isAlreadyInPortal =
+        portal === 'client'
+          ? currentPath.startsWith('/client') || currentPath === '/'
+          : currentPath.startsWith(`/${portal}`)
+      if (isAlreadyInPortal && roleMatchesPortal(portal, data.user)) {
+        router.refresh()
+        return
+      }
     }
 
     const destination = roleMatchesPortal(portal, data.user)
@@ -84,6 +100,7 @@ export const SignInForm: FC<SignInFormProps> = ({
       : pathForUserRole(data.user.role)
 
     router.push(destination)
+    router.refresh()
   }
 
   const submitHandler = useFormSubmitHandler<SignInFormData, TokenResponse>(
