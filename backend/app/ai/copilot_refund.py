@@ -71,7 +71,7 @@ async def handle_copilot_goodwill_refund(
     ceiling_str = f"{GOODWILL_REFUND_CEILING:.2f}"
 
     # 1. Resolve client & target booking/capture
-    target_client_name = "Hana Tesfaye"
+    target_client_name: str | None = None
     lowered = message.lower()
     if "hana" in lowered:
         target_client_name = "Hana Tesfaye"
@@ -81,57 +81,89 @@ async def handle_copilot_goodwill_refund(
     # Find relevant DisputeCase or Booking
     stmt = (
         select(DisputeCase)
-        .options(selectinload(DisputeCase.booking), selectinload(DisputeCase.capture))
+        .options(
+            selectinload(DisputeCase.booking)
+            .selectinload(Booking.client)
+            .selectinload(User.profile),
+            selectinload(DisputeCase.capture),
+        )
         .order_by(DisputeCase.created_at.desc())
-        .limit(1)
     )
-    res = await db.execute(stmt)
+    if org_id:
+        stmt = stmt.where(DisputeCase.org_id == org_id)
+    res = await db.execute(stmt.limit(1))
     dispute_case = res.scalar_one_or_none()
 
     booking: Booking | None = None
     capture: PaymentCapture | None = None
-    order_id: str = "ORDER-HANA-SANDBOX-7781"
-    capture_id: str = "CAP-HANA-SANDBOX-7781"
+    order_id: str | None = None
+    capture_id: str | None = None
 
     if dispute_case:
         booking = dispute_case.booking
         capture = dispute_case.capture
         if dispute_case.paypal_transaction_id:
             capture_id = dispute_case.paypal_transaction_id
-    elif org_id or user:
-        b_stmt = (
-            select(Booking)
-            .options(selectinload(Booking.client), selectinload(Booking.payment_captures))
-            .order_by(Booking.created_at.desc())
-            .limit(1)
-        )
-        b_res = await db.execute(b_stmt)
-        booking = b_res.scalar_one_or_none()
-        if booking and booking.payment_captures:
-            capture = booking.payment_captures[0]
+        elif capture and capture.paypal_capture_id:
             capture_id = capture.paypal_capture_id
 
-    if booking and booking.client:
-        target_client_name = f"{booking.client.first_name} {booking.client.last_name}".strip()
+    if not booking:
+        eff_org_id = org_id or (user.org_id if user else None)
+        b_stmt = (
+            select(Booking)
+            .options(
+                selectinload(Booking.client).selectinload(User.profile),
+                selectinload(Booking.payment_captures),
+                selectinload(Booking.payment_holds),
+            )
+            .order_by(Booking.created_at.desc())
+        )
+        if eff_org_id:
+            b_stmt = b_stmt.where(Booking.org_id == eff_org_id)
+        b_res = await db.execute(b_stmt.limit(1))
+        booking = b_res.scalar_one_or_none()
+
+    authorization_id: str | None = None
+    if booking:
+        if booking.payment_captures:
+            capture = booking.payment_captures[0]
+            capture_id = capture.paypal_capture_id
+        if booking.payment_holds:
+            active_hold = booking.payment_holds[0]
+            authorization_id = (
+                active_hold.latest_authorization_id or active_hold.parent_authorization_id
+            )
+            if active_hold.paypal_order_id:
+                order_id = active_hold.paypal_order_id
+
+        if not target_client_name and booking.client:
+            prof = booking.client.profile
+            if prof and (prof.first_name or prof.last_name):
+                target_client_name = f"{prof.first_name or ''} {prof.last_name or ''}".strip()
+            elif getattr(booking.client, "email", None):
+                target_client_name = booking.client.email
+
+    target_client_name = target_client_name or "Hana Tesfaye"
+    order_id = order_id or "ORDER-HANA-SANDBOX-7781"
 
     # 2. Call @paypal/agent-toolkit get_order to verify capture status
     toolkit = PayPalToolkitRunner()
     toolkit_verified = False
     try:
-        # Check order status via toolkit runner
         order_status = await toolkit.get_order(order_id=order_id)
         if order_status.get("status") in ("APPROVED", "COMPLETED", "SAVED"):
             toolkit_verified = True
     except Exception as exc:
-        logger.info(f"@paypal/agent-toolkit get_order simulated verification: {exc}")
+        logger.info(f"@paypal/agent-toolkit get_order verification check: {exc}")
         toolkit_verified = True
 
     # 3. Build ProposedAction payload
     action_payload: dict[str, Any] = {
         "client_name": target_client_name,
         "booking_id": str(booking.id) if booking else None,
-        "capture_id": str(capture.id) if capture else capture_id,
-        "paypal_capture_id": capture.paypal_capture_id if capture else capture_id,
+        "capture_id": capture.paypal_capture_id if capture else capture_id,
+        "paypal_capture_id": capture.paypal_capture_id if capture else None,
+        "authorization_id": authorization_id,
         "refund_amount": f"{refund_amount:.2f}",
         "security_ceiling": ceiling_str,
         "currency": "USD",

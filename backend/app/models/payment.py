@@ -131,7 +131,7 @@ class PaymentCapture(BaseModel):
     paypal_debug_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     hold = relationship("PaymentHold", back_populates="captures")
-    booking = relationship("Booking")
+    booking = relationship("Booking", back_populates="payment_captures")
 
 
 class PaypalWebhookEvent(BaseModel):

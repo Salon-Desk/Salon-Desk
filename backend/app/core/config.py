@@ -150,6 +150,17 @@ class Settings(BaseSettings):
     rustfs_region: str = "us-east-1"
     storage_public_base_url: str = "http://localhost:8000/api/v1/storage"
 
+    @field_validator("debug", mode="before")
+    @classmethod
+    def normalize_debug(cls, value: object) -> bool:
+        if isinstance(value, str):
+            lower = value.strip().lower()
+            if lower in {"release", "prod", "production", "false", "0", "no", "off"}:
+                return False
+            if lower in {"debug", "dev", "development", "true", "1", "yes", "on"}:
+                return True
+        return bool(value)
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def normalize_cors_origins(cls, value: object) -> list[str]:

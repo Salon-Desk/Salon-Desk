@@ -44,6 +44,68 @@ def _intersect_windows(
     return sorted_unique
 
 
+async def check_stylist_shift(
+    db: AsyncSession,
+    *,
+    org_id: UUID,
+    stylist_id: UUID,
+    starts_at: datetime,
+    ends_at: datetime,
+) -> bool:
+    """Verify if a stylist is scheduled on shift and not on break for the given slot."""
+    settings_result = await db.execute(select(OrgSettings).where(OrgSettings.org_id == org_id))
+    settings = settings_result.scalar_one_or_none()
+    tz_name = settings.timezone if settings and settings.timezone else "UTC"
+    tz = resolve_org_timezone(tz_name)
+
+    starts_local = starts_at.astimezone(tz)
+    ends_local = ends_at.astimezone(tz)
+    day_key = _WEEKDAY_KEYS[starts_local.date().weekday()]
+    windows_raw = (settings.working_hours if settings else {}).get(day_key, [])
+    salon_open_windows: list[list[str]] = []
+    for window in windows_raw or []:
+        if isinstance(window, (list, tuple)) and len(window) == 2:
+            salon_open_windows.append([str(window[0]), str(window[1])])
+
+    slot_start_time_s = starts_local.strftime("%H:%M")
+    slot_end_time_s = ends_local.strftime("%H:%M")
+
+    # If salon working hours are configured, slot must fall within them
+    if salon_open_windows and not any(
+        slot_start_time_s >= w[0] and slot_end_time_s <= w[1] for w in salon_open_windows
+    ):
+        return False
+
+    shift_stmt = (
+        select(OrgShift)
+        .join(OrgEmployeeShift, OrgEmployeeShift.org_shift_id == OrgShift.id)
+        .where(
+            OrgEmployeeShift.user_id == stylist_id,
+            OrgShift.org_id == org_id,
+        )
+    )
+    shifts = (await db.execute(shift_stmt)).scalars().all()
+    shift_windows: list[list[str]] = []
+    stylist_breaks: list[list[str]] = []
+    for s in shifts:
+        if isinstance(s.data, dict):
+            for w in s.data.get("windows", []):
+                if isinstance(w, (list, tuple)) and len(w) == 2:
+                    shift_windows.append([str(w[0]), str(w[1])])
+            for b in s.data.get("breaks", []):
+                if isinstance(b, (list, tuple)) and len(b) == 2:
+                    stylist_breaks.append([str(b[0]), str(b[1])])
+
+    # If stylist has designated shift windows, slot must fall within them
+    if shift_windows and not any(
+        slot_start_time_s >= w[0] and slot_end_time_s <= w[1] for w in shift_windows
+    ):
+        return False
+
+    # Slot must not conflict with stylist breaks
+    return not any(slot_start_time_s < b[1] and slot_end_time_s > b[0] for b in stylist_breaks)
+
+
 async def check_slot_available(
     db: AsyncSession,
     *,

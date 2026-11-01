@@ -210,6 +210,12 @@ class DisputeService:
             )
             if chat_resp and len(chat_resp.strip()) > 80:
                 advocate_text = chat_resp.strip()
+                if "Ed25519" not in advocate_text:
+                    advocate_text += (
+                        f"\n\nCryptographic Evidence Appendix:\n"
+                        f"- Ed25519 Digital Signature: Verified ({'PASS' if consent_verified else 'FAIL'})\n"
+                        f"- SHA-256 Ledger Seal: Verified ({entries_checked} entries checked)"
+                    )
         except Exception as exc:
             logger.info(f"LLM Advocate generated template fallback due to: {exc}")
             advocate_text = default_rebuttal

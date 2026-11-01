@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import attributes, selectinload
 
 from app.core.exceptions import ForbiddenError, NotFoundError, PolicyViolationException
 from app.models.booking import Booking, BookingService
@@ -88,7 +88,7 @@ def _get_user_display_name(user: User | None) -> str:
         return "Assigned stylist"
     insp = sa_inspect(user, raiseerr=False)
     if insp is not None:
-        if "profile" in insp.attrs and insp.attrs.profile.loaded_value is not sa_inspect.NO_VALUE:
+        if "profile" in insp.attrs and insp.attrs.profile.loaded_value is not attributes.NO_VALUE:
             prof = insp.attrs.profile.loaded_value
             if prof:
                 name = getattr(prof, "full_name", None)

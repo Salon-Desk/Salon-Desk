@@ -468,7 +468,7 @@ export function ProposedActionCard({ action }: { action: AgentProposedAction }) 
     try {
       const res = await approveRefund({
         booking_id: payload.bookingId,
-        capture_id: payload.captureId,
+        capture_id: payload.paypalCaptureId || payload.captureId,
         client_name: clientName,
         refund_amount: refundAmount,
         reason: payload.reason || `Goodwill partial refund for ${clientName}`,
@@ -478,13 +478,21 @@ export function ProposedActionCard({ action }: { action: AgentProposedAction }) 
         res.refund_id || `REF-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
       setRefundId(generatedId)
       setIsApproved(true)
-      toast.success(`Refund of $${refundAmount} successfully issued via PayPal`, toastColor.success)
-    } catch {
-      // Graceful demo fallback
-      const fallbackId = `REF-PP-SANDBOX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
-      setRefundId(fallbackId)
-      setIsApproved(true)
-      toast.success(`Refund of $${refundAmount} successfully issued via PayPal`, toastColor.success)
+      toast.success(
+        `Refund of $${refundAmount} successfully issued via PayPal (${generatedId})`,
+        toastColor.success,
+      )
+    } catch (err: unknown) {
+      const errorObj = err as {
+        data?: { detail?: string; error?: { message?: string } }
+        message?: string
+      }
+      const msg =
+        errorObj?.data?.detail ||
+        errorObj?.data?.error?.message ||
+        errorObj?.message ||
+        'Refund execution failed'
+      toast.error(`Refund failed: ${msg}`, toastColor.error)
     }
   }
 

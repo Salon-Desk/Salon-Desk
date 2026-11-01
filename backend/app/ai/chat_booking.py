@@ -517,12 +517,78 @@ async def _book_requested_service(
     # 3. Time is specified, but stylist is not chosen
     time_str = starts_at.strftime("%A, %b %d at %I:%M %p")
     if not stylist_query:
-        stylist_names = [s.get("display_name") for s in stylists if s.get("display_name")]
+        # Check shift and availability for each stylist at this specific slot
+        available_stylists = []
+        dur_min = getattr(service, "duration_minutes", 60)
+        dur_int = dur_min if isinstance(dur_min, (int, float)) else 60
+        ends_at_check = starts_at + timedelta(minutes=int(dur_int))
+
+        from app.services.availability_service import check_slot_available, check_stylist_shift
+
+        for s in stylists:
+            s_id = s.get("id")
+            if not s_id:
+                continue
+            try:
+                # 1. Shift check (working hours, shift window, breaks)
+                on_shift = await check_stylist_shift(
+                    db,
+                    org_id=service.organization_id,
+                    stylist_id=s_id,
+                    starts_at=starts_at,
+                    ends_at=ends_at_check,
+                )
+                if not on_shift:
+                    continue
+
+                # 2. Existing booking collision check
+                is_free = await check_slot_available(
+                    db,
+                    service=service,
+                    starts_at=starts_at,
+                    ends_at=ends_at_check,
+                    stylist_id=s_id,
+                )
+                if not is_free:
+                    continue
+
+                available_stylists.append(s)
+            except Exception:
+                available_stylists.append(s)
+
+        effective_stylists = available_stylists if available_stylists else stylists
+        active_cards = [
+            {
+                "id": "any",
+                "name": "Any available stylist",
+                "organization_name": org_name,
+                "role": "Fastest appointment",
+                "is_any": True,
+            }
+        ]
+        for s in effective_stylists:
+            if s.get("display_name"):
+                active_cards.append(
+                    {
+                        "id": str(s["id"]),
+                        "name": s["display_name"],
+                        "organization_name": org_name,
+                        "role": s.get("role") or "Stylist",
+                        "picture": s.get("picture"),
+                        "bio": ", ".join(s.get("specialties", []))
+                        if s.get("specialties")
+                        else None,
+                        "rating": float(s.get("rating_avg", 0.0)) if s.get("rating_avg") else None,
+                        "is_any": False,
+                    }
+                )
+
+        stylist_names = [s.get("display_name") for s in effective_stylists if s.get("display_name")]
         if stylist_names:
             stylist_options = ", ".join(stylist_names)
             reply = (
                 f"Great choice! For {service.name} at {org_name} on {time_str}, "
-                f"which stylist would you like to book with? We have {stylist_options}, "
+                f"which stylist would you like to book with? Available on shift: {stylist_options}, "
                 "or you can choose 'Any available stylist'."
             )
         else:
@@ -530,7 +596,7 @@ async def _book_requested_service(
                 f"Great choice! For {service.name} at {org_name} on {time_str}, "
                 "would you like to request a specific stylist, or book with any available stylist?"
             )
-        return True, reply, {"stylists": stylist_cards, "needs_stylist": True}
+        return True, reply, {"stylists": active_cards, "needs_stylist": True}
 
     stylist_id, resolved_stylist = await resolve_stylist(db, service.organization_id, stylist_query)
 

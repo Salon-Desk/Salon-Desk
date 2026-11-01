@@ -68,11 +68,8 @@ class Booking(TimestampedModel):
     consents = relationship(
         "Consent", back_populates="booking", order_by="desc(Consent.created_at)"
     )
-    payment_holds = relationship(
-        "PaymentHold", back_populates="booking", order_by="desc(PaymentHold.created_at)"
-    )
-    consents = relationship(
-        "Consent", back_populates="booking", order_by="desc(Consent.created_at)"
+    payment_captures = relationship(
+        "PaymentCapture", back_populates="booking", order_by="desc(PaymentCapture.created_at)"
     )
 
 
