@@ -117,14 +117,28 @@ export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
             <span className="font-semibold text-emerald-800">{formatUsd(0)}</span>
           </div>
         )}
+        {booking.refundAmount != null && booking.refundAmount > 0 ? (
+          <div className="mt-2.5 pt-2 border-t border-purple-200/80 flex items-center justify-between gap-3 text-sm">
+            <span className="font-semibold text-purple-900">Goodwill Refund Issued</span>
+            <span className="font-bold text-purple-700">-{formatUsd(booking.refundAmount)}</span>
+          </div>
+        ) : null}
         <p className="mt-2 text-[11px] text-amber-800/80 leading-relaxed">
           PayPal authorization only. Settlement uses the locked booking-time price and policy.
           Cancel before {booking.freeCancelDeadlineLabel} to release the hold at {formatUsd(0)}.
         </p>
       </div>
 
-      {!isPlaceholderValue(booking.paypalAuthId) || !isPlaceholderValue(booking.consentHash) ? (
+      {!isPlaceholderValue(booking.paypalAuthId) ||
+      !isPlaceholderValue(booking.consentHash) ||
+      booking.refundId ? (
         <div className="mb-5 space-y-2 rounded-2xl border border-stone-100 px-4 py-3 font-mono text-[11px] text-stone-500">
+          {booking.refundId ? (
+            <div className="flex justify-between gap-3">
+              <span className="font-sans text-stone-400">PayPal refund</span>
+              <span className="truncate font-semibold text-purple-700">{booking.refundId}</span>
+            </div>
+          ) : null}
           {!isPlaceholderValue(booking.paypalAuthId) ? (
             <div className="flex justify-between gap-3">
               <span className="font-sans text-stone-400">PayPal auth</span>

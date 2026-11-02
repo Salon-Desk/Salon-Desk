@@ -159,7 +159,9 @@ export function SettlementDrawer({
   const isCaptured = booking.status === 'CAPTURED'
   const isNoShowCaptured = booking.status === 'NO_SHOW_CAPTURED'
   const isVoided = booking.status === 'VOIDED'
-  const isSettled = isCaptured || isNoShowCaptured || isVoided
+  const isRefunded =
+    booking.status === 'REFUNDED' || (booking.refundAmount != null && booking.refundAmount > 0)
+  const isSettled = isCaptured || isNoShowCaptured || isVoided || isRefunded
 
   // Check if the appointment time has passed in the organization's timezone
   const canSettle = (() => {
@@ -543,20 +545,23 @@ export function SettlementDrawer({
               <span
                 className={cn(
                   'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border',
-                  isCaptured
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    : isNoShowCaptured
-                      ? 'bg-rose-50 text-rose-800 border-rose-200'
-                      : isVoided
-                        ? 'bg-slate-100 text-slate-700 border-slate-200'
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                  isRefunded
+                    ? 'bg-purple-50 text-purple-800 border-purple-200'
+                    : isCaptured
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : isNoShowCaptured
+                        ? 'bg-rose-50 text-rose-800 border-rose-200'
+                        : isVoided
+                          ? 'bg-slate-100 text-slate-700 border-slate-200'
+                          : 'bg-emerald-50 text-emerald-800 border-emerald-200',
                 )}
               >
                 <Check className="h-2.5 w-2.5" />
-                {isCaptured && 'Settled in Full'}
-                {isNoShowCaptured && 'No-Show Fee Captured'}
-                {isVoided && 'Released · $0 Charged'}
-                {!isSettled && '$0 Charged Upfront'}
+                {isRefunded && `Refund Issued (${formatUsd(booking.refundAmount ?? 0)})`}
+                {!isRefunded && isCaptured && 'Settled in Full'}
+                {!isRefunded && isNoShowCaptured && 'No-Show Fee Captured'}
+                {!isRefunded && isVoided && 'Released · $0 Charged'}
+                {!isRefunded && !isSettled && '$0 Charged Upfront'}
               </span>
             </div>
 
@@ -658,6 +663,22 @@ export function SettlementDrawer({
                 <div className="flex items-center justify-between text-slate-600 font-medium pt-1.5 border-t border-slate-200/60">
                   <span>Final Charged Amount</span>
                   <span className="font-mono font-bold text-slate-800">{formatUsd(0)}</span>
+                </div>
+              )}
+
+              {isRefunded && (
+                <div className="flex items-center justify-between text-purple-800 font-medium pt-1.5 border-t border-purple-200/60">
+                  <span className="flex items-center gap-1.5">
+                    <span>Goodwill Refund Executed</span>
+                    {booking.refundId && (
+                      <span className="font-mono text-[10px] text-purple-600">
+                        ({booking.refundId})
+                      </span>
+                    )}
+                  </span>
+                  <span className="font-mono font-bold text-purple-700">
+                    -{formatUsd(booking.refundAmount ?? 0)}
+                  </span>
                 </div>
               )}
             </div>
@@ -1118,6 +1139,29 @@ export function SettlementDrawer({
                   </button>
                 </div>
               </div>
+
+              {booking.refundId ? (
+                <div className="flex items-center justify-between pt-2.5">
+                  <span className="text-slate-500">PayPal Refund ID</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-xs font-semibold text-purple-700">
+                      {booking.refundId}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(booking.refundId!, 'paypal_refund')}
+                      className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                      title="Copy PayPal Refund Reference"
+                    >
+                      {copiedKey === 'paypal_refund' ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="flex items-center justify-between pt-2.5">
                 <span className="text-slate-500">Booking Confirmation Ref</span>

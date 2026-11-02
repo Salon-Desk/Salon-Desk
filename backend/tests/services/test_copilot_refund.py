@@ -98,10 +98,6 @@ async def test_approve_copilot_refund_captures_active_hold_and_refunds() -> None
             new=AsyncMock(return_value=mock_captured),
         ) as mock_capture_call,
         patch(
-            "app.api.v1.client.assistant.PayPalToolkitRunner.refund_order",
-            new=AsyncMock(return_value={"status": "COMPLETED", "refund_id": "REF-PP-TEST-1234"}),
-        ) as mock_refund_call,
-        patch(
             "app.api.v1.client.assistant.append_ledger",
             new=AsyncMock(),
         ),
@@ -115,13 +111,68 @@ async def test_approve_copilot_refund_captures_active_hold_and_refunds() -> None
         res = await approve_copilot_refund(body=body, db=mock_db)
 
         assert res.status == "success"
-        assert res.refund_id == "REF-PP-TEST-1234"
         assert res.capture_id == "2GG9988776655"
+        assert res.refund_id.startswith("REL-")
+        # Net balance to capture was $55.00 - $15.00 = $40.00 with final_capture=True
         mock_capture_call.assert_awaited_once()
-        mock_refund_call.assert_awaited_once_with(
-            capture_id="2GG9988776655",
-            amount=Decimal("15.00"),
-            reason="Owner goodwill refund approved for Abebe Bikila",
-            staff_id=None,
-            db=mock_db,
+        call_kwargs = mock_capture_call.call_args.kwargs
+        assert call_kwargs["amount"] == Decimal("40.00")
+        assert call_kwargs["final_capture"] is True
+
+
+@pytest.mark.asyncio
+async def test_approve_copilot_refund_voids_hold_when_full_waiver() -> None:
+    from unittest.mock import patch
+    from uuid import uuid4
+
+    from app.api.v1.client.assistant import approve_copilot_refund
+    from app.models.booking import Booking
+    from app.models.enums import BookingStatus, PaymentHoldStatus
+    from app.models.payment import PaymentHold
+    from app.schemas.ai import CopilotRefundRequest
+
+    mock_db = AsyncMock()
+    mock_res = MagicMock()
+    mock_res.scalar_one_or_none.return_value = None
+    mock_db.execute.return_value = mock_res
+    booking_id = uuid4()
+    org_id = uuid4()
+
+    mock_hold = MagicMock(spec=PaymentHold)
+    mock_hold.id = uuid4()
+    mock_hold.status = PaymentHoldStatus.AUTHORIZED
+    mock_hold.amount = Decimal("30.00")
+    mock_hold.latest_authorization_id = "8JL57900YX194480G"
+    mock_hold.parent_authorization_id = None
+
+    mock_booking = MagicMock(spec=Booking)
+    mock_booking.id = booking_id
+    mock_booking.org_id = org_id
+    mock_booking.status = BookingStatus.CONFIRMED
+    mock_booking.total_price = Decimal("30.00")
+    mock_booking.agreed_hold_amount = Decimal("30.00")
+    mock_booking.agreed_no_show_fee = Decimal("15.00")
+    mock_booking.payment_captures = []
+    mock_booking.payment_holds = [mock_hold]
+    mock_booking.cancellation_fee_json = {}
+
+    mock_db.get.return_value = mock_booking
+
+    with (
+        patch(
+            "app.services.hold_service.void_hold", new=AsyncMock(return_value=mock_hold)
+        ) as mock_void_call,
+        patch("app.api.v1.client.assistant.append_ledger", new=AsyncMock()),
+    ):
+        body = CopilotRefundRequest(
+            booking_id=str(booking_id),
+            capture_id="8JL57900YX194480G",
+            refund_amount=Decimal("30.00"),  # Full waiver
+            client_name="Hana Tesfaye",
         )
+        res = await approve_copilot_refund(body=body, db=mock_db)
+
+        assert res.status == "success"
+        assert res.refund_id.startswith("VOID-")
+        assert "$0.00 charged" in res.message
+        mock_void_call.assert_awaited_once_with(mock_db, booking=mock_booking)

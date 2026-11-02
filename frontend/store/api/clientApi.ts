@@ -372,7 +372,7 @@ export const clientApi = baseApi.injectEndpoints({
         method: 'POST',
         data: body,
       }),
-      invalidatesTags: ['payments', 'bookings'],
+      invalidatesTags: ['payments', 'bookings', 'disputes', 'organizations'],
     }),
   }),
 })

@@ -122,6 +122,9 @@ class BookingOut(ORMModel):
     consent_hash: str | None = None
     consent_terms_version: str | None = None
     consent_signed_at: datetime | None = None
+    refund_id: str | None = None
+    refund_amount: Decimal | None = None
+    refund_status: str | None = None
 
 
 def _user_display_name(user) -> str | None:
@@ -195,6 +198,19 @@ def booking_to_out(booking) -> BookingOut:
         consent_terms_version = latest_consent.terms_version
         consent_signed_at = latest_consent.created_at
 
+    refund_id = None
+    refund_amount = None
+    refund_status = None
+    if booking.cancellation_fee_json and isinstance(booking.cancellation_fee_json, dict):
+        refund_id = booking.cancellation_fee_json.get("refund_id")
+        raw_refund_amt = booking.cancellation_fee_json.get("refund_amount")
+        if raw_refund_amt is not None:
+            try:
+                refund_amount = Decimal(str(raw_refund_amt))
+            except Exception:
+                refund_amount = None
+        refund_status = booking.cancellation_fee_json.get("refund_status")
+
     return BookingOut(
         id=booking.id,
         org_id=booking.org_id,
@@ -236,4 +252,7 @@ def booking_to_out(booking) -> BookingOut:
         consent_hash=consent_hash,
         consent_terms_version=consent_terms_version,
         consent_signed_at=consent_signed_at,
+        refund_id=refund_id,
+        refund_amount=refund_amount,
+        refund_status=refund_status,
     )

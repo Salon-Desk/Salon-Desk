@@ -7,6 +7,7 @@ export type HoldState =
   | 'REAUTHORIZED'
   | 'PENDING'
   | 'PENDING_PAYMENT'
+  | 'REFUNDED'
 
 export interface Booking {
   id: string
@@ -58,6 +59,9 @@ export interface Booking {
   honorPeriodEndsInHours?: number
   reauthorizationCount?: number
   reauthorizedAt?: string
+  refundId?: string | null
+  refundAmount?: number | null
+  refundStatus?: string | null
   /** Organization timezone (e.g., 'America/New_York') */
   organizationTimezone?: string | null
   paymentHold?: {

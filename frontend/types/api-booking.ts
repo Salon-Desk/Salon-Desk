@@ -48,6 +48,9 @@ export interface ApiBooking {
   consent_hash?: string | null
   consent_terms_version?: string | null
   consent_signed_at?: string | null
+  refund_id?: string | null
+  refund_amount?: string | number | null
+  refund_status?: string | null
 }
 
 export interface OrgBookingsQuery {

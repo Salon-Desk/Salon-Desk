@@ -67,8 +67,10 @@ export function MerchantAppointmentsView() {
       const candidates = (tableData?.items ?? []).map((b) => mapApiBookingToUi(b))
       const target = bookingId
         ? candidates.find((b) => b.id === bookingId)
-        : candidates.find((b) => b.status === 'NO_SHOW_CAPTURED' || b.status === 'VOIDED') ||
-          candidates[0]
+        : candidates.find(
+            (b) =>
+              b.status === 'NO_SHOW_CAPTURED' || b.status === 'VOIDED' || b.status === 'REFUNDED',
+          ) || candidates[0]
       if (target) {
         setSelectedBooking(target)
       }
@@ -200,7 +202,10 @@ export function MerchantAppointmentsView() {
             showActions={true}
             renderRowActions={(b) => {
               const isSettled =
-                b.status === 'CAPTURED' || b.status === 'NO_SHOW_CAPTURED' || b.status === 'VOIDED'
+                b.status === 'CAPTURED' ||
+                b.status === 'NO_SHOW_CAPTURED' ||
+                b.status === 'VOIDED' ||
+                b.status === 'REFUNDED'
 
               return (
                 <div className="flex items-center justify-end gap-1.5">

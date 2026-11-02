@@ -102,9 +102,15 @@ export function getBookingTableColumns({
           <div className="font-bold text-slate-900 text-xs font-mono tabular-nums">
             {formatUsd(b.servicePrice)}
           </div>
-          <div className="text-[10px] text-amber-700 font-mono font-medium">
-            Hold: {formatUsd(b.holdAmount)}
-          </div>
+          {b.refundAmount != null && b.refundAmount > 0 ? (
+            <div className="text-[10px] text-purple-700 font-mono font-semibold">
+              Refund: -{formatUsd(b.refundAmount)}
+            </div>
+          ) : (
+            <div className="text-[10px] text-amber-700 font-mono font-medium">
+              Hold: {formatUsd(b.holdAmount)}
+            </div>
+          )}
         </div>
       ),
     },

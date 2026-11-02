@@ -1,5 +1,6 @@
 import logging
 import uuid
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, status
@@ -250,9 +251,8 @@ async def approve_copilot_refund(
                 break
 
     # If no real capture exists yet, but booking has an active authorization hold:
-    # We must capture the hold first on PayPal Sandbox!
+    active_hold = None
     if not real_capture_id and booking and booking.payment_holds:
-        active_hold = None
         for h in booking.payment_holds:
             if h.status in (
                 PaymentHoldStatus.AUTHORIZED,
@@ -262,83 +262,152 @@ async def approve_copilot_refund(
                 active_hold = h
                 break
 
-        if active_hold:
-            if booking.status == BookingStatus.NO_SHOW:
-                fee = booking.agreed_no_show_fee or Decimal("27.50")
-                cap_type = PaymentCaptureType.NO_SHOW_FEE
-            else:
-                fee = (
-                    booking.total_price
-                    or booking.agreed_hold_amount
-                    or active_hold.amount
-                    or Decimal("30.00")
-                )
-                cap_type = PaymentCaptureType.FULL
-            fee = max(fee, body.refund_amount)
-            cap = await capture_hold(
-                db,
-                booking=booking,
-                capture_type=cap_type,
-                amount=fee,
-                final_capture=True,
-            )
-            real_capture_id = cap.paypal_capture_id
+    hold_handled = False
+    refund_msg: str | None = None
 
-    final_capture_id = real_capture_id or capture_id or f"CAP-{uuid.uuid4().hex[:12].upper()}"
-
-    # 2. Execute refund via PayPalToolkitRunner
-    toolkit = PayPalToolkitRunner()
-    reason = body.reason or f"Owner goodwill refund approved for {body.client_name or 'Hana'}"
-    staff_id = user.id if user else None
-
-    try:
-        refund_res = await toolkit.refund_order(
-            capture_id=final_capture_id,
-            amount=body.refund_amount,
-            reason=reason,
-            staff_id=staff_id,
-            db=db,
+    if active_hold and not real_capture_id and booking:
+        hold_amt = active_hold.amount
+        refund_amt = body.refund_amount
+        gross_fee = (
+            booking.agreed_no_show_fee
+            if booking.status == BookingStatus.NO_SHOW
+            else (booking.total_price or booking.agreed_hold_amount or hold_amt)
         )
-    except PolicyViolationException as pve:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=pve.message) from pve
-    except PayPalAPIError as pae:
-        if "PERMISSION_DENIED" in pae.message or pae.status_code == 403:
-            logger.warning(
-                f"PayPal capture {final_capture_id} belongs to connected merchant account without third-party API refund permissions. Recording approved goodwill refund: {pae.message}"
-            )
-            refund_res = {
-                "status": "COMPLETED",
-                "refund_id": f"REF-PP-MERCHANT-{uuid.uuid4().hex[:8].upper()}",
-                "amount": {"value": str(body.refund_amount), "currency_code": "USD"},
-            }
-        else:
-            logger.error(f"PayPal API error executing refund: {pae.message}")
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST,
-                detail=f"PayPal refund error: {pae.message}",
-            ) from pae
-    except Exception as exc:
-        if not toolkit.client.configured:
-            logger.warning(f"PayPal not configured; refund fallback used: {exc}")
-            refund_res = {
-                "status": "COMPLETED",
-                "refund_id": f"REF-STUB-{uuid.uuid4().hex[:10].upper()}",
-                "amount": {"value": str(body.refund_amount), "currency_code": "USD"},
-            }
-        else:
-            logger.error(f"PayPal refund execution error: {exc}")
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST,
-                detail=f"Refund execution failed: {str(exc)}",
-            ) from exc
 
-    refund_id = (
-        refund_res.get("refund_id")
-        or refund_res.get("id")
-        or f"REF-{uuid.uuid4().hex[:10].upper()}"
+        # 1. Full hold waiver / cancellation: void authorization so $0 is charged
+        if refund_amt >= hold_amt or refund_amt >= gross_fee:
+            from app.services.hold_service import void_hold
+
+            await void_hold(db, booking=booking)
+            booking.status = BookingStatus.CANCELLED
+            refund_id = f"VOID-{active_hold.id.hex[:10].upper()}"
+            final_capture_id = (
+                active_hold.latest_authorization_id or active_hold.parent_authorization_id or ""
+            )
+            hold_handled = True
+            refund_msg = f"Full authorization hold of ${hold_amt:.2f} successfully voided and released ($0.00 charged)"
+        else:
+            # 2. Partial concession: capture ONLY the net discounted balance with final_capture=True
+            # PayPal captures the net amount and automatically releases the remaining difference to the client card
+            net_capture_amount = max(Decimal("0.00"), gross_fee - refund_amt)
+            if net_capture_amount == Decimal("0.00"):
+                from app.services.hold_service import void_hold
+
+                await void_hold(db, booking=booking)
+                booking.status = BookingStatus.CANCELLED
+                refund_id = f"VOID-{active_hold.id.hex[:10].upper()}"
+                final_capture_id = (
+                    active_hold.latest_authorization_id or active_hold.parent_authorization_id or ""
+                )
+                hold_handled = True
+                refund_msg = f"Full authorization hold of ${hold_amt:.2f} successfully voided ($0.00 charged)"
+            else:
+                cap_type = (
+                    PaymentCaptureType.NO_SHOW_FEE
+                    if booking.status == BookingStatus.NO_SHOW
+                    else PaymentCaptureType.FULL
+                )
+                cap = await capture_hold(
+                    db,
+                    booking=booking,
+                    capture_type=cap_type,
+                    amount=net_capture_amount,
+                    final_capture=True,
+                )
+                final_capture_id = cap.paypal_capture_id
+                refund_id = f"REL-{uuid.uuid4().hex[:10].upper()}"
+                hold_handled = True
+                refund_msg = (
+                    f"Goodwill concession applied: captured net balance of ${net_capture_amount:.2f} via PayPal; "
+                    f"${refund_amt:.2f} released back to client"
+                )
+
+    final_capture_id = (
+        final_capture_id
+        if "final_capture_id" in locals() and final_capture_id
+        else (real_capture_id or capture_id or f"CAP-{uuid.uuid4().hex[:12].upper()}")
     )
 
-    # 3. Update DisputeCase if present
+    reason = body.reason or f"Owner goodwill refund approved for {body.client_name or 'Hana'}"
+
+    # 3. If an existing capture was present (not handled via hold void/net capture), execute refund via PayPalToolkitRunner
+    if not hold_handled:
+        toolkit = PayPalToolkitRunner()
+        staff_id = user.id if user else None
+
+        try:
+            refund_res = await toolkit.refund_order(
+                capture_id=final_capture_id,
+                amount=body.refund_amount,
+                reason=reason,
+                staff_id=staff_id,
+                db=db,
+            )
+        except PolicyViolationException as pve:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=pve.message) from pve
+        except PayPalAPIError as pae:
+            if "PERMISSION_DENIED" in pae.message or pae.status_code == 403:
+                logger.warning(
+                    f"PayPal capture {final_capture_id} belongs to connected merchant account without third-party API refund permissions. Recording approved goodwill refund: {pae.message}"
+                )
+                refund_res = {
+                    "status": "COMPLETED",
+                    "refund_id": f"REF-PP-MERCHANT-{uuid.uuid4().hex[:8].upper()}",
+                    "amount": {"value": str(body.refund_amount), "currency_code": "USD"},
+                }
+            else:
+                logger.error(f"PayPal API error executing refund: {pae.message}")
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    detail=f"PayPal refund error: {pae.message}",
+                ) from pae
+        except Exception as exc:
+            if not toolkit.client.configured:
+                logger.warning(f"PayPal not configured; refund fallback used: {exc}")
+                refund_res = {
+                    "status": "COMPLETED",
+                    "refund_id": f"REF-STUB-{uuid.uuid4().hex[:10].upper()}",
+                    "amount": {"value": str(body.refund_amount), "currency_code": "USD"},
+                }
+            else:
+                logger.error(f"PayPal refund execution error: {exc}")
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    detail=f"Refund execution failed: {str(exc)}",
+                ) from exc
+
+        refund_id = (
+            refund_res.get("refund_id")
+            or refund_res.get("id")
+            or f"REF-{uuid.uuid4().hex[:10].upper()}"
+        )
+        refund_msg = f"Refund of ${body.refund_amount:.2f} issued via PayPal"
+
+    # 3. Update Booking & PaymentCapture records with refund metadata
+    if booking:
+        fee_dict = dict(booking.cancellation_fee_json or {})
+        fee_dict.update(
+            {
+                "refund_id": refund_id,
+                "refund_amount": str(body.refund_amount),
+                "refund_status": "COMPLETED",
+                "refund_reason": reason,
+                "refunded_at": datetime.now(UTC).isoformat(),
+            }
+        )
+        booking.cancellation_fee_json = fee_dict
+
+        # Update capture status on matching capture
+        if booking.payment_captures:
+            for cap_rec in booking.payment_captures:
+                if cap_rec.paypal_capture_id == final_capture_id or not cap_rec.paypal_capture_id:
+                    cap_rec.status = (
+                        "REFUNDED" if body.refund_amount >= cap_rec.amount else "PARTIALLY_REFUNDED"
+                    )
+                    break
+        await db.flush()
+
+    # 4. Update DisputeCase if present
     if not dispute_case and booking:
         disp_stmt = select(DisputeCase).where(DisputeCase.booking_id == booking.id).limit(1)
         disp_res = await db.execute(disp_stmt)
@@ -346,18 +415,18 @@ async def approve_copilot_refund(
 
     if dispute_case and not isinstance(dispute_case, Exception):
         try:
-            dispute_case.status = DisputeCaseStatus.RESOLVED_SELLER_FAVOR
+            dispute_case.status = DisputeCaseStatus.RESOLVED_BUYER_FAVOR
             dispute_case.recommended_offer_amount = body.refund_amount
             await db.flush()
         except AttributeError:
             pass
 
-    # 4. Append audit ledger entry
+    # 5. Append audit ledger entry
     org_id = booking.org_id if booking else (user.org_id if user and user.org_id else None)
     if org_id:
         await append_ledger(
             db,
-            event_type="COPILOT_GOODWILL_REFUND_EXECUTED",
+            event_type="GOODWILL_PARTIAL_REFUND",
             org_id=org_id,
             booking_id=booking.id if booking else None,
             amount=body.refund_amount,
@@ -380,5 +449,5 @@ async def approve_copilot_refund(
         capture_id=final_capture_id,
         booking_id=str(booking.id) if booking else None,
         client_name=body.client_name or "Client",
-        message=f"Refund of ${body.refund_amount:.2f} issued via PayPal",
+        message=refund_msg or f"Refund of ${body.refund_amount:.2f} issued via PayPal",
     )
