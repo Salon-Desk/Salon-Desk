@@ -158,8 +158,8 @@ def create_app() -> FastAPI:
     @application.exception_handler(PolicyViolationException)
     async def policy_handler(_request: Request, exc: PolicyViolationException) -> JSONResponse:
         return JSONResponse(
-            status_code=400,
-            content=error(code="POLICY_VIOLATION", message=exc.message).model_dump(),
+            status_code=getattr(exc, "status_code", 400),
+            content=error(code=exc.code or "POLICY_VIOLATION", message=exc.message).model_dump(),
         )
 
     @application.exception_handler(SalonDeskError)

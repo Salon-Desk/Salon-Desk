@@ -26,6 +26,17 @@ def _http_for(exc: Exception) -> int:
     if isinstance(exc, NotFoundError):
         return status.HTTP_404_NOT_FOUND
     if isinstance(exc, PolicyViolationException):
+        if getattr(exc, "status_code", None) == 422:
+            return status.HTTP_422_UNPROCESSABLE_ENTITY
+        if getattr(exc, "code", None) in {
+            "REAUTHORIZATION_TOO_SOON",
+            "HOLD_EXPIRED",
+            "RESCHEDULE_LIMIT_EXCEEDED",
+            "BOOKING_HORIZON_EXCEEDED",
+        }:
+            return status.HTTP_422_UNPROCESSABLE_ENTITY
+        if "reschedule" in exc.message.lower() or "deposit holds" in exc.message.lower():
+            return status.HTTP_422_UNPROCESSABLE_ENTITY
         return status.HTTP_400_BAD_REQUEST
     return status.HTTP_400_BAD_REQUEST
 

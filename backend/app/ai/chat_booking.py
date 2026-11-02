@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import re
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -106,7 +108,7 @@ _BOOKING_EXTRACT_PROMPT = """You extract booking requests from a user chat messa
 Return ONLY a JSON object with:
 - "action": "book" | "confirm" | "none"
 - "service_query": string or null (e.g. "Haircut", "Fade", "Balayage", "Braids", "Manicure", "Swedish Massage")
-- "preferred_time": string or null (ISO 8601 formatted datetime string like "2026-10-25T14:00:00Z" calculated relative to Current Date/Time, or null if the user has NOT specified a date or time yet)
+- "preferred_time": string or null (ISO 8601 formatted datetime string like "2026-10-25T14:00:00" WITHOUT trailing Z or offset, matching user's stated local time calculated relative to Current Date/Time, or null if the user has NOT specified a date or time yet)
 - "stylist_query": string or null (e.g. "Sarah", "Alex", "Yared Desta", "any", "anyone", "any available stylist", "no preference", or null if not yet mentioned)
 - "client_email": string or null (e.g. "user@example.com" if mentioned in the message or recent conversation, otherwise null)
 - "notes": string or null
@@ -116,7 +118,7 @@ Rules:
 - "confirm": User explicitly wants to confirm an existing pending booking or finalize a hold.
 - "none": User is just asking questions, browsing, or greeting.
 - ALWAYS carry over service_query, stylist_query, and preferred_time from recent conversation if they were already identified in previous turns.
-- If the user provides a time (e.g. 'tomorrow at 2 pm'), set "preferred_time" to its ISO 8601 datetime based on Current Date/Time, while keeping the service_query and stylist_query from context.
+- If the user provides a time (e.g. 'tomorrow at 2 pm'), set "preferred_time" to its local ISO 8601 datetime without Z suffix based on Current Date/Time, while keeping the service_query and stylist_query from context.
 - If the user specifies or selects a stylist (e.g. 'with Yared Desta', 'Yared Desta', 'any stylist'), capture it in "stylist_query", while keeping service_query and preferred_time from context.
 - If the user replies with 'yes', 'yes please', 'sounds good', 'lock it in', 'confirm', or agrees to book, keep action="book" (or "confirm" if pending), and preserve the service_query, preferred_time, and stylist_query from context.
 - If the user has NOT specified any preference for a stylist yet, set "stylist_query" to null.
@@ -169,15 +171,28 @@ def _extract_json(text: str) -> dict[str, Any] | None:
         return None
 
 
-def _parse_starts_at(preferred_time: str | None) -> datetime | None:
+def _parse_starts_at(
+    preferred_time: str | None, client_tz: ZoneInfo | None = None
+) -> datetime | None:
     if not preferred_time or not preferred_time.strip():
         return None
     cleaned = preferred_time.strip()
+    target_tz = client_tz or UTC
+
+    # Case 1: ISO string ending in Z or with explicit offset
+    if cleaned.endswith("Z") or ("+" in cleaned[10:] or "-" in cleaned[10:]):
+        try:
+            dt = datetime.fromisoformat(cleaned.replace("Z", "+00:00"))
+            return dt.astimezone(UTC)
+        except ValueError:
+            pass
+
+    # Case 2: Naive ISO string (local time without timezone), attach target_tz and convert to UTC
     try:
-        dt = datetime.fromisoformat(cleaned.replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(cleaned)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=UTC)
-        return dt
+            dt = dt.replace(tzinfo=target_tz)
+        return dt.astimezone(UTC)
     except ValueError:
         pass
 
@@ -186,13 +201,13 @@ def _parse_starts_at(preferred_time: str | None) -> datetime | None:
 
         dt = parser.parse(cleaned)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=UTC)
-        return dt
+            dt = dt.replace(tzinfo=target_tz)
+        return dt.astimezone(UTC)
     except Exception:
         pass
 
     low = cleaned.lower()
-    now = datetime.now(UTC)
+    now = datetime.now(target_tz)
     base_day = now
     if "tomorrow" in low:
         base_day = now + timedelta(days=1)
@@ -209,7 +224,8 @@ def _parse_starts_at(preferred_time: str | None) -> datetime | None:
         elif meridiem == "am" and h == 12:
             h = 0
         hour, minute = h, m
-        return base_day.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        dt_local = base_day.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        return dt_local.astimezone(UTC)
 
     return None
 
@@ -218,6 +234,7 @@ async def _extract_booking_action(
     llm: BaseLLMService,
     message: str,
     history: list[ChatMessage] | None = None,
+    client_timezone: str | None = None,
 ) -> dict[str, Any] | None:
     """Ask the LLM for book/confirm slots. None means the turn is not a booking."""
     context_lines = []
@@ -225,7 +242,14 @@ async def _extract_booking_action(
         for m in history[-6:]:
             context_lines.append(f"{m.role.capitalize()}: {m.content}")
     context_str = "\n".join(context_lines)
-    now_str = datetime.now(UTC).strftime("%A, %Y-%m-%d %H:%M UTC")
+    if client_timezone:
+        try:
+            user_tz = ZoneInfo(client_timezone)
+            now_str = datetime.now(user_tz).strftime(f"%A, %Y-%m-%d %H:%M ({client_timezone})")
+        except Exception:
+            now_str = datetime.now(UTC).strftime("%A, %Y-%m-%d %H:%M UTC")
+    else:
+        now_str = datetime.now(UTC).strftime("%A, %Y-%m-%d %H:%M UTC")
     user_prompt = (
         f"Current Date/Time: {now_str}\n\nRecent Conversation:\n{context_str}\n\nLatest User Message: {message}"
         if context_str
@@ -270,6 +294,7 @@ async def _resolve_chat_client(
 async def _confirm_pending_booking(
     db: AsyncSession,
     client: User,
+    client_timezone: str | None = None,
 ) -> tuple[bool, str, dict[str, str | None] | None]:
     b_res = await db.execute(
         select(Booking)
@@ -302,7 +327,11 @@ async def _confirm_pending_booking(
     await payment_service.complete_hold(db, hold=hold, paypal_order_token=hold.paypal_order_id)
     await db.commit()
 
-    time_str = pending.starts_at.strftime("%A, %b %d at %I:%M %p")
+    display_tz = UTC
+    if client_timezone:
+        with contextlib.suppress(Exception):
+            display_tz = ZoneInfo(client_timezone)
+    time_str = pending.starts_at.astimezone(display_tz).strftime("%A, %b %d at %I:%M %p")
     confirmed_info = {
         "id": str(pending.id),
         "service_name": "Appointment",
@@ -430,6 +459,7 @@ async def _book_requested_service(
     parsed: dict[str, Any],
     user_was_anonymous: bool = False,
     frontend_base: str | None = None,
+    client_timezone: str | None = None,
 ) -> tuple[bool, str, dict[str, Any] | None]:
     service = await _resolve_requested_service(db, parsed.get("service_query") or "")
     if service is None:
@@ -440,7 +470,13 @@ async def _book_requested_service(
             {"recommendations": rec_cards},
         )
 
-    starts_at = _parse_starts_at(parsed.get("preferred_time"))
+    client_tz: ZoneInfo | None = None
+    if client_timezone:
+        with contextlib.suppress(Exception):
+            client_tz = ZoneInfo(client_timezone)
+
+    starts_at = _parse_starts_at(parsed.get("preferred_time"), client_tz=client_tz)
+    display_tz = client_tz or UTC
     org = await db.get(Organization, service.organization_id)
     org_name = org.name if org else "Salon"
     stylist_query = parsed.get("stylist_query")
@@ -515,7 +551,7 @@ async def _book_requested_service(
         return True, reply, {"needs_time": True}
 
     # 3. Time is specified, but stylist is not chosen
-    time_str = starts_at.strftime("%A, %b %d at %I:%M %p")
+    time_str = starts_at.astimezone(display_tz).strftime("%A, %b %d at %I:%M %p")
     if not stylist_query:
         # Check shift and availability for each stylist at this specific slot
         available_stylists = []
@@ -651,7 +687,9 @@ async def _book_requested_service(
         payment_link = f"/client/book/{service.id}?slot={starts_at.isoformat()}"
 
     commission_amount = str(booking.commission_snapshot.get("amount", "0.00"))
-    free_cancel_str = booking.free_cancel_deadline_at.strftime("%A, %b %d at %I:%M %p")
+    free_cancel_str = booking.free_cancel_deadline_at.astimezone(display_tz).strftime(
+        "%A, %b %d at %I:%M %p"
+    )
 
     booking_info = {
         "id": str(booking.id),
@@ -707,6 +745,7 @@ async def try_handle_chat_booking(
     history: list[ChatMessage],
     user: User | None = None,
     frontend_base: str | None = None,
+    client_timezone: str | None = None,
 ) -> tuple[bool, str, dict[str, Any] | None]:
     """Check if the user is asking to book or confirm an appointment, and execute if so.
 
@@ -716,7 +755,7 @@ async def try_handle_chat_booking(
     if not mentions_booking(message, history):
         return False, "", None
 
-    parsed = await _extract_booking_action(llm, message, history)
+    parsed = await _extract_booking_action(llm, message, history, client_timezone=client_timezone)
     if parsed is None:
         return False, "", None
 
@@ -778,7 +817,12 @@ async def try_handle_chat_booking(
 
     user_was_anonymous = user is None
     if parsed.get("action") == "confirm":
-        return await _confirm_pending_booking(db, client)
+        return await _confirm_pending_booking(db, client, client_timezone=client_timezone)
     return await _book_requested_service(
-        db, client, parsed, user_was_anonymous=user_was_anonymous, frontend_base=frontend_base
+        db,
+        client,
+        parsed,
+        user_was_anonymous=user_was_anonymous,
+        frontend_base=frontend_base,
+        client_timezone=client_timezone,
     )

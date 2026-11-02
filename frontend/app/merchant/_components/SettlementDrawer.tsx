@@ -1,5 +1,6 @@
 'use client'
 
+import { addDays, differenceInDays, format } from 'date-fns'
 import {
   AlertTriangle,
   Calendar,
@@ -24,7 +25,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { RescheduleBookingDialog } from '@/app/client/_components/RescheduleBookingDialog'
@@ -69,6 +70,18 @@ export function SettlementDrawer({
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false)
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false)
+
+  // PayPal authorization hold lifecycle calculations
+  const holdAuthorizedAt = useMemo(() => {
+    const raw = booking.paymentHold?.authorizedAt || booking.authorizedAt || booking.createdAt
+    if (!raw) return new Date()
+    const d = new Date(raw)
+    return Number.isNaN(d.getTime()) ? new Date() : d
+  }, [booking])
+
+  const now = useMemo(() => new Date(), [])
+  const daysOld = useMemo(() => differenceInDays(now, holdAuthorizedAt), [now, holdAuthorizedAt])
+  const rescheduleMaxDate = useMemo(() => addDays(holdAuthorizedAt, 28), [holdAuthorizedAt])
 
   // Slot Rescue State & RTK Query Hooks
   const [selectedWaitlistId, setSelectedWaitlistId] = useState<string | null>(null)
@@ -330,23 +343,64 @@ export function SettlementDrawer({
               {/* Reauthorize & Reschedule options if within valid window */}
               {(booking.status === 'HELD' || booking.status === 'REAUTHORIZED') && (
                 <div className="pt-1.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center">
-                  <button
-                    type="button"
-                    disabled={
-                      isSettlementProcessing ||
-                      booking.status === 'REAUTHORIZED' ||
-                      (booking.reauthorizationCount ?? 0) >= 1
-                    }
-                    onClick={() => setPendingConfirmation('REAUTH')}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-sky-700 hover:text-sky-900 hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer"
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                    <span>
-                      {booking.status === 'REAUTHORIZED' || (booking.reauthorizationCount ?? 0) >= 1
-                        ? 'Payment extended (Max 1)'
-                        : 'Extend reservation (72h)'}
+                  {daysOld >= 29 ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700 border border-rose-200">
+                      <Lock className="h-3 w-3 text-rose-500" />
+                      Hold Expired
                     </span>
-                  </button>
+                  ) : daysOld < 3 ? (
+                    <div
+                      className="inline-flex items-center gap-1.5"
+                      title="Guaranteed active (Honor period active until Day 4)"
+                    >
+                      <button
+                        type="button"
+                        disabled
+                        className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 cursor-not-allowed"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        <span>Reauthorize Hold</span>
+                      </button>
+                      <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800 border border-amber-200">
+                        Guaranteed active (Honor period active until Day 4)
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        disabled={
+                          isSettlementProcessing ||
+                          booking.status === 'REAUTHORIZED' ||
+                          (booking.reauthorizationCount ?? 0) >= 1
+                        }
+                        onClick={() => setPendingConfirmation('REAUTH')}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-medium text-sky-700 hover:text-sky-900 hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer"
+                        title={
+                          booking.status === 'REAUTHORIZED' ||
+                          (booking.reauthorizationCount ?? 0) >= 1
+                            ? 'Payment extended (Max 1)'
+                            : 'Eligible for Renewal'
+                        }
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        <span>
+                          {booking.status === 'REAUTHORIZED' ||
+                          (booking.reauthorizationCount ?? 0) >= 1
+                            ? 'Payment extended (Max 1)'
+                            : 'Reauthorize Hold'}
+                        </span>
+                      </button>
+                      {daysOld >= 4 &&
+                        daysOld < 29 &&
+                        booking.status !== 'REAUTHORIZED' &&
+                        (booking.reauthorizationCount ?? 0) < 1 && (
+                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-800 border border-emerald-200">
+                            Eligible for Renewal
+                          </span>
+                        )}
+                    </div>
+                  )}
 
                   <span className="text-slate-300 text-xs hidden sm:inline">·</span>
 
@@ -359,6 +413,18 @@ export function SettlementDrawer({
                     <Calendar className="h-3 w-3 text-amber-700" />
                     <span>Reschedule / Change Stylist</span>
                   </button>
+                </div>
+              )}
+
+              {daysOld >= 28 && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-950 flex items-start gap-2 text-left mt-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-[11px] leading-relaxed">
+                    Reschedule Limit: This deposit hold expires on{' '}
+                    <strong>{format(rescheduleMaxDate, 'MMM d, yyyy')}</strong> (29 days from
+                    booking). To schedule beyond this date, please release this hold and book a new
+                    appointment.
+                  </p>
                 </div>
               )}
             </div>

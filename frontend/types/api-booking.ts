@@ -42,6 +42,7 @@ export interface ApiBooking {
   hold_amount?: string | number | null
   captured_amount?: string | number | null
   honor_expires_at?: string | null
+  hold_authorized_at?: string | null
   reauthorization_count?: number | null
   idempotency_key?: string | null
   consent_hash?: string | null
@@ -171,6 +172,8 @@ export interface ClientChatRequest {
   history?: ClientChatMessage[]
   user_lat?: number | null
   user_lng?: number | null
+  /** IANA timezone of the client browser, e.g. "America/New_York" */
+  client_timezone?: string
   /** client = booking concierge; merchant/admin = system help */
   portal?: AssistantPortal
 }

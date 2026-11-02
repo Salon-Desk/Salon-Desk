@@ -42,7 +42,10 @@ async def create_booking(body: BookingCreate, user: ClientUser, db: DbSession) -
             customer_notes=body.customer_notes,
             party_size=body.party_size,
         )
-    except (ForbiddenError, NotFoundError) as exc:
+    except (ForbiddenError, NotFoundError, PolicyViolationException) as exc:
+        if isinstance(exc, PolicyViolationException):
+            code = getattr(exc, "status_code", status.HTTP_422_UNPROCESSABLE_ENTITY)
+            raise HTTPException(code, detail=exc.message) from exc
         # Slot conflicts are client errors, not auth failures.
         if isinstance(exc, ForbiddenError) and "not available" in exc.message.lower():
             raise HTTPException(status.HTTP_409_CONFLICT, detail=exc.message) from exc
@@ -225,17 +228,27 @@ async def reschedule_booking(
             is_org=is_org,
         )
     except (ForbiddenError, NotFoundError, PolicyViolationException) as exc:
+        if isinstance(exc, PolicyViolationException):
+            code = getattr(exc, "status_code", None)
+            if not code or code == 400:
+                code = (
+                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                    if (
+                        "reschedule" in exc.message.lower()
+                        or "deposit holds" in exc.message.lower()
+                        or getattr(exc, "code", None)
+                        in {"RESCHEDULE_LIMIT_EXCEEDED", "BOOKING_HORIZON_EXCEEDED"}
+                    )
+                    else status.HTTP_400_BAD_REQUEST
+                )
+            raise HTTPException(code, detail=exc.message) from exc
         code = (
             status.HTTP_409_CONFLICT
             if isinstance(exc, ForbiddenError) and "not available" in exc.message.lower()
             else (
                 status.HTTP_403_FORBIDDEN
                 if isinstance(exc, ForbiddenError)
-                else (
-                    status.HTTP_404_NOT_FOUND
-                    if isinstance(exc, NotFoundError)
-                    else status.HTTP_400_BAD_REQUEST
-                )
+                else status.HTTP_404_NOT_FOUND
             )
         )
         raise HTTPException(code, detail=exc.message) from exc

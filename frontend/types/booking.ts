@@ -60,6 +60,12 @@ export interface Booking {
   reauthorizedAt?: string
   /** Organization timezone (e.g., 'America/New_York') */
   organizationTimezone?: string | null
+  paymentHold?: {
+    authorizedAt?: string | null
+    createdAt?: string | null
+    [key: string]: unknown
+  } | null
+  authorizedAt?: string | null
 }
 
 export type LedgerAction =

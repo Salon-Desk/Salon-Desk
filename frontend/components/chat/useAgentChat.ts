@@ -222,11 +222,15 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           }
         }
 
+        const clientTimezone =
+          typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined
+
         const data = await clientConciergeChat({
           message: outgoingMessage,
           language: features.defaultLanguage,
           history: historyPayload,
           portal,
+          client_timezone: clientTimezone,
           user_lat: support ? null : (location?.lat ?? null),
           user_lng: support ? null : (location?.lng ?? null),
         }).unwrap()

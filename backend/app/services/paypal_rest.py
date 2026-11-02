@@ -28,6 +28,7 @@ from app.services.paypal_helpers import (
     is_stub_mode,
 )
 from app.services.paypal_webhooks import verify_webhook_signature as _verify_webhook_signature
+from app.services.policy_engine import assert_can_reauthorize_hold
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ __all__ = [
     "PayPalAPIError",
     "PayPalRestClient",
     "_raise_for_paypal",
+    "assert_can_reauthorize_hold",
     "is_paypal_merchant_id",
 ]
 
@@ -230,8 +232,12 @@ class PayPalRestClient:
         self,
         *,
         authorization_id: str,
+        hold: Any = None,
         paypal_request_id: str | None = None,
     ) -> dict:
+        if hold is not None:
+            assert_can_reauthorize_hold(hold)
+
         if is_stub_mode(authorization_id, self.configured):
             return build_stub_reauthorize_response(authorization_id)
 

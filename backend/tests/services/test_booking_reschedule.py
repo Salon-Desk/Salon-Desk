@@ -15,7 +15,7 @@ from app.models.enums import BookingStatus, PaymentHoldStatus, UserRole
 from app.models.payment import PaymentHold
 from app.models.service import Service
 from app.models.user import User
-from app.services.booking_service import reschedule_booking
+from app.services.booking_service import create_booking, reschedule_booking
 
 
 def _create_mock_booking(
@@ -28,6 +28,7 @@ def _create_mock_booking(
     client_id: uuid4 | None = None,
     org_id: uuid4 | None = None,
     stylist_id: uuid4 | None = None,
+    hold_authorized_at: datetime | None = None,
 ) -> Booking:
     cid = client_id or uuid4()
     oid = org_id or uuid4()
@@ -70,6 +71,9 @@ def _create_mock_booking(
         currency="USD",
         status=PaymentHoldStatus.AUTHORIZED,
     )
+    if hold_authorized_at is not None:
+        hold.authorized_at = hold_authorized_at
+        hold.created_at = hold_authorized_at
     booking.payment_hold = hold
     return booking
 
@@ -217,3 +221,96 @@ async def test_reschedule_exceeds_hold_ceiling_raises_policy_violation() -> None
             starts_at=now + timedelta(days=4),
             is_org=False,
         )
+
+
+@pytest.mark.asyncio
+async def test_booking_attempt_30_days_ahead_rejected() -> None:
+    now = datetime.now(UTC)
+    db = AsyncMock()
+    # Attempt to book 30 days ahead (exceeding 28-day cap)
+    starts_at_30d = now + timedelta(days=30)
+    with pytest.raises(PolicyViolationException) as exc_info:
+        await create_booking(
+            db,
+            client_id=uuid4(),
+            org_id=uuid4(),
+            service_ids=[uuid4()],
+            starts_at=starts_at_30d,
+            stylist_id=None,
+            customer_notes=None,
+        )
+    assert exc_info.value.code == "BOOKING_HORIZON_EXCEEDED"
+    assert "up to 28 days in advance" in exc_info.value.message
+    assert getattr(exc_info.value, "status_code", None) == 422
+
+
+@pytest.mark.asyncio
+async def test_reschedule_attempt_day_32_rejected() -> None:
+    now = datetime.now(UTC)
+    auth_date = now - timedelta(days=2)
+    starts_at = now + timedelta(days=5)
+    ends_at = starts_at + timedelta(hours=1)
+
+    booking = _create_mock_booking(
+        starts_at=starts_at,
+        ends_at=ends_at,
+        hold_authorized_at=auth_date,
+    )
+
+    db = AsyncMock()
+    # Attempt to reschedule to Day 32 from authorization date (30 days from now)
+    new_start = auth_date + timedelta(days=32)
+    new_end = new_start + timedelta(hours=1)
+
+    with (
+        patch("app.services.booking_service.check_slot_available", AsyncMock(return_value=True)),
+        pytest.raises(PolicyViolationException) as exc_info,
+    ):
+        await reschedule_booking(
+            db,
+            booking=booking,
+            actor_id=booking.client_id,
+            starts_at=new_start,
+            ends_at=new_end,
+            is_org=False,
+        )
+    assert exc_info.value.code == "RESCHEDULE_LIMIT_EXCEEDED"
+    assert "Cannot reschedule past" in exc_info.value.message
+    assert "PayPal authorization holds expire 29 days" in exc_info.value.message
+    assert getattr(exc_info.value, "status_code", None) == 422
+
+
+@pytest.mark.asyncio
+async def test_reschedule_attempt_day_15_passes_cleanly() -> None:
+    now = datetime.now(UTC)
+    auth_date = now - timedelta(days=1)
+    starts_at = now + timedelta(days=3)
+    ends_at = starts_at + timedelta(hours=1)
+
+    booking = _create_mock_booking(
+        starts_at=starts_at,
+        ends_at=ends_at,
+        hold_authorized_at=auth_date,
+    )
+
+    db = AsyncMock()
+    db.flush = AsyncMock()
+
+    # Attempt to reschedule to Day 15 from authorization date (well within 28-day window)
+    new_start = auth_date + timedelta(days=15)
+    new_end = new_start + timedelta(hours=1)
+
+    with (
+        patch("app.services.booking_service.check_slot_available", AsyncMock(return_value=True)),
+        patch("app.services.booking_service.append_ledger", AsyncMock()),
+    ):
+        updated = await reschedule_booking(
+            db,
+            booking=booking,
+            actor_id=booking.client_id,
+            starts_at=new_start,
+            ends_at=new_end,
+            is_org=False,
+        )
+        assert updated.starts_at == new_start
+        assert updated.ends_at == new_end

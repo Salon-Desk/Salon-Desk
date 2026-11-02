@@ -1,5 +1,6 @@
 'use client'
 
+import { addDays, format } from 'date-fns'
 import { AlertTriangle, Calendar, Clock, Lock, ShieldCheck, User, Users } from 'lucide-react'
 import React, { useId, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -90,6 +91,27 @@ export function RescheduleBookingDialog({
     return new Date(now.getTime() - offset).toISOString().slice(0, 16)
   }, [mountNowMs])
 
+  // Allowable reschedule window based on hold creation / authorization date (max 28 days)
+  const holdAuthorizedAt = useMemo(() => {
+    const raw = booking.paymentHold?.authorizedAt || booking.authorizedAt || booking.createdAt
+    if (!raw) return new Date(mountNowMs)
+    const d = new Date(raw)
+    return Number.isNaN(d.getTime()) ? new Date(mountNowMs) : d
+  }, [booking, mountNowMs])
+
+  const rescheduleMaxDate = useMemo(() => addDays(holdAuthorizedAt, 28), [holdAuthorizedAt])
+
+  const maxDateTime = useMemo(() => {
+    const offset = rescheduleMaxDate.getTimezoneOffset() * 60000
+    return new Date(rescheduleMaxDate.getTime() - offset).toISOString().slice(0, 16)
+  }, [rescheduleMaxDate])
+
+  const isPastMaxCutoff = useMemo(() => {
+    if (!selectedDateTime) return false
+    const d = new Date(selectedDateTime)
+    return !Number.isNaN(d.getTime()) && d.getTime() > rescheduleMaxDate.getTime()
+  }, [selectedDateTime, rescheduleMaxDate])
+
   // Check if anything actually changed
   const hasChanges = useMemo(() => {
     const timeChanged = selectedDateTime && selectedDateTime !== defaultDateTime
@@ -97,7 +119,7 @@ export function RescheduleBookingDialog({
     return Boolean(timeChanged || stylistChanged)
   }, [selectedDateTime, defaultDateTime, selectedStylistId, booking.stylistId])
 
-  const canSubmit = !isSubmitting && hasChanges && (isOrg || !isWithinCutoff)
+  const canSubmit = !isSubmitting && hasChanges && (isOrg || !isWithinCutoff) && !isPastMaxCutoff
 
   const handleSubmit = async () => {
     setErrorMessage(null)
@@ -105,6 +127,13 @@ export function RescheduleBookingDialog({
     if (!hasChanges) {
       toast.info('No changes were made to time or stylist.', toastColor.info)
       onClose()
+      return
+    }
+
+    if (isPastMaxCutoff) {
+      setErrorMessage(
+        `Cannot reschedule past ${format(rescheduleMaxDate, 'MMM d, yyyy')}. PayPal authorization holds expire 29 days from the original booking date. For dates further out, please cancel and create a new reservation.`,
+      )
       return
     }
 
@@ -281,12 +310,14 @@ export function RescheduleBookingDialog({
               type="datetime-local"
               value={selectedDateTime}
               min={minDateTime}
+              max={maxDateTime}
               onChange={(e) => setSelectedDateTime(e.target.value)}
               disabled={isSubmitting || (!isOrg && isWithinCutoff)}
               className={cn(
                 'w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-stone-900 shadow-xs transition-colors',
                 'focus:border-stone-900 focus:outline-hidden focus:ring-1 focus:ring-stone-900',
                 'disabled:bg-stone-100 disabled:text-stone-400 disabled:cursor-not-allowed',
+                isPastMaxCutoff && 'border-amber-500 bg-amber-50/40 text-amber-950',
               )}
             />
           </div>
@@ -294,6 +325,21 @@ export function RescheduleBookingDialog({
             Estimated duration: {booking.durationMin || 60} mins based on your selected service.
           </p>
         </div>
+
+        {/* PayPal 29-Day Hard Ceiling Reschedule Warning Banner */}
+        {isPastMaxCutoff && (
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-950 space-y-1.5 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 font-semibold text-amber-900">
+              <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0" />
+              <span>Reschedule Limit Exceeded</span>
+            </div>
+            <p className="leading-relaxed text-[11px] text-amber-900">
+              Reschedule Limit: This deposit hold expires on{' '}
+              <strong>{format(rescheduleMaxDate, 'MMM d, yyyy')}</strong> (29 days from booking). To
+              schedule beyond this date, please release this hold and book a new appointment.
+            </p>
+          </div>
+        )}
 
         {/* Stylist Selector */}
         <div className="space-y-1.5">

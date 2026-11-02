@@ -136,6 +136,11 @@ export function mapApiBookingToUi(
     settlementNote: booking.cancellation_reason || undefined,
     reauthorizationCount: booking.reauthorization_count ?? extras?.reauthorizationCount ?? 0,
     organizationTimezone: booking.organization_timezone || null,
+    paymentHold: {
+      authorizedAt: booking.hold_authorized_at || booking.created_at,
+      createdAt: booking.created_at,
+    },
+    authorizedAt: booking.hold_authorized_at || booking.created_at,
   }
 }
 

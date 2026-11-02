@@ -92,6 +92,7 @@ async def chat(
             body.history,
             user=user,
             frontend_base=_trusted_origin(request),
+            client_timezone=body.client_timezone,
         )
         if booking_handled:
             auth_token = confirmed_info.pop("auth_token", None) if confirmed_info else None

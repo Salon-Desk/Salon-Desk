@@ -205,6 +205,16 @@ export function ClientCheckoutPage({
       return
     }
 
+    const maxBookingDate = new Date(Date.now() + 28 * 86400000)
+    if (new Date(startsAt).getTime() > maxBookingDate.getTime()) {
+      toast.error(
+        'Appointments with PayPal deposit holds can only be scheduled up to 28 days in advance.',
+        toastColor.error,
+      )
+      setStartsAt(null)
+      return
+    }
+
     if (phoneError || !clientPhone.trim()) {
       toast.error('Please enter a valid phone number before proceeding', toastColor.error)
       return

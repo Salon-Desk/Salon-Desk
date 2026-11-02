@@ -15,6 +15,7 @@ from app.models.policy import Consent
 from app.services.ledger_service import append_ledger
 from app.services.payment_notification_service import send_booking_confirmation_notification
 from app.services.paypal_rest import PayPalRestClient
+from app.services.policy_engine import assert_can_reauthorize_hold
 
 MAX_REAUTHORIZATION_COUNT = 1
 
@@ -229,10 +230,13 @@ async def reauthorize_hold(db: AsyncSession, *, booking: Booking) -> PaymentHold
     }:
         raise ForbiddenError("Only AUTHORIZED or REAUTHORIZED holds can be reauthorized")
 
+    assert_can_reauthorize_hold(hold)
+
     parent_id = hold.parent_authorization_id or hold.latest_authorization_id or ""
     paypal = PayPalRestClient()
     paypal_result = await paypal.reauthorize_authorization(
         authorization_id=parent_id,
+        hold=hold,
         paypal_request_id=f"reauth-{hold.id}-{hold.reauthorization_count + 1}",
     )
     new_auth_id = (

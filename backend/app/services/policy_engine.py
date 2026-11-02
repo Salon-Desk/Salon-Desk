@@ -9,6 +9,7 @@ from uuid import UUID
 
 from app.core.exceptions import ForbiddenError, PolicyViolationException
 from app.models.enums import BookingStatus, PaymentHoldStatus, UserRole
+from app.models.payment import AuthorizationHold, PaymentHold
 
 VALID_BOOKING_TRANSITIONS: dict[BookingStatus, set[BookingStatus]] = {
     BookingStatus.PENDING_PAYMENT: {BookingStatus.CONFIRMED, BookingStatus.CANCELLED},
@@ -73,6 +74,51 @@ def assert_valid_hold_transition(
     allowed = VALID_HOLD_TRANSITIONS.get(curr, set())
     if tgt not in allowed:
         raise PolicyViolationException(f"Invalid hold transition from {curr.value} to {tgt.value}")
+
+
+def assert_can_reauthorize_hold(
+    hold: AuthorizationHold | PaymentHold | Any,
+    now: datetime | None = None,
+) -> None:
+    """Enforce PayPal authorization hold lifecycle constraints.
+
+    - Days 0-3 (72-hour honor window): Reauthorization is blocked (REAUTHORIZATION_TOO_SOON).
+    - Days 4-29: Reauthorization is permitted.
+    - Day 29+: Hold has reached its maximum lifetime and cannot be reauthorized (HOLD_EXPIRED).
+    """
+    current = now or datetime.now(UTC)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=UTC)
+
+    auth_at = getattr(hold, "authorized_at", None)
+    if not isinstance(auth_at, datetime):
+        auth_at = getattr(hold, "created_at", None)
+    if not isinstance(auth_at, datetime):
+        auth_at = current
+    if auth_at.tzinfo is None:
+        auth_at = auth_at.replace(tzinfo=UTC)
+
+    hold_age = current - auth_at
+    days_since_auth = hold_age.total_seconds() / 86400.0
+
+    # Block reauthorization during Days 0–3 honor period
+    if days_since_auth < 3.0:
+        raise PolicyViolationException(
+            code="REAUTHORIZATION_TOO_SOON",
+            message=(
+                f"Hold is in its initial 3-day honor period ({days_since_auth:.1f} days old). "
+                "Reauthorization is only permitted between Day 4 and Day 29."
+            ),
+            status_code=422,
+        )
+
+    # Block reauthorization on or after Day 29
+    if days_since_auth >= 29.0:
+        raise PolicyViolationException(
+            code="HOLD_EXPIRED",
+            message="Hold has reached the maximum 29-day lifetime and cannot be reauthorized.",
+            status_code=422,
+        )
 
 
 def assert_can_settle(

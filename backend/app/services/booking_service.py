@@ -41,6 +41,7 @@ from app.services.policy_engine import (
 
 __all__ = [
     "create_booking",
+    "create_booking_order",
     "get_booking",
     "list_client_bookings",
     "list_org_bookings",
@@ -119,13 +120,21 @@ async def create_booking(
     party_size: int = 1,
     service_stylists: list | None = None,
 ) -> Booking:
+    now_utc = datetime.now(UTC)
+    s_at = starts_at if starts_at.tzinfo is not None else starts_at.replace(tzinfo=UTC)
+    if s_at <= now_utc:
+        raise ForbiddenError("Cannot book an appointment in the past")
+
+    if s_at > now_utc + timedelta(days=28):
+        raise PolicyViolationException(
+            code="BOOKING_HORIZON_EXCEEDED",
+            message="Appointments with PayPal deposit holds can only be scheduled up to 28 days in advance.",
+            status_code=422,
+        )
+
     org = await db.get(Organization, org_id)
     if org is None or org.status != OrganizationStatus.APPROVED:
         raise ForbiddenError("Organization is not available for booking")
-
-    now_utc = datetime.now(UTC)
-    if starts_at <= now_utc:
-        raise ForbiddenError("Cannot book an appointment in the past")
 
     if not service_ids:
         raise ForbiddenError("At least one service must be selected")
@@ -511,6 +520,37 @@ async def reschedule_booking(
             f"({agreed_hold}). Supplementary authorization or in-person settlement required."
         )
 
+    # Guardrail: PayPal 29-day authorization hold ceiling
+    # Rescheduled appointment cannot exceed 28 days from hold authorization date
+    hold = getattr(booking, "payment_hold", None)
+    if hold is None and hasattr(booking, "payment_holds") and booking.payment_holds:
+        hold = booking.payment_holds[0]
+    if hold is None:
+        hold_res = await db.execute(
+            select(PaymentHold)
+            .where(PaymentHold.booking_id == booking.id)
+            .order_by(PaymentHold.created_at.desc())
+            .limit(1)
+        )
+        hold = hold_res.scalar_one_or_none()
+
+    if hold is not None:
+        auth_at = getattr(hold, "authorized_at", None) or getattr(hold, "created_at", None)
+        if isinstance(auth_at, datetime):
+            if auth_at.tzinfo is None:
+                auth_at = auth_at.replace(tzinfo=UTC)
+            max_reschedule_date = auth_at + timedelta(days=28)
+            if target_starts_at > max_reschedule_date:
+                raise PolicyViolationException(
+                    code="RESCHEDULE_LIMIT_EXCEEDED",
+                    message=(
+                        f"Cannot reschedule past {max_reschedule_date.isoformat()}. "
+                        "PayPal authorization holds expire 29 days from the original booking date. "
+                        "For dates further out, please cancel and create a new reservation."
+                    ),
+                    status_code=422,
+                )
+
     prev_starts = booking.starts_at
     prev_ends = booking.ends_at
     prev_stylist = booking.stylist_id
@@ -557,3 +597,6 @@ async def reschedule_booking(
     )
     await db.flush()
     return booking
+
+
+create_booking_order = create_booking

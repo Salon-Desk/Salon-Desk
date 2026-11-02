@@ -9,7 +9,21 @@ class SalonDeskError(Exception):
 class PolicyViolationException(SalonDeskError):
     """Raised when a deterministic policy rule is violated."""
 
-    def __init__(self, message: str = "Policy violation") -> None:
+    def __init__(
+        self,
+        message: str = "Policy violation",
+        code: str | None = None,
+        status_code: int = 400,
+        **kwargs,
+    ) -> None:
+        if "message" in kwargs:
+            message = kwargs.pop("message")
+        if "code" in kwargs and not code:
+            code = kwargs.pop("code")
+        if "status_code" in kwargs:
+            status_code = kwargs.pop("status_code")
+        self.code = code
+        self.status_code = status_code
         super().__init__(message)
 
 

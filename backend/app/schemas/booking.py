@@ -116,6 +116,7 @@ class BookingOut(ORMModel):
     hold_amount: Decimal | None = None
     captured_amount: Decimal | None = None
     honor_expires_at: datetime | None = None
+    hold_authorized_at: datetime | None = None
     reauthorization_count: int | None = None
     idempotency_key: str | None = None
     consent_hash: str | None = None
@@ -168,6 +169,7 @@ def booking_to_out(booking) -> BookingOut:
     hold_amount = None
     captured_amount = None
     honor_expires_at = None
+    hold_authorized_at = None
     reauthorization_count = None
     idempotency_key = None
     if latest_hold:
@@ -181,6 +183,7 @@ def booking_to_out(booking) -> BookingOut:
         hold_amount = latest_hold.amount
         captured_amount = latest_hold.captured_amount
         honor_expires_at = latest_hold.honor_expires_at
+        hold_authorized_at = getattr(latest_hold, "authorized_at", None) or latest_hold.created_at
         reauthorization_count = latest_hold.reauthorization_count
         idempotency_key = latest_hold.idempotency_key
 
@@ -227,6 +230,7 @@ def booking_to_out(booking) -> BookingOut:
         hold_amount=hold_amount,
         captured_amount=captured_amount,
         honor_expires_at=honor_expires_at,
+        hold_authorized_at=hold_authorized_at,
         reauthorization_count=reauthorization_count,
         idempotency_key=idempotency_key,
         consent_hash=consent_hash,

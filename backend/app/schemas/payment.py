@@ -28,6 +28,7 @@ class PaymentHoldOut(ORMModel):
     reauthorization_count: int
     idempotency_key: str
     created_at: datetime
+    authorized_at: datetime | None = None
     # Present when status=PENDING — client opens this to approve the AUTHORIZE hold.
     approval_url: str | None = None
 
