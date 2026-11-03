@@ -119,7 +119,7 @@ export function BookingReceipt({ booking, onClose }: ReceiptModalProps) {
         )}
         {booking.refundAmount != null && booking.refundAmount > 0 ? (
           <div className="mt-2.5 pt-2 border-t border-purple-200/80 flex items-center justify-between gap-3 text-sm">
-            <span className="font-semibold text-purple-900">Goodwill Refund Issued</span>
+            <span className="font-semibold text-purple-900">Refund Issued</span>
             <span className="font-bold text-purple-700">-{formatUsd(booking.refundAmount)}</span>
           </div>
         ) : null}

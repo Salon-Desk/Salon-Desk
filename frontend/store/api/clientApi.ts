@@ -7,8 +7,6 @@ import type {
   ClientChatResponse,
   CompleteHoldRequest,
   ConsentRequest,
-  CopilotRefundApprovalRequest,
-  CopilotRefundApprovalResponse,
   CreateBookingRequest,
   CreateHoldRequest,
   LiveKitTokenRequest,
@@ -362,18 +360,6 @@ export const clientApi = baseApi.injectEndpoints({
         data: body,
       }),
     }),
-
-    approveCopilotRefund: builder.mutation<
-      CopilotRefundApprovalResponse,
-      CopilotRefundApprovalRequest
-    >({
-      query: (body) => ({
-        url: '/api/v1/ai/owner-copilot/refund',
-        method: 'POST',
-        data: body,
-      }),
-      invalidatesTags: ['payments', 'bookings', 'disputes', 'organizations'],
-    }),
   }),
 })
 
@@ -403,7 +389,6 @@ export const {
   useCompletePaymentHoldMutation,
   useClientConciergeChatMutation,
   useCreateLiveKitTokenMutation,
-  useApproveCopilotRefundMutation,
 } = clientApi
 
 /** @deprecated Use `clientApi` — kept for existing imports. */

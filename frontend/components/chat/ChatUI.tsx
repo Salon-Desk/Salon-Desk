@@ -8,7 +8,6 @@ import type {
   AgentChatReplyContext,
   AgentConfirmedBooking,
   AgentOrganizationRecommendation,
-  AgentProposedAction,
   AgentServiceRecommendation,
   AgentStylistRecommendation,
 } from '@/components/chat/useAgentChat'
@@ -28,7 +27,6 @@ export interface ChatMessageItem {
   organizations?: AgentOrganizationRecommendation[]
   stylists?: AgentStylistRecommendation[]
   confirmedBooking?: AgentConfirmedBooking | null
-  proposedAction?: AgentProposedAction | null
   replyContext?: AgentChatReplyContext | null
   navigation?: {
     target: string
@@ -49,7 +47,6 @@ export {
   AuthPromptCard,
   ConfirmedBookingCard,
   OrganizationCard,
-  ProposedActionCard,
   ServiceCard,
   StylistCard,
 } from './ChatCards'
@@ -60,7 +57,6 @@ import {
   AuthPromptCard,
   ConfirmedBookingCard,
   OrganizationCard,
-  ProposedActionCard,
   ServiceCard,
   StylistCard,
 } from './ChatCards'
@@ -469,13 +465,6 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
               {!support && !isUser && msg.confirmedBooking && (
                 <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
                   <ConfirmedBookingCard booking={msg.confirmedBooking} />
-                </div>
-              )}
-
-              {/* Proposed Action Card (e.g. Owner Copilot Goodwill Refund) */}
-              {!isUser && msg.proposedAction && (
-                <div className="ml-9 mt-2 w-[calc(100%-2.25rem)] max-w-[94%]">
-                  <ProposedActionCard action={msg.proposedAction} />
                 </div>
               )}
 

@@ -669,7 +669,7 @@ export function SettlementDrawer({
               {isRefunded && (
                 <div className="flex items-center justify-between text-purple-800 font-medium pt-1.5 border-t border-purple-200/60">
                   <span className="flex items-center gap-1.5">
-                    <span>Goodwill Refund Executed</span>
+                    <span>Refund Executed</span>
                     {booking.refundId && (
                       <span className="font-mono text-[10px] text-purple-600">
                         ({booking.refundId})

@@ -247,44 +247,6 @@ export interface ClientChatResponse {
     selector?: string | null
   } | null
   payment_link?: string | null
-  proposed_action?: {
-    action_type: string
-    confidence: number
-    payload: {
-      client_name?: string
-      refund_amount?: string | number
-      security_ceiling?: string | number
-      currency?: string
-      order_id?: string
-      capture_id?: string
-      paypal_capture_id?: string
-      booking_id?: string
-      reason?: string
-      status?: string
-      toolkit_verified?: boolean
-      toolkit_action?: string
-    }
-  } | null
-}
-
-export interface CopilotRefundApprovalRequest {
-  booking_id?: string | null
-  capture_id?: string | null
-  client_name?: string | null
-  refund_amount: number | string
-  currency?: string
-  reason?: string | null
-}
-
-export interface CopilotRefundApprovalResponse {
-  status: string
-  refund_id: string
-  refund_amount: number | string
-  currency: string
-  capture_id: string
-  booking_id?: string | null
-  client_name?: string | null
-  message: string
 }
 
 export interface LiveKitTokenRequest {

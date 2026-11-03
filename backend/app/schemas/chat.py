@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from app.ai.support_actions import AgentNavigation, AgentUiAction
-from app.schemas.ai import ChatMessage, ProposedAction
+from app.schemas.ai import ChatMessage
 
 AssistantPortal = Literal["client", "merchant", "admin"]
 
@@ -94,7 +94,6 @@ class ChatResponse(BaseModel):
     navigation: AgentNavigation | None = None
     ui_action: AgentUiAction | None = None
     payment_link: str | None = None
-    proposed_action: ProposedAction | None = None
 
 
 class LiveKitTokenRequest(BaseModel):

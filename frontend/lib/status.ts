@@ -48,7 +48,6 @@ export const LEDGER_ACTION_TONE: Record<LedgerAction, Tone> = {
   FULL_PAYMENT_CAPTURED: 'emerald',
   NO_SHOW_FEE_CAPTURED: 'rose',
   AUTHORIZATION_VOIDED: 'slate',
-  GOODWILL_PARTIAL_REFUND: 'purple',
   HONOR_PERIOD_REAUTHORIZED: 'sky',
 }
 

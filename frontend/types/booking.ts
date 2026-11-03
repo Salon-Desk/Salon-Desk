@@ -77,7 +77,6 @@ export type LedgerAction =
   | 'FULL_PAYMENT_CAPTURED'
   | 'NO_SHOW_FEE_CAPTURED'
   | 'AUTHORIZATION_VOIDED'
-  | 'GOODWILL_PARTIAL_REFUND'
   | 'HONOR_PERIOD_REAUTHORIZED'
 
 export interface AuditLedgerEntry {

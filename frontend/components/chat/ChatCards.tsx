@@ -3,7 +3,6 @@
 import {
   Building2,
   CheckCircle2,
-  Loader2,
   Lock,
   LogIn,
   ShieldCheck,
@@ -15,25 +14,21 @@ import {
 import Image from 'next/image'
 import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
-import { toast } from 'sonner'
 
 import { LegalDialog, type LegalDoc } from '@/app/client/_components/LegalDialog'
 import { useAuthModal } from '@/components/auth/auth-context'
 import type {
   AgentConfirmedBooking,
   AgentOrganizationRecommendation,
-  AgentProposedAction,
   AgentServiceRecommendation,
   AgentStylistRecommendation,
 } from '@/components/chat/useAgentChat'
 import { Checkbox } from '@/components/ui/checkbox'
-import { toastColor } from '@/constant/toast-color'
 import { SERVICE_IMAGE_FALLBACK } from '@/lib/data/service-content'
 import { formatUsd } from '@/lib/format'
 import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import { cn } from '@/lib/utils'
 import type { RootState } from '@/store'
-import { useApproveCopilotRefundMutation } from '@/store/api/clientApi'
 
 /**
  * Stylist recommendation card rendered inside assistant turn.
@@ -446,152 +441,6 @@ export function AuthPromptCard({
           </button>
         </div>
       )}
-    </div>
-  )
-}
-
-/**
- * ProposedActionCard rendered inside assistant turn for Owner Copilot HITL approvals.
- * Supports goodwill partial refunds with safety limits and PayPal toolkit verification.
- */
-export function ProposedActionCard({ action }: { action: AgentProposedAction }) {
-  const [approveRefund, { isLoading }] = useApproveCopilotRefundMutation()
-  const [isApproved, setIsApproved] = useState(action.payload.status === 'APPROVED')
-  const [refundId, setRefundId] = useState<string | null>(null)
-
-  const payload = action.payload
-  const clientName = payload.clientName || 'Hana Tesfaye'
-  const refundAmount = Number(payload.refundAmount ?? 15).toFixed(2)
-  const securityCeiling = Number(payload.securityCeiling ?? 30).toFixed(2)
-
-  const handleApprove = async () => {
-    try {
-      const res = await approveRefund({
-        booking_id: payload.bookingId,
-        capture_id: payload.paypalCaptureId || payload.captureId,
-        client_name: clientName,
-        refund_amount: refundAmount,
-        reason: payload.reason || `Goodwill partial refund for ${clientName}`,
-      }).unwrap()
-
-      const generatedId =
-        res.refund_id || `REF-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
-      setRefundId(generatedId)
-      setIsApproved(true)
-      toast.success(
-        `Refund of $${refundAmount} successfully issued via PayPal (${generatedId})`,
-        toastColor.success,
-      )
-    } catch (err: unknown) {
-      const errorObj = err as {
-        data?: { detail?: string; error?: { message?: string } }
-        message?: string
-      }
-      const msg =
-        errorObj?.data?.detail ||
-        errorObj?.data?.error?.message ||
-        errorObj?.message ||
-        'Refund execution failed'
-      toast.error(`Refund failed: ${msg}`, toastColor.error)
-    }
-  }
-
-  return (
-    <div className="w-full rounded-2xl border border-indigo-200/90 bg-gradient-to-b from-white via-indigo-50/20 to-white p-3.5 shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 text-stone-900">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-2.5 border-b border-indigo-100">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-2xs">
-            <ShieldCheck className="h-4 w-4" />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-stone-950">Proposed Action</h4>
-            <p className="text-[10px] text-stone-500">Goodwill Partial Refund</p>
-          </div>
-        </div>
-        <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
-          Human-in-the-Loop
-        </span>
-      </div>
-
-      {/* Action Body */}
-      <div className="mt-3 space-y-2">
-        <div className="flex items-baseline justify-between rounded-xl bg-white p-2.5 border border-stone-200/80 shadow-2xs">
-          <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400">
-              Recipient
-            </span>
-            <p className="text-xs font-semibold text-stone-900">{clientName}</p>
-          </div>
-          <div className="text-right">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-600">
-              Partial Refund
-            </span>
-            <p className="text-base font-extrabold text-indigo-700">${refundAmount}</p>
-          </div>
-        </div>
-
-        {/* Security Ceiling Enforced */}
-        <div className="flex items-center justify-between rounded-xl bg-emerald-50/80 px-2.5 py-2 border border-emerald-200 text-[11px] font-medium text-emerald-900">
-          <span className="flex items-center gap-1.5 font-semibold">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-            Security Ceiling Enforced:
-          </span>
-          <span className="font-bold text-emerald-800">${securityCeiling} Max</span>
-        </div>
-
-        {/* Toolkit Verification Footnote */}
-        <div className="space-y-0.5 px-1 py-1 text-[10.5px] text-stone-500">
-          <p className="flex items-center gap-1.5">
-            <span className="text-emerald-600 font-bold">✓</span>
-            Verified capture via{' '}
-            <code className="rounded bg-stone-100 px-1 py-0.2 text-[10px] text-stone-700 font-mono">
-              @paypal/agent-toolkit get_order
-            </code>
-          </p>
-          <p className="flex items-center gap-1.5">
-            <span className="text-emerald-600 font-bold">✓</span>
-            Audit ledger sequence queued for SHA-256 seal
-          </p>
-        </div>
-      </div>
-
-      {/* Action Button / Completed State */}
-      <div className="mt-3 pt-2 border-t border-stone-100">
-        {isApproved ? (
-          <div className="flex items-center justify-between rounded-xl bg-emerald-600 px-3 py-2 text-white shadow-xs">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-100" />
-              <div>
-                <p className="text-xs font-bold leading-tight">Refund Issued via PayPal</p>
-                <p className="text-[10px] text-emerald-100 font-mono">
-                  {refundId ? `ID: ${refundId}` : 'Confirmed'}
-                </p>
-              </div>
-            </div>
-            <span className="rounded bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-              Completed
-            </span>
-          </div>
-        ) : (
-          <button
-            type="button"
-            id="agent-approve-refund-btn"
-            disabled={isLoading}
-            onClick={handleApprove}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] py-2.5 px-3 text-xs font-bold text-white shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>Executing PayPal Refund...</span>
-              </>
-            ) : (
-              <span>Approve ${refundAmount} Refund (Human-in-the-Loop)</span>
-            )}
-          </button>
-        )}
-      </div>
     </div>
   )
 }

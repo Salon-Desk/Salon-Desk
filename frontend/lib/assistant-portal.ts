@@ -137,7 +137,7 @@ const MERCHANT: PortalChrome = {
   subtitleVoice: 'Ask how something works',
   fabLabel: 'Open AI Copilot',
   fabTitle: 'AI Copilot',
-  placeholder: 'Ask copilot or type e.g. "Draft a $15 goodwill refund for Hana"…',
+  placeholder: 'Ask copilot or type e.g. "Review open disputes"…',
   thinkingLabel: 'Copilot executing toolkit action…',
   voicePlaceholder: 'Ask about services, staff, settlements…',
   voiceConnecting: 'Connecting to AI Copilot…',
@@ -163,12 +163,6 @@ const MERCHANT: PortalChrome = {
   typingDot: 'bg-teal-500',
   welcomeSuggestions: [
     {
-      label: 'Goodwill Refund',
-      hint: 'Draft $15 for Hana',
-      prompt: 'Draft a $15 goodwill refund for Hana.',
-      icon: CircleDollarSign,
-    },
-    {
       label: 'Disputes',
       hint: 'Chargeback defense',
       prompt: 'Review open disputes and AI win probability',
@@ -188,7 +182,6 @@ const MERCHANT: PortalChrome = {
     },
   ],
   chips: [
-    'Draft a $15 goodwill refund for Hana.',
     'Review open disputes',
     'Check slot rescue waitlist',
     'Simulate PayPal chargeback defense',
@@ -295,7 +288,7 @@ export function portalChrome(portal: AssistantPortal): PortalChrome {
 
 export function welcomeMessageForPortal(portal: AssistantPortal): string {
   if (portal === 'merchant') {
-    return 'Hi Selam — Owner AI Copilot here. I can draft goodwill refunds with strict PayPal safety limits, review dispute defense dossiers, coordinate slot rescue waitlists, or assist with salon operations. How can I help you today?'
+    return 'Hi Selam — Owner AI Copilot here. I can review dispute defense dossiers, coordinate slot rescue waitlists, or assist with salon operations. How can I help you today?'
   }
   if (portal === 'admin') {
     return 'Hi — admin help here. I can guide approvals, salon status, commission rules and SaaS billing, taxonomy, or platform staff. What do you want to do?'
