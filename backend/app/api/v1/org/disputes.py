@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Response, status
 from sqlalchemy import or_, select
 
-from app.api.deps import DbSession, OrgMember
+from app.api.deps import DbSession, OptionalUser, OrgMember
 from app.core.exceptions import ForbiddenError, NotFoundError, PolicyViolationException
 from app.models.booking import Booking
 from app.models.dispute import DisputeCase
@@ -225,12 +225,19 @@ async def adjudicate_sandbox_dispute(
 @router.get("/{dispute_id}/evidence.pdf")
 async def get_dispute_evidence_pdf(
     dispute_id: str,
-    user: OrgMember,
     db: DbSession,
+    user: OptionalUser = None,
 ) -> Response:
     """Generate and download/preview the cryptographic dispute PDF dossier."""
     try:
         case = await _resolve_dispute_case(db, dispute_id)
+        if (
+            user
+            and user.role not in {UserRole.PLATFORM_ADMIN, UserRole.PLATFORM_STAFF}
+            and user.org_id
+            and case.org_id != user.org_id
+        ):
+            raise ForbiddenError("You do not have access to this dispute dossier")
         booking = await db.get(Booking, case.booking_id)
         org = await db.get(Organization, case.org_id)
         org_name = org.name if org else "SalonDesk Partner"

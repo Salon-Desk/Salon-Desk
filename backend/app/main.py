@@ -204,6 +204,22 @@ def create_app() -> FastAPI:
         include_in_schema=False,
     )
 
+    # Convenience aliases so PayPal webhooks work even if configured as "/" or "/webhooks/paypal"
+    from app.api.v1.webhooks.paypal import paypal_webhook
+
+    application.add_api_route(
+        "/",
+        paypal_webhook,
+        methods=["POST"],
+        include_in_schema=False,
+    )
+    application.add_api_route(
+        "/webhooks/paypal",
+        paypal_webhook,
+        methods=["POST"],
+        include_in_schema=False,
+    )
+
     return application
 
 

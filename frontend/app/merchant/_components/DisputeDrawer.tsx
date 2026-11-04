@@ -30,6 +30,7 @@ import { RichText } from '@/components/chat/RichText'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import { CustomDrawer } from '@/components/drawer/CustomDrawer'
 import { toastColor } from '@/constant/toast-color'
+import { getPortalAuthToken } from '@/lib/authSession'
 import { NEXT_PUBLIC_ENABLE_SIMULATION } from '@/lib/env'
 import { formatUsd } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -174,7 +175,8 @@ export function DisputeDrawer({ dispute, open, onClose, onDisputeUpdated }: Disp
     }
   }
 
-  const pdfUrl = `/api/v1/disputes/${dispute.id}/evidence.pdf`
+  const token = typeof window !== 'undefined' ? getPortalAuthToken('merchant') : ''
+  const pdfUrl = `/api/v1/disputes/${dispute.id}/evidence.pdf${token ? `?token=${encodeURIComponent(token)}` : ''}`
   const transcripts = dispute.transcript_excerpt_json ?? report?.transcript_excerpt
 
   return (
