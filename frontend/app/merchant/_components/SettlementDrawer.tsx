@@ -37,11 +37,7 @@ import { Badge, HoldStateBadge } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { formatBookingRef, formatDuration, formatUsd, isPlaceholderValue } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import {
-  useGetBookingWaitlistQuery,
-  useRescueSlotMutation,
-  useSimulateDisputeMutation,
-} from '@/store/api/disputeApi'
+import { useGetBookingWaitlistQuery, useRescueSlotMutation } from '@/store/api/disputeApi'
 import type { Booking } from '@/types'
 import type { SlotRescueResponse } from '@/types/dispute'
 
@@ -94,24 +90,7 @@ export function SettlementDrawer({
     { skip: !booking.id },
   )
   const [rescueSlotMutation, { isLoading: isRescuing }] = useRescueSlotMutation()
-  const [simulateDispute, { isLoading: isSimulatingDispute }] = useSimulateDisputeMutation()
   const router = useRouter()
-
-  const handleSimulateDispute = async () => {
-    try {
-      await simulateDispute({
-        bookingId: booking.id,
-        reason: 'MERCHANDISE_OR_SERVICE_NOT_RECEIVED',
-        dispute_amount: booking.noShowFee || 30.0,
-      }).unwrap()
-      toast.success('Dispute chargeback simulated! Opening Dispute Counsel...', toastColor.success)
-      onClose()
-      router.push('/merchant/disputes')
-    } catch {
-      onClose()
-      router.push('/merchant/disputes')
-    }
-  }
 
   const handleExecuteRescue = async () => {
     try {
@@ -1070,7 +1049,7 @@ export function SettlementDrawer({
               </div>
             </div>
 
-            {/* Dispute Counsel Test Action */}
+            {/* Dispute Counsel Link */}
             {isNoShowCaptured && (
               <div className="flex items-center justify-between rounded-xl border border-indigo-200/80 bg-indigo-50/60 p-3 text-xs text-indigo-950">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -1082,18 +1061,20 @@ export function SettlementDrawer({
                       Dispute Counsel Defense
                     </p>
                     <p className="text-[11px] text-slate-500 truncate">
-                      Simulate customer PayPal chargeback &amp; test AI rebuttals
+                      Review cryptographic evidence dossier &amp; PayPal dispute status
                     </p>
                   </div>
                 </div>
                 <button
                   type="button"
                   id="agent-dispute-btn"
-                  disabled={isSimulatingDispute}
-                  onClick={handleSimulateDispute}
-                  className="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-colors cursor-pointer shrink-0 ml-2 disabled:opacity-50"
+                  onClick={() => {
+                    onClose()
+                    router.push('/merchant/disputes')
+                  }}
+                  className="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-colors cursor-pointer shrink-0 ml-2"
                 >
-                  {isSimulatingDispute ? 'Simulating...' : 'Simulate Dispute →'}
+                  View in Disputes →
                 </button>
               </div>
             )}

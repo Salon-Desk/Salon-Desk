@@ -30,6 +30,7 @@ import { RichText } from '@/components/chat/RichText'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import { CustomDrawer } from '@/components/drawer/CustomDrawer'
 import { toastColor } from '@/constant/toast-color'
+import { NEXT_PUBLIC_ENABLE_SIMULATION } from '@/lib/env'
 import { formatUsd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import {
@@ -313,30 +314,32 @@ export function DisputeDrawer({ dispute, open, onClose, onDisputeUpdated }: Disp
             </div>
 
             {/* Sandbox Simulation Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-2.5 sm:px-3 sm:py-2 text-[11px] text-amber-900">
-              <div className="flex items-center gap-1.5 font-medium shrink-0">
-                <Sparkles className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                <span>Sandbox Demo Controls:</span>
+            {NEXT_PUBLIC_ENABLE_SIMULATION && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-2.5 sm:px-3 sm:py-2 text-[11px] text-amber-900">
+                <div className="flex items-center gap-1.5 font-medium shrink-0">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                  <span>Sandbox Demo Controls:</span>
+                </div>
+                <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    disabled={isAdjudicating || isResolvedSeller}
+                    onClick={() => handleAdjudicateSandbox('SELLER_FAVOR')}
+                    className="flex-1 sm:flex-none text-center rounded-lg border border-emerald-300 bg-white px-2.5 py-1.5 sm:py-1 font-semibold text-[10px] sm:text-[11px] text-emerald-700 shadow-2xs hover:bg-emerald-50 active:scale-95 disabled:opacity-40 cursor-pointer transition-all"
+                  >
+                    {isAdjudicating ? 'Processing...' : 'Simulate Win (Seller Favor)'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isAdjudicating || isResolvedBuyer}
+                    onClick={() => handleAdjudicateSandbox('BUYER_FAVOR')}
+                    className="flex-1 sm:flex-none text-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 sm:py-1 font-semibold text-[10px] sm:text-[11px] text-slate-600 shadow-2xs hover:bg-slate-50 active:scale-95 disabled:opacity-40 cursor-pointer transition-all"
+                  >
+                    Simulate Concede
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 w-full sm:w-auto">
-                <button
-                  type="button"
-                  disabled={isAdjudicating || isResolvedSeller}
-                  onClick={() => handleAdjudicateSandbox('SELLER_FAVOR')}
-                  className="flex-1 sm:flex-none text-center rounded-lg border border-emerald-300 bg-white px-2.5 py-1.5 sm:py-1 font-semibold text-[10px] sm:text-[11px] text-emerald-700 shadow-2xs hover:bg-emerald-50 active:scale-95 disabled:opacity-40 cursor-pointer transition-all"
-                >
-                  {isAdjudicating ? 'Processing...' : 'Simulate Win (Seller Favor)'}
-                </button>
-                <button
-                  type="button"
-                  disabled={isAdjudicating || isResolvedBuyer}
-                  onClick={() => handleAdjudicateSandbox('BUYER_FAVOR')}
-                  className="flex-1 sm:flex-none text-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 sm:py-1 font-semibold text-[10px] sm:text-[11px] text-slate-600 shadow-2xs hover:bg-slate-50 active:scale-95 disabled:opacity-40 cursor-pointer transition-all"
-                >
-                  Simulate Concede
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         }
       >

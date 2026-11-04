@@ -20,6 +20,7 @@ import { toast } from 'sonner'
 import { PrimaryButton } from '@/components/button'
 import { toastColor } from '@/constant/toast-color'
 import { useAgentUiActions } from '@/hooks/useAgentUiActions'
+import { NEXT_PUBLIC_ENABLE_SIMULATION } from '@/lib/env'
 import { formatUsd } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useListDisputesQuery, useSimulateDisputeMutation } from '@/store/api/disputeApi'
@@ -192,21 +193,23 @@ export default function MerchantDisputesPage() {
             <span className="hidden sm:inline">Refresh</span>
           </button>
 
-          <PrimaryButton
-            id="agent-simulate-dispute-btn"
-            variant="primary"
-            onClick={handleSimulateNewDispute}
-            isDisabled={isSimulating}
-            className="h-9 text-xs font-bold px-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-2xs"
-            icon={
-              isSimulating ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-              ) : (
-                <Sparkles className="h-3.5 w-3.5 mr-1.5 text-amber-300" />
-              )
-            }
-            title={isSimulating ? 'Simulating...' : 'Simulate Chargeback ($30)'}
-          />
+          {NEXT_PUBLIC_ENABLE_SIMULATION && (
+            <PrimaryButton
+              id="agent-simulate-dispute-btn"
+              variant="primary"
+              onClick={handleSimulateNewDispute}
+              isDisabled={isSimulating}
+              className="h-9 text-xs font-bold px-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-2xs"
+              icon={
+                isSimulating ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5 text-amber-300" />
+                )
+              }
+              title={isSimulating ? 'Simulating...' : 'Simulate Chargeback ($30)'}
+            />
+          )}
         </div>
       </div>
 
