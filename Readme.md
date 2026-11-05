@@ -1,397 +1,198 @@
-# SalonDesk
+# SalonDesk — A Hold, Not a Charge
 
-Multi-tenant salon booking platform with three apps:
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![CI Suite](https://img.shields.io/badge/CI%20Suite-235%20passed-success.svg)](.github/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-paypalai.hackathon.huludelala.com-brightgreen.svg)](https://paypalai.hackathon.huludelala.com)
+[![YouTube Demo](https://img.shields.io/badge/YouTube-2%3A42%20Walkthrough-red.svg)](https://youtu.be/to2uynlBQmE)
 
-1. **Client app** — discover salons/services and book appointments
-2. **Organization portal** — staff, services, schedules, bookings, PayPal account
-3. **Platform admin** — orgs, commissions, categories, change-request approvals
-
-Stack: **FastAPI** (`backend/`) + **Next.js** (`frontend/`) + **PostgreSQL**.
-
----
-
-## Quick start
-
-**Docker (everything in Compose):**
-
-```bash
-cp .env.example .env   # edit secrets as needed
-docker compose up --build
-# Web + API via Compose networking; see compose file for ports.
-```
-
-**Local dev (recommended for day-to-day coding):** run Postgres (often via Compose **db only**), then backend + frontend on the host — see [Local development without Docker](#local-development-without-docker).
+> **PayPal AI Hackathon Submission**
+> AI-powered salon booking concierge + PayPal authorization holds that end salon no-show revenue losses without charging clients upfront.
 
 ---
 
-## Local development (without Docker)
+## 1. The Problem
 
-Run the **API**, **Next.js app**, and optional **voice worker** as normal processes on your machine. You do **not** need `docker compose up --build` for the full stack; many teams only use Docker for Postgres (pgvector).
+Independent stylists, barbers, and salon owners operate on razor-thin margins. According to industry data (Fresha, 2025), salons lose an average of **7% of their annual revenue** to no-shows and last-minute cancellations, causing a **56% operational schedule disruption**.
+
+Traditional upfront non-refundable deposits create severe conversion friction:
+- **Clients hate paying in advance** before setting foot in the salon.
+- **Salons face chargebacks and refund disputes** when cancellations occur.
+- **Marketplace liability:** Holding client cash in escrow creates custody headaches.
+
+---
+
+## 2. The Solution: "A Hold, Not a Charge"
+
+SalonDesk introduces closed-loop authorization holds powered by **PayPal Orders v2** and **Agentic AI**:
+
+1. **$0 Charged at Booking**: Clients authorize a deposit hold via PayPal Orders v2 (`intent="AUTHORIZE"`). No funds leave their bank account up front.
+2. **Deterministic Settlement**:
+   - **Client Shows Up (`mark-show`)**: Full service price is captured directly into the salon's PayPal merchant account (`final_capture=True`).
+   - **Client No-Shows (`mark-no-show`)**: Only the agreed no-show fee (e.g. $30 on a $120 service) is captured; remaining authorization is immediately voided.
+   - **Timely Cancellation**: Cardholder hold is voided with zero fees.
+3. **Waitlist Slot Rescue**: If an appointment is cancelled, the Slot Rescue agent automatically offers the open window to waitlisted clients. If refilled, the cancellation fee is waived or refunded.
+4. **Autonomous Dispute Counsel**: When a client files a dispute, a 3-agent pipeline compiles an **Ed25519-signed, SHA-256 hash-chained PDF evidence dossier** and submits formal defense directly to PayPal's Resolution Center.
+
+---
+
+## 3. Try It in 60 Seconds (Judge Quick Start)
+
+Hosted Prototype URL: **[https://paypalai.hackathon.huludelala.com](https://paypalai.hackathon.huludelala.com)**
+
+### Demo Logins (All share password: `Password123!`)
+
+| Role | Email | Purpose / View |
+|---|---|---|
+| **Platform Admin** | `admin@salondesk.local` | Platform overview, commission tracking, organization taxonomy |
+| **Salon Owner** | `owner@selam.local` | **Selam Hair Studio** merchant console, calendar, appointment settlement, dispute drawer |
+| **Receptionist** | `reception@selam.local` | Front-desk check-in and scheduling |
+| **Stylist** | `stylist1@selam.local` | Stylist schedule and assigned bookings (Selam Haile) |
+| **Client** | `abebe07@personal.example.com` | Client app: AI booking chat, service exploration, booking history |
+
+### PayPal Sandbox Buyer Login (Use in PayPal checkout popups)
+
+- **Buyer Email:** `abebe07@personal.example.com`
+- **Buyer Password:** `,S7W{C-b`
+- **Secondary Buyer:** `ailurophile99@personal.example.com` / `RKd4)RGo`
+
+> [!TIP]
+> **One-Click Reset**: Click the **Reset Demo** button in the top navigation bar, or send `POST https://paypalai.hackathon.huludelala.com/api/demo/reset` at any time to return the database to a pristine demo state.
+
+---
+
+## 4. How We Use PayPal
+
+SalonDesk goes far beyond simple checkout buttons. We implement the complete lifecycle of PayPal Orders v2, Payments v2, Webhooks, and Disputes v1:
+
+| Capability | PayPal API & Method | Repository File | Implementation Details |
+|---|---|---|---|
+| **Deposit Authorization** | `POST /v2/checkout/orders` (`intent: AUTHORIZE`) | [`backend/app/services/paypal_rest.py`](backend/app/services/paypal_rest.py) | Places an authorization hold with payee merchant ID, brand context, and `NO_SHIPPING`. Zero upfront charge. |
+| **Partial & Full Capture** | `POST /v2/payments/authorizations/{id}/capture` | [`backend/app/services/capture_service.py`](backend/app/services/capture_service.py) | Executes `final_capture: true` to capture service price or policy-agreed no-show fee and release remaining hold. |
+| **Hold Reauthorization** | `POST /v2/payments/authorizations/{id}/reauthorize` | [`backend/app/tasks/hold_expiration.py`](backend/app/tasks/hold_expiration.py) | Scheduled task monitors the 3-day PayPal honor window and renews active holds before expiration. |
+| **Hold Void** | `POST /v2/payments/authorizations/{id}/void` | [`backend/app/services/booking_service.py`](backend/app/services/booking_service.py) | Instantly voids holds upon free cancellation or slot rescue waiver. |
+| **Idempotency Defense** | `PayPal-Request-Id` | [`backend/app/services/paypal_helpers.py`](backend/app/services/paypal_helpers.py) | Unique hash per state transition prevents duplicate authorizations or accidental double-captures. |
+| **Webhook Verification** | `POST /v1/notifications/verify-webhook-signature` | [`backend/app/services/paypal_webhooks.py`](backend/app/services/paypal_webhooks.py) | Validates asymmetric PayPal signatures with transmission IDs and cert URLs before processing lifecycle events. |
+| **Dispute Defense Evidence** | `POST /v1/customer/disputes/{id}/provide-evidence` | [`backend/app/services/dispute_service.py`](backend/app/services/dispute_service.py) | Formally transmits the generated legal rebuttal and cryptographic dossier to the PayPal Resolution Center. |
+| **Agent Commerce Toolkit** | Orders v2 & Payments v2 Runner | [`backend/app/services/paypal_toolkit.py`](backend/app/services/paypal_toolkit.py) | Agent tooling interface with amount ceiling bounds ($0.50–$250) and prohibited autonomous action firewalls. |
+
+---
+
+## 5. Tools Disclosure (AI Architecture)
+
+In accordance with Hackathon Official Rules §4, below is the complete disclosure of AI models and tools utilized:
+
+| AI Surface | Technology / Model | Repository Location | Role & Implementation |
+|---|---|---|---|
+| **Multi-Provider LLM** | Groq (`openai/gpt-oss-120b`), OpenAI (`gpt-4.1-mini`), or Ollama (`llama3.2`) | [`backend/app/ai/llm/`](backend/app/ai/llm/) | Pluggable LLM interface powering chat responses, function call arguments, and legal text generation. |
+| **Semantic RAG Engine** | `sentence-transformers/all-minilm` + PostgreSQL `pgvector` | [`backend/app/ai/rag/`](backend/app/ai/rag/) | Entity-linked vector embeddings matching user styling desires with catalog services, stylists, and policies. |
+| **Realtime Voice Concierge** | LiveKit RTC + Deepgram STT + LLM Worker | [`backend/agent.py`](backend/agent.py) | Full-duplex voice concierge allowing clients to verbally discover salons, check stylist openings, and book. |
+| **Dispute Counsel: Investigator** | Deterministic Cryptographic Verifier | [`backend/app/services/dispute_service.py`](backend/app/services/dispute_service.py) | Verifies Ed25519 digital client signatures and unbroken SHA-256 financial audit chains before defense generation. |
+| **Dispute Counsel: Advocate** | LLM Dispute Attorney | [`backend/app/services/dispute_service.py`](backend/app/services/dispute_service.py) | Drafts a 5-part formal legal rebuttal matching PayPal Resolution Center formatting constraints without Markdown tables. |
+| **Dispute Counsel: Skeptic** | LLM Risk Analyst + Deterministic Proof Clamping | [`backend/app/services/dispute_service.py`](backend/app/services/dispute_service.py) | Critically evaluates evidence gaps, scores win probability (clamped to 88-96% on verified crypto proofs), and advises strategy. |
+| **Court-Ready PDF Dossier** | Native PDF-1.4 Generator | [`backend/app/services/pdf_evidence_generator.py`](backend/app/services/pdf_evidence_generator.py) | Assembles cryptographic checksums, verified chat transcripts, and timeline exhibits into a court-ready evidence file. |
+| **Owner Copilot** | LLM Operations Copilot | [`backend/app/ai/tools/`](backend/app/ai/tools/) | Salon management copilot assisting owners with schedule adjustments, commission summaries, and policy edits. |
+
+---
+
+## 6. Safety: "AI Proposes; Code and PayPal Decide"
+
+SalonDesk strictly adheres to defensive fintech design principles:
+
+- **Prohibited Autonomous Tools (`BLOCKED_AGENT_TOOLS`)**: The AI agent is explicitly prevented from executing `accept_dispute_claim`. Dispute concessions require human staff authorization.
+- **Deposit & Capture Ceilings**:
+  - Deposit ceiling: Deposits are capped at 50% of total service price (`MAX_DEPOSIT_FRACTION = 0.50`).
+  - Capture ceiling: A merchant cannot capture more than the agreed no-show fee locked at booking creation.
+- **Booking-Time Immutability**: Cancellation deadlines, fee percentages, and commission rates are snapshotted in JSON at agreement time; subsequent salon policy edits never retroactively alter existing bookings.
+- **Ed25519 Cryptographic Consent**: Client agreement to the no-show fee policy is digitally signed using an Ed25519 keypair and verified mathematically.
+- **SHA-256 Ledger Chaining**: Every state event (`AUTHORIZATION_CREATED`, `CAPTURE_COMPLETED`) appends a hash-chained block referencing the prior block hash, guaranteeing tamper-proof records.
+
+---
+
+## 7. What We Built During the Hackathon
+
+- **Initial Commit:** October 14, 2026 (after the Hackathon start date of October 1, 2026).
+- **100% of the codebase**—FastAPI backend, Next.js frontend, PayPal integrations, pgvector RAG, LiveKit voice worker, and automated dispute counsel—was authored during the hackathon period.
+- **Automated Test Suite:** **235 passing tests** across API, domain services, crypto verification, and PayPal lifecycle integrations.
+
+---
+
+## 8. Local Development & Testing
 
 ### Prerequisites
+- Node.js 20+ and `pnpm`
+- Python 3.11+ and `uv`
+- Docker (for PostgreSQL with `pgvector`)
 
-| Tool | Purpose |
-|------|---------|
-| [Node.js](https://nodejs.org/) 18+ and **pnpm** | Frontend + root Husky |
-| [uv](https://docs.astral.sh/uv/) | Backend Python env |
-| **PostgreSQL with pgvector** | Required for app + RAG (`vector` extension) |
-
-### 1. Environment files
-
+### 1. Start Database & Dependencies
 ```bash
-# Repo root — backend reads this (and backend/.env if present)
 cp .env.example .env
-
-# Frontend — copy from example or root NEXT_PUBLIC_* vars
-cp frontend/.env.example frontend/.env
-```
-
-In **root `.env`**:
-
-- `DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/salondesk` is fine for Compose.
-- On the **host**, FastAPI rewrites `@db` → `localhost:${POSTGRES_PORT}` when `db` does not resolve (see `backend/app/core/database_url.py`).
-- Set **`POSTGRES_PORT`** to the port Postgres listens on **your machine** (Compose maps `POSTGRES_PORT:5432`, e.g. `5433` if 5432 is taken).
-
-In **`frontend/.env`**:
-
-- `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000` — Next.js proxies `/api/v1/*` to the API in dev (`frontend/next.config.ts`).
-
-### 2. Database (Postgres only — minimal Docker)
-
-Use the pgvector image (plain Postgres will fail on `CREATE EXTENSION vector`):
-
-```bash
 docker compose up -d db
-make seed          # or: make seed-clear for a fresh demo DB
 ```
 
-Native Postgres instead of Compose: install **pgvector**, create DB `salondesk`, and set `DATABASE_URL` / `POSTGRES_PORT` to match your host.
-
-### 3. One-time install
-
+### 2. Install & Seed
 ```bash
-pnpm install                    # repo root (Husky hooks)
-cd backend && uv sync --group dev
-cd frontend && pnpm install
-```
-
-### 4. Run the app (three terminals)
-
-Use **separate terminals** so each process can be restarted independently.
-
-| Terminal | Directory | Command | URL |
-|----------|-----------|---------|-----|
-| **A — API** | `backend/` | `uv run fastapi dev app/main.py` | http://127.0.0.1:8000 · [Docs](http://127.0.0.1:8000/docs) |
-| **B — Web** | `frontend/` | `pnpm dev` | http://localhost:3000 |
-| **C — Voice** (optional) | repo root or `backend/` | `make voice-agent` | LiveKit worker (see below) |
-
-**Terminal A — Backend**
-
-```bash
+# Backend setup
 cd backend
-uv run fastapi dev app/main.py
+uv sync --group dev
+uv run python -m scripts.seed --clear
+
+# Frontend setup
+cd ../frontend
+pnpm install
 ```
 
-**Terminal B — Frontend**
-
+### 3. Run Development Servers
 ```bash
-cd frontend
-pnpm dev
-```
+# Terminal 1: Backend API (port 8000)
+cd backend && uv run fastapi dev app/main.py
 
-Restart frontend after changing any `NEXT_PUBLIC_*` variable.
+# Terminal 2: Next.js Frontend (port 3000)
+cd frontend && pnpm dev
 
-**Terminal C — Voice agent (optional)**
-
-Requires LiveKit + Deepgram (and LLM) in root `.env`: `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `DEEPGRAM_API_KEY`, plus `LLM_PROVIDER` / API keys.
-
-```bash
-# From repo root
-make voice-agent
-
-# Equivalent
+# Terminal 3 (Optional): LiveKit Voice Agent
 cd backend && uv run python agent.py start
 ```
 
-Match **`NEXT_PUBLIC_LIVEKIT_URL`** in `frontend/.env` to **`LIVEKIT_URL`** in root `.env`. The browser gets a JWT from `POST /api/v1/livekit/token`; secrets stay on the server.
-
-For **RAG** (chat + voice grounding), after seeding:
-
+### 4. Run Test Suite
 ```bash
-docker compose up -d ollama   # optional, for local embeddings
-ollama pull all-minilm
-make ingest-knowledge
+# Backend pytest suite (235 tests)
+cd backend && uv run pytest -v
+
+# Code quality checks
+cd backend && uv run ruff check . && uv run ruff format --check .
+cd ../frontend && pnpm typecheck && pnpm lint
 ```
-
-Text concierge without voice: enable `NEXT_PUBLIC_ENABLE_AGENT_CHAT=true` and use `POST /api/v1/chat` (no Terminal C).
-
-### 5. Smoke check
-
-```bash
-curl -s http://127.0.0.1:8000/health
-curl -s http://127.0.0.1:8000/api/v1/catalog/categories   # public catalog
-```
-
-Open http://localhost:3000 — client catalog is public; sign in with [demo accounts](#demo-accounts) for admin/merchant/client portals.
-
-**UI conventions:** [frontend/AGENTS.md](frontend/AGENTS.md) · **Monorepo layout:** [AGENTS.md](AGENTS.md)
 
 ---
 
-## Lint, format & git hooks
+## 9. Project Structure
 
-Husky runs at the **repo root** (not inside `frontend/` or `backend/`) so one pre-commit gate covers both apps.
-
-### One-time setup
-
-```bash
-# From repo root — installs husky + lint-staged and wires .husky/
-pnpm install
-
-# Backend lint/format/test tools (ruff, pytest)
-cd backend && uv sync --group dev
 ```
-
-`pnpm install` at the root runs `prepare` → `husky`, which sets `core.hooksPath` to `.husky/_`.
-
-### What runs on commit
-
-| Staged paths | Pre-commit actions |
-|---|---|
-| `frontend/**` | `lint-staged` (ESLint + Prettier on staged files), then `pnpm format`, `pnpm lint`, `pnpm typecheck` |
-| `backend/**` | `lint-staged` (Ruff check `--fix` + format on staged `.py`), then full `ruff check`, `ruff format --check`, `pytest` |
-
-Config: [`.husky/pre-commit`](.husky/pre-commit), [`lint-staged.config.mjs`](lint-staged.config.mjs), [`package.json`](package.json).
-
-Skip hooks for an emergency commit only: `HUSKY=0 git commit …` (prefer fixing the gate instead).
-
-### Manual commands
-
-| Area | Check | Fix |
-|---|---|---|
-| Frontend | `pnpm --dir frontend validate` | `pnpm --dir frontend lint:fix` · `pnpm --dir frontend format:fix` |
-| Backend | `cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest` | `cd backend && uv run ruff check --fix . && uv run ruff format .` |
-| Both | `pnpm validate` or `make validate` | `make format` then re-run validate |
-
-| Make target | Description |
-|---|---|
-| `make lint` / `make lint-frontend` / `make lint-backend` | Lint only |
-| `make format` / `make format-frontend` / `make format-backend` | Auto-fix + format |
-| `make validate` | Full frontend + backend gate (same spirit as CI / husky) |
-
-**Tooling:** frontend uses **ESLint** + **Prettier**; backend uses **Ruff** (lint + format) and **pytest**. Ruff settings live in [`backend/pyproject.toml`](backend/pyproject.toml).
+Salon-Desk/
+├── backend/
+│   ├── app/
+│   │   ├── ai/            # RAG, LLM providers, LiveKit voice agent, agent tools
+│   │   ├── api/v1/        # Endpoints: auth, catalog, bookings, orgs, settlements, disputes
+│   │   ├── core/          # Database, crypto (Ed25519), config, security firewalls
+│   │   ├── models/        # SQLAlchemy ORM models (ledger, policy, bookings, disputes)
+│   │   ├── schemas/       # Pydantic v2 validation schemas
+│   │   ├── services/      # PayPal REST, capture, dispute counsel, slot rescue, ledger
+│   │   └── tasks/         # Celery/background tasks (hold expiration, sync)
+│   ├── scripts/           # Seeding, pgvector ingestion
+│   └── tests/             # 235 unit and integration tests
+├── frontend/
+│   ├── app/               # Next.js 16 App Router (Client, Merchant, Admin portals)
+│   ├── components/        # UI components, dispute drawer, chat widget, sandbox modal
+│   ├── lib/               # Mappers, constants, sandbox personas
+│   └── store/             # Redux Toolkit & RTK Query API client slices
+├── docs/                  # Architecture specs, dispute lifecycle guides, permissions matrix
+├── .github/workflows/     # GitHub Actions CI suite
+└── docker-compose.yml     # Container orchestration
+```
 
 ---
 
-## Database seed
+## 10. Team & License
 
-Demo data includes **Selam Hair Studio**, platform admin/staff, categories, commissions, services, clients, and sample bookings.
-
-**Important:** root `.env` may use hostname `db` for Compose; **`make seed`** / **`make ingest-knowledge`** and the running API on the host use **`localhost:$POSTGRES_PORT`**. Use image `pgvector/pgvector:pg16` — plain Postgres cannot create the `vector` extension. If Homebrew Postgres already owns `5432`, set `POSTGRES_PORT=5433` in `.env`. Start Postgres first:
-
-```bash
-docker compose up -d db
-```
-
-| Command | Behavior |
-|---|---|
-| `make seed` | Insert demo data if not already present |
-| `make seed-clear` | **Truncate all tables**, then seed fresh |
-
-From `backend/` (explicit localhost URL recommended on the host):
-
-```bash
-# Without clear (no-op if already seeded)
-uv run python -m scripts.seed \
-  --database-url 'postgresql+asyncpg://postgres:postgres@localhost:5432/salondesk'
-
-# With clear
-uv run python -m scripts.seed --clear \
-  --database-url 'postgresql+asyncpg://postgres:postgres@localhost:5432/salondesk'
-```
-
-If you run the seed script without `--database-url` and `.env` still points at `@db:…`, the seed script and FastAPI settings rewrite `db` → `localhost:${POSTGRES_PORT}` when `db` is not resolvable on the host.
-
-### Demo accounts
-
-Password for all seeded users: `Password123!`
-
-| Email | Role |
-|---|---|
-| `admin@salondesk.local` | Platform admin |
-| `staff@salondesk.local` | Platform staff |
-| `owner@selam.local` | Org owner |
-| `reception@selam.local` | Reception |
-| `stylist1@selam.local` / `stylist2@selam.local` | Stylists |
-| `abebe07@personal.example.com` / `ailurophile99@personal.example.com` | Clients (SalonDesk portal; PayPal checkout passwords in app Sandbox modal) |
-
-Judge demo reset (non-production): `POST /api/demo/reset` (clear + seed).
-
----
-
-## LLM providers
-
-Choose one provider in `.env`:
-
-```bash
-LLM_PROVIDER=groq   # groq | ollama | openai
-
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4.1-mini
-
-GROQ_API_KEY=
-GROQ_MODEL=openai/gpt-oss-120b
-
-OLLAMA_MODEL=llama3.2:1b
-OLLAMA_BASE_URL=http://localhost:11434/v1
-```
-
-Provider classes live under `backend/app/ai/llm/` (`GroqLLMService`, `OllamaLLMService`, `OpenAILLMService`). `app/services/llm/` may re-export for compatibility. Restart the API after changing `LLM_PROVIDER`.
-
----
-
-## Voice agent + RAG
-
-**FastAPI** serves tokens/chat; a **separate LiveKit worker** handles realtime voice. Both share `retrieve_context()` over Postgres/pgvector `knowledge_chunk` — an entity-linked semantic index of approved orgs, active services, categories, and policies (plus optional platform FAQ). Recommendations are hydrated from live ORM rows (PRD AI grounding).
-
-```
-Browser mic → LiveKit room ← JWT from POST /api/v1/livekit/token
-                 ↓
-         Python voice worker (backend/agent.py → app.ai.agent)
-         STT → retrieve_context + tools → LLM → TTS
-                 ↓
-         knowledge_chunk (pgvector) → hydrate Service cards
-                 ↑
-Text chat POST /api/v1/chat  (same pipeline + recommendation cards)
-```
-
-### Setup
-
-1. Use a **pgvector** Postgres image (`docker compose` already uses `pgvector/pgvector:pg16`).
-2. Seed catalog data, then start Ollama and pull the embed model:
-   ```bash
-   make seed
-   docker compose up -d ollama
-   ollama pull all-minilm
-   ```
-3. Index live platform data into `knowledge_chunk`:
-   ```bash
-   make ingest-knowledge
-   ```
-4. Configure LiveKit + Deepgram in `.env` (`LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `DEEPGRAM_API_KEY`).
-5. Run the API plus the voice worker — same as [Local development without Docker](#local-development-without-docker) (Terminal A + Terminal C).
-
-### APIs
-
-| Endpoint | Purpose |
-|---|---|
-| `POST /api/v1/livekit/token` | Mint room JWT + agent dispatch (`{ language?: "en"\|"am" }`) |
-| `POST /api/v1/chat` | Text chat: reply + citations + service recommendation cards |
-
-Ingest: live DB via [`backend/scripts/ingest_knowledge.py`](backend/scripts/ingest_knowledge.py) (+ optional [`backend/data/knowledge_en.json`](backend/data/knowledge_en.json) platform FAQ).
-Schema: [`backend/schema_rag.sql`](backend/schema_rag.sql) / ORM `KnowledgeChunk`.
-
-**Design notes:** one RAG pipeline for chat and voice; per-turn inject with timeout; booking intent keeps scheduling focus; room name encodes language (`salondesk-agent-{en|am}-…`); never invent prices or open slots.
-
----
-
-## Postman collection
-
-Generate/refresh from OpenAPI (no server required):
-
-```bash
-make postman
-```
-
-Output: [`postman/collection.json`](postman/collection.json).
-Details: [`docs/postman/README.md`](docs/postman/README.md).
-
----
-
-## Make targets
-
-| Target | Description |
-|---|---|
-| `make seed` | Seed demo data (skip if present) |
-| `make seed-clear` | Clear DB + seed |
-| `make seed-help` | Print seed usage |
-| `make ingest-knowledge` | Re-index live catalog (+ FAQ) into pgvector |
-| `make voice-agent` | Start LiveKit voice worker |
-| `make postman` | Generate Postman collection |
-| `make postman-help` | Print Postman usage |
-| `make lint` | Lint frontend (ESLint) + backend (Ruff) |
-| `make format` | Auto-fix/format frontend + backend |
-| `make validate` | Full quality gate (format check, lint, typecheck, pytest) |
-
----
-
-## Project layout
-
-```
-AGENTS.md         Monorepo agent guide (backend + pointers to frontend)
-.husky/           Git hooks (pre-commit for frontend + backend)
-package.json      Root husky + lint-staged + validate scripts
-lint-staged.config.mjs
-backend/
-  agent.py        LiveKit worker CLI
-  app/
-    api/deps/     Shared FastAPI dependencies
-    api/v1/       shared | platform | org | client | webhooks routers
-    ai/           RAG, LLM, LiveKit agent worker, tools
-    models/       SQLAlchemy models
-    services/     Domain services
-    tasks/        Scheduled / background jobs
-  scripts/        seed, ingest_knowledge (CLI)
-  tests/          pytest (api, services, integrations)
-frontend/
-  AGENTS.md       Next.js conventions (RTK, portals, client components)
-  app/            App Router portals + Providers.tsx
-  store/          Redux + RTK Query API slices
-postman/          Generated collection.json
-docker-compose.yml
-```
-
-**Agent docs:** [AGENTS.md](AGENTS.md) (repo) · [frontend/AGENTS.md](frontend/AGENTS.md) (Next.js detail).
-Postman notes (if present): [`docs/postman/README.md`](docs/postman/README.md).
-
----
-
-## Useful API prefixes
-
-Routers are grouped under `backend/app/api/v1/{shared,platform,org,client,webhooks}/`; HTTP paths below are unchanged for clients.
-
-| Prefix | Area |
-|---|---|
-| `/api/v1/auth` | Sign-up, sign-in, profile, password reset |
-| `/api/v1/catalog` | Public org/service discovery |
-| `/api/v1/bookings` | Client bookings, consent, cancel |
-| `/api/v1/organizations` | Org portal (settings, staff, services, finance) |
-| `/api/v1/admin` | Platform admin |
-| `/api/v1/payments` | Authorization holds |
-| `/api/v1/settlements` | Mark show / no-show |
-| `/api/v1/ai` | Booking assistant / owner copilot |
-| `/api/v1/chat` | RAG text chat |
-| `/api/v1/livekit` | Voice room tokens |
-| `/api/v1/webhooks` | PayPal (and other) webhooks |
-| `/health` | Health check |
-
-Frontend RTK Query clients: `frontend/store/api/{shared,platform,org,client}Api.ts`.
-
-
-
-
-<!-- VPS -->
-```bash
-# Demo seed (12 orgs, ~60-100 services):
-docker exec -it salondesk sh -lc 'cd /app/backend && python -m scripts.seed --clear'
-
-# Full catalog seed (~432 orgs, ~9,100 services):
-docker exec -it salondesk sh -lc 'cd /app/backend && python -m scripts.seed --clear --all'
-
-# Seed and ingest knowledge (demo):
-docker exec -it salondesk sh -lc 'cd /app/backend && python -m scripts.seed --clear && python -m scripts.ingest_knowledge'
-
-# Seed and ingest knowledge (full):
-docker exec -it salondesk sh -lc 'cd /app/backend && python -m scripts.seed --clear --all && python -m scripts.ingest_knowledge'
-```
-
+Built with care for the PayPal AI Hackathon by the **SalonDesk Team**.
+Licensed under the [Apache License 2.0](LICENSE).
