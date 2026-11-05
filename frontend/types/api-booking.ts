@@ -36,6 +36,21 @@ export interface ApiBooking {
   service_name?: string | null
   organization_name?: string | null
   organization_timezone?: string | null
+  paypal_auth_id?: string | null
+  paypal_order_id?: string | null
+  hold_status?: string | null
+  hold_amount?: string | number | null
+  captured_amount?: string | number | null
+  honor_expires_at?: string | null
+  hold_authorized_at?: string | null
+  reauthorization_count?: number | null
+  idempotency_key?: string | null
+  consent_hash?: string | null
+  consent_terms_version?: string | null
+  consent_signed_at?: string | null
+  refund_id?: string | null
+  refund_amount?: string | number | null
+  refund_status?: string | null
 }
 
 export interface OrgBookingsQuery {
@@ -43,16 +58,29 @@ export interface OrgBookingsQuery {
   ends_at?: string
 }
 
+export interface ServiceStylistSelection {
+  service_id: string
+  stylist_id?: string | null
+}
+
 export interface CreateBookingRequest {
   org_id: string
   starts_at: string
   service_ids: string[]
   stylist_id?: string | null
+  service_stylists?: ServiceStylistSelection[]
+  party_size?: number
   customer_notes?: string | null
 }
 
 export interface CancelBookingRequest {
   reason?: string | null
+}
+
+export interface RescheduleBookingRequest {
+  starts_at?: string | null
+  ends_at?: string | null
+  stylist_id?: string | null
 }
 
 export interface ConsentRequest {
@@ -81,6 +109,11 @@ export interface AvailabilityResponse {
   day: string
   open_windows: [string, string][] | string[][]
   slots: TimeSlot[]
+  salon_hours?: [string, string][] | string[][]
+  shift_windows?: [string, string][] | string[][]
+  stylist_name?: string | null
+  simultaneous_capacity?: number
+  service_duration_minutes?: number | null
 }
 
 export interface CreateHoldRequest {
@@ -142,6 +175,8 @@ export interface ClientChatRequest {
   history?: ClientChatMessage[]
   user_lat?: number | null
   user_lng?: number | null
+  /** IANA timezone of the client browser, e.g. "America/New_York" */
+  client_timezone?: string
   /** client = booking concierge; merchant/admin = system help */
   portal?: AssistantPortal
 }

@@ -8,6 +8,7 @@ from email.message import EmailMessage
 import aiosmtplib
 
 from app.core.config import get_settings
+from app.services import email_templates
 
 logger = logging.getLogger(__name__)
 
@@ -84,38 +85,22 @@ async def send_email_safe(
 
 async def send_verification_email(*, to_address: str, first_name: str, token: str) -> bool:
     settings = get_settings()
-    link = f"{settings.frontend_base_url.rstrip('/')}/verify-email?token={token}"
-    subject = "Verify your SalonDesk email"
-    body = (
-        f"Hi {first_name},\n\n"
-        "Welcome to SalonDesk. Please verify your email to finish setting up your account:\n\n"
-        f"{link}\n\n"
-        "This link expires in 24 hours. If you did not create an account, ignore this message.\n"
-    )
-    html = (
-        f"<p>Hi {first_name},</p>"
-        "<p>Welcome to SalonDesk. Please verify your email to finish setting up your account:</p>"
-        f'<p><a href="{link}">Verify email</a></p>'
-        "<p>This link expires in 24 hours.</p>"
+    subject, body, html = email_templates.build_verification_email(
+        first_name=first_name,
+        token=token,
+        to_address=to_address,
+        frontend_base_url=settings.frontend_base_url,
     )
     return await send_email_safe(subject, body, to_address=to_address, html_body=html)
 
 
 async def send_password_reset_email(*, to_address: str, first_name: str, token: str) -> bool:
     settings = get_settings()
-    link = f"{settings.frontend_base_url.rstrip('/')}/reset-password?token={token}"
-    subject = "Reset your SalonDesk password"
-    body = (
-        f"Hi {first_name},\n\n"
-        "We received a request to reset your SalonDesk password:\n\n"
-        f"{link}\n\n"
-        "This link expires in 1 hour. If you did not request a reset, ignore this message.\n"
-    )
-    html = (
-        f"<p>Hi {first_name},</p>"
-        "<p>We received a request to reset your SalonDesk password:</p>"
-        f'<p><a href="{link}">Reset password</a></p>'
-        "<p>This link expires in 1 hour.</p>"
+    subject, body, html = email_templates.build_password_reset_email(
+        first_name=first_name,
+        token=token,
+        to_address=to_address,
+        frontend_base_url=settings.frontend_base_url,
     )
     return await send_email_safe(subject, body, to_address=to_address, html_body=html)
 
@@ -132,20 +117,20 @@ async def send_booking_confirmation_email(
     free_cancel_deadline: str,
     booking_id: str,
 ) -> bool:
-    subject = f"Booking confirmed — {service_name} at {salon_name}"
-    body = (
-        f"Hi {client_name},\n\n"
-        "Your SalonDesk appointment is confirmed and a PayPal authorization hold is in place.\n\n"
-        f"Service: {service_name}\n"
-        f"Salon: {salon_name}\n"
-        f"When: {starts_at_label}\n"
-        f"Hold amount: ${hold_amount} (nothing charged today)\n"
-        f"Agreed no-show fee: ${no_show_fee}\n"
-        f"Free cancel until: {free_cancel_deadline}\n"
-        f"Booking ref: {booking_id}\n\n"
-        "Settlement uses the price and policy locked at booking time.\n"
+    settings = get_settings()
+    subject, body, html = email_templates.build_booking_confirmation_email(
+        client_name=client_name,
+        service_name=service_name,
+        salon_name=salon_name,
+        starts_at_label=starts_at_label,
+        hold_amount=hold_amount,
+        no_show_fee=no_show_fee,
+        free_cancel_deadline=free_cancel_deadline,
+        booking_id=booking_id,
+        to_address=to_address,
+        frontend_base_url=settings.frontend_base_url,
     )
-    return await send_email_safe(subject, body, to_address=to_address)
+    return await send_email_safe(subject, body, to_address=to_address, html_body=html)
 
 
 async def send_booking_reminder_email(
@@ -158,18 +143,44 @@ async def send_booking_reminder_email(
     free_cancel_deadline: str,
     booking_id: str,
 ) -> bool:
-    subject = f"Reminder — {service_name} at {salon_name}"
-    body = (
-        f"Hi {client_name},\n\n"
-        "This is a reminder for your upcoming SalonDesk appointment.\n\n"
-        f"Service: {service_name}\n"
-        f"Salon: {salon_name}\n"
-        f"When: {starts_at_label}\n"
-        f"Free cancel until: {free_cancel_deadline}\n"
-        f"Booking ref: {booking_id}\n\n"
-        "See you soon!\n"
+    settings = get_settings()
+    subject, body, html = email_templates.build_booking_reminder_email(
+        client_name=client_name,
+        service_name=service_name,
+        salon_name=salon_name,
+        starts_at_label=starts_at_label,
+        free_cancel_deadline=free_cancel_deadline,
+        booking_id=booking_id,
+        to_address=to_address,
+        frontend_base_url=settings.frontend_base_url,
     )
-    return await send_email_safe(subject, body, to_address=to_address)
+    return await send_email_safe(subject, body, to_address=to_address, html_body=html)
+
+
+async def send_no_show_fee_captured_email(
+    *,
+    to_address: str,
+    client_name: str,
+    service_name: str,
+    salon_name: str,
+    starts_at_label: str,
+    no_show_fee: str,
+    booking_id: str,
+    paypal_capture_id: str | None = None,
+) -> bool:
+    settings = get_settings()
+    subject, body, html = email_templates.build_no_show_fee_captured_email(
+        client_name=client_name,
+        service_name=service_name,
+        salon_name=salon_name,
+        starts_at_label=starts_at_label,
+        no_show_fee=no_show_fee,
+        booking_id=booking_id,
+        to_address=to_address,
+        paypal_capture_id=paypal_capture_id,
+        frontend_base_url=settings.frontend_base_url,
+    )
+    return await send_email_safe(subject, body, to_address=to_address, html_body=html)
 
 
 async def notify_platform(
@@ -179,10 +190,18 @@ async def notify_platform(
 ) -> bool:
     """Notify the shared ops inbox (NOTIFY_EMAIL) and optional secondary recipient."""
     settings = get_settings()
-    ok = await send_email_safe(subject, body, to_address=settings.notify_email or None)
+    subj, text_body, html = email_templates.build_platform_notification_email(
+        subject=subject,
+        message=body,
+        to_address=settings.notify_email or None,
+        frontend_base_url=settings.frontend_base_url,
+    )
+    ok = await send_email_safe(
+        subj, text_body, to_address=settings.notify_email or None, html_body=html
+    )
     secondary = (settings.yisihak_notify_email or "").strip()
     if secondary and secondary.lower() != (settings.notify_email or "").lower():
-        await send_email_safe(subject, body, to_address=secondary)
+        await send_email_safe(subj, text_body, to_address=secondary, html_body=html)
     return ok
 
 

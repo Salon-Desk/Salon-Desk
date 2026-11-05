@@ -158,8 +158,8 @@ def create_app() -> FastAPI:
     @application.exception_handler(PolicyViolationException)
     async def policy_handler(_request: Request, exc: PolicyViolationException) -> JSONResponse:
         return JSONResponse(
-            status_code=400,
-            content=error(code="POLICY_VIOLATION", message=exc.message).model_dump(),
+            status_code=getattr(exc, "status_code", 400),
+            content=error(code=exc.code or "POLICY_VIOLATION", message=exc.message).model_dump(),
         )
 
     @application.exception_handler(SalonDeskError)
@@ -200,6 +200,22 @@ def create_app() -> FastAPI:
     application.add_api_route(
         "/api/demo/reset",
         demo.reset_demo,
+        methods=["POST"],
+        include_in_schema=False,
+    )
+
+    # Convenience aliases so PayPal webhooks work even if configured as "/" or "/webhooks/paypal"
+    from app.api.v1.webhooks.paypal import paypal_webhook
+
+    application.add_api_route(
+        "/",
+        paypal_webhook,
+        methods=["POST"],
+        include_in_schema=False,
+    )
+    application.add_api_route(
+        "/webhooks/paypal",
+        paypal_webhook,
         methods=["POST"],
         include_in_schema=False,
     )

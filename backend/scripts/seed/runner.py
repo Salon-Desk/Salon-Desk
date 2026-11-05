@@ -12,13 +12,22 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import get_settings
 from app.core.database_url import resolve_database_url
+from app.models.booking import Booking, BookingService, WaitlistEntry
 from app.models.curation import FeaturedItem, PlatformCurationSetting
+from app.models.dispute import DisputeCase
 from app.models.enums import (
+    BookingStatus,
+    DisputeCaseStatus,
+    DisputeRecommendation,
     OrgCancellationPolicyStatus,
+    PaymentCaptureType,
+    PaymentHoldStatus,
     UserRole,
+    WaitlistStatus,
 )
 from app.models.organization import Organization
-from app.models.policy import OrgCancellationPolicy
+from app.models.payment import PaymentCapture, PaymentHold
+from app.models.policy import Consent, OrgCancellationPolicy
 from app.models.service import Service
 from app.models.user import User
 from app.services.auth_service import DEFAULT_CANCELLATION_POLICY
@@ -204,6 +213,216 @@ async def seed_clients_and_bookings(session: AsyncSession, org_data_list: list[d
     logger.info("Seeded clients and sample bookings (pending + confirmed/hold)")
 
 
+async def seed_dispute_and_waitlist(session: AsyncSession, org_data_list: list[dict]) -> None:
+    if not org_data_list:
+        return
+    primary = org_data_list[0]
+    org = primary["org"]
+    service = primary["services"][0]
+    stylist = primary["stylists"][0]
+
+    from app.services.dispute_service import DEFAULT_BILINGUAL_EXHIBIT
+    from app.services.ledger_service import append_ledger
+
+    from .factories import build_consent_signature
+
+    # 1. Create client for disputed booking
+    disputed_client = build_user(
+        email="dispute.client@example.com",
+        role=UserRole.CLIENT,
+        first_name="Hana",
+        last_name="Tesfaye",
+        phone="+15551230009",
+        picture=AVATAR_IMAGES[2],
+    )
+    session.add(disputed_client)
+    await session.flush()
+
+    # 2. Create settled NO_SHOW booking
+    starts_at = datetime.now(UTC) - timedelta(days=2, hours=3)
+    ends_at = starts_at + timedelta(minutes=service.duration_minutes)
+    agreed_fee = Decimal("30.00")
+
+    policy_snapshot = {
+        "name": "Default",
+        **DEFAULT_CANCELLATION_POLICY,
+    }
+    commission_snapshot = {
+        "type": "percentage",
+        "percentage": "10.00",
+        "flat": None,
+        "amount": "3.00",
+    }
+
+    booking = Booking(
+        org_id=org.id,
+        client_id=disputed_client.id,
+        stylist_id=stylist.id,
+        starts_at=starts_at,
+        ends_at=ends_at,
+        status=BookingStatus.NO_SHOW,
+        total_price=service.base_price,
+        agreed_hold_amount=agreed_fee,
+        agreed_no_show_fee=agreed_fee,
+        agreed_late_cancel_fee=agreed_fee,
+        free_cancel_deadline_at=starts_at - timedelta(hours=24),
+        policy_snapshot_json=policy_snapshot,
+        commission_snapshot=commission_snapshot,
+        customer_notes="Wants cornrows with natural hair",
+    )
+    session.add(booking)
+    await session.flush()
+
+    session.add(
+        BookingService(
+            booking_id=booking.id,
+            service_id=service.id,
+            base_price=service.base_price,
+            service_policy_snapshot_json=policy_snapshot,
+            commission_rule_snapshot_json=commission_snapshot,
+        )
+    )
+
+    # 3. Create cryptographically signed Consent
+    signed_payload = f"booking={booking.id};accepted=true;fee=30.00"
+    terms_hash, signature_b64 = build_consent_signature(signed_payload)
+    consent = Consent(
+        booking_id=booking.id,
+        client_id=disputed_client.id,
+        terms_version="v1.0-standard",
+        terms_text_hash=terms_hash,
+        signature_b64=signature_b64,
+        signed_payload=signed_payload,
+    )
+    session.add(consent)
+
+    # 4. Create PaymentHold and PaymentCapture
+    hold_id = f"SEED-HOLD-{booking.id}"
+    hold = PaymentHold(
+        booking_id=booking.id,
+        org_id=org.id,
+        paypal_order_id=f"SEED-ORDER-{booking.id}",
+        parent_authorization_id=hold_id,
+        latest_authorization_id=hold_id,
+        amount=agreed_fee,
+        captured_amount=agreed_fee,
+        currency="USD",
+        status=PaymentHoldStatus.CAPTURED,
+        honor_expires_at=datetime.now(UTC) + timedelta(days=3),
+        reauthorization_count=0,
+        idempotency_key=f"seed-dispute-hold-{booking.id}",
+    )
+    session.add(hold)
+    await session.flush()
+
+    capture = PaymentCapture(
+        booking_id=booking.id,
+        hold_id=hold.id,
+        paypal_capture_id=f"CAP-{booking.id.hex[:12].upper()}",
+        amount=agreed_fee,
+        currency="USD",
+        capture_type=PaymentCaptureType.NO_SHOW_FEE,
+        status="COMPLETED",
+    )
+    session.add(capture)
+    await session.flush()
+
+    # Append ledger entry
+    await append_ledger(
+        session,
+        event_type="CAPTURE_COMPLETED",
+        org_id=org.id,
+        booking_id=booking.id,
+        hold_id=hold.id,
+        amount=agreed_fee,
+        payload={"reason": "NO_SHOW_FEE", "booking_id": str(booking.id)},
+    )
+
+    # 5. Pre-seed DisputeCase in WAITING_FOR_SELLER_RESPONSE state
+    rebuttal_text = (
+        f"FORMAL REBUTTAL - SALONDESK DISPUTE DEFENSE (REASON: MERCHANDISE_OR_SERVICE_NOT_RECEIVED)\n"
+        f"1. Service Agreement: The client booked an exclusive appointment with {org.name} "
+        f"scheduled for {starts_at.strftime('%Y-%m-%d %H:%M UTC')}. The client agreed to a deposit/no-show fee "
+        f"of ${agreed_fee:.2f} USD if not cancelled before {booking.free_cancel_deadline_at.strftime('%Y-%m-%d %H:%M UTC')}.\n"
+        f"2. Cryptographic Proof of Consent: The client signed terms via Ed25519 keypair "
+        f"(Terms Hash: {terms_hash[:24]}..., Signature Prefix: {signature_b64[:24]}...). Mathematical verification status: PASS.\n"
+        f"3. Verified Transcript Exhibit: Client explicitly consented via chat exchange:\n"
+        f"   Client: 'I want to book braids Saturday at 3:00 PM with Selam. I accept the $30 no-show fee policy.'\n"
+        f"4. Audit Ledger Integrity: Financial events are sealed in the SalonDesk SHA-256 hash-chained ledger.\n"
+        f"5. Conclusion: Merchant reserved chair capacity as contracted. Fee was captured strictly per consented terms."
+    )
+
+    investigator_report = {
+        "booking_id": str(booking.id),
+        "booking_status": "NO_SHOW",
+        "created_at_utc": booking.created_at.isoformat() if booking.created_at else None,
+        "starts_at_utc": starts_at.strftime("%Y-%m-%d %H:%M UTC"),
+        "free_cancel_deadline_at_utc": booking.free_cancel_deadline_at.strftime(
+            "%Y-%m-%d %H:%M UTC"
+        ),
+        "agreed_no_show_fee": str(agreed_fee),
+        "captured_amount": str(agreed_fee),
+        "capture_id": str(capture.id),
+        "paypal_capture_id": capture.paypal_capture_id,
+        "ed25519_consent_verified": True,
+        "terms_text_hash": terms_hash,
+        "signature_prefix": signature_b64[:32],
+        "ledger_chain_verified": True,
+        "ledger_entries_checked": 1,
+        "ledger_error": None,
+        "terminal_ledger_hash": "CHAIN_SEALED",
+        "transcript_excerpt": DEFAULT_BILINGUAL_EXHIBIT,
+    }
+
+    dispute_case = DisputeCase(
+        booking_id=booking.id,
+        org_id=org.id,
+        capture_id=capture.id,
+        paypal_dispute_id="PP-D-90418-SANDBOX",
+        paypal_transaction_id=capture.paypal_capture_id,
+        reason="MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+        dispute_amount=agreed_fee,
+        status=DisputeCaseStatus.WAITING_FOR_SELLER_RESPONSE,
+        consent_verified=True,
+        ledger_chain_verified=True,
+        ledger_entries_checked=1,
+        transcript_excerpt_json=DEFAULT_BILINGUAL_EXHIBIT,
+        investigator_report_json=investigator_report,
+        advocate_rebuttal_text=rebuttal_text,
+        skeptic_win_probability=94,
+        skeptic_critique=(
+            "Strong defense. Valid Ed25519 signature, unbroken SHA-256 ledger chain, clear bilingual transcript "
+            "evidence, and captured amount is within the agreed fee ceiling. High probability of seller favor adjudication."
+        ),
+        recommended_action=DisputeRecommendation.FILE_EVIDENCE,
+        recommended_offer_amount=None,
+    )
+    session.add(dispute_case)
+
+    # 6. Pre-seed 2 WaitlistEntry candidates for Slot Rescue
+    candidate_1 = WaitlistEntry(
+        org_id=org.id,
+        service_id=service.id,
+        client_id=None,
+        client_name="Hana Tesfaye",
+        client_email="hana.tesfaye@example.et",
+        preferred_starts_at=datetime.now(UTC) + timedelta(days=2, hours=2),
+        status=WaitlistStatus.WAITING,
+    )
+    candidate_2 = WaitlistEntry(
+        org_id=org.id,
+        service_id=service.id,
+        client_id=None,
+        client_name="Meron Alemu",
+        client_email="meron.alemu@example.et",
+        preferred_starts_at=datetime.now(UTC) + timedelta(days=2, hours=4),
+        status=WaitlistStatus.WAITING,
+    )
+    session.add_all([candidate_1, candidate_2])
+    await session.flush()
+    logger.info("Seeded dispute case PP-D-90418-SANDBOX and 2 waitlist candidates for Slot Rescue")
+
+
 async def seed_curation(session: AsyncSession, org_data_list: list[dict]) -> None:
     if not org_data_list:
         return
@@ -327,6 +546,7 @@ async def run_seed(
                 limit_services=eff_limit_services,
             )
             await seed_clients_and_bookings(session, org_data_list)
+            await seed_dispute_and_waitlist(session, org_data_list)
             await seed_curation(session, org_data_list)
             await session.commit()
 

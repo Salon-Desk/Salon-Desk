@@ -4,6 +4,7 @@ Monorepo for a multi-tenant salon booking demo: **FastAPI** (`backend/`) + **Nex
 
 | Doc | Audience |
 | --- | --- |
+| [backend/AGENTS.md](backend/AGENTS.md) | FastAPI, SQLAlchemy, payments, AI/RAG, migrations, and tests |
 | [frontend/AGENTS.md](frontend/AGENTS.md) | Next.js App Router, Redux, portal UI conventions |
 | [Readme.md](Readme.md) | Human setup: Docker, seed, voice agent, make targets |
 | [PERMISSIONS_MAPPER.md](PERMISSIONS_MAPPER.md) | Actor roles, permissions matrix, and route/action access mapper |

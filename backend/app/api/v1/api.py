@@ -6,6 +6,7 @@ from app.api.v1.org import (
     bookings as org_bookings,
 )
 from app.api.v1.org import (
+    disputes,
     employees,
     finance,
     onboarding,
@@ -59,6 +60,7 @@ api_router.include_router(employees.router)
 api_router.include_router(org_services.router)
 api_router.include_router(org_bookings.router)
 api_router.include_router(settlements.router)
+api_router.include_router(disputes.router)
 api_router.include_router(finance.router)
 
 # Client application

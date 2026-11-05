@@ -182,11 +182,35 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         : query
 
       try {
+        // Merchant portal instant action assist
+        if (portal === 'merchant') {
+          const lower = query.toLowerCase()
+          if (lower.includes('dispute') || lower.includes('chargeback')) {
+            if (
+              typeof window !== 'undefined' &&
+              !window.location.pathname.startsWith('/merchant/disputes')
+            ) {
+              router.push('/merchant/disputes')
+            }
+            if (lower.includes('simulate')) {
+              highlightElement('#agent-simulate-dispute-btn')
+            } else {
+              highlightElement('#agent-dispute-btn')
+            }
+          } else if (lower.includes('slot rescue') || lower.includes('waitlist')) {
+            highlightElement('#agent-slot-rescue-btn')
+          }
+        }
+
+        const clientTimezone =
+          typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined
+
         const data = await clientConciergeChat({
           message: outgoingMessage,
           language: features.defaultLanguage,
           history: historyPayload,
           portal,
+          client_timezone: clientTimezone,
           user_lat: support ? null : (location?.lat ?? null),
           user_lng: support ? null : (location?.lng ?? null),
         }).unwrap()

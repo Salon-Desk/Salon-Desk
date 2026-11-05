@@ -2,6 +2,7 @@
 
 import { addDays, format } from 'date-fns'
 import {
+  Calendar,
   CalendarX2,
   Check,
   ChevronRight,
@@ -11,6 +12,8 @@ import {
   Moon,
   Sun,
   Sunrise,
+  User,
+  Users,
 } from 'lucide-react'
 
 import { formatDuration } from '@/lib/format'
@@ -44,6 +47,8 @@ function groupSlots(slots: TimeSlot[], timeZone: string) {
 export interface CheckoutScheduleProps {
   serviceId: string
   durationMin: number
+  stylistId?: string | null
+  stylistName?: string
   salonTz: string
   displayTz: string
   timezoneOptions: { value: string; label: string }[]
@@ -58,6 +63,8 @@ export interface CheckoutScheduleProps {
 export function CheckoutSchedule({
   serviceId,
   durationMin,
+  stylistId,
+  stylistName,
   salonTz,
   displayTz,
   timezoneOptions,
@@ -74,12 +81,24 @@ export function CheckoutSchedule({
     isError,
     refetch,
   } = useGetBookingAvailabilityQuery(
-    { service_id: serviceId, day: selectedDay },
+    {
+      service_id: serviceId,
+      day: selectedDay,
+      stylist_id: stylistId || undefined,
+      duration_minutes: durationMin > 0 ? durationMin : undefined,
+    },
     { skip: !serviceId || !selectedDay },
   )
 
   const availableSlots = (availability?.slots ?? []).filter((s) => s.available !== false)
   const openWindows = availability?.open_windows ?? []
+  const effectiveStylistName = availability?.stylist_name || stylistName || 'Any available stylist'
+  const shiftWindows = availability?.shift_windows ?? []
+  const salonHours =
+    availability?.salon_hours && availability.salon_hours.length > 0
+      ? availability.salon_hours
+      : openWindows
+  const simultaneousCapacity = availability?.simultaneous_capacity ?? 1
   const groups = groupSlots(availableSlots, displayTz)
   const selectedDate = parseYmd(selectedDay)
   const isClosed = !isFetching && availability && openWindows.length === 0
@@ -91,11 +110,11 @@ export function CheckoutSchedule({
 
   return (
     <div className="animate-in fade-in slide-in-from-right-2 duration-200">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="font-serif text-2xl text-stone-950">Pick a day &amp; time</h2>
           <p className="mt-1 text-sm text-stone-500">
-            {formatDuration(durationMin)} appointment · salon hours in {salonTz.replace(/_/g, ' ')}
+            Select an open slot tailored to stylist shifts and salon hours.
           </p>
         </div>
         <label className="flex items-center gap-2 self-start rounded-full border border-stone-200 bg-white px-3 py-2 text-xs text-stone-600 shadow-xs sm:self-auto">
@@ -113,6 +132,57 @@ export function CheckoutSchedule({
             ))}
           </select>
         </label>
+      </div>
+
+      {/* Schedule context badges: Stylist Shift, Service Time, Salon Hours, Simultaneous Working Capacity */}
+      <div className="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="rounded-2xl border border-stone-200/80 bg-stone-50/70 p-3">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+            <User className="h-3 w-3" />
+            <span>Stylist &amp; Shift</span>
+          </div>
+          <p className="mt-1 text-xs font-semibold text-stone-900 truncate">
+            {effectiveStylistName}
+          </p>
+          <p className="text-[11px] text-stone-500 truncate">
+            {shiftWindows.length > 0
+              ? shiftWindows.map((w) => `${formatHm(w[0])}–${formatHm(w[1])}`).join(', ')
+              : 'Assigned to day shift'}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-stone-200/80 bg-stone-50/70 p-3">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+            <Clock className="h-3 w-3" />
+            <span>Service Time</span>
+          </div>
+          <p className="mt-1 text-xs font-semibold text-stone-900">{formatDuration(durationMin)}</p>
+          <p className="text-[11px] text-stone-500">Duration per slot</p>
+        </div>
+
+        <div className="rounded-2xl border border-stone-200/80 bg-stone-50/70 p-3">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+            <Calendar className="h-3 w-3" />
+            <span>Salon Hours</span>
+          </div>
+          <p className="mt-1 text-xs font-semibold text-stone-900 truncate">
+            {salonHours.length > 0
+              ? salonHours.map((w) => `${formatHm(w[0])}–${formatHm(w[1])}`).join(', ')
+              : 'Closed today'}
+          </p>
+          <p className="text-[11px] text-stone-500 truncate">{salonTz.replace(/_/g, ' ')}</p>
+        </div>
+
+        <div className="rounded-2xl border border-stone-200/80 bg-stone-50/70 p-3">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+            <Users className="h-3 w-3" />
+            <span>Capacity</span>
+          </div>
+          <p className="mt-1 text-xs font-semibold text-stone-900">
+            {simultaneousCapacity} simultaneous
+          </p>
+          <p className="text-[11px] text-stone-500">Concurrent stations</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-[minmax(0,1fr)] xl:grid-cols-2">

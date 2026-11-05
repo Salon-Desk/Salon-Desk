@@ -2,11 +2,12 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import attributes, selectinload
 
-from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.exceptions import ForbiddenError, NotFoundError, PolicyViolationException
 from app.models.booking import Booking, BookingService
 from app.models.enums import (
     BookingStatus,
@@ -15,18 +16,15 @@ from app.models.enums import (
     PaymentCaptureType,
     PaymentHoldStatus,
     ServiceStatus,
+    UserRole,
+    UserStatus,
 )
 from app.models.organization import Organization
 from app.models.payment import PaymentHold
 from app.models.policy import OrgCancellationPolicy
 from app.models.service import Service
 from app.models.user import User
-from app.services.availability_service import (
-    check_slot_available,
-    find_eligible_stylists_for_service,
-    get_availability,
-    is_stylist_on_time_off,
-)
+from app.services.availability_service import check_slot_available, get_availability
 from app.services.commission_service import (
     commission_rule_for_service,
     total_platform_commission_for_services,
@@ -36,12 +34,14 @@ from app.services.payment_service import capture_hold, void_hold
 from app.services.policy_engine import (
     agreed_late_cancel_fee,
     agreed_no_show_fee,
+    assert_can_reschedule,
     free_cancel_deadline_at,
     is_within_free_cancel_window,
 )
 
 __all__ = [
     "create_booking",
+    "create_booking_order",
     "get_booking",
     "list_client_bookings",
     "list_org_bookings",
@@ -56,6 +56,8 @@ _BOOKING_LOAD_OPTIONS = (
     selectinload(Booking.client).selectinload(User.profile),
     selectinload(Booking.stylist).selectinload(User.profile),
     selectinload(Booking.booking_services).selectinload(BookingService.service),
+    selectinload(Booking.payment_holds),
+    selectinload(Booking.consents),
 )
 
 _DEFAULT_POLICY = {
@@ -82,6 +84,30 @@ async def _load_active_policy(db: AsyncSession, org_id: UUID) -> dict:
     }
 
 
+def _get_user_display_name(user: User | None) -> str:
+    if not user:
+        return "Assigned stylist"
+    insp = sa_inspect(user, raiseerr=False)
+    if insp is not None:
+        if "profile" in insp.attrs and insp.attrs.profile.loaded_value is not attributes.NO_VALUE:
+            prof = insp.attrs.profile.loaded_value
+            if prof:
+                name = getattr(prof, "full_name", None)
+                if callable(name):
+                    name = name()
+                if name:
+                    return str(name)
+    else:
+        prof = getattr(user, "profile", None)
+        if prof:
+            name = getattr(prof, "full_name", None)
+            if callable(name):
+                name = name()
+            if name:
+                return str(name)
+    return getattr(user, "email", "Assigned stylist")
+
+
 async def create_booking(
     db: AsyncSession,
     *,
@@ -91,10 +117,29 @@ async def create_booking(
     starts_at: datetime,
     stylist_id: UUID | None,
     customer_notes: str | None,
+    party_size: int = 1,
+    service_stylists: list | None = None,
 ) -> Booking:
+    now_utc = datetime.now(UTC)
+    s_at = starts_at if starts_at.tzinfo is not None else starts_at.replace(tzinfo=UTC)
+    if s_at <= now_utc:
+        raise ForbiddenError("Cannot book an appointment in the past")
+
+    if s_at > now_utc + timedelta(days=28):
+        raise PolicyViolationException(
+            code="BOOKING_HORIZON_EXCEEDED",
+            message="Appointments with PayPal deposit holds can only be scheduled up to 28 days in advance.",
+            status_code=422,
+        )
+
     org = await db.get(Organization, org_id)
     if org is None or org.status != OrganizationStatus.APPROVED:
         raise ForbiddenError("Organization is not available for booking")
+
+    if not service_ids:
+        raise ForbiddenError("At least one service must be selected")
+
+    party_size = max(1, min(10, party_size))
 
     result = await db.execute(
         select(Service).where(
@@ -105,11 +150,47 @@ async def create_booking(
     )
     services = list(result.scalars().all())
     if len(services) != len(set(service_ids)):
-        raise NotFoundError("One or more services not found")
+        raise NotFoundError("One or more services not found or inactive")
+
+    # Map per-service stylist selections
+    service_stylist_map: dict[UUID, UUID | None] = {}
+    if service_stylists:
+        for ss in service_stylists:
+            sid = getattr(ss, "service_id", None) or (
+                ss.get("service_id") if isinstance(ss, dict) else None
+            )
+            stid = (
+                getattr(ss, "stylist_id", None)
+                if hasattr(ss, "stylist_id")
+                else (ss.get("stylist_id") if isinstance(ss, dict) else None)
+            )
+            if sid:
+                service_stylist_map[UUID(str(sid))] = UUID(str(stid)) if stid else None
+
+    # Collect and validate all unique stylists
+    all_stylist_ids: set[UUID] = set()
+    if stylist_id is not None:
+        all_stylist_ids.add(stylist_id)
+    for stid in service_stylist_map.values():
+        if stid is not None:
+            all_stylist_ids.add(stid)
+
+    stylist_users: dict[UUID, User] = {}
+    for stid in all_stylist_ids:
+        st = await db.get(User, stid)
+        if st is None or st.org_id != org_id or st.status != UserStatus.ACTIVE:
+            raise ForbiddenError("Selected stylist is not available at this salon")
+        if st.role != UserRole.STYLIST:
+            raise ForbiddenError("Selected staff member is not an active stylist")
+        stylist_users[stid] = st
+
+    # Fallback overall stylist_id to first service's stylist if not provided
+    if stylist_id is None and services:
+        stylist_id = service_stylist_map.get(services[0].id)
 
     total_duration = sum(s.duration_minutes for s in services)
     ends_at = starts_at + timedelta(minutes=total_duration)
-    total_price = sum((s.base_price for s in services), Decimal("0"))
+    total_price = sum((s.base_price for s in services), Decimal("0")) * party_size
 
     # Supersede any previous incomplete pending bookings for this client on the same slot
     stale_user_pending_q = select(Booking).where(
@@ -140,44 +221,71 @@ async def create_booking(
     if stale_user_pending:
         await db.flush()
 
-    primary = services[0]
-    if stylist_id is None:
-        eligible_stylists = await find_eligible_stylists_for_service(
+    # Verify slot availability: either segmented per service if specific stylists differ, or across the full session
+    has_varying_stylists = bool(service_stylist_map and len(set(service_stylist_map.values())) > 1)
+    if has_varying_stylists:
+        curr_start = starts_at
+        for s in services:
+            curr_end = curr_start + timedelta(minutes=s.duration_minutes)
+            s_stylist = service_stylist_map.get(s.id, stylist_id)
+            slot_ok = await check_slot_available(
+                db,
+                service=s,
+                starts_at=curr_start,
+                ends_at=curr_end,
+                stylist_id=s_stylist,
+            )
+            if not slot_ok:
+                raise ForbiddenError(f"Selected time slot is not available for {s.name}")
+            curr_start = curr_end
+    else:
+        primary = services[0]
+        common_stylist = service_stylist_map.get(primary.id, stylist_id)
+        available = await check_slot_available(
             db,
-            org_id=org_id,
             service=primary,
-            day=starts_at.date(),
             starts_at=starts_at,
             ends_at=ends_at,
+            stylist_id=common_stylist,
         )
-        if eligible_stylists:
-            stylist_id = eligible_stylists[0].id
-    else:
-        if await is_stylist_on_time_off(db, stylist_id, starts_at.date()):
-            raise ForbiddenError("Selected stylist is off on this date")
-
-    available = await check_slot_available(
-        db,
-        service=primary,
-        starts_at=starts_at,
-        ends_at=ends_at,
-        stylist_id=stylist_id,
-    )
-    if not available:
-        raise ForbiddenError("Selected time slot is not available")
+        if not available:
+            raise ForbiddenError("Selected time slot is not available")
 
     policy_snapshot = await _load_active_policy(db, org_id)
+    policy_snapshot["party_size"] = party_size
     no_show_fee = agreed_no_show_fee(total_price=total_price, policy_data=policy_snapshot)
     late_cancel_fee = agreed_late_cancel_fee(total_price=total_price, policy_data=policy_snapshot)
     deadline = free_cancel_deadline_at(starts_at=starts_at, policy_data=policy_snapshot)
 
-    platform_commission = await total_platform_commission_for_services(db, services)
+    platform_commission = (await total_platform_commission_for_services(db, services)) * party_size
+    primary = services[0]
     primary_rule = await commission_rule_for_service(db, primary)
     commission_snapshot = {
         **primary_rule,
         "amount": str(platform_commission),
     }
     agreed_hold = (total_price + platform_commission).quantize(Decimal("0.01"))
+
+    # Format notes
+    note_segments: list[str] = []
+    if party_size > 1:
+        note_segments.append(f"Party size: {party_size} guests")
+    if customer_notes:
+        note_segments.append(customer_notes)
+    if service_stylist_map:
+        stylist_details = []
+        for s in services:
+            st_id = service_stylist_map.get(s.id)
+            st_user = stylist_users.get(st_id) if st_id else None
+            st_name = (
+                _get_user_display_name(st_user)
+                if st_user
+                else ("Any available stylist" if not st_id else "Assigned stylist")
+            )
+            stylist_details.append(f"{s.name}: {st_name}")
+        note_segments.append("Stylists: " + " · ".join(stylist_details))
+
+    final_notes = "\n".join(note_segments) if note_segments else None
 
     booking = Booking(
         org_id=org_id,
@@ -193,19 +301,25 @@ async def create_booking(
         free_cancel_deadline_at=deadline,
         policy_snapshot_json=policy_snapshot,
         commission_snapshot=commission_snapshot,
-        customer_notes=customer_notes,
+        customer_notes=final_notes,
     )
     db.add(booking)
     await db.flush()
 
     for service in services:
         line_rule = await commission_rule_for_service(db, service)
+        svc_stylist_id = service_stylist_map.get(service.id, stylist_id)
+        svc_policy = dict(policy_snapshot)
+        if svc_stylist_id and svc_stylist_id in stylist_users:
+            st_user = stylist_users[svc_stylist_id]
+            svc_policy["stylist_id"] = str(svc_stylist_id)
+            svc_policy["stylist_name"] = _get_user_display_name(st_user)
         db.add(
             BookingService(
                 booking_id=booking.id,
                 service_id=service.id,
                 base_price=service.base_price,
-                service_policy_snapshot_json=policy_snapshot,
+                service_policy_snapshot_json=svc_policy,
                 commission_rule_snapshot_json=line_rule,
             )
         )
@@ -316,11 +430,13 @@ async def reschedule_booking(
     db: AsyncSession,
     *,
     booking: Booking,
-    starts_at: datetime,
-    stylist_id: UUID | None = None,
     actor_id: UUID,
+    starts_at: datetime | None = None,
+    ends_at: datetime | None = None,
+    stylist_id: UUID | None = None,
     is_org: bool = False,
 ) -> Booking:
+    """Reschedule an appointment time and/or reassign stylist with policy cutoff and availability checks."""
     if booking.status in {
         BookingStatus.CANCELLED,
         BookingStatus.COMPLETED,
@@ -331,53 +447,148 @@ async def reschedule_booking(
     if not is_org and booking.client_id != actor_id:
         raise ForbiddenError("Not your booking")
 
-    if starts_at.tzinfo is None:
-        starts_at = starts_at.replace(tzinfo=UTC)
+    if starts_at is None and stylist_id is None:
+        raise PolicyViolationException(
+            "At least one modification (starts_at or stylist_id) must be specified"
+        )
 
-    if starts_at <= datetime.now(UTC):
-        raise ForbiddenError("Cannot reschedule to a past time")
+    # Time restriction check: clients cannot reschedule within the salon's cutoff window (e.g. 4 hours)
+    assert_can_reschedule(
+        starts_at=booking.starts_at,
+        policy_data=booking.policy_snapshot_json,
+        is_org=is_org,
+    )
 
-    original_duration = booking.ends_at - booking.starts_at
-    ends_at = starts_at + original_duration
+    now = datetime.now(UTC)
 
+    # Determine target time range
+    if starts_at is not None:
+        target_starts_at = (
+            starts_at if starts_at.tzinfo is not None else starts_at.replace(tzinfo=UTC)
+        )
+        if target_starts_at <= now:
+            raise ForbiddenError("Cannot reschedule to a past time")
+
+        if ends_at is not None:
+            target_ends_at = ends_at if ends_at.tzinfo is not None else ends_at.replace(tzinfo=UTC)
+            if target_ends_at <= target_starts_at:
+                raise PolicyViolationException("Appointment end time must be after start time")
+        else:
+            orig_duration = booking.ends_at - booking.starts_at
+            target_ends_at = target_starts_at + orig_duration
+    else:
+        target_starts_at = booking.starts_at
+        target_ends_at = booking.ends_at
+
+    # Determine target stylist
     target_stylist_id = stylist_id if stylist_id is not None else booking.stylist_id
+    if stylist_id is not None and stylist_id != booking.stylist_id:
+        stylist_user = await db.get(User, stylist_id)
+        if stylist_user is None or stylist_user.org_id != booking.org_id:
+            raise NotFoundError("Stylist not found in this organization")
 
-    # Verify availability for all services in this booking
+    # Slot availability check
     for bs in booking.booking_services:
-        service = await db.get(Service, bs.service_id)
-        if service is None or service.status != ServiceStatus.ACTIVE:
+        service = getattr(bs, "service", None)
+        if not isinstance(service, Service):
+            service = await db.get(Service, bs.service_id)
+        if service is None or (
+            getattr(service, "status", None) is not None and service.status != ServiceStatus.ACTIVE
+        ):
             raise NotFoundError("Service not available")
         available = await check_slot_available(
             db,
             service=service,
-            starts_at=starts_at,
-            ends_at=ends_at,
+            starts_at=target_starts_at,
+            ends_at=target_ends_at,
+            stylist_id=target_stylist_id,
             exclude_booking_id=booking.id,
         )
         if not available:
             raise ForbiddenError("Selected time slot is not available")
 
-    old_starts = booking.starts_at
-    booking.starts_at = starts_at
-    booking.ends_at = ends_at
-    if stylist_id is not None:
-        booking.stylist_id = target_stylist_id
+    # Guardrail: Total price cannot exceed authorized hold ceiling without new approval
+    agreed_hold = getattr(booking, "agreed_hold_amount", None)
+    total_price = getattr(booking, "total_price", None)
+    if (
+        isinstance(agreed_hold, (Decimal, int, float))
+        and isinstance(total_price, (Decimal, int, float))
+        and total_price > agreed_hold
+    ):
+        raise PolicyViolationException(
+            f"Rescheduled total price ({total_price}) exceeds authorized deposit hold "
+            f"({agreed_hold}). Supplementary authorization or in-person settlement required."
+        )
 
-    # Recalculate free cancellation deadline
-    deadline = free_cancel_deadline_at(
-        starts_at=starts_at, policy_data=booking.policy_snapshot_json
+    # Guardrail: PayPal 29-day authorization hold ceiling
+    # Rescheduled appointment cannot exceed 28 days from hold authorization date
+    hold = getattr(booking, "payment_hold", None)
+    if hold is None and hasattr(booking, "payment_holds") and booking.payment_holds:
+        hold = booking.payment_holds[0]
+    if hold is None:
+        hold_res = await db.execute(
+            select(PaymentHold)
+            .where(PaymentHold.booking_id == booking.id)
+            .order_by(PaymentHold.created_at.desc())
+            .limit(1)
+        )
+        hold = hold_res.scalar_one_or_none()
+
+    if hold is not None:
+        auth_at = getattr(hold, "authorized_at", None) or getattr(hold, "created_at", None)
+        if isinstance(auth_at, datetime):
+            if auth_at.tzinfo is None:
+                auth_at = auth_at.replace(tzinfo=UTC)
+            max_reschedule_date = auth_at + timedelta(days=28)
+            if target_starts_at > max_reschedule_date:
+                raise PolicyViolationException(
+                    code="RESCHEDULE_LIMIT_EXCEEDED",
+                    message=(
+                        f"Cannot reschedule past {max_reschedule_date.isoformat()}. "
+                        "PayPal authorization holds expire 29 days from the original booking date. "
+                        "For dates further out, please cancel and create a new reservation."
+                    ),
+                    status_code=422,
+                )
+
+    prev_starts = booking.starts_at
+    prev_ends = booking.ends_at
+    prev_stylist = booking.stylist_id
+
+    booking.starts_at = target_starts_at
+    booking.ends_at = target_ends_at
+    booking.stylist_id = target_stylist_id
+
+    # Recompute free cancellation deadline based on new starts_at
+    booking.free_cancel_deadline_at = free_cancel_deadline_at(
+        starts_at=target_starts_at,
+        policy_data=booking.policy_snapshot_json,
     )
-    booking.free_cancel_deadline_at = deadline
+    if hasattr(booking, "reminder_sent_at"):
+        booking.reminder_sent_at = None
+
+    await db.flush()
 
     await append_ledger(
         db,
         event_type="BOOKING_RESCHEDULED",
         payload={
             "booking_id": str(booking.id),
-            "old_starts_at": old_starts.isoformat(),
-            "new_starts_at": starts_at.isoformat(),
-            "new_ends_at": ends_at.isoformat(),
+            "old_starts_at": prev_starts.isoformat(),
+            "previous_starts_at": prev_starts.isoformat(),
+            "previous_ends_at": prev_ends.isoformat(),
+            "previous_stylist_id": str(prev_stylist) if prev_stylist else None,
+            "new_starts_at": target_starts_at.isoformat(),
+            "new_ends_at": target_ends_at.isoformat(),
             "stylist_id": str(target_stylist_id) if target_stylist_id else None,
+            "new_stylist_id": str(target_stylist_id) if target_stylist_id else None,
+            "free_cancel_deadline_at": (
+                booking.free_cancel_deadline_at.isoformat()
+                if booking.free_cancel_deadline_at
+                else None
+            ),
+            "actor_id": str(actor_id),
+            "is_org": is_org,
         },
         org_id=booking.org_id,
         booking_id=booking.id,
@@ -386,3 +597,6 @@ async def reschedule_booking(
     )
     await db.flush()
     return booking
+
+
+create_booking_order = create_booking

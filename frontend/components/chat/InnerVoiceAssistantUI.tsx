@@ -15,6 +15,7 @@ import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 
 import { FloatingVoicePill } from '@/components/chat/FloatingVoicePill'
+import { RichText } from '@/components/chat/RichText'
 import type {
   AgentOrganizationRecommendation,
   AgentServiceRecommendation,
@@ -324,18 +325,39 @@ export function InnerVoiceAssistantUI({
           return
         }
 
-        if (parsed?.type === 'ui_action') {
+        if (parsed?.type === 'ui_action' || topic === 'lk.agent.ui_action') {
+          const actionPayload = {
+            type: 'ui_action' as const,
+            ...parsed,
+          }
+
           if (
-            parsed.target &&
+            actionPayload.target &&
+            actionPayload.target.startsWith('/') &&
             typeof window !== 'undefined' &&
-            window.location.pathname !== parsed.target
+            window.location.pathname !== actionPayload.target
           ) {
-            router.push(parsed.target)
+            router.push(actionPayload.target)
           }
-          dispatchAgentUiAction(parsed)
-          if (parsed.selector) {
-            highlightElement(parsed.selector)
+
+          // Spotlight & router assistance for Dispute Counsel and Slot Rescue
+          if (actionPayload.action === 'open_dispute_drawer') {
+            if (
+              typeof window !== 'undefined' &&
+              !window.location.pathname.startsWith('/merchant/disputes')
+            ) {
+              router.push('/merchant/disputes')
+            }
+            const sel = actionPayload.selector || '#agent-dispute-btn'
+            highlightElement(sel)
+          } else if (actionPayload.action === 'execute_slot_rescue') {
+            const sel = actionPayload.selector || '#agent-slot-rescue-btn'
+            highlightElement(sel)
+          } else if (actionPayload.selector) {
+            highlightElement(actionPayload.selector)
           }
+
+          dispatchAgentUiAction(actionPayload)
           return
         }
       } catch {
@@ -679,13 +701,16 @@ export function InnerVoiceAssistantUI({
                     </div>
                     <div
                       className={cn(
-                        'rounded-2xl px-3.5 py-2 text-xs sm:text-[13px] leading-relaxed shadow-xs max-w-[88%] whitespace-pre-wrap',
+                        'rounded-2xl px-3.5 py-2 text-xs sm:text-[13px] leading-relaxed shadow-xs max-w-[88%]',
                         isUser
                           ? 'rounded-tr-xs bg-slate-900 text-slate-50'
                           : 'rounded-tl-xs border border-slate-200/80 bg-slate-50 text-slate-900',
                       )}
                     >
-                      {msg.text}
+                      <RichText
+                        content={msg.text}
+                        className={isUser ? 'text-slate-50' : 'text-slate-900'}
+                      />
                     </div>
                   </div>
                 )

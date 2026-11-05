@@ -12,6 +12,7 @@ import type {
   LiveKitTokenRequest,
   LiveKitTokenResponse,
   PaymentHold,
+  RescheduleBookingRequest,
 } from '@/types/api-booking'
 import type {
   CatalogStaffMember,
@@ -260,9 +261,15 @@ export const clientApi = baseApi.injectEndpoints({
 
     getBookingAvailability: builder.query<
       AvailabilityResponse,
-      { service_id: string; day: string; slot_minutes?: number; stylist_id?: string | null }
+      {
+        service_id: string
+        day: string
+        slot_minutes?: number
+        stylist_id?: string | null
+        duration_minutes?: number | null
+      }
     >({
-      query: ({ service_id, day, slot_minutes, stylist_id }) => ({
+      query: ({ service_id, day, slot_minutes, stylist_id, duration_minutes }) => ({
         url: '/api/v1/bookings/availability',
         method: 'GET',
         params: {
@@ -270,6 +277,7 @@ export const clientApi = baseApi.injectEndpoints({
           day,
           ...(slot_minutes ? { slot_minutes } : {}),
           ...(stylist_id ? { stylist_id } : {}),
+          ...(duration_minutes ? { duration_minutes } : {}),
         },
       }),
     }),
@@ -306,11 +314,11 @@ export const clientApi = baseApi.injectEndpoints({
 
     rescheduleBooking: builder.mutation<
       ApiBooking,
-      { bookingId: string; body: { starts_at: string; stylist_id?: string | null } }
+      { bookingId: string; body: RescheduleBookingRequest }
     >({
       query: ({ bookingId, body }) => ({
         url: `/api/v1/bookings/${bookingId}/reschedule`,
-        method: 'POST',
+        method: 'PATCH',
         data: body,
       }),
       invalidatesTags: ['bookings'],

@@ -6,6 +6,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export interface PrimaryButtonProps {
+  id?: string
   title?: string
   children?: React.ReactNode
   icon?: React.ReactNode
@@ -33,6 +34,7 @@ export interface PrimaryButtonProps {
 }
 
 const PrimaryButton: React.FC<PrimaryButtonProps> = ({
+  id,
   title,
   children,
   icon,
@@ -120,6 +122,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   if (href && !disabled) {
     return (
       <Link
+        id={id}
         href={href}
         className={finalClassName}
         style={style}
@@ -133,6 +136,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 
   return (
     <Button
+      id={id}
       disabled={disabled}
       type={type}
       onClick={onClick}

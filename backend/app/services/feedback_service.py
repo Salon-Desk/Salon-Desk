@@ -122,7 +122,7 @@ async def list_catalog_staff(db: AsyncSession, org_id: UUID) -> list[dict]:
         .where(
             User.org_id == org_id,
             User.status == UserStatus.ACTIVE,
-            User.role.in_([UserRole.STYLIST, UserRole.ORG_OWNER]),
+            User.role == UserRole.STYLIST,
         )
         .order_by(User.created_at)
     )

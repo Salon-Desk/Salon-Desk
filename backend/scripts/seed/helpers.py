@@ -57,6 +57,21 @@ async def _ensure_enum_values(conn) -> None:
         ("feedback_moderation_status", "pending"),
         ("feedback_moderation_status", "approved"),
         ("feedback_moderation_status", "rejected"),
+        ("dispute_case_status", "OPEN"),
+        ("dispute_case_status", "INVESTIGATING"),
+        ("dispute_case_status", "EVIDENCE_READY"),
+        ("dispute_case_status", "WAITING_FOR_SELLER_RESPONSE"),
+        ("dispute_case_status", "EVIDENCE_SUBMITTED"),
+        ("dispute_case_status", "UNDER_REVIEW"),
+        ("dispute_case_status", "OFFER_MADE"),
+        ("dispute_case_status", "RESOLVED_SELLER_FAVOR"),
+        ("dispute_case_status", "RESOLVED_BUYER_FAVOR"),
+        ("dispute_recommendation", "FILE_EVIDENCE"),
+        ("dispute_recommendation", "MAKE_OFFER"),
+        ("waitlist_status", "WAITING"),
+        ("waitlist_status", "OFFERED"),
+        ("waitlist_status", "RESCUED_FILLED"),
+        ("waitlist_status", "EXPIRED"),
     ):
         await conn.execute(
             text(

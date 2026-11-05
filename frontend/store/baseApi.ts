@@ -25,6 +25,7 @@ export const API_TAG_TYPES = [
   'admin',
   'dashboard',
   'curation',
+  'disputes',
 ] as const
 
 export type ApiTagType = (typeof API_TAG_TYPES)[number]

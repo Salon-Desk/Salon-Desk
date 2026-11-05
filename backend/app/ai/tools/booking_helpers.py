@@ -8,6 +8,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,20 +22,31 @@ from app.models.user import User
 logger = logging.getLogger("salondesk.ai.booking_tools")
 
 
-def parse_starts_at(preferred_time: str | None) -> datetime:
-    """Parse appointment time or default to tomorrow at 2:00 PM UTC."""
+def parse_starts_at(preferred_time: str | None, client_tz: ZoneInfo | None = None) -> datetime:
+    """Parse appointment time or default to tomorrow at 2:00 PM in client timezone / UTC."""
+    tz = client_tz or UTC
     if preferred_time:
+        cleaned = preferred_time.strip()
+        # Case 1: explicit offset or Z
+        if cleaned.endswith("Z") or ("+" in cleaned[10:] or "-" in cleaned[10:]):
+            try:
+                dt = datetime.fromisoformat(cleaned.replace("Z", "+00:00"))
+                return dt.astimezone(UTC)
+            except ValueError:
+                pass
+        # Case 2: naive local string
         try:
-            dt = datetime.fromisoformat(preferred_time.replace("Z", "+00:00"))
+            dt = datetime.fromisoformat(cleaned)
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=UTC)
-            return dt
+                dt = dt.replace(tzinfo=tz)
+            return dt.astimezone(UTC)
         except ValueError:
             pass
 
-    # Default to tomorrow at 14:00 UTC
-    tomorrow = datetime.now(UTC) + timedelta(days=1)
-    return tomorrow.replace(hour=14, minute=0, second=0, microsecond=0)
+    # Default to tomorrow at 14:00 in client timezone
+    tomorrow = datetime.now(tz) + timedelta(days=1)
+    local_dt = tomorrow.replace(hour=14, minute=0, second=0, microsecond=0)
+    return local_dt.astimezone(UTC)
 
 
 async def resolve_client(db: AsyncSession, client_email: str | None = None) -> User | None:
@@ -172,9 +184,11 @@ def build_booking_payload(
     org: Organization | None,
     starts_at: datetime,
     stylist_name: str | None = None,
+    display_tz: ZoneInfo | None = None,
 ) -> dict[str, Any]:
     """Build a standardized booking payload for callbacks."""
-    formatted_time = starts_at.strftime("%A, %b %d at %I:%M %p")
+    tz = display_tz or UTC
+    formatted_time = starts_at.astimezone(tz).strftime("%A, %b %d at %I:%M %p")
     org_name = org.name if org else "Salon"
 
     return {
@@ -192,19 +206,20 @@ def build_booking_payload(
     }
 
 
-def build_booking_data_dict(booking: Booking) -> dict[str, Any]:
+def build_booking_data_dict(booking: Booking, display_tz: ZoneInfo | None = None) -> dict[str, Any]:
     """Build booking data dict for client booking listings."""
+    tz = display_tz or UTC
     org = booking.organization
     svc_names = (
         ", ".join(bs.service.name for bs in booking.booking_services if bs.service)
         or "Salon service"
     )
     deadline_str = (
-        booking.free_cancel_deadline_at.strftime("%b %d at %I:%M %p")
+        booking.free_cancel_deadline_at.astimezone(tz).strftime("%b %d at %I:%M %p")
         if booking.free_cancel_deadline_at
         else "24h prior"
     )
-    formatted_time = booking.starts_at.strftime("%A, %b %d at %I:%M %p")
+    formatted_time = booking.starts_at.astimezone(tz).strftime("%A, %b %d at %I:%M %p")
 
     return {
         "booking_id": str(booking.id),

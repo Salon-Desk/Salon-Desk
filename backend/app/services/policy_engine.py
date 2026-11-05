@@ -1,11 +1,15 @@
 """Deterministic booking/deposit/cancel policy state machine."""
 
+from __future__ import annotations
+
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from app.core.exceptions import ForbiddenError, PolicyViolationException
 from app.models.enums import BookingStatus, PaymentHoldStatus, UserRole
+from app.models.payment import AuthorizationHold, PaymentHold
 
 VALID_BOOKING_TRANSITIONS: dict[BookingStatus, set[BookingStatus]] = {
     BookingStatus.PENDING_PAYMENT: {BookingStatus.CONFIRMED, BookingStatus.CANCELLED},
@@ -72,6 +76,51 @@ def assert_valid_hold_transition(
         raise PolicyViolationException(f"Invalid hold transition from {curr.value} to {tgt.value}")
 
 
+def assert_can_reauthorize_hold(
+    hold: AuthorizationHold | PaymentHold | Any,
+    now: datetime | None = None,
+) -> None:
+    """Enforce PayPal authorization hold lifecycle constraints.
+
+    - Days 0-3 (72-hour honor window): Reauthorization is blocked (REAUTHORIZATION_TOO_SOON).
+    - Days 4-29: Reauthorization is permitted.
+    - Day 29+: Hold has reached its maximum lifetime and cannot be reauthorized (HOLD_EXPIRED).
+    """
+    current = now or datetime.now(UTC)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=UTC)
+
+    auth_at = getattr(hold, "authorized_at", None)
+    if not isinstance(auth_at, datetime):
+        auth_at = getattr(hold, "created_at", None)
+    if not isinstance(auth_at, datetime):
+        auth_at = current
+    if auth_at.tzinfo is None:
+        auth_at = auth_at.replace(tzinfo=UTC)
+
+    hold_age = current - auth_at
+    days_since_auth = hold_age.total_seconds() / 86400.0
+
+    # Block reauthorization during Days 0–3 honor period
+    if days_since_auth < 3.0:
+        raise PolicyViolationException(
+            code="REAUTHORIZATION_TOO_SOON",
+            message=(
+                f"Hold is in its initial 3-day honor period ({days_since_auth:.1f} days old). "
+                "Reauthorization is only permitted between Day 4 and Day 29."
+            ),
+            status_code=422,
+        )
+
+    # Block reauthorization on or after Day 29
+    if days_since_auth >= 29.0:
+        raise PolicyViolationException(
+            code="HOLD_EXPIRED",
+            message="Hold has reached the maximum 29-day lifetime and cannot be reauthorized.",
+            status_code=422,
+        )
+
+
 def assert_can_settle(
     user_role: UserRole | str,
     org_id: UUID | None,
@@ -96,6 +145,20 @@ def assert_deposit_within_ceiling(service_price: Decimal, deposit_amount: Decima
     ceiling = service_price * MAX_DEPOSIT_FRACTION
     if deposit_amount > ceiling:
         raise PolicyViolationException(f"Deposit {deposit_amount} exceeds ceiling {ceiling}")
+
+
+def assert_capture_within_ceiling(
+    hold_amount: Decimal, already_captured: Decimal, capture_amount: Decimal
+) -> None:
+    """Ensure capture amount is positive and does not exceed remaining authorized ceiling."""
+    if capture_amount <= Decimal("0"):
+        raise PolicyViolationException("Capture amount must be greater than zero")
+    remaining = hold_amount - already_captured
+    if capture_amount > remaining:
+        raise PolicyViolationException(
+            f"Capture {capture_amount} would exceed authorized ceiling "
+            f"(remaining {remaining} of {hold_amount})"
+        )
 
 
 def can_self_cancel(*, hours_until_start: float, free_cancel_hours: float) -> bool:
@@ -141,3 +204,107 @@ def is_within_free_cancel_window(
     if current.tzinfo is None:
         current = current.replace(tzinfo=UTC)
     return current <= deadline
+
+
+DEFAULT_RESCHEDULE_CUTOFF_HOURS = 4.0
+
+
+def can_reschedule(
+    *,
+    starts_at: datetime,
+    now: datetime | None = None,
+    cutoff_hours: float = DEFAULT_RESCHEDULE_CUTOFF_HOURS,
+    is_org: bool = False,
+) -> bool:
+    """Evaluate whether client self-service rescheduling is permitted based on the cutoff window.
+
+    Salon staff (is_org=True) can bypass cutoff limits.
+    Clients are restricted if the appointment is fewer than cutoff_hours away.
+    """
+    if is_org:
+        return True
+    current = now or datetime.now(UTC)
+    s_at = starts_at if starts_at.tzinfo is not None else starts_at.replace(tzinfo=UTC)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=UTC)
+    hours_until_start = (s_at - current).total_seconds() / 3600.0
+    return hours_until_start >= cutoff_hours
+
+
+def assert_can_reschedule(
+    *,
+    starts_at: datetime,
+    now: datetime | None = None,
+    policy_data: dict | None = None,
+    is_org: bool = False,
+) -> None:
+    """Raise PolicyViolationException if client attempts to reschedule within the cutoff window."""
+    if is_org:
+        return
+    policy = policy_data or {}
+    cutoff_hours = float(policy.get("reschedule_cutoff_hours", DEFAULT_RESCHEDULE_CUTOFF_HOURS))
+    if not can_reschedule(starts_at=starts_at, now=now, cutoff_hours=cutoff_hours, is_org=is_org):
+        display_cutoff = int(cutoff_hours) if cutoff_hours.is_integer() else cutoff_hours
+        raise PolicyViolationException(
+            f"Rescheduling is not permitted within {display_cutoff} hours of appointment start time."
+        )
+
+
+def evaluate_slot_rescue(
+    original_booking_status: BookingStatus,
+    hold_status: PaymentHoldStatus | None,
+    agreed_no_show_fee: Decimal,
+    captured_amount: Decimal,
+) -> dict[str, Any]:
+    """Deterministic referee deciding whether to void authorization hold or refund captured fee on slot rescue."""
+    if captured_amount > Decimal("0.00") and (
+        original_booking_status in {BookingStatus.NO_SHOW, BookingStatus.CANCELLED}
+        or hold_status in {PaymentHoldStatus.CAPTURED, PaymentHoldStatus.PARTIALLY_CAPTURED}
+    ):
+        return {
+            "action": "REFUND_CAPTURE",
+            "waived_amount": captured_amount,
+            "refund_amount": captured_amount,
+        }
+
+    if hold_status in {
+        PaymentHoldStatus.AUTHORIZED,
+        PaymentHoldStatus.REAUTHORIZED,
+    } and captured_amount == Decimal("0.00"):
+        return {
+            "action": "VOID_HOLD",
+            "waived_amount": agreed_no_show_fee,
+            "refund_amount": Decimal("0.00"),
+        }
+
+    return {
+        "action": "NOOP",
+        "waived_amount": Decimal("0.00"),
+        "refund_amount": Decimal("0.00"),
+    }
+
+
+def is_slot_rescued(
+    cancelled_starts_at: datetime,
+    cancelled_ends_at: datetime,
+    replacement_starts_at: datetime,
+) -> bool:
+    """Check if replacement booking overlaps or refills the vacated appointment slot."""
+    c_start = (
+        cancelled_starts_at
+        if cancelled_starts_at.tzinfo is not None
+        else cancelled_starts_at.replace(tzinfo=UTC)
+    )
+    c_end = (
+        cancelled_ends_at
+        if cancelled_ends_at.tzinfo is not None
+        else cancelled_ends_at.replace(tzinfo=UTC)
+    )
+    r_start = (
+        replacement_starts_at
+        if replacement_starts_at.tzinfo is not None
+        else replacement_starts_at.replace(tzinfo=UTC)
+    )
+
+    # Valid if replacement falls on the same calendar block (from start up to end, with 60-min grace tolerance)
+    return (c_start - timedelta(minutes=30)) <= r_start <= (c_end + timedelta(minutes=30))

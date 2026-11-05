@@ -24,6 +24,8 @@ import { formatBookingRef, formatUsd } from '@/lib/format'
 import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
 import type { Booking } from '@/types'
 
+import { DisputeBookingModal } from './DisputeBookingModal'
+
 interface BookingsPanelProps {
   pendingBookings?: Booking[]
   activeHolds: Booking[]
@@ -32,6 +34,7 @@ interface BookingsPanelProps {
   onCancel: (booking: Booking) => void
   onViewReceipt: (booking: Booking) => void
   onCompletePayment?: (booking: Booking) => void
+  onReschedule?: (booking: Booking) => void
   searchQuery: string
   onSearchChange: (value: string) => void
   sortBy:
@@ -60,12 +63,15 @@ export function BookingsPanel({
   onCancel,
   onViewReceipt,
   onCompletePayment,
+  onReschedule,
   searchQuery,
   onSearchChange,
   sortBy,
   onSortChange,
 }: BookingsPanelProps) {
   const [rescheduleTarget, setRescheduleTarget] = useState<Booking | null>(null)
+  const [disputeTarget, setDisputeTarget] = useState<Booking | null>(null)
+  const noShowBookings = pastBookings.filter((b) => b.status === 'NO_SHOW_CAPTURED')
   return (
     <div className="space-y-8 sm:space-y-12">
       {/* Editorial Header */}
@@ -168,6 +174,45 @@ export function BookingsPanel({
         </section>
       ) : null}
 
+      {/* Automatic No-Show Notification Alert Banner */}
+      {noShowBookings.length > 0 && (
+        <div className="rounded-3xl border border-rose-200 bg-rose-50/90 p-4 sm:p-5 text-rose-950 shadow-xs">
+          <div className="flex items-start gap-3.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-700">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-rose-200/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-900">
+                  Notice
+                </span>
+                <h3 className="font-semibold text-sm text-rose-950">
+                  Appointment flagged as No-Show
+                </h3>
+              </div>
+              <p className="mt-1 text-xs text-rose-850 leading-relaxed">
+                The salon flagged your appointment (
+                <span className="font-semibold">{noShowBookings[0].serviceName}</span> at{' '}
+                <span className="font-semibold">{noShowBookings[0].salonName || 'Salon'}</span>) as
+                a no-show and captured the agreed fee ({formatUsd(noShowBookings[0].noShowFee)}). If
+                you attended or this was marked in error, you can dispute it directly with salon
+                management.
+              </p>
+              <div className="mt-3 flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setDisputeTarget(noShowBookings[0])}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-rose-900 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-rose-800"
+                >
+                  <span>Dispute or Contact Salon</span>
+                  <span>→</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Active Holds Section */}
       <section>
         <div className="mb-5 flex items-center gap-3">
@@ -199,7 +244,9 @@ export function BookingsPanel({
                 booking={booking}
                 onCancel={() => onCancel(booking)}
                 onViewReceipt={onViewReceipt}
-                onReschedule={() => setRescheduleTarget(booking)}
+                onReschedule={() =>
+                  onReschedule ? onReschedule(booking) : setRescheduleTarget(booking)
+                }
               />
             ))}
           </div>
@@ -252,6 +299,21 @@ export function BookingsPanel({
                     <SettlementLabel booking={booking} />
                   </div>
 
+                  {booking.status === 'NO_SHOW_CAPTURED' && (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-2.5 text-xs text-rose-900 space-y-1">
+                      <p className="font-semibold text-[11px] text-rose-800 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Flagged as No-Show
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setDisputeTarget(booking)}
+                        className="font-semibold text-rose-700 underline text-[11px] cursor-pointer hover:text-rose-900"
+                      >
+                        Dispute or Contact Salon →
+                      </button>
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => onViewReceipt(booking)}
@@ -299,13 +361,24 @@ export function BookingsPanel({
                         <HoldStateBadge status={booking.status} />
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => onViewReceipt(booking)}
-                          className="inline-flex cursor-pointer items-center rounded-full border border-stone-200 bg-stone-100 px-3.5 py-1 text-xs font-semibold text-stone-800 transition-colors hover:bg-stone-200 active:scale-[0.98]"
-                        >
-                          Receipt
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          {booking.status === 'NO_SHOW_CAPTURED' && (
+                            <button
+                              type="button"
+                              onClick={() => setDisputeTarget(booking)}
+                              className="inline-flex cursor-pointer items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100 active:scale-[0.98]"
+                            >
+                              Dispute
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => onViewReceipt(booking)}
+                            className="inline-flex cursor-pointer items-center rounded-full border border-stone-200 bg-stone-100 px-3.5 py-1 text-xs font-semibold text-stone-800 transition-colors hover:bg-stone-200 active:scale-[0.98]"
+                          >
+                            Receipt
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -321,6 +394,14 @@ export function BookingsPanel({
           booking={rescheduleTarget}
           open={Boolean(rescheduleTarget)}
           onClose={() => setRescheduleTarget(null)}
+        />
+      )}
+
+      {disputeTarget && (
+        <DisputeBookingModal
+          booking={disputeTarget}
+          open={Boolean(disputeTarget)}
+          onClose={() => setDisputeTarget(null)}
         />
       )}
     </div>

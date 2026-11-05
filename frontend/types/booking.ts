@@ -7,6 +7,7 @@ export type HoldState =
   | 'REAUTHORIZED'
   | 'PENDING'
   | 'PENDING_PAYMENT'
+  | 'REFUNDED'
 
 export interface Booking {
   id: string
@@ -37,6 +38,9 @@ export interface Booking {
   cancellationFeeReason?: string | null
   status: HoldState
   paypalAuthId: string
+  paypalOrderId?: string | null
+  holdStatus?: string | null
+  capturedAmount?: number | null
   /** @deprecated Prefer freeCancelDeadlineLabel / honorExpiresLabel */
   authExpiresAt: string
   /** Human-readable free-cancel deadline (from free_cancel_deadline_at) */
@@ -47,14 +51,25 @@ export interface Booking {
   commissionSnapshot?: Record<string, unknown>
   idempotencyKey: string
   consentHash: string
+  consentTermsVersion?: string | null
+  consentSignedAt?: string | null
   createdAt: string
   settledAt?: string
   settlementNote?: string
   honorPeriodEndsInHours?: number
   reauthorizationCount?: number
   reauthorizedAt?: string
+  refundId?: string | null
+  refundAmount?: number | null
+  refundStatus?: string | null
   /** Organization timezone (e.g., 'America/New_York') */
   organizationTimezone?: string | null
+  paymentHold?: {
+    authorizedAt?: string | null
+    createdAt?: string | null
+    [key: string]: unknown
+  } | null
+  authorizedAt?: string | null
 }
 
 export type LedgerAction =
@@ -62,7 +77,6 @@ export type LedgerAction =
   | 'FULL_PAYMENT_CAPTURED'
   | 'NO_SHOW_FEE_CAPTURED'
   | 'AUTHORIZATION_VOIDED'
-  | 'GOODWILL_PARTIAL_REFUND'
   | 'HONOR_PERIOD_REAUTHORIZED'
 
 export interface AuditLedgerEntry {

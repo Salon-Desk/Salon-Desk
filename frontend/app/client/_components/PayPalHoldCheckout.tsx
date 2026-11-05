@@ -1,6 +1,15 @@
 'use client'
 
-import { ArrowLeft, ArrowRight, CalendarCheck2, Info, Lock, MapPin, User } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarCheck2,
+  Info,
+  Lock,
+  MapPin,
+  Sparkles,
+  User,
+} from 'lucide-react'
 import Image from 'next/image'
 import { type ReactNode, useMemo, useState } from 'react'
 
@@ -22,13 +31,15 @@ import {
 } from '@/store/api/clientApi'
 import type { Booking, SalonService, StaffMember } from '@/types'
 
+import { CheckoutGuestServiceSelection } from './CheckoutGuestServiceSelection'
 import { CheckoutReview } from './CheckoutReview'
 import { CheckoutSchedule } from './CheckoutSchedule'
 import { CheckoutHeader, CheckoutPendingView, CheckoutSuccessView } from './CheckoutStatusViews'
 import { BookingStepper, type CheckoutWizardStep } from './CheckoutStepper'
 import { buildCheckoutQuote, CheckoutSummary } from './CheckoutSummary'
+import { MultiServiceStylistPicker } from './MultiServiceStylistPicker'
 import { ServiceDetailModal } from './ServiceDetailModal'
-import { StylistPicker } from './StylistPicker'
+import { ServiceSelectionModal } from './ServiceSelectionModal'
 
 export type AuthStep = 'review' | 'authorizing' | 'awaiting_paypal' | 'success'
 
@@ -47,13 +58,24 @@ const COMMON_TIMEZONES = [
 
 export interface PayPalHoldCheckoutProps {
   service: SalonService
+  services?: SalonService[]
+  availableOrgServices?: SalonService[]
+  onToggleService?: (service: SalonService) => void
   stylist: StaffMember
+  serviceStylistMap?: Record<string, StaffMember>
+  onSelectServiceStylist?: (serviceId: string, stylist: StaffMember) => void
+  onApplyStylistToAll?: (stylist: StaffMember) => void
   staffOptions: StaffMember[]
   staffLoading?: boolean
   startsAt: string | null
   step: AuthStep
   confirmedBooking: Booking | null
   initialWizardStep?: CheckoutWizardStep
+  partySize?: number
+  onPartySizeChange?: (size: number) => void
+  clientPhone?: string
+  onClientPhoneChange?: (phone: string) => void
+  phoneError?: string
   /** Banner rendered above the wizard, e.g. after a cancelled PayPal approval. */
   notice?: ReactNode
   onSelectStylist: (staff: StaffMember) => void
@@ -65,13 +87,24 @@ export interface PayPalHoldCheckoutProps {
 
 export function PayPalHoldCheckout({
   service,
+  services,
+  availableOrgServices,
+  onToggleService,
   stylist,
+  serviceStylistMap,
+  onSelectServiceStylist,
+  onApplyStylistToAll,
   staffOptions,
   staffLoading = false,
   startsAt,
   step,
   confirmedBooking,
   initialWizardStep = 1,
+  partySize = 1,
+  onPartySizeChange,
+  clientPhone,
+  onClientPhoneChange,
+  phoneError,
   notice,
   onSelectStylist,
   onSelectStartsAt,
@@ -79,6 +112,9 @@ export function PayPalHoldCheckout({
   onExit,
   onViewBookings,
 }: PayPalHoldCheckoutProps) {
+  const allServices = services && services.length > 0 ? services : [service]
+  const totalDurationMin = allServices.reduce((acc, s) => acc + s.durationMin, 0)
+  const totalPrice = allServices.reduce((acc, s) => acc + s.price, 0)
   const salonName = service.organizationName
   const coverSrc = service.imageUrl || serviceImage(service.id)
   const orgId = service.organizationId
@@ -95,16 +131,27 @@ export function PayPalHoldCheckout({
     pickedDay ?? (startsAt ? ymdInTimeZone(new Date(startsAt), salonTz) : todayYmd)
 
   const [wizardStep, setWizardStep] = useState<CheckoutWizardStep>(
-    initialWizardStep === 3 && !startsAt ? 2 : initialWizardStep,
+    initialWizardStep === 4 && !startsAt ? 3 : initialWizardStep,
   )
   const [agreedPolicy, setAgreedPolicy] = useState(false)
   const [agreedTerms, setAgreedTerms] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false)
 
-  const quote = buildCheckoutQuote(service, policy, startsAt)
+  const quote = buildCheckoutQuote(allServices, policy, startsAt, partySize)
   const stylistLabel =
     stylist.id === ANY_AVAILABLE_STYLIST.id ? 'Any available stylist' : stylist.name
+
+  const stylistSubtitle = useMemo(() => {
+    if (allServices.length > 1 && serviceStylistMap) {
+      const distinct = new Set(Object.values(serviceStylistMap).map((s) => s.id))
+      return `${distinct.size} stylist${distinct.size > 1 ? 's' : ''} assigned`
+    }
+    return stylistLabel
+  }, [allServices.length, serviceStylistMap, stylistLabel])
+
+  const guestsSubtitle = `${partySize} guest${partySize > 1 ? 's' : ''} · ${allServices.length} svc`
 
   const timezoneOptions = useMemo(() => {
     const browserTz = browserTimeZone()
@@ -128,18 +175,25 @@ export function PayPalHoldCheckout({
   }
 
   const agreed = agreedPolicy && agreedTerms
-  const canContinue = wizardStep === 1 ? Boolean(stylist?.id) : Boolean(startsAt)
+  const canContinue =
+    wizardStep === 1
+      ? allServices.length > 0 && partySize >= 1
+      : wizardStep === 2
+        ? true
+        : wizardStep === 3
+          ? Boolean(startsAt)
+          : true
 
   const handlePrimary = () => {
-    if (wizardStep < 3) {
+    if (wizardStep < 4) {
       if (canContinue) goToStep((wizardStep + 1) as CheckoutWizardStep)
       return
     }
     if (!startsAt) {
-      goToStep(2)
+      goToStep(3)
       return
     }
-    if (!agreed) {
+    if (!agreed || Boolean(phoneError) || !clientPhone?.trim()) {
       setShowErrors(true)
       return
     }
@@ -160,26 +214,32 @@ export function PayPalHoldCheckout({
     : null
 
   const primaryLabel =
-    wizardStep === 3 ? 'Continue to PayPal' : wizardStep === 2 ? 'Review booking' : 'Choose time'
+    wizardStep === 4
+      ? 'Continue to PayPal'
+      : wizardStep === 3
+        ? 'Review booking'
+        : wizardStep === 2
+          ? 'Choose date & time'
+          : 'Continue to stylists'
 
   const primaryButton = (
     <PrimaryButton
-      variant={wizardStep === 3 ? 'paypal' : 'dark'}
+      variant={wizardStep === 4 ? 'paypal' : 'dark'}
       size="sm"
       className={cn(
         'h-12 flex-1 rounded-full text-sm font-semibold transition-all shadow-sm active:scale-[0.99] cursor-pointer',
-        wizardStep === 3
+        wizardStep === 4
           ? 'bg-[#FFC439] hover:bg-[#F4B41A] text-[#003087]'
           : 'bg-stone-950 hover:bg-stone-800 text-white',
       )}
-      isDisabled={wizardStep < 3 && !canContinue}
+      isDisabled={wizardStep < 4 && !canContinue}
       onClick={handlePrimary}
       fullWidth
     >
       <span className="flex items-center justify-center gap-2">
-        {wizardStep === 3 ? <Lock className="h-4 w-4 shrink-0 text-[#003087]" /> : null}
+        {wizardStep === 4 ? <Lock className="h-4 w-4 shrink-0 text-[#003087]" /> : null}
         <span>{primaryLabel}</span>
-        {wizardStep < 3 ? <ArrowRight className="h-4 w-4 shrink-0" /> : null}
+        {wizardStep < 4 ? <ArrowRight className="h-4 w-4 shrink-0" /> : null}
       </span>
     </PrimaryButton>
   )
@@ -242,7 +302,9 @@ export function PayPalHoldCheckout({
               Book appointment
             </p>
             <h1 className="truncate font-serif text-2xl text-stone-950 sm:text-3xl">
-              {service.name}
+              {allServices.length > 1
+                ? `${service.name} + ${allServices.length - 1} more`
+                : service.name}
             </h1>
             <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-stone-500 sm:text-sm">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-stone-400" />
@@ -250,10 +312,10 @@ export function PayPalHoldCheckout({
                 {[salonName, org?.physical_address].filter(Boolean).join(' · ') || 'Salon'}
               </span>
               <span className="shrink-0">
-                · {formatDuration(service.durationMin)} · {formatUsd(service.price)}
+                · {formatDuration(totalDurationMin)} · {formatUsd(totalPrice)}
               </span>
             </p>
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsDetailOpen(true)}
@@ -262,6 +324,21 @@ export function PayPalHoldCheckout({
                 <Info className="h-3.5 w-3.5 text-amber-700" />
                 <span>About Service &amp; Reviews</span>
               </button>
+
+              {availableOrgServices && availableOrgServices.length > 1 && onToggleService && (
+                <button
+                  type="button"
+                  onClick={() => setIsServiceModalOpen(true)}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50/80 px-3 py-1 text-xs font-semibold text-amber-900 shadow-2xs hover:bg-amber-100 transition-colors"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                  <span>
+                    {allServices.length > 1
+                      ? `Services (${allServices.length}) · Add / Remove`
+                      : '+ Add More Services'}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -269,7 +346,12 @@ export function PayPalHoldCheckout({
         <div className="mb-6 rounded-3xl border border-stone-200 bg-white px-4 py-4 sm:px-6">
           <BookingStepper
             current={wizardStep}
-            subtitles={{ 1: stylistLabel, 2: selectionLabel, 3: null }}
+            subtitles={{
+              1: guestsSubtitle,
+              2: stylistSubtitle,
+              3: selectionLabel,
+              4: '$0 today',
+            }}
             onStepClick={goToStep}
           />
         </div>
@@ -279,17 +361,34 @@ export function PayPalHoldCheckout({
         <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
           <section className="min-w-0">
             {wizardStep === 1 && (
-              <StylistPicker
-                stylist={stylist}
-                staffOptions={staffOptions}
-                isLoading={staffLoading}
-                onSelect={onSelectStylist}
+              <CheckoutGuestServiceSelection
+                partySize={partySize}
+                onPartySizeChange={onPartySizeChange ?? (() => {})}
+                services={allServices}
+                onOpenServiceModal={
+                  availableOrgServices && availableOrgServices.length > 1 && onToggleService
+                    ? () => setIsServiceModalOpen(true)
+                    : undefined
+                }
+                onRemoveService={onToggleService}
               />
             )}
             {wizardStep === 2 && (
+              <MultiServiceStylistPicker
+                services={allServices}
+                serviceStylistMap={serviceStylistMap ?? { [service.id]: stylist }}
+                onSelectServiceStylist={onSelectServiceStylist ?? ((_, s) => onSelectStylist(s))}
+                onApplyStylistToAll={onApplyStylistToAll ?? onSelectStylist}
+                staffOptions={staffOptions}
+                isLoading={staffLoading}
+              />
+            )}
+            {wizardStep === 3 && (
               <CheckoutSchedule
                 serviceId={service.id}
-                durationMin={service.durationMin}
+                durationMin={totalDurationMin}
+                stylistId={stylist.id === ANY_AVAILABLE_STYLIST.id ? null : stylist.id}
+                stylistName={stylistLabel}
                 salonTz={salonTz}
                 displayTz={displayTz}
                 timezoneOptions={timezoneOptions}
@@ -301,13 +400,19 @@ export function PayPalHoldCheckout({
                 onSelectStartsAt={onSelectStartsAt}
               />
             )}
-            {wizardStep === 3 && (
+            {wizardStep === 4 && (
               <CheckoutReview
-                serviceName={service.name}
+                serviceName={
+                  allServices.length > 1
+                    ? `${service.name} (+${allServices.length - 1} additional)`
+                    : service.name
+                }
+                services={allServices}
+                serviceStylistMap={serviceStylistMap}
                 salonName={salonName}
                 stylistLabel={stylistLabel}
                 startsAt={startsAt}
-                durationMin={service.durationMin}
+                durationMin={totalDurationMin}
                 displayTz={displayTz}
                 quote={quote}
                 agreedPolicy={agreedPolicy}
@@ -315,8 +420,14 @@ export function PayPalHoldCheckout({
                 onAgreedPolicyChange={setAgreedPolicy}
                 onAgreedTermsChange={setAgreedTerms}
                 showErrors={showErrors}
-                onEditStylist={() => goToStep(1)}
-                onEditSchedule={() => goToStep(2)}
+                onEditGuestsServices={() => goToStep(1)}
+                onEditStylist={() => goToStep(2)}
+                onEditSchedule={() => goToStep(3)}
+                partySize={partySize}
+                onPartySizeChange={onPartySizeChange}
+                clientPhone={clientPhone}
+                onClientPhoneChange={onClientPhoneChange}
+                phoneError={phoneError}
               />
             )}
           </section>
@@ -324,6 +435,7 @@ export function PayPalHoldCheckout({
           <aside className="lg:sticky lg:top-24">
             <CheckoutSummary
               service={service}
+              services={allServices}
               coverSrc={coverSrc}
               salonName={salonName}
               orgId={orgId ?? undefined}
@@ -332,13 +444,14 @@ export function PayPalHoldCheckout({
               startsAt={startsAt}
               displayTz={displayTz}
               quote={quote}
+              partySize={partySize}
               onOpenDetails={() => setIsDetailOpen(true)}
             >
               <div className="hidden items-center gap-2.5 pt-2 lg:flex">
                 {backButton}
                 {primaryButton}
               </div>
-              {wizardStep === 3 ? (
+              {wizardStep === 4 ? (
                 <p className="hidden text-center text-[11px] text-stone-400 lg:block">
                   You will approve the hold on PayPal, then return here.
                 </p>
@@ -353,6 +466,16 @@ export function PayPalHoldCheckout({
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
       />
+
+      {availableOrgServices && onToggleService && (
+        <ServiceSelectionModal
+          isOpen={isServiceModalOpen}
+          onClose={() => setIsServiceModalOpen(false)}
+          availableServices={availableOrgServices}
+          selectedServices={allServices}
+          onToggleService={onToggleService}
+        />
+      )}
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_32px_-16px_rgba(28,25,23,0.25)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-2xl flex-col gap-2.5">

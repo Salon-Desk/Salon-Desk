@@ -26,6 +26,8 @@ function formatDeadlineLabel(iso: string | null | undefined): string {
 /** Map backend booking status → demo HoldState used by UI badges/drawers. */
 export function mapBookingStatusToHoldState(status: string): HoldState {
   switch (status.toUpperCase()) {
+    case 'REFUNDED':
+      return 'REFUNDED'
     case 'COMPLETED':
       return 'CAPTURED'
     case 'CANCELLED':
@@ -55,6 +57,8 @@ export function mapApiBookingToUi(
     honorExpiresAt?: string | null
     reauthorizationCount?: number
     holdStatus?: string | null
+    idempotencyKey?: string | null
+    consentHash?: string | null
   },
 ): Booking {
   const price = Number(booking.total_price) || 0
@@ -74,13 +78,30 @@ export function mapApiBookingToUi(
   const ends = new Date(booking.ends_at)
   const durationMin = Math.max(15, Math.round((ends.getTime() - starts.getTime()) / 60000))
   const freeCancelDeadlineLabel = formatDeadlineLabel(booking.free_cancel_deadline_at)
-  const honorExpiresLabel = extras?.honorExpiresAt
-    ? formatDeadlineLabel(extras.honorExpiresAt)
-    : undefined
+  const honorExpiresLabel = booking.honor_expires_at
+    ? formatDeadlineLabel(booking.honor_expires_at)
+    : extras?.honorExpiresAt
+      ? formatDeadlineLabel(extras.honorExpiresAt)
+      : undefined
 
   let status = mapBookingStatusToHoldState(booking.status)
-  if (extras?.holdStatus?.toUpperCase() === 'REAUTHORIZED' && status === 'HELD') {
+  const effectiveHoldStatus = booking.hold_status || extras?.holdStatus
+  if (effectiveHoldStatus?.toUpperCase() === 'REAUTHORIZED' && status === 'HELD') {
     status = 'REAUTHORIZED'
+  }
+
+  const refundId =
+    booking.refund_id || (booking.cancellation_fee_json?.refund_id as string | undefined)
+  const rawRefundAmt =
+    booking.refund_amount != null
+      ? booking.refund_amount
+      : booking.cancellation_fee_json?.refund_amount
+  const refundAmount = rawRefundAmt != null ? Number(rawRefundAmt) : null
+  const refundStatus =
+    booking.refund_status || (booking.cancellation_fee_json?.refund_status as string | undefined)
+
+  if (refundId || (refundAmount != null && refundAmount > 0)) {
+    status = 'REFUNDED'
   }
 
   return {
@@ -114,18 +135,31 @@ export function mapApiBookingToUi(
     cancellationFeeCharged: cancellationFeeCharged > 0 ? cancellationFeeCharged : null,
     cancellationFeeReason,
     status,
-    paypalAuthId: extras?.paypalAuthId || '—',
+    paypalAuthId: extras?.paypalAuthId || booking.paypal_auth_id || '',
+    paypalOrderId: booking.paypal_order_id || null,
+    holdStatus: effectiveHoldStatus || null,
+    capturedAmount: booking.captured_amount != null ? Number(booking.captured_amount) : null,
     authExpiresAt: freeCancelDeadlineLabel,
     freeCancelDeadlineLabel,
     honorExpiresLabel,
     policySnapshot: booking.policy_snapshot_json || undefined,
     commissionSnapshot: booking.commission_snapshot || undefined,
-    idempotencyKey: booking.id,
-    consentHash: '—',
+    idempotencyKey: booking.idempotency_key || extras?.idempotencyKey || booking.id,
+    consentHash: booking.consent_hash || extras?.consentHash || '',
+    consentTermsVersion: booking.consent_terms_version || null,
+    consentSignedAt: booking.consent_signed_at || null,
     createdAt: new Date(booking.created_at).toLocaleString(),
     settlementNote: booking.cancellation_reason || undefined,
-    reauthorizationCount: extras?.reauthorizationCount,
+    reauthorizationCount: booking.reauthorization_count ?? extras?.reauthorizationCount ?? 0,
+    refundId: refundId || null,
+    refundAmount: refundAmount != null && Number.isFinite(refundAmount) ? refundAmount : null,
+    refundStatus: refundStatus || null,
     organizationTimezone: booking.organization_timezone || null,
+    paymentHold: {
+      authorizedAt: booking.hold_authorized_at || booking.created_at,
+      createdAt: booking.created_at,
+    },
+    authorizedAt: booking.hold_authorized_at || booking.created_at,
   }
 }
 

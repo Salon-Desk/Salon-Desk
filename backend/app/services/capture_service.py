@@ -11,6 +11,7 @@ from app.models.payment import PaymentCapture
 from app.services.hold_service import get_active_hold
 from app.services.ledger_service import append_ledger
 from app.services.paypal_rest import PayPalRestClient
+from app.services.policy_engine import assert_capture_within_ceiling
 
 
 async def capture_hold(
@@ -53,12 +54,7 @@ async def capture_hold(
     else:
         capture_amount = amount if amount is not None else hold.amount
 
-    remaining = hold.amount - hold.captured_amount
-    if capture_amount > remaining:
-        raise PolicyViolationException(
-            f"Capture {capture_amount} would exceed authorized ceiling "
-            f"(remaining {remaining} of {hold.amount})"
-        )
+    assert_capture_within_ceiling(hold.amount, hold.captured_amount, capture_amount)
     if capture_type == PaymentCaptureType.FULL and capture_amount > full_settlement_amount:
         raise PolicyViolationException(
             f"Full capture {capture_amount} exceeds agreed settlement "
@@ -129,4 +125,10 @@ async def capture_hold(
     from app.services.commission_billing_service import accrue_commission_for_capture
 
     await accrue_commission_for_capture(db, booking=booking, capture=capture)
+
+    if capture_type == PaymentCaptureType.NO_SHOW_FEE:
+        from app.services.payment_notification_service import send_no_show_fee_notification
+
+        await send_no_show_fee_notification(db, booking=booking, capture=capture)
+
     return capture

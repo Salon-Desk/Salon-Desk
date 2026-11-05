@@ -3,8 +3,10 @@
 import { Calendar, Search, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React from 'react'
+import { useSelector } from 'react-redux'
 
 import { ROUTES } from '@/lib/constants'
+import { isAuthenticatedSelector, isClientUser, userSelector } from '@/store/authSlice'
 
 import type { ClientTab } from './ClientHeader'
 
@@ -24,6 +26,9 @@ export function ClientExperienceMobileNav({
   activeHoldsCount,
 }: ClientExperienceMobileNavProps) {
   const router = useRouter()
+  const user = useSelector(userSelector)
+  const isAuthenticated = useSelector(isAuthenticatedSelector)
+  const isLoggedInClient = Boolean(isAuthenticated && isClientUser(user))
   const isCatalogActive = activeTab === 'catalog' && !isChatOpen
   const isAiActive = isChatOpen
   const isBookingsActive = activeTab === 'my-bookings' && !isChatOpen
@@ -67,33 +72,35 @@ export function ClientExperienceMobileNav({
         <span>Ask AI</span>
       </button>
 
-      <button
-        type="button"
-        onClick={() => {
-          router.push(ROUTES.clientBookings)
-        }}
-        className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
-          isBookingsActive
-            ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
-            : 'text-stone-400 hover:text-white hover:bg-white/[0.06]'
-        }`}
-      >
-        <Calendar className="h-3.5 w-3.5" />
-        <span className="flex items-center gap-1.5">
-          Bookings
-          {activeHoldsCount > 0 && (
-            <span
-              className={`h-4 min-w-4 px-1 rounded-full text-[9px] font-mono font-bold flex items-center justify-center ${
-                isBookingsActive
-                  ? 'bg-amber-400 text-stone-950 shadow-xs'
-                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-              }`}
-            >
-              {activeHoldsCount}
-            </span>
-          )}
-        </span>
-      </button>
+      {isLoggedInClient && (
+        <button
+          type="button"
+          onClick={() => {
+            router.push(ROUTES.clientBookings)
+          }}
+          className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-all cursor-pointer select-none active:scale-[0.96] ${
+            isBookingsActive
+              ? 'bg-gradient-to-b from-white to-stone-100 text-stone-950 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.9)]'
+              : 'text-stone-400 hover:text-white hover:bg-white/[0.06]'
+          }`}
+        >
+          <Calendar className="h-3.5 w-3.5" />
+          <span className="flex items-center gap-1.5">
+            Bookings
+            {activeHoldsCount > 0 && (
+              <span
+                className={`h-4 min-w-4 px-1 rounded-full text-[9px] font-mono font-bold flex items-center justify-center ${
+                  isBookingsActive
+                    ? 'bg-amber-400 text-stone-950 shadow-xs'
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                }`}
+              >
+                {activeHoldsCount}
+              </span>
+            )}
+          </span>
+        </button>
+      )}
     </nav>
   )
 }

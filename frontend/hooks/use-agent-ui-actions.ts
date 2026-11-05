@@ -39,6 +39,10 @@ export interface AgentActionHandlers {
   onFilterPolicyRequests?: () => void
   onFilterPaypalRequests?: () => void
 
+  // Dispute Counsel & Slot Rescue actions
+  onOpenDisputeDrawer?: (disputeId?: string) => void
+  onExecuteSlotRescue?: (bookingId?: string) => void
+
   // Generic action handler
   onAction?: (payload: AgentUiActionPayload) => void
 }
@@ -141,6 +145,20 @@ export function useAgentUiActions(handlers: AgentActionHandlers = {}) {
           case 'filter_voided':
             handlers.onFilterVoided?.()
             break
+
+          // Dispute Counsel & Slot Rescue
+          case 'open_dispute_drawer': {
+            handlers.onOpenDisputeDrawer?.(detail.details || detail.target)
+            const sel = detail.selector || '#agent-dispute-btn'
+            highlightElement(sel)
+            break
+          }
+          case 'execute_slot_rescue': {
+            handlers.onExecuteSlotRescue?.(detail.details || detail.target)
+            const sel = detail.selector || '#agent-slot-rescue-btn'
+            highlightElement(sel)
+            break
+          }
 
           // Admin
           case 'open_add_salon':

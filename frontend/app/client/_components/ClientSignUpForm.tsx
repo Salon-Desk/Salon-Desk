@@ -18,6 +18,7 @@ import { toApiPhoneDigits } from '@/lib/util/phone'
 import type { AppDispatch } from '@/store'
 import { useSignUpMutation } from '@/store/api/sharedApi'
 import { setActiveApp, setAuthData } from '@/store/authSlice'
+import { API_TAG_TYPES, baseApi } from '@/store/baseApi'
 import type { ApiResponse } from '@/types/api'
 import type { SignUpRequest, TokenResponse } from '@/types/auth'
 
@@ -53,8 +54,18 @@ export const ClientSignUpForm: FC = () => {
       }),
     )
     dispatch(setActiveApp('client'))
+    dispatch(baseApi.util.invalidateTags([...API_TAG_TYPES]))
     closeAuthModal()
+
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname
+      if (currentPath.startsWith('/client') || currentPath === '/') {
+        router.refresh()
+        return
+      }
+    }
     router.push('/client')
+    router.refresh()
   }
 
   const submitHandler = useFormSubmitHandler<SignUpRequest, TokenResponse>(
@@ -114,16 +125,27 @@ export const ClientSignUpForm: FC = () => {
           name="phone"
           label="Phone Number"
           placeholder="+1 (555) 000-0000"
-          className="rounded-xl border-slate-200"
-        />
-
-        <RHFPasswordField
-          name="password"
-          label="Password"
-          placeholder="At least 8 characters"
           isRequired
           className="rounded-xl border-slate-200"
         />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <RHFPasswordField
+            name="password"
+            label="Password"
+            placeholder="At least 8 characters"
+            isRequired
+            className="rounded-xl border-slate-200"
+          />
+
+          <RHFPasswordField
+            name="confirm_password"
+            label="Confirm Password"
+            placeholder="Re-enter password"
+            isRequired
+            className="rounded-xl border-slate-200"
+          />
+        </div>
 
         <div className="pt-2">
           <PrimaryButton

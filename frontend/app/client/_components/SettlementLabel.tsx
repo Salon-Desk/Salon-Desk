@@ -2,6 +2,13 @@ import { formatUsd } from '@/lib/format'
 import type { Booking } from '@/types'
 
 export function SettlementLabel({ booking }: { booking: Booking }) {
+  if (booking.status === 'REFUNDED' || (booking.refundAmount != null && booking.refundAmount > 0)) {
+    return (
+      <span className="font-medium text-purple-700">
+        {formatUsd(booking.refundAmount ?? booking.holdAmount)} refunded
+      </span>
+    )
+  }
   if (booking.cancellationFeeCharged != null && booking.cancellationFeeCharged > 0) {
     const label =
       booking.cancellationFeeReason === 'late_cancel' ? 'late cancel fee' : 'cancellation fee'

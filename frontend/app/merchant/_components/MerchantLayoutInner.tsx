@@ -37,6 +37,7 @@ import {
   useGetMyServicesQuery,
 } from '@/store/api/orgApi'
 import { logout, userSelector } from '@/store/authSlice'
+import { API_TAG_TYPES, baseApi } from '@/store/baseApi'
 
 import { useMerchantContext } from '../_context/MerchantContext'
 import { getMerchantTabFromPathname } from '../_types/merchant-types'
@@ -162,6 +163,7 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
 
   const handleLockSession = () => {
     dispatch(logout('merchant'))
+    dispatch(baseApi.util.invalidateTags([...API_TAG_TYPES]))
   }
 
   return (

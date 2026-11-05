@@ -95,10 +95,16 @@ export function useAiConcierge() {
 
       try {
         if (features.agentChat) {
+          const clientTimezone =
+            typeof Intl !== 'undefined'
+              ? Intl.DateTimeFormat().resolvedOptions().timeZone
+              : undefined
+
           const data = await clientConciergeChat({
             message: query,
             language: features.defaultLanguage,
             history: historyRef.current,
+            client_timezone: clientTimezone,
             user_lat: location?.lat ?? null,
             user_lng: location?.lng ?? null,
           }).unwrap()

@@ -11,6 +11,7 @@ import { toastColor } from '@/constant/toast-color'
 import type { AppDispatch } from '@/store'
 import { useJudgeDemoAuthMutation, useSignInMutation } from '@/store/api/sharedApi'
 import { type AppPortal, setActiveApp, setAuthData } from '@/store/authSlice'
+import { API_TAG_TYPES, baseApi } from '@/store/baseApi'
 
 export type DemoPersona = {
   email: string
@@ -51,9 +52,24 @@ export function useQuickDemoSignIn(password = DEMO_ACCOUNT_PASSWORD) {
         }),
       )
       dispatch(setActiveApp(persona.portal))
+      dispatch(baseApi.util.invalidateTags([...API_TAG_TYPES]))
       toast.success(`Signed in as ${persona.label}`, toastColor.success)
       closeAuthModal()
+
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname
+        const isAlreadyInPortal =
+          persona.portal === 'client'
+            ? currentPath.startsWith('/client') || currentPath === '/'
+            : currentPath.startsWith(`/${persona.portal}`)
+        if (isAlreadyInPortal) {
+          router.refresh()
+          return
+        }
+      }
+
       router.push(persona.destination)
+      router.refresh()
     } catch (err: unknown) {
       const message =
         (err as { data?: { detail?: string }; message?: string })?.data?.detail ||
@@ -71,6 +87,7 @@ export const DemoPersonasPanel: FC<DemoPersonasPanelProps> = ({
   showJudgeDemo = false,
   password = DEMO_ACCOUNT_PASSWORD,
 }) => {
+  const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { closeAuthModal } = useAuthModal()
   const { signInAs, isLoading } = useQuickDemoSignIn(password)
@@ -98,8 +115,10 @@ export const DemoPersonasPanel: FC<DemoPersonasPanelProps> = ({
         }),
       )
       dispatch(setActiveApp(judgePortal))
+      dispatch(baseApi.util.invalidateTags([...API_TAG_TYPES]))
       toast.success(`Judge demo token issued for ${res.user.email}`, toastColor.success)
       closeAuthModal()
+      router.refresh()
     } catch (err: unknown) {
       const message =
         (err as { data?: { detail?: string }; message?: string })?.data?.detail ||

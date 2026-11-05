@@ -1,6 +1,15 @@
 'use client'
 
-import { Calendar as CalendarIcon, Check, Clock, Loader2, Sparkles, User } from 'lucide-react'
+import { addDays, format } from 'date-fns'
+import {
+  AlertTriangle,
+  Calendar as CalendarIcon,
+  Check,
+  Clock,
+  Loader2,
+  Sparkles,
+  User,
+} from 'lucide-react'
 import Image from 'next/image'
 import React, { useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -27,13 +36,25 @@ export function RescheduleBookingDialog({
   onClose,
   onSuccess,
 }: RescheduleBookingDialogProps) {
-  // Generate selectable days for the next 14 days starting today
+  const holdAuthorizedAt = useMemo(() => {
+    const raw = booking.paymentHold?.authorizedAt || booking.authorizedAt || booking.createdAt
+    if (!raw) return new Date()
+    const d = new Date(raw)
+    return Number.isNaN(d.getTime()) ? new Date() : d
+  }, [booking])
+
+  const rescheduleMaxDate = useMemo(() => addDays(holdAuthorizedAt, 28), [holdAuthorizedAt])
+
+  // Generate selectable days up to the 28-day reschedule ceiling
   const availableDays = useMemo(() => {
     const days: { dateStr: string; label: string; weekday: string; isToday: boolean }[] = []
     const now = new Date()
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 28; i++) {
       const d = new Date()
       d.setDate(now.getDate() + i)
+      if (d.getTime() > rescheduleMaxDate.getTime() + 86400000) {
+        break
+      }
       const dateStr = d.toISOString().split('T')[0]
       const weekday = d.toLocaleDateString(undefined, { weekday: 'short' })
       const label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
@@ -45,7 +66,7 @@ export function RescheduleBookingDialog({
       })
     }
     return days
-  }, [])
+  }, [rescheduleMaxDate])
 
   const [selectedDay, setSelectedDay] = useState<string>(availableDays[0]?.dateStr ?? '')
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
@@ -65,9 +86,23 @@ export function RescheduleBookingDialog({
 
   const [rescheduleBooking, { isLoading: isRescheduling }] = useRescheduleBookingMutation()
 
+  const isPastMaxCutoff = useMemo(() => {
+    if (!selectedSlot) return false
+    const d = new Date(selectedSlot)
+    return !Number.isNaN(d.getTime()) && d.getTime() > rescheduleMaxDate.getTime()
+  }, [selectedSlot, rescheduleMaxDate])
+
   const handleConfirm = async () => {
     if (!selectedSlot) {
       toast.error('Please select a time slot to reschedule', toastColor.error)
+      return
+    }
+
+    if (isPastMaxCutoff) {
+      toast.error(
+        `Reschedule Limit: This deposit hold expires on ${format(rescheduleMaxDate, 'MMM d, yyyy')} (29 days from booking). To schedule beyond this date, please release this hold and book a new appointment.`,
+        toastColor.error,
+      )
       return
     }
 
@@ -257,6 +292,21 @@ export function RescheduleBookingDialog({
             </div>
           )}
         </div>
+
+        {/* PayPal 29-Day Hard Ceiling Reschedule Warning Banner */}
+        {isPastMaxCutoff && (
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-950 space-y-1.5 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 font-semibold text-amber-900">
+              <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0" />
+              <span>Reschedule Limit Exceeded</span>
+            </div>
+            <p className="leading-relaxed text-[11px] text-amber-900">
+              Reschedule Limit: This deposit hold expires on{' '}
+              <strong>{format(rescheduleMaxDate, 'MMM d, yyyy')}</strong> (29 days from booking). To
+              schedule beyond this date, please release this hold and book a new appointment.
+            </p>
+          </div>
+        )}
 
         {/* Selected Slot Confirmation Preview */}
         {selectedSlotFormatted && (

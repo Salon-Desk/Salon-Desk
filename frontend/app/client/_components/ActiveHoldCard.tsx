@@ -1,4 +1,4 @@
-import { AlertTriangle, Clock, FileText, Lock, Shield, User, XCircle } from 'lucide-react'
+import { AlertTriangle, Calendar, Clock, FileText, Lock, Shield, User, XCircle } from 'lucide-react'
 import Image from 'next/image'
 
 import { buildCancelOutcomePreview } from '@/lib/booking/cancel-policy'
@@ -10,9 +10,15 @@ interface ActiveHoldCardProps {
   booking: Booking
   onCancel: () => void
   onViewReceipt: (booking: Booking) => void
+  onReschedule?: (booking: Booking) => void
 }
 
-export function ActiveHoldCard({ booking, onCancel, onViewReceipt }: ActiveHoldCardProps) {
+export function ActiveHoldCard({
+  booking,
+  onCancel,
+  onViewReceipt,
+  onReschedule,
+}: ActiveHoldCardProps) {
   const cancelPreview = buildCancelOutcomePreview({
     totalPrice: booking.servicePrice,
     agreedNoShowFee: booking.noShowFee,
@@ -140,34 +146,37 @@ export function ActiveHoldCard({ booking, onCancel, onViewReceipt }: ActiveHoldC
       </div>
 
       {/* Action buttons */}
-      <div className="flex items-center gap-2.5 pt-4 border-t border-stone-100">
+      <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-stone-100 sm:flex-nowrap">
+        {onReschedule && (
+          <button
+            type="button"
+            onClick={() => onReschedule(booking)}
+            className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white hover:bg-stone-50 text-stone-900 text-xs sm:text-sm font-semibold px-3 transition-colors cursor-pointer active:scale-[0.98] shadow-2xs"
+          >
+            <Calendar className="h-3.5 w-3.5 text-amber-700" />
+            <span>Reschedule</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => onViewReceipt(booking)}
-          className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs sm:text-sm font-semibold px-4 transition-colors cursor-pointer active:scale-[0.98]"
+          className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs sm:text-sm font-semibold px-3 transition-colors cursor-pointer active:scale-[0.98]"
         >
           <FileText className="h-3.5 w-3.5 text-stone-600" />
-          <span>View Receipt</span>
+          <span>Receipt</span>
         </button>
 
         <button
           type="button"
           onClick={onCancel}
-          className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs sm:text-sm font-semibold px-4 transition-colors cursor-pointer active:scale-[0.98]"
+          className="h-10 flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs sm:text-sm font-semibold px-3 transition-colors cursor-pointer active:scale-[0.98]"
         >
           <XCircle className="h-3.5 w-3.5 text-rose-600" />
           {cancelPreview.withinFreeWindow ? (
-            <>
-              <span className="sm:hidden">Cancel ($0)</span>
-              <span className="hidden sm:inline">Cancel & release hold ($0)</span>
-            </>
+            <span>Cancel ($0)</span>
           ) : (
-            <>
-              <span className="sm:hidden">Cancel ({formatUsd(cancelPreview.chargeAmount)})</span>
-              <span className="hidden sm:inline">
-                Cancel ({formatUsd(cancelPreview.chargeAmount)} late fee)
-              </span>
-            </>
+            <span>Cancel ({formatUsd(cancelPreview.chargeAmount)})</span>
           )}
         </button>
       </div>

@@ -204,3 +204,19 @@ async def test_chat_structured_failure_raises_llm_error() -> None:
         await svc.chat_structured(
             [{"role": "user", "content": "hi"}], SampleOutputSchema, max_retries=0
         )
+
+
+def test_paypal_api_base_sandbox_guard() -> None:
+    # Allowed in non-production because it contains sandbox.paypal.com
+    dev_settings = _settings(
+        environment="development", paypal_api_base="https://api-m.sandbox.paypal.com"
+    )
+    assert "sandbox.paypal.com" in dev_settings.paypal_api_base
+
+    # Rejected in non-production if pointing to live PayPal
+    with pytest.raises(ValidationError, match="must point to sandbox.paypal.com"):
+        _settings(environment="development", paypal_api_base="https://api-m.paypal.com")
+
+    # Allowed in production
+    prod_settings = _settings(environment="production", paypal_api_base="https://api-m.paypal.com")
+    assert prod_settings.paypal_api_base == "https://api-m.paypal.com"
