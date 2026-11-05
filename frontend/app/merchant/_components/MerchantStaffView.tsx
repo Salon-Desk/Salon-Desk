@@ -13,6 +13,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { PrimaryButton } from '@/components/button'
@@ -31,23 +32,31 @@ import {
   type MerchantStaffListParams,
   MerchantStaffListParamsSchema,
 } from '@/lib/listing-params/merchant-staff-list-params'
+import { hasMerchantPermission } from '@/lib/permissions/permissions'
 import { staffDisplayName } from '@/lib/util/staff-display'
 import { cn } from '@/lib/utils'
 import {
   useDeleteMyEmployeeMutation,
   useGetMyEmployeeShiftsQuery,
   useGetMyEmployeesQuery,
+  useGetMyOrganizationQuery,
+  useResendMyEmployeeInviteMutation,
+  useResetMyEmployeePasswordMutation,
 } from '@/store/api/orgApi'
+import { userSelector } from '@/store/authSlice'
 import type { User } from '@/types/user'
 
 import { EditEmployeeModal } from './EditEmployeeModal'
 import { EmployeeFormModal } from './EmployeeFormModal'
+import { MerchantStaffActionDialog } from './MerchantStaffActionDialog'
 import { MerchantStaffCard } from './MerchantStaffCard'
 import { MerchantStaffHeader } from './MerchantStaffHeader'
 import { StaffShiftsModal } from './StaffShiftsModal'
 import { getStaffTableColumns } from './StaffTableColumns'
 
 export function MerchantStaffView() {
+  const user = useSelector(userSelector)
+  const canManageStaff = hasMerchantPermission(user?.role, 'merchant:staff:manage')
   const { params, displayParams, setParam, setParams } = useListingParams<
     MerchantStaffListParams,
     typeof MerchantStaffListParamsSchema
@@ -69,6 +78,9 @@ export function MerchantStaffView() {
   const employees = employeesData?.items ?? []
   const totalItems = employeesData?.total ?? employees.length
   const [deleteEmployee, { isLoading: isDeleting }] = useDeleteMyEmployeeMutation()
+  const [resendInvite] = useResendMyEmployeeInviteMutation()
+  const [resetPassword] = useResetMyEmployeePasswordMutation()
+  const { data: org } = useGetMyOrganizationQuery()
 
   const { data: employeeShifts = [] } = useGetMyEmployeeShiftsQuery()
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -77,6 +89,12 @@ export function MerchantStaffView() {
   const [editingEmployee, setEditingEmployee] = useState<User | null>(null)
   const [deleting, setDeleting] = useState<User | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const [staffActionTarget, setStaffActionTarget] = useState<User | null>(null)
+  const [staffActionType, setStaffActionType] = useState<'resend_invite' | 'reset_password'>(
+    'resend_invite',
+  )
+  const [isActionLoading, setIsActionLoading] = useState(false)
 
   useAgentUiActions({
     onOpenAddStaff: () => setIsAddOpen(true),
@@ -106,6 +124,41 @@ export function MerchantStaffView() {
       const message =
         (err as { data?: { detail?: string } })?.data?.detail || 'Could not remove employee'
       toast.error(String(message), toastColor.error)
+    }
+  }
+
+  const handleInitiateAction = (member: User, type: 'resend_invite' | 'reset_password') => {
+    if (member.role === 'org_owner') {
+      toast.error('The salon owner account cannot be managed via staff actions', toastColor.error)
+      return
+    }
+    setStaffActionTarget(member)
+    setStaffActionType(type)
+  }
+
+  const handleConfirmAction = async () => {
+    if (!staffActionTarget) return
+    setIsActionLoading(true)
+    try {
+      if (staffActionType === 'resend_invite') {
+        const res = await resendInvite(staffActionTarget.id).unwrap()
+        toast.success(
+          res.detail || `Invitation resent to ${staffActionTarget.email}`,
+          toastColor.success,
+        )
+      } else {
+        const res = await resetPassword(staffActionTarget.id).unwrap()
+        toast.success(
+          res.detail || `Temporary password emailed to ${staffActionTarget.email}`,
+          toastColor.success,
+        )
+      }
+      setStaffActionTarget(null)
+    } catch (err) {
+      const message = (err as { data?: { detail?: string } })?.data?.detail || 'Operation failed'
+      toast.error(String(message), toastColor.error)
+    } finally {
+      setIsActionLoading(false)
     }
   }
 
@@ -140,12 +193,30 @@ export function MerchantStaffView() {
         onCopyId: handleCopyId,
         copiedId,
         employeeShifts,
-        onManageShifts: (m) => {
-          setSelectedStaffForShift(m.id)
-          setIsShiftsOpen(true)
-        },
+        onEdit: canManageStaff ? (m) => setEditingEmployee(m) : undefined,
+        onDelete: canManageStaff
+          ? (m) => {
+              if (m.role === 'org_owner') {
+                toast.error('The organization owner cannot be removed', toastColor.error)
+                return
+              }
+              setDeleting(m)
+            }
+          : undefined,
+        onResendInvite: canManageStaff
+          ? (m) => handleInitiateAction(m, 'resend_invite')
+          : undefined,
+        onResetPassword: canManageStaff
+          ? (m) => handleInitiateAction(m, 'reset_password')
+          : undefined,
+        onManageShifts: canManageStaff
+          ? (m) => {
+              setSelectedStaffForShift(m.id)
+              setIsShiftsOpen(true)
+            }
+          : undefined,
       }),
-    [copiedId, employeeShifts],
+    [canManageStaff, copiedId, employeeShifts],
   )
 
   return (
@@ -159,7 +230,7 @@ export function MerchantStaffView() {
           setSelectedStaffForShift(null)
           setIsShiftsOpen(true)
         }}
-        onAddStaff={() => setIsAddOpen(true)}
+        onAddStaff={canManageStaff ? () => setIsAddOpen(true) : undefined}
       />
 
       {/* Interactive Metric Stat Cards with Quick Filtering */}
@@ -352,15 +423,17 @@ export function MerchantStaffView() {
               <span className="mr-auto text-[11px] font-medium text-slate-500 lg:mr-1">
                 {totalItems} {totalItems === 1 ? 'record' : 'records'}
               </span>
-              <PrimaryButton
-                key="add-staff-grid"
-                title="Add team member"
-                size="sm"
-                fullWidth={false}
-                icon={<Plus className="h-3.5 w-3.5" />}
-                className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
-                onClick={() => setIsAddOpen(true)}
-              />
+              {canManageStaff && (
+                <PrimaryButton
+                  key="add-staff-grid"
+                  title="Invite team member"
+                  size="sm"
+                  fullWidth={false}
+                  icon={<Plus className="h-3.5 w-3.5" />}
+                  className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-none"
+                  onClick={() => setIsAddOpen(true)}
+                />
+              )}
             </div>
           </div>
 
@@ -373,12 +446,30 @@ export function MerchantStaffView() {
                   shifts={employeeShifts.filter((es) => es.user_id === member.id)}
                   onCopyId={handleCopyId}
                   isCopied={copiedId === member.id}
-                  onEdit={(m) => setEditingEmployee(m)}
-                  onDelete={member.role !== 'org_owner' ? (m) => setDeleting(m) : undefined}
-                  onManageShifts={(m) => {
-                    setSelectedStaffForShift(m.id)
-                    setIsShiftsOpen(true)
-                  }}
+                  onEdit={canManageStaff ? (m) => setEditingEmployee(m) : undefined}
+                  onDelete={
+                    canManageStaff && member.role !== 'org_owner'
+                      ? (m) => setDeleting(m)
+                      : undefined
+                  }
+                  onResendInvite={
+                    canManageStaff && member.role !== 'org_owner'
+                      ? (m) => handleInitiateAction(m, 'resend_invite')
+                      : undefined
+                  }
+                  onResetPassword={
+                    canManageStaff && member.role !== 'org_owner'
+                      ? (m) => handleInitiateAction(m, 'reset_password')
+                      : undefined
+                  }
+                  onManageShifts={
+                    canManageStaff
+                      ? (m) => {
+                          setSelectedStaffForShift(m.id)
+                          setIsShiftsOpen(true)
+                        }
+                      : undefined
+                  }
                 />
               ))}
             </div>
@@ -452,7 +543,7 @@ export function MerchantStaffView() {
           customButtons={[
             <PrimaryButton
               key="add-staff"
-              title="Add team member"
+              title="Invite team member"
               size="sm"
               fullWidth={false}
               icon={<Plus className="h-3.5 w-3.5" />}
@@ -497,6 +588,17 @@ export function MerchantStaffView() {
           onConfirm={() => void handleConfirmDelete()}
         />
       ) : null}
+
+      {/* Staff Action Confirm (Resend Invite / Reset Password) */}
+      <MerchantStaffActionDialog
+        open={Boolean(staffActionTarget)}
+        onClose={() => setStaffActionTarget(null)}
+        onConfirm={() => void handleConfirmAction()}
+        member={staffActionTarget}
+        actionType={staffActionType}
+        isLoading={isActionLoading}
+        salonName={org?.name}
+      />
     </div>
   )
 }

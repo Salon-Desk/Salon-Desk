@@ -1,6 +1,12 @@
-'use client'
-
-import { CheckCircle2, Copy, CreditCard, ExternalLink, ShieldCheck, Sparkles } from 'lucide-react'
+import {
+  AlertCircle,
+  CheckCircle2,
+  Copy,
+  CreditCard,
+  ExternalLink,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react'
 
 import { PrimaryButton } from '@/components/button'
 import { Card } from '@/components/ui'
@@ -8,6 +14,7 @@ import type { ApiOrgAccount } from '@/types/api-org'
 
 interface MerchantPaypalCardProps {
   account?: ApiOrgAccount | null
+  isFirstTime?: boolean
   orgName?: string
   merchantId: string
   copied: boolean
@@ -18,6 +25,7 @@ interface MerchantPaypalCardProps {
 
 export function MerchantPaypalCard({
   account,
+  isFirstTime = false,
   orgName,
   merchantId,
   copied,
@@ -25,6 +33,8 @@ export function MerchantPaypalCard({
   onCopyMerchantId,
   onRequestChange,
 }: MerchantPaypalCardProps) {
+  const isConnected = !isFirstTime && Boolean(account?.merchant_id && account.status === 'approved')
+
   return (
     <div className="space-y-6">
       <Card
@@ -39,7 +49,7 @@ export function MerchantPaypalCard({
             <div>
               <h2 className="text-base font-bold text-slate-900">PayPal Merchant Account</h2>
               <p className="text-xs text-slate-500">
-                Orders v2 direct capture disbursement connection
+                Direct client payment holds and payout processing
               </p>
             </div>
           </div>
@@ -47,26 +57,42 @@ export function MerchantPaypalCard({
           <div className="flex shrink-0 items-center gap-2">
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold capitalize ${
-                account?.status === 'approved'
+                isConnected
                   ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                  : account?.status === 'pending'
+                  : isFirstTime
                     ? 'border-amber-300 bg-amber-50 text-amber-800'
-                    : 'border-slate-300 bg-slate-50 text-slate-700'
+                    : account?.status === 'pending'
+                      ? 'border-amber-300 bg-amber-50 text-amber-800'
+                      : 'border-slate-300 bg-slate-50 text-slate-700'
               }`}
             >
               <span
                 className={`h-2 w-2 rounded-full ${
-                  account?.status === 'approved'
+                  isConnected
                     ? 'animate-pulse bg-emerald-500'
-                    : account?.status === 'pending'
+                    : isFirstTime || account?.status === 'pending'
                       ? 'animate-pulse bg-amber-500'
                       : 'bg-slate-400'
                 }`}
               />
-              {account?.status || 'unlinked'}
+              {isFirstTime ? 'Not Connected' : account?.status || 'unlinked'}
             </span>
           </div>
         </div>
+
+        {isFirstTime && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-200/90 bg-amber-50/70 p-4 text-amber-950">
+            <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-bold text-xs">PayPal Payout Setup Required</h4>
+              <p className="text-[11.5px] leading-relaxed text-amber-900/90">
+                Connect your PayPal Business account to enable online checkout for your clients.
+                Payouts from appointment authorization holds will be captured directly into your
+                account upon check-in.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Organization & Account Parameters */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -112,10 +138,10 @@ export function MerchantPaypalCard({
 
           <div className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-200/80 bg-white p-2.5 font-mono text-xs">
             <span
-              className="min-w-0 truncate font-bold tracking-wide text-slate-900"
+              className={`min-w-0 truncate ${isFirstTime || !account?.merchant_id ? 'font-sans italic text-slate-400' : 'font-bold tracking-wide text-slate-900'}`}
               title={merchantId}
             >
-              {merchantId}
+              {isFirstTime || !account?.merchant_id ? 'Not configured yet' : merchantId}
             </span>
             {account?.merchant_id ? (
               <button
@@ -171,17 +197,21 @@ export function MerchantPaypalCard({
           </div>
         </div>
 
-        <div className="flex flex-col items-center justify-between gap-1 pt-2 md:flex-row">
+        <div className="flex flex-col items-center justify-between gap-2 pt-2 md:flex-row">
           <PrimaryButton
-            title="Request PayPal Account Change"
-            variant="outline"
+            title={isFirstTime ? 'Connect PayPal Account' : 'Request PayPal Account Change'}
+            variant={isFirstTime ? 'primary' : 'outline'}
             size="sm"
             isDisabled={submitting}
             onClick={onRequestChange}
             icon={<ExternalLink className="h-3.5 w-3.5" />}
-            className="h-10 rounded-xl text-xs font-semibold w-1/2"
+            className={`h-10 rounded-xl text-xs font-semibold ${isFirstTime ? 'w-full sm:w-auto px-6' : 'w-1/2'}`}
           />
-          <span className="text-[11px] text-slate-400">Changes require compliance review</span>
+          <span className="text-[11px] text-slate-400">
+            {isFirstTime
+              ? 'Activates direct payouts without waiting for review'
+              : 'Changes require compliance review'}
+          </span>
         </div>
       </Card>
     </div>

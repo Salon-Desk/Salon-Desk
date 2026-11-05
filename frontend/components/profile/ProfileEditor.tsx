@@ -22,6 +22,12 @@ import { userSelector } from '@/store/authSlice'
 const profileSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
+  handle: z
+    .string()
+    .max(50, 'Handle must be 50 characters or fewer')
+    .regex(/^@?[a-zA-Z0-9_.-]*$/, 'Handle may only contain letters, numbers, underscores, and dots')
+    .optional()
+    .or(z.literal('')),
   phone: z.string().optional(),
   middle_name: z.string().optional(),
   picture: z.any().optional(),
@@ -48,6 +54,7 @@ export const ProfileEditor: FC<ProfileEditorProps> = ({
     values: {
       first_name: profile?.first_name || user?.first_name || '',
       last_name: profile?.last_name || user?.last_name || '',
+      handle: profile?.handle || '',
       phone: profile?.phone || '',
       middle_name: profile?.middle_name || '',
       picture: profile?.picture || null,
@@ -67,12 +74,15 @@ export const ProfileEditor: FC<ProfileEditorProps> = ({
         pictureUrl = null
       }
 
+      const cleanHandle = data.handle?.trim().replace(/^@/, '').toLowerCase() || null
+
       await updateProfile({
         first_name: data.first_name,
         last_name: data.last_name,
         middle_name: data.middle_name || null,
         phone: data.phone || null,
         picture: pictureUrl,
+        handle: cleanHandle,
       }).unwrap()
 
       toast.success('Profile updated successfully', toastColor.success)
@@ -110,6 +120,13 @@ export const ProfileEditor: FC<ProfileEditorProps> = ({
             <RHFTextField name="first_name" label="First name" isRequired />
             <RHFTextField name="last_name" label="Last name" isRequired />
           </div>
+          <RHFTextField
+            name="handle"
+            label="Personal Handle"
+            placeholder="e.g. alex_hair"
+            leftIcon="user"
+            isRequired={false}
+          />
           <RHFTextField name="middle_name" label="Middle name" />
           <RHFTextField name="phone" label="Phone" />
 

@@ -12,6 +12,7 @@ import type { ApiOrgService } from '@/types/api-org'
 interface MerchantServiceCardProps {
   service: ApiOrgService
   categoryName?: string
+  canManage?: boolean
   onEdit: (service: ApiOrgService) => void
   onDeactivate: (service: ApiOrgService) => void
   isDeactivating?: boolean
@@ -20,6 +21,7 @@ interface MerchantServiceCardProps {
 export function MerchantServiceCard({
   service,
   categoryName = 'General Service',
+  canManage = true,
   onEdit,
   onDeactivate,
   isDeactivating = false,
@@ -129,31 +131,33 @@ export function MerchantServiceCard({
           <span>ID: {service.id.slice(0, 8)}</span>
         </button>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit(service)}
-            title="Edit service details"
-            className="h-8 gap-1.5 rounded-xl border-slate-200/90 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900 shadow-2xs transition-all active:scale-95"
-          >
-            <SquarePen className="h-3.5 w-3.5 text-slate-500" />
-            <span>Edit</span>
-          </Button>
-
-          {service.status !== 'inactive' ? (
+        {canManage && (
+          <div className="flex items-center gap-1.5 shrink-0">
             <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onDeactivate(service)}
-              title="Deactivate service"
-              disabled={isDeactivating}
-              className="h-8 w-8 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 border border-transparent transition-all active:scale-95"
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(service)}
+              title="Edit service details"
+              className="h-8 gap-1.5 rounded-xl border-slate-200/90 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900 shadow-2xs transition-all active:scale-95"
             >
-              <Clock className="h-3.5 w-3.5" />
+              <SquarePen className="h-3.5 w-3.5 text-slate-500" />
+              <span>Edit</span>
             </Button>
-          ) : null}
-        </div>
+
+            {service.status !== 'inactive' ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onDeactivate(service)}
+                title="Deactivate service"
+                disabled={isDeactivating}
+                className="h-8 w-8 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 border border-transparent transition-all active:scale-95"
+              >
+                <Clock className="h-3.5 w-3.5" />
+              </Button>
+            ) : null}
+          </div>
+        )}
       </div>
     </Card>
   )

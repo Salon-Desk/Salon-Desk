@@ -16,6 +16,7 @@ import {
 
 import { Logo } from '@/components/brand'
 import { ConsoleSidebarNav, type SidebarTab } from '@/components/layout/console-sidebar-nav'
+import { canAccessAdminRoute } from '@/lib/permissions/permissions'
 import type { PlatformUser } from '@/types'
 
 import { ADMIN_NAV_GROUPS, ADMIN_TAB_LABELS, ADMIN_TAB_ROUTES } from '../_constants/admin-nav'
@@ -23,6 +24,7 @@ import type { AdminTabId } from '../_types/admin-types'
 
 interface AdminSidebarProps {
   activeTab: AdminTabId
+  role?: string
   onTabChange?: (tab: AdminTabId) => void
   onCloseMobile?: () => void
   organizationCount: number
@@ -37,6 +39,7 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({
   activeTab,
+  role,
   onTabChange,
   onCloseMobile,
   organizationCount,
@@ -48,7 +51,7 @@ export function AdminSidebar({
   currentUser,
   onLockSession,
 }: AdminSidebarProps) {
-  const tabs: SidebarTab<AdminTabId>[] = [
+  const allTabs: SidebarTab<AdminTabId>[] = [
     {
       id: 'overview',
       label: ADMIN_TAB_LABELS.overview,
@@ -121,6 +124,8 @@ export function AdminSidebar({
       href: ADMIN_TAB_ROUTES.staff,
     },
   ]
+
+  const tabs = allTabs.filter((tab) => !tab.href || canAccessAdminRoute(role, tab.href))
 
   const initials = currentUser.name
     .split(' ')

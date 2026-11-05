@@ -1,4 +1,13 @@
-import { CheckCircle2, Clock, Copy, UserRound } from 'lucide-react'
+import {
+  CheckCircle2,
+  Clock,
+  Copy,
+  KeyRound,
+  Mail,
+  SquarePen,
+  Trash2,
+  UserRound,
+} from 'lucide-react'
 
 import { StatusBadge } from '@/components/badge/StatusBadge'
 import {
@@ -17,6 +26,10 @@ interface StaffTableColumnsProps {
   copiedId: string | null
   employeeShifts?: ApiOrgEmployeeShift[]
   onManageShifts?: (member: User) => void
+  onEdit?: (member: User) => void
+  onDelete?: (member: User) => void
+  onResendInvite?: (member: User) => void
+  onResetPassword?: (member: User) => void
 }
 
 export function getStaffTableColumns({
@@ -24,6 +37,10 @@ export function getStaffTableColumns({
   copiedId,
   employeeShifts = [],
   onManageShifts,
+  onEdit,
+  onDelete,
+  onResendInvite,
+  onResetPassword,
 }: StaffTableColumnsProps): ColumnDefinition<User>[] {
   return [
     {
@@ -52,7 +69,19 @@ export function getStaffTableColumns({
               </div>
             )}
             <div className="min-w-0">
-              <div className="font-bold text-slate-900 text-xs truncate">{name}</div>
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="font-bold text-slate-900 text-xs truncate">{name}</span>
+                {(member.profile?.handle || member.handle) && (
+                  <span className="font-mono text-[10px] text-amber-700/90 font-medium shrink-0">
+                    @{member.profile?.handle || member.handle}
+                  </span>
+                )}
+                {member.category_ids && member.category_ids.length > 0 && (
+                  <span className="text-[9.5px] rounded bg-amber-500/10 text-amber-800 border border-amber-300/40 px-1 py-0.2 font-semibold shrink-0">
+                    {member.category_ids.length} {member.category_ids.length === 1 ? 'cat' : 'cats'}
+                  </span>
+                )}
+              </div>
               <a
                 href={`mailto:${member.email}`}
                 className="block truncate font-mono text-[11px] text-slate-500 transition-colors hover:text-amber-700 hover:underline"
@@ -112,15 +141,26 @@ export function getStaffTableColumns({
         return (
           <div className="flex items-center gap-1.5 flex-wrap">
             {memberShifts.length > 0 ? (
-              memberShifts.map((s) => (
-                <span
-                  key={s.id}
-                  className="inline-flex items-center gap-1 rounded-md border border-amber-200/90 bg-amber-50/80 px-2 py-0.5 text-[10.5px] font-semibold text-amber-900 shadow-2xs"
-                >
-                  <Clock className="h-2.5 w-2.5 text-amber-600" />
-                  <span>{s.shift_name || 'Shift'}</span>
-                </span>
-              ))
+              memberShifts.map((s) => {
+                const daysLabel =
+                  s.days && s.days.length > 0
+                    ? s.days.map((d) => d.slice(0, 3).toUpperCase()).join(',')
+                    : null
+                return (
+                  <span
+                    key={s.id}
+                    className="inline-flex items-center gap-1 rounded-md border border-amber-200/90 bg-amber-50/80 px-2 py-0.5 text-[10.5px] font-semibold text-amber-900 shadow-2xs"
+                  >
+                    <Clock className="h-2.5 w-2.5 text-amber-600" />
+                    <span>{s.shift_name || 'Shift'}</span>
+                    {daysLabel && (
+                      <span className="text-[9px] text-amber-700/80 font-normal">
+                        ({daysLabel})
+                      </span>
+                    )}
+                  </span>
+                )
+              })
             ) : (
               <span className="text-[11px] text-slate-400 italic">Default hours</span>
             )}
@@ -170,6 +210,58 @@ export function getStaffTableColumns({
                 <Copy className="h-3 w-3" />
               )}
             </button>
+          </div>
+        )
+      },
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (member) => {
+        const isOwner = member.role === 'org_owner'
+
+        return (
+          <div className="flex items-center gap-1">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(member)}
+                className="cursor-pointer rounded-lg p-1.5 text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
+                title="Edit member details"
+              >
+                <SquarePen className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {!isOwner && onResendInvite && (
+              <button
+                type="button"
+                onClick={() => onResendInvite(member)}
+                className="cursor-pointer rounded-lg p-1.5 text-sky-600 transition-all hover:bg-sky-50 active:scale-95"
+                title="Resend invitation email"
+              >
+                <Mail className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {!isOwner && onResetPassword && (
+              <button
+                type="button"
+                onClick={() => onResetPassword(member)}
+                className="cursor-pointer rounded-lg p-1.5 text-amber-600 transition-all hover:bg-amber-50 active:scale-95"
+                title="Reset temporary password"
+              >
+                <KeyRound className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {!isOwner && onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(member)}
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 transition-all hover:bg-rose-50 hover:text-rose-600 active:scale-95"
+                title="Remove from roster"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         )
       },

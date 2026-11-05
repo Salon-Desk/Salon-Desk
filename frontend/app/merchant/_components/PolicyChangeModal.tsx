@@ -26,6 +26,7 @@ export interface PolicyChangeSubmitPayload {
 
 export interface PolicyChangeModalProps {
   open: boolean
+  isFirstTime?: boolean
   initialName?: string
   policyHours: number
   noShowFee?: number
@@ -39,6 +40,7 @@ export interface PolicyChangeModalProps {
 
 export function PolicyChangeModal({
   open,
+  isFirstTime = false,
   initialName = 'Standard 24h Policy',
   policyHours,
   noShowFee,
@@ -52,7 +54,7 @@ export function PolicyChangeModal({
   const methods = useForm<PolicyChangeFormData>({
     resolver: zodResolver(policyChangeSchema),
     defaultValues: {
-      name: initialName,
+      name: isFirstTime ? 'Standard Cancellation Policy' : initialName,
       policyHours: '24',
       noShowFeePercent: 50,
       lateCancelFeePercent: 25,
@@ -72,7 +74,7 @@ export function PolicyChangeModal({
           ? noShowFee
           : 50
     methods.reset({
-      name: initialName || 'Standard 24h Policy',
+      name: isFirstTime ? 'Standard Cancellation Policy' : initialName || 'Standard 24h Policy',
       policyHours: allowed.includes(hours as (typeof allowed)[number]) ? hours : '24',
       noShowFeePercent: defaultNoShow,
       lateCancelFeePercent: Number.isFinite(lateCancelFeePercent) ? lateCancelFeePercent : 25,
@@ -80,6 +82,7 @@ export function PolicyChangeModal({
     })
   }, [
     open,
+    isFirstTime,
     initialName,
     policyHours,
     noShowFee,
@@ -95,7 +98,7 @@ export function PolicyChangeModal({
     const late = Number(data.lateCancelFeePercent)
     const hold = Number(data.holdPercent) || 100
     await onSubmit({
-      name: data.name.trim() || initialName,
+      name: data.name.trim() || (isFirstTime ? 'Standard Cancellation Policy' : initialName),
       policyHours: hours,
       noShowFee: noShow,
       noShowFeePercent: noShow,
@@ -114,7 +117,7 @@ export function PolicyChangeModal({
       }}
       header={
         <h3 className="font-bold text-slate-900 text-base">
-          Propose Cancellation Policy Amendment
+          {isFirstTime ? 'Set Up Cancellation Policy' : 'Propose Cancellation Policy Amendment'}
         </h3>
       }
     >
@@ -129,10 +132,13 @@ export function PolicyChangeModal({
           <div className="flex items-start gap-2.5 rounded-xl border border-amber-200/80 bg-amber-50/60 p-3 text-amber-900">
             <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
             <div className="space-y-1">
-              <span className="font-semibold text-xs">Fair Terms Compliance Review</span>
+              <span className="font-semibold text-xs">
+                {isFirstTime ? 'Instant Policy Setup' : 'Fair Terms Compliance Review'}
+              </span>
               <p className="text-[11px] leading-relaxed text-amber-800/90">
-                To balance salon chair protection with consumer fairness, policy modifications are
-                reviewed before taking effect across your online booking catalog.
+                {isFirstTime
+                  ? 'Define your salon cancellation window and no-show protection fees. Since this is your first policy setup, it will be activated immediately without review so you can accept bookings.'
+                  : 'To balance salon chair protection with consumer fairness, policy modifications are reviewed before taking effect across your online booking catalog.'}
               </p>
             </div>
           </div>
@@ -182,7 +188,11 @@ export function PolicyChangeModal({
 
           <div className="flex items-center gap-2 text-[11px] text-slate-500">
             <AlertCircle className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-            <span>Active appointments made under previous terms remain protected.</span>
+            <span>
+              {isFirstTime
+                ? 'Clients will review and provide digital consent to these terms at booking checkout.'
+                : 'Active appointments made under previous terms remain protected.'}
+            </span>
           </div>
 
           <div className="flex flex-col gap-2 pt-2 sm:flex-row">
@@ -197,7 +207,15 @@ export function PolicyChangeModal({
               isDisabled={isLoading}
             />
             <PrimaryButton
-              title={isLoading ? 'Submitting…' : 'Submit policy amendment'}
+              title={
+                isFirstTime
+                  ? isLoading
+                    ? 'Activating…'
+                    : 'Save & Activate Policy'
+                  : isLoading
+                    ? 'Submitting…'
+                    : 'Submit policy amendment'
+              }
               type="submit"
               size="sm"
               fullWidth

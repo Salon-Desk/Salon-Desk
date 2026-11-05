@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { ConsoleShell } from '@/components/layout/ConsoleShell'
+import { PermissionAccessDenied } from '@/components/layout/PermissionAccessDenied'
 import { PortalGuard } from '@/components/layout/PortalGuard'
 import { toastColor } from '@/constant/toast-color'
 import { useMerchantSession } from '@/hooks/use-merchant-session'
@@ -18,14 +19,21 @@ import {
   buildMerchantLayoutServicesSnapshotApiParams,
 } from '@/lib/listing-params/merchant-dashboard-snapshot-list-params'
 import { mapBookingStatusToHoldState } from '@/lib/mappers/booking'
+import { computeMerchantOnboardingStatus } from '@/lib/onboarding/merchant-onboarding'
+import {
+  canAccessMerchantRoute,
+  getDefaultMerchantRouteForRole,
+} from '@/lib/permissions/permissions'
 import type { AppDispatch } from '@/store'
 import {
   useCreateMyChangeRequestMutation,
+  useGetMyCancellationPoliciesQuery,
   useGetMyChangeRequestsQuery,
   useGetMyEmployeesQuery,
   useGetMyOrgAccountQuery,
   useGetMyOrganizationQuery,
   useGetMyOrgBookingsQuery,
+  useGetMyOrgSettingsQuery,
   useGetMyServicesQuery,
 } from '@/store/api/orgApi'
 import { logout, userSelector } from '@/store/authSlice'
@@ -49,6 +57,7 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
   const currentTab = getMerchantTabFromPathname(pathname)
   const dispatch = useDispatch<AppDispatch>()
   const user = useSelector(userSelector)
+  const isRouteAllowed = canAccessMerchantRoute(user?.role, pathname)
   const { skipOrgApi } = useMerchantSession()
 
   const { data: org } = useGetMyOrganizationQuery(undefined, { skip: skipOrgApi })
@@ -69,6 +78,8 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
     buildMerchantLayoutChangeRequestsSnapshotApiParams(),
     { skip: skipOrgApi },
   )
+  const { data: orgSettings } = useGetMyOrgSettingsQuery(undefined, { skip: skipOrgApi })
+  const { data: policiesData } = useGetMyCancellationPoliciesQuery(undefined, { skip: skipOrgApi })
 
   const apiBookings = apiBookingsData?.items ?? []
   const employees = employeesData?.items ?? []
@@ -87,6 +98,10 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
   const pendingChangeRequests = useMemo(
     () => changeRequests.filter((cr) => cr.status.toUpperCase() === 'PENDING').length,
     [changeRequests],
+  )
+  const incompleteSetupCount = useMemo(
+    () => computeMerchantOnboardingStatus(account, orgSettings, policiesData).incompleteCount,
+    [account, orgSettings, policiesData],
   )
 
   const {
@@ -159,12 +174,14 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
         sidebar={
           <MerchantSidebar
             salon={salon}
+            role={user?.role}
             activeTab={currentTab}
             activeHoldsCount={activeHoldsCount}
             bookingsCount={apiBookings.length}
             staffCount={employees.length}
             servicesCount={services.length}
             pendingChangeRequests={pendingChangeRequests}
+            incompleteSetupCount={incompleteSetupCount}
             onOpenCopilot={() => openAgentChat('chat')}
             onLockSession={handleLockSession}
             onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -180,7 +197,17 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
           />
         }
       >
-        <div className="animate-in fade-in duration-200">{children}</div>
+        {isRouteAllowed ? (
+          <div className="animate-in fade-in duration-200">{children}</div>
+        ) : (
+          <PermissionAccessDenied
+            role={user?.role}
+            returnHref={getDefaultMerchantRouteForRole(user?.role)}
+            returnLabel={user?.role === 'stylist' ? 'Go to Calendar' : 'Go to Dashboard'}
+            title="Merchant Access Restricted"
+            description="Your salon staff account role does not have permission to access this management area."
+          />
+        )}
       </ConsoleShell>
 
       {selectedBooking ? (

@@ -1,12 +1,13 @@
 'use client'
 
-import { CheckCircle2, Clock, Sliders, XCircle } from 'lucide-react'
+import { CheckCircle2, Clock, LayoutGrid, List, Sliders, XCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { StatCard } from '@/components/card'
 import { EmptyState } from '@/components/empty'
-import { Badge, Card, PageHeader, SearchInput } from '@/components/ui'
+import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
+import { Badge, Card, PageHeader, SearchInput, SegmentedControl } from '@/components/ui'
 import { Pagination } from '@/components/ui/pagination'
 import { AdminQueryState } from '@/components/ui/query-state-view'
 import { toastColor } from '@/constant/toast-color'
@@ -19,8 +20,11 @@ import {
   buildAdminRequestsCountApiParams,
 } from '@/lib/listing-params/admin-requests-list-params'
 import { useGetAdminChangeRequestsQuery } from '@/store/api/platformApi'
+import type { ApiChangeRequest } from '@/types/api-org'
 
+import { ChangeRequestDetailsModal } from './ChangeRequestDetailsModal'
 import { ChangeRequestReviewActions } from './ChangeRequestReviewActions'
+import { getChangeRequestsTableColumns } from './ChangeRequestsTableColumns'
 import { PayloadParameterCard } from './PayloadParameterCard'
 
 const FILTER_LABELS: Record<AdminRequestsListParams['status'], string> = {
@@ -37,6 +41,8 @@ export function AdminRequestsView() {
     typeof AdminRequestsListParamsSchema
   >(AdminRequestsListParamsSchema)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
+  const [inspectedRequest, setInspectedRequest] = useState<ApiChangeRequest | null>(null)
 
   useAgentUiActions({
     onFilterPolicyRequests: () => {
@@ -108,18 +114,39 @@ export function AdminRequestsView() {
     ],
   )
 
+  const tableColumns = useMemo(
+    () =>
+      getChangeRequestsTableColumns({
+        onInspect: (req) => setInspectedRequest(req),
+      }),
+    [],
+  )
+
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 pb-12 animate-in fade-in duration-300">
-      {/* Header Banner */}
-      <PageHeader
-        eyebrow="Merchant Governance · Policy & Payout Amendments"
-        title="Change Request Governance"
-        badge={`${counts.PENDING} Actionable`}
-        description="Review, approve, and audit salon merchant policy updates (free cancellation windows, no-show penalties) and PayPal payout configuration changes."
-        onRefresh={() => void handleRefresh()}
-        isRefreshing={isRefreshing}
-        refreshTitle="Refresh requests"
-      />
+    <div className="mx-auto w-full max-w-7xl space-y-6 pb-12 animate-in fade-in duration-300">
+      {/* Header Banner with View Switcher */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <PageHeader
+          eyebrow="Merchant Governance · Policy & Payout Amendments"
+          title="Change Request Governance"
+          badge={`${counts.PENDING} Actionable`}
+          description="Review, approve, and audit salon merchant policy updates (free cancellation windows, no-show penalties) and PayPal payout configuration changes."
+          onRefresh={() => void handleRefresh()}
+          isRefreshing={isRefreshing}
+          refreshTitle="Refresh requests"
+        />
+
+        <div className="shrink-0 self-start sm:self-center">
+          <SegmentedControl
+            options={[
+              { value: 'table' as const, label: 'Table', icon: List },
+              { value: 'cards' as const, label: 'Cards', icon: LayoutGrid },
+            ]}
+            value={viewMode}
+            onChange={(val) => setViewMode(val)}
+          />
+        </div>
+      </div>
 
       {/* 3 KPI Summary Cards */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
@@ -201,50 +228,82 @@ export function AdminRequestsView() {
             title="No change requests found"
             description="Merchant policy and PayPal configuration amendments appear here for platform review."
           />
-        ) : (
-          <div className="space-y-4">
-            {paginatedRequests.map((cr) => (
-              <Card
-                key={cr.id}
-                padding="none"
-                className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
-              >
-                <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 p-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="soft">{cr.request_type.replace(/_/g, ' ')}</Badge>
-                      <Badge variant="soft">{cr.status}</Badge>
-                    </div>
-                    <p className="text-xs text-slate-500 font-mono">
-                      Org: {cr.org_id.slice(0, 8)}… · Request: {cr.id.slice(0, 8)}…
-                    </p>
-                    <p className="flex items-center gap-1 text-[11px] text-slate-400">
-                      <Clock className="h-3 w-3" />
-                      {new Date(cr.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                  <ChangeRequestReviewActions request={cr} />
-                </div>
-                <div className="p-4">
-                  <PayloadParameterCard cr={cr} />
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {totalItems > 0 && (
-          <Pagination
+        ) : viewMode === 'table' ? (
+          /* Table View */
+          <BasicDataGridTable
+            data={paginatedRequests}
+            columns={tableColumns}
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalItems}
-            pageSize={pageSize}
-            setCurrentPage={(page) => setParam('page', page)}
-            onPageSizeChange={(size) => setParams({ limit: size, page: 1 })}
-            pageSizeOptions={[5, 10, 20]}
+            itemsPerPage={pageSize}
+            onPageChange={(page) => setParam('page', page)}
+            onItemPerPageChange={(size) => setParams({ limit: size, page: 1 })}
+            showPagination={totalItems > 0}
+            showSearch={false}
+            showItemsPerPage={true}
+            showColumnSelector={true}
+            showActions={false}
+            refetch={() => void handleRefresh()}
+            isFetching={isLoading || isRefreshing}
+            tableClassName="border-slate-200/80"
+            headerClassName="bg-slate-50/70"
           />
+        ) : (
+          /* Cards View */
+          <div className="space-y-4">
+            <div className="space-y-4">
+              {paginatedRequests.map((cr) => (
+                <Card
+                  key={cr.id}
+                  padding="none"
+                  className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+                >
+                  <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 p-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="soft">{cr.request_type.replace(/_/g, ' ')}</Badge>
+                        <Badge variant="soft">{cr.status}</Badge>
+                      </div>
+                      <p className="text-xs text-slate-500 font-mono">
+                        Org: {cr.org_id.slice(0, 8)}… · Request: {cr.id.slice(0, 8)}…
+                      </p>
+                      <p className="flex items-center gap-1 text-[11px] text-slate-400">
+                        <Clock className="h-3 w-3" />
+                        {new Date(cr.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <ChangeRequestReviewActions request={cr} onReviewed={() => void refetch()} />
+                  </div>
+                  <div className="p-4">
+                    <PayloadParameterCard cr={cr} />
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {totalItems > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                setCurrentPage={(page) => setParam('page', page)}
+                onPageSizeChange={(size) => setParams({ limit: size, page: 1 })}
+                pageSizeOptions={[5, 10, 20]}
+              />
+            )}
+          </div>
         )}
       </AdminQueryState>
+
+      {/* Inspect & Review Modal */}
+      <ChangeRequestDetailsModal
+        request={inspectedRequest}
+        open={Boolean(inspectedRequest)}
+        onClose={() => setInspectedRequest(null)}
+        onSuccess={() => void refetch()}
+      />
     </div>
   )
 }

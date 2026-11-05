@@ -13,6 +13,79 @@ export interface ApiOrganization {
   created_at: string
 }
 
+export interface AdminOrgOwner {
+  id: string
+  email: string
+  first_name?: string | null
+  last_name?: string | null
+  phone?: string | null
+  status: string
+  role: string
+  created_at?: string | null
+}
+
+export interface AdminOrgPaypal {
+  id?: string | null
+  merchant_id?: string | null
+  merchant_email?: string | null
+  display_name?: string | null
+  currency: string
+  status?: string | null
+  approved_at?: string | null
+  created_at?: string | null
+}
+
+export interface AdminOrgServiceItem {
+  id: string
+  name: string
+  category_name?: string | null
+  base_price: string | number
+  duration_minutes: number
+  status: string
+  simultaneous_capacity: number
+}
+
+export interface AdminOrgStaffItem {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  role: string
+  picture?: string | null
+  phone?: string | null
+}
+
+export interface AdminOrganizationDetail {
+  id: string
+  owner_id: string
+  name: string
+  status: ApiOrgStatus
+  description?: string | null
+  picture?: string | null
+  created_at: string
+  owner?: AdminOrgOwner | null
+  paypal_account?: AdminOrgPaypal | null
+  physical_address?: string | null
+  timezone?: string | null
+  lat?: string | number | null
+  lng?: string | number | null
+  working_hours?: WorkingHoursMap | null
+  cancellation_policy?: {
+    org_id: string
+    name: string
+    free_cancel_hours: number
+    no_show_fee_percent: number
+    late_cancel_fee_percent?: number | null
+    data: Record<string, unknown>
+  } | null
+  rating_avg: number
+  review_count: number
+  services_count: number
+  staff_count: number
+  services: AdminOrgServiceItem[]
+  staff: AdminOrgStaffItem[]
+}
+
 export type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 export type TimeInterval = [string, string]
 export type WorkingHoursMap = Record<DayKey, TimeInterval[]>
@@ -189,17 +262,29 @@ export interface ApiServiceCategory {
   id: string
   name: string
   description?: string | null
+  status?: 'ACTIVE' | 'INACTIVE' | string
+  active_organizations_count?: number
+  active_services_count?: number
   created_at: string
 }
 
 export interface CreateServiceCategoryRequest {
   name: string
   description?: string | null
+  status?: 'ACTIVE' | 'INACTIVE' | string
 }
 
 export interface UpdateServiceCategoryRequest {
   name?: string
   description?: string | null
+  status?: 'ACTIVE' | 'INACTIVE' | string
+}
+
+export interface TaxonomyMetrics {
+  total_categories: number
+  active_categories: number
+  total_active_organizations: number
+  total_active_services: number
 }
 
 export interface PlatformCommission {
@@ -317,11 +402,30 @@ export interface ApiOrgEmployeeShift {
   id: string
   user_id: string
   org_shift_id: string
+  days?: string[]
   created_at: string
   employee_name?: string | null
   employee_email?: string | null
   shift_name?: string | null
   shift_data?: Record<string, unknown> | null
+}
+
+export interface ApiOrgEmployeeTimeOff {
+  id: string
+  org_id: string
+  user_id: string
+  start_date: string
+  end_date: string
+  reason?: string | null
+  created_at: string
+  employee_name?: string | null
+  employee_email?: string | null
+}
+
+export interface ApiEmployeeCategory {
+  id: string
+  name: string
+  description?: string | null
 }
 
 export interface HeroSettings {

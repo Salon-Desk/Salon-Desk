@@ -10,18 +10,30 @@ from app.schemas.common import ORMModel
 class ServiceCategoryCreate(BaseModel):
     name: str
     description: str | None = None
+    status: str = "ACTIVE"
 
 
 class ServiceCategoryUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
+    status: str | None = None
 
 
 class ServiceCategoryOut(ORMModel):
     id: UUID
     name: str
     description: str | None = None
+    status: str = "ACTIVE"
+    active_organizations_count: int = 0
+    active_services_count: int = 0
     created_at: datetime
+
+
+class TaxonomyMetricsOut(BaseModel):
+    total_categories: int
+    active_categories: int
+    total_active_organizations: int
+    total_active_services: int
 
 
 class ServiceCreate(BaseModel):

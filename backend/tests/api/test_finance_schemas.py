@@ -2,8 +2,10 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from app.schemas.organization import (
+    CancellationPolicyCreate,
     CancellationPolicyOut,
     ChangeRequestOut,
+    OrgAccountCreate,
     OrgAccountOut,
 )
 
@@ -93,3 +95,33 @@ def test_change_request_out_schema():
     assert dumped["submitter_name"] == "Jane Doe"
     assert dumped["payload_json"]["data"]["free_cancel_hours"] == 12
     assert dumped["current_snapshot_json"]["data"]["free_cancel_hours"] == 24
+
+
+def test_cancellation_policy_create_schema():
+    payload = CancellationPolicyCreate(
+        name="Custom 48h Notice Policy",
+        data={
+            "free_cancel_hours": 48,
+            "no_show_fee_percent": 100,
+            "late_cancel_fee_percent": 50,
+            "hold_percent": 100,
+        },
+    )
+    dumped = payload.model_dump()
+    assert dumped["name"] == "Custom 48h Notice Policy"
+    assert dumped["data"]["free_cancel_hours"] == 48
+    assert dumped["data"]["no_show_fee_percent"] == 100
+
+
+def test_org_account_create_schema():
+    payload = OrgAccountCreate(
+        merchant_id="PAYPAL-DIRECT-ID",
+        merchant_email="owner@salon.com",
+        display_name="Direct Atelier",
+        currency="USD",
+    )
+    dumped = payload.model_dump()
+    assert dumped["merchant_id"] == "PAYPAL-DIRECT-ID"
+    assert dumped["merchant_email"] == "owner@salon.com"
+    assert dumped["display_name"] == "Direct Atelier"
+    assert dumped["currency"] == "USD"

@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import FormProvider from '@/components/forms/FormProvider'
+import RHFSelect from '@/components/forms/RHFSelect'
 import RHFTextArea from '@/components/forms/RHFTextArea'
 import RHFTextField from '@/components/forms/RHFTextField'
 import { toastColor } from '@/constant/toast-color'
@@ -45,6 +46,7 @@ export function CategoryFormModal({ open, editing, onClose }: CategoryFormModalP
       methods.reset({
         name: editing.name,
         description: editing.description ?? '',
+        status: editing.status?.toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
       })
     } else {
       methods.reset(categoryDefaultValues)
@@ -59,6 +61,7 @@ export function CategoryFormModal({ open, editing, onClose }: CategoryFormModalP
           body: {
             name: (data.name ?? '').trim(),
             description: data.description?.trim() || null,
+            status: data.status,
           },
         }).unwrap()
         toast.success('Category updated', toastColor.success)
@@ -66,6 +69,7 @@ export function CategoryFormModal({ open, editing, onClose }: CategoryFormModalP
         await createCategory({
           name: (data.name ?? '').trim(),
           description: data.description?.trim() || null,
+          status: data.status,
         }).unwrap()
         toast.success('Category created', toastColor.success)
       }
@@ -101,6 +105,15 @@ export function CategoryFormModal({ open, editing, onClose }: CategoryFormModalP
         <div className="space-y-3">
           <RHFTextField name="name" label="Name" isRequired />
           <RHFTextArea name="description" label="Description" isRequired={false} rows={3} />
+          <RHFSelect
+            name="status"
+            label="Status"
+            options={[
+              { value: 'ACTIVE', label: 'Active — Published to Catalog' },
+              { value: 'INACTIVE', label: 'Inactive — Hidden from Catalog' },
+            ]}
+            isRequired
+          />
           <PrimaryButton
             title={isLoading ? 'Saving…' : 'Save category'}
             isLoading={isLoading}

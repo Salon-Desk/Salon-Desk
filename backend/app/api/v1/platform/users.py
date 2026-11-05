@@ -1,3 +1,5 @@
+import secrets
+import string
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -13,8 +15,22 @@ from app.models.enums import (
 from app.models.user import Profile, User
 from app.schemas.common import MessageOut
 from app.schemas.user import StaffCreate, UserOut
+from app.services.email_service import (
+    send_staff_invite_email,
+    send_staff_password_reset_email,
+)
 
 router = APIRouter(prefix="/admin", tags=["platform"])
+
+
+def _generate_temp_password(length: int = 8) -> str:
+    """Generate a clean 8-character temporary password with letters and digits."""
+    alphabet = string.ascii_letters + string.digits
+    while True:
+        pwd = "".join(secrets.choice(alphabet) for _ in range(length))
+        if any(c.isalpha() for c in pwd) and any(c.isdigit() for c in pwd):
+            return pwd
+
 
 # --- Platform staff ---
 
@@ -58,9 +74,11 @@ async def register_staff(body: StaffCreate, user: PlatformAdminOnly, db: DbSessi
     existing = await db.execute(select(User).where(User.email == body.email.lower()))
     if existing.scalar_one_or_none():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="Email already registered")
+
+    raw_password = body.password or _generate_temp_password(8)
     staff = User(
         email=body.email.lower(),
-        password_hash=hash_password(body.password),
+        password_hash=hash_password(raw_password),
         role=UserRole.PLATFORM_STAFF,
         status=UserStatus.ACTIVE,
     )
@@ -76,6 +94,13 @@ async def register_staff(body: StaffCreate, user: PlatformAdminOnly, db: DbSessi
         )
     )
     await db.flush()
+
+    await send_staff_invite_email(
+        to_address=staff.email,
+        first_name=body.first_name,
+        temp_password=raw_password,
+    )
+
     result = await db.execute(
         select(User).options(selectinload(User.profile)).where(User.id == staff.id)
     )
@@ -84,10 +109,62 @@ async def register_staff(body: StaffCreate, user: PlatformAdminOnly, db: DbSessi
 
 @router.delete("/staff/{staff_id}", response_model=MessageOut)
 async def remove_staff(staff_id: UUID, user: PlatformAdminOnly, db: DbSession) -> MessageOut:
-    _ = user
+    if user.id == staff_id:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own account. Platform admins may only remove other users.",
+        )
     staff = await db.get(User, staff_id)
-    if staff is None or staff.role != UserRole.PLATFORM_STAFF:
+    if staff is None or staff.role not in (UserRole.PLATFORM_STAFF, UserRole.PLATFORM_ADMIN):
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Staff not found")
     staff.status = UserStatus.INACTIVE
     await db.flush()
     return MessageOut(detail="Platform staff deactivated")
+
+
+@router.post("/staff/{staff_id}/resend-invite", response_model=MessageOut)
+async def resend_staff_invite(staff_id: UUID, user: PlatformAdminOnly, db: DbSession) -> MessageOut:
+    _ = user
+    result = await db.execute(
+        select(User).options(selectinload(User.profile)).where(User.id == staff_id)
+    )
+    staff = result.scalar_one_or_none()
+    if staff is None or staff.role not in (UserRole.PLATFORM_STAFF, UserRole.PLATFORM_ADMIN):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Staff not found")
+
+    new_password = _generate_temp_password(8)
+    staff.password_hash = hash_password(new_password)
+    await db.flush()
+
+    first_name = staff.profile.first_name if staff.profile else "there"
+    await send_staff_invite_email(
+        to_address=staff.email,
+        first_name=first_name,
+        temp_password=new_password,
+    )
+    return MessageOut(detail="Invitation resent successfully")
+
+
+@router.post("/staff/{staff_id}/reset-password", response_model=MessageOut)
+async def reset_staff_password(
+    staff_id: UUID, user: PlatformAdminOnly, db: DbSession
+) -> MessageOut:
+    _ = user
+    result = await db.execute(
+        select(User).options(selectinload(User.profile)).where(User.id == staff_id)
+    )
+    staff = result.scalar_one_or_none()
+    if staff is None or staff.role not in (UserRole.PLATFORM_STAFF, UserRole.PLATFORM_ADMIN):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Staff not found")
+
+    new_password = _generate_temp_password(8)
+    staff.password_hash = hash_password(new_password)
+    await db.flush()
+
+    first_name = staff.profile.first_name if staff.profile else "there"
+    await send_staff_password_reset_email(
+        to_address=staff.email,
+        first_name=first_name,
+        temp_password=new_password,
+    )
+    return MessageOut(detail="Password reset and emailed to staff member")

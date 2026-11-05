@@ -5,7 +5,7 @@ import { StatusBadge } from '@/components/badge'
 import type { ColumnDefinition } from '@/types/table'
 import type { User } from '@/types/user'
 
-export function getAdminStaffColumns(): ColumnDefinition<User>[] {
+export function getAdminStaffColumns(currentUserId?: string): ColumnDefinition<User>[] {
   return [
     {
       id: 'member',
@@ -20,6 +20,7 @@ export function getAdminStaffColumns(): ColumnDefinition<User>[] {
           .join('')
           .slice(0, 2)
           .toUpperCase()
+        const isSelf = Boolean(currentUserId && member.id === currentUserId)
 
         return (
           <div className="flex items-center gap-3">
@@ -27,8 +28,15 @@ export function getAdminStaffColumns(): ColumnDefinition<User>[] {
               {initials}
             </div>
             <div className="min-w-0">
-              <div className="font-bold text-slate-900 text-xs truncate max-w-[200px]">
-                {fullName}
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-slate-900 text-xs truncate max-w-[180px]">
+                  {fullName}
+                </span>
+                {isSelf && (
+                  <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 ring-1 ring-amber-500/20">
+                    You
+                  </span>
+                )}
               </div>
               <div className="text-[11px] text-slate-500 truncate max-w-[200px]">
                 {member.email}

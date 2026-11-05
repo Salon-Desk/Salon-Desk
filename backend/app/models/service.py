@@ -14,6 +14,9 @@ class ServiceCategory(TimestampedModel):
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(32), default="ACTIVE", server_default="ACTIVE", nullable=False
+    )
 
     services = relationship("Service", back_populates="category")
     commissions = relationship("PlatformCommission", back_populates="service_category")
@@ -79,3 +82,23 @@ class ServiceGiving(BaseModel):
 
     service = relationship("Service", back_populates="givers")
     user = relationship("User")
+
+
+class OrgEmployeeCategory(BaseModel):
+    __tablename__ = "org_employee_category"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("user.id"),
+        nullable=False,
+        index=True,
+    )
+    service_category_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("service_category.id"),
+        nullable=False,
+        index=True,
+    )
+
+    user = relationship("User", back_populates="employee_categories")
+    service_category = relationship("ServiceCategory")

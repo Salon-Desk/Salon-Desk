@@ -6,10 +6,12 @@ import { type ReactNode, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { ConsoleShell } from '@/components/layout/console-shell'
+import { PermissionAccessDenied } from '@/components/layout/PermissionAccessDenied'
 import { PortalGuard } from '@/components/layout/portal-guard'
 import { Toast } from '@/components/ui'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { buildAdminCategoriesNavApiParams } from '@/lib/listing-params/admin-taxonomy-list-params'
+import { canAccessAdminRoute } from '@/lib/permissions/permissions'
 import type { AppDispatch } from '@/store'
 import {
   useGetAdminCategoriesQuery,
@@ -31,6 +33,7 @@ export function AdminLayoutInner({ children }: { children: ReactNode }) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const dispatch = useDispatch<AppDispatch>()
   const user = useSelector(userSelector)
+  const isRouteAllowed = canAccessAdminRoute(user?.role, pathname)
   const { skipAdminApi } = useAdminSession()
   const { data: dashboard } = useGetAdminDashboardQuery(undefined, { skip: skipAdminApi })
   const { data: categoriesData } = useGetAdminCategoriesQuery(buildAdminCategoriesNavApiParams(), {
@@ -63,6 +66,7 @@ export function AdminLayoutInner({ children }: { children: ReactNode }) {
           sidebar={
             <AdminSidebar
               activeTab={currentTab}
+              role={user?.role}
               onCloseMobile={() => setIsMobileSidebarOpen(false)}
               organizationCount={dashboard?.total_organizations ?? 0}
               categoryCount={categories.length}
@@ -96,7 +100,17 @@ export function AdminLayoutInner({ children }: { children: ReactNode }) {
             />
           }
         >
-          <div className="animate-in fade-in duration-200">{children}</div>
+          {isRouteAllowed ? (
+            <div className="animate-in fade-in duration-200">{children}</div>
+          ) : (
+            <PermissionAccessDenied
+              role={user?.role}
+              returnHref="/admin"
+              returnLabel="Return to Overview"
+              title="Admin Module Restricted"
+              description="This administrative section requires Super Administrator privileges. Your account role has access to support, reviews, and catalog moderation."
+            />
+          )}
         </ConsoleShell>
       </div>
     </PortalGuard>

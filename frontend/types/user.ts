@@ -11,6 +11,7 @@ export interface Profile {
   middle_name?: string | null
   picture?: string | null
   phone?: string | null
+  handle?: string | null
 }
 
 export interface User {
@@ -27,6 +28,8 @@ export interface User {
   last_name?: string
   name?: string
   phone?: string | null
+  handle?: string | null
+  category_ids?: string[]
 }
 
 export interface ProfileUpdatePayload {
@@ -35,18 +38,21 @@ export interface ProfileUpdatePayload {
   middle_name?: string | null
   picture?: string | null
   phone?: string | null
+  handle?: string | null
 }
 
 /* ── Employee / staff request shapes ── */
 
 export interface CreateEmployeeRequest {
   email: string
-  password: string
+  password?: string
   first_name: string
   last_name: string
   role: 'reception' | 'stylist'
   middle_name?: string | null
   phone?: string | null
+  handle?: string | null
+  category_ids?: string[]
 }
 
 export interface UpdateEmployeeRequest {
@@ -56,11 +62,13 @@ export interface UpdateEmployeeRequest {
   phone?: string | null
   role?: 'reception' | 'stylist'
   picture?: string | null
+  handle?: string | null
+  category_ids?: string[]
 }
 
 export interface CreateStaffRequest {
   email: string
-  password: string
+  password?: string
   first_name: string
   last_name: string
   middle_name?: string | null
@@ -70,4 +78,5 @@ export interface CreateStaffRequest {
 export interface AssignShiftRequest {
   user_id: string
   org_shift_id: string
+  days?: string[]
 }

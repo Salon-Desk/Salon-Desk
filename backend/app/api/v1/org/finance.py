@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -7,6 +8,8 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import DbSession, OrgMember, OrgOwner
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.core.pagination import paginate_items
+from app.models.enums import OrgAccountStatus, OrgCancellationPolicyStatus
+from app.models.organization import Organization
 from app.models.payment import OrgAccount
 from app.models.policy import OrgCancellationPolicy
 from app.schemas.common import PageOut
@@ -16,9 +19,11 @@ from app.schemas.ledger import (
     PayCommissionInvoiceRequest,
 )
 from app.schemas.organization import (
+    CancellationPolicyCreate,
     CancellationPolicyOut,
     ChangeRequestCreate,
     ChangeRequestOut,
+    OrgAccountCreate,
     OrgAccountOut,
 )
 from app.services import change_request_service, commission_billing_service
@@ -39,6 +44,38 @@ async def list_policies(user: OrgMember, db: DbSession) -> list[CancellationPoli
     return [CancellationPolicyOut.model_validate(p) for p in result.scalars().all()]
 
 
+@router.post(
+    "/me/cancellation-policies",
+    response_model=CancellationPolicyOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_initial_policy(
+    body: CancellationPolicyCreate, user: OrgOwner, db: DbSession
+) -> CancellationPolicyOut:
+    actives = await db.execute(
+        select(OrgCancellationPolicy).where(
+            OrgCancellationPolicy.org_id == user.org_id,
+            OrgCancellationPolicy.status == OrgCancellationPolicyStatus.ACTIVE,
+        )
+    )
+    if actives.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A cancellation policy is already configured. Propose amendments via change request.",
+        )
+
+    policy = OrgCancellationPolicy(
+        org_id=user.org_id,
+        name=body.name,
+        data=body.data,
+        status=OrgCancellationPolicyStatus.ACTIVE,
+    )
+    db.add(policy)
+    await db.flush()
+    await db.refresh(policy)
+    return CancellationPolicyOut.model_validate(policy)
+
+
 @router.get("/me/account", response_model=OrgAccountOut | None)
 async def get_account(user: OrgMember, db: DbSession) -> OrgAccountOut | None:
     result = await db.execute(
@@ -50,6 +87,45 @@ async def get_account(user: OrgMember, db: DbSession) -> OrgAccountOut | None:
     )
     account = result.scalar_one_or_none()
     return OrgAccountOut.model_validate(account) if account else None
+
+
+@router.post(
+    "/me/account",
+    response_model=OrgAccountOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_initial_account(
+    body: OrgAccountCreate, user: OrgOwner, db: DbSession
+) -> OrgAccountOut:
+    existing = await db.execute(
+        select(OrgAccount).where(
+            OrgAccount.org_id == user.org_id,
+            OrgAccount.status == OrgAccountStatus.APPROVED,
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A PayPal account is already linked. Propose changes via change request.",
+        )
+
+    org = await db.get(Organization, user.org_id)
+    display_name = body.display_name or (org.name if org else body.merchant_id)
+
+    account = OrgAccount(
+        org_id=user.org_id,
+        merchant_id=body.merchant_id.strip(),
+        merchant_email=body.merchant_email.strip() if body.merchant_email else None,
+        display_name=display_name,
+        currency=body.currency or "USD",
+        status=OrgAccountStatus.APPROVED,
+        approved_at=datetime.now(UTC),
+        approved_by=user.id,
+    )
+    db.add(account)
+    await db.flush()
+    await db.refresh(account)
+    return OrgAccountOut.model_validate(account)
 
 
 @router.get("/me/change-requests", response_model=PageOut[ChangeRequestOut])
@@ -107,7 +183,7 @@ async def create_change_request(
 
 @router.get("/me/commission-records", response_model=PageOut[CommissionRecordOut])
 async def list_commission_records(
-    user: OrgMember,
+    user: OrgOwner,
     db: DbSession,
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Page size"),
@@ -123,7 +199,7 @@ async def list_commission_records(
 
 @router.get("/me/commission-invoices", response_model=PageOut[OrgCommissionInvoiceOut])
 async def list_commission_invoices(
-    user: OrgMember,
+    user: OrgOwner,
     db: DbSession,
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Page size"),

@@ -77,7 +77,7 @@ export function MerchantStaffHeader({
           {onAddStaff && (
             <div data-agent-action="add-staff">
               <PrimaryButton
-                title="Add team member"
+                title="Invite team member"
                 size="sm"
                 fullWidth={false}
                 icon={<Plus className="h-4 w-4" />}

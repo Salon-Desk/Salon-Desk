@@ -1,7 +1,8 @@
+import datetime
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import Enum, ForeignKey, Numeric, String, Text
+from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -94,6 +95,34 @@ class OrgEmployeeShift(BaseModel):
         nullable=False,
         index=True,
     )
+    days: Mapped[list[str]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=lambda: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+    )
 
     user = relationship("User")
     org_shift = relationship("OrgShift", back_populates="employee_shifts")
+
+
+class OrgEmployeeTimeOff(TimestampedModel):
+    __tablename__ = "org_employee_time_off"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organization.id"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("user.id"),
+        nullable=False,
+        index=True,
+    )
+    start_date: Mapped[datetime.date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[datetime.date] = mapped_column(Date, nullable=False)
+    reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    user = relationship("User")
+    organization = relationship("Organization")
