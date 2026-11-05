@@ -1,6 +1,6 @@
 """Merge disputes and scheduling migration heads.
 
-Revision ID: 0006_merge_disputes_and_scheduling
+Revision ID: 0006_merge_heads
 Revises: 0003_disputes_slot_rescue, 0005_scheduling_staff
 Create Date: 2026-11-05
 """
@@ -8,7 +8,8 @@ Create Date: 2026-11-05
 from collections.abc import Sequence
 
 # revision identifiers, used by Alembic.
-revision: str = "0006_merge_disputes_and_scheduling"
+# Must be <= 32 chars (alembic_version.version_num VARCHAR(32)).
+revision: str = "0006_merge_heads"
 down_revision: str | tuple[str, ...] | None = (
     "0003_disputes_slot_rescue",
     "0005_scheduling_staff",

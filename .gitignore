@@ -1,5 +1,7 @@
 .env
 .env.vps
+.env.production
+env.production
 temp
 docs
 
