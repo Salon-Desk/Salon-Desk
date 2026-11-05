@@ -2,7 +2,7 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![CI Suite](https://img.shields.io/badge/CI%20Suite-235%20passed-success.svg)](.github/workflows/ci.yml)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-paypalai.hackathon.huludelala.com-brightgreen.svg)](https://paypalai.hackathon.huludelala.com)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-salon--desk.onrender.com-brightgreen.svg)](https://salon-desk.onrender.com/client)
 [![YouTube Demo](https://img.shields.io/badge/YouTube-2%3A42%20Walkthrough-red.svg)](https://youtu.be/to2uynlBQmE)
 
 > **PayPal AI Hackathon Submission**  
@@ -36,7 +36,8 @@ Independent stylists and barbers lose an average of **7% of their annual revenue
 
 ## 2. Try It in 60 Seconds (Judge Quick Start)
 
-Hosted Prototype URL: **[https://paypalai.hackathon.huludelala.com](https://paypalai.hackathon.huludelala.com)**
+Hosted Prototype URL: **[https://salon-desk.onrender.com/client](https://salon-desk.onrender.com/client)**  
+*(Also accessible from root portal hub: [https://salon-desk.onrender.com](https://salon-desk.onrender.com))*
 
 ### Demo Accounts (Shared Password: `Password123!`)
 
@@ -55,7 +56,7 @@ Hosted Prototype URL: **[https://paypalai.hackathon.huludelala.com](https://payp
 - **Secondary Buyer:** `ailurophile99@personal.example.com` / `RKd4)RGo`
 
 > [!TIP]
-> **One-Click Sandbox Reset:** Click the **Reset Demo** button in the header toolbar, or send `POST https://paypalai.hackathon.huludelala.com/api/demo/reset` to restore a clean demo state at any time. Enable browser pop-ups for PayPal Sandbox authorization windows.
+> **One-Click Sandbox Reset:** Click the **Reset Demo** button in the header toolbar, or send `POST https://salon-desk.onrender.com/api/demo/reset` to restore a clean demo state at any time. Enable browser pop-ups for PayPal Sandbox authorization windows.
 
 ---
 

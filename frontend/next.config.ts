@@ -32,8 +32,12 @@ function storagePattern(origin: string | undefined): RemotePattern | null {
 const storageRemotePatterns = [
   storagePattern(process.env.NEXT_PUBLIC_SITE_URL),
   storagePattern(process.env.NEXT_PUBLIC_API_URL),
+  storagePattern('https://salon-desk.onrender.com'),
+  storagePattern('http://salon-desk.onrender.com'),
   storagePattern('https://paypalai.hackathon.huludelala.com'),
   storagePattern('http://paypalai.hackathon.huludelala.com'),
+  { protocol: 'https', hostname: '**.onrender.com', pathname: '/api/v1/storage/**' },
+  { protocol: 'http', hostname: '**.onrender.com', pathname: '/api/v1/storage/**' },
   { protocol: 'https', hostname: '**.huludelala.com', pathname: '/api/v1/storage/**' },
   { protocol: 'http', hostname: '**.huludelala.com', pathname: '/api/v1/storage/**' },
   { protocol: 'http', hostname: 'localhost', pathname: '/api/v1/storage/**' },
