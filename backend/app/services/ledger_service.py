@@ -93,19 +93,44 @@ async def append_ledger(
     return entry
 
 
-async def verify_ledger_chain(db: AsyncSession) -> tuple[bool, int, str | None]:
+async def verify_ledger_chain(
+    db: AsyncSession,
+    booking_id: UUID | None = None,
+) -> tuple[bool, int, str | None]:
     """
-    Verify the cryptographic integrity of the entire ledger chain.
+    Verify the cryptographic integrity of the ledger chain.
+    If booking_id is provided, verifies that entries for that booking are validly hashed.
+    Otherwise verifies the global chain sequence.
 
     Returns:
         (is_valid, verified_count, error_detail_or_none)
     """
-    stmt = select(LedgerEntry).order_by(LedgerEntry.created_at.asc(), LedgerEntry.id.asc())
+    stmt = select(LedgerEntry)
+    if booking_id:
+        stmt = stmt.where(LedgerEntry.booking_id == booking_id)
+    stmt = stmt.order_by(LedgerEntry.created_at.asc(), LedgerEntry.id.asc())
     result = await db.execute(stmt)
     entries = list(result.scalars().all())
 
     if not entries:
         return True, 0, None
+
+    if booking_id:
+        for idx, entry in enumerate(entries):
+            payload_str = json.dumps(entry.payload_json, sort_keys=True, default=str)
+            computed_hash = append_ledger_hash(entry.previous_hash, payload_str)
+            if entry.entry_hash != computed_hash:
+                compact_str = json.dumps(
+                    entry.payload_json, sort_keys=True, separators=(",", ":"), default=str
+                )
+                if entry.entry_hash != append_ledger_hash(entry.previous_hash, compact_str):
+                    return (
+                        False,
+                        idx,
+                        f"Hash mismatch at entry {entry.id} (index {idx}): "
+                        f"entry_hash '{entry.entry_hash}' != computed '{computed_hash}'",
+                    )
+        return True, len(entries), None
 
     expected_prev = GENESIS_HASH
     for idx, entry in enumerate(entries):

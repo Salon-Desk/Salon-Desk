@@ -187,6 +187,62 @@ async def ingest_webhook(
                         reason=reason,
                         dispute_amount=amt_val,
                     )
+        elif event_type == "CUSTOMER.DISPUTE.UPDATED":
+            dispute_id = resource.get("dispute_id")
+            if dispute_id:
+                from app.models.dispute import DisputeCase
+                from app.models.enums import DisputeCaseStatus
+
+                stmt = select(DisputeCase).where(DisputeCase.paypal_dispute_id == str(dispute_id))
+                case = (await db.execute(stmt)).scalar_one_or_none()
+                if case:
+                    res_status = resource.get("status", "").upper()
+                    if res_status == "UNDER_REVIEW":
+                        case.status = DisputeCaseStatus.UNDER_REVIEW
+                    elif res_status == "WAITING_FOR_SELLER_RESPONSE":
+                        case.status = DisputeCaseStatus.WAITING_FOR_SELLER_RESPONSE
+                    elif res_status in ("WAITING_FOR_BUYER_RESPONSE", "INQUIRY"):
+                        case.status = DisputeCaseStatus.UNDER_REVIEW
+                    elif res_status == "RESOLVED":
+                        outcome_info = resource.get("dispute_outcome") or {}
+                        out_code = (outcome_info.get("outcome_code") or "").upper()
+                        out_reason = (outcome_info.get("outcome_reason") or "").upper()
+                        fund_movements = resource.get("fund_movements") or []
+                        hold_released = any(
+                            m.get("party") == "RECEIVER"
+                            and m.get("type") == "CREDIT"
+                            and m.get("reason") == "HOLD_RELEASED"
+                            for m in fund_movements
+                        )
+                        is_seller = (
+                            "SELLER" in out_code
+                            or "CANCEL" in out_code
+                            or "BUYER_CANCELLED" in out_reason
+                            or hold_released
+                        )
+                        case.status = (
+                            DisputeCaseStatus.RESOLVED_SELLER_FAVOR
+                            if is_seller
+                            else DisputeCaseStatus.RESOLVED_BUYER_FAVOR
+                        )
+                        case.adjudication_outcome = (
+                            out_code
+                            or out_reason
+                            or ("SELLER_FAVOR" if is_seller else "BUYER_FAVOR")
+                        )
+                        case.resolved_at = datetime.now(UTC)
+
+                    # Update metadata, buyer messages, and transaction items
+                    rep = dict(case.investigator_report_json or {})
+                    if "messages" in resource and resource["messages"]:
+                        rep["dispute_messages"] = resource["messages"]
+                    if "dispute_life_cycle_stage" in resource:
+                        rep["dispute_life_cycle_stage"] = resource["dispute_life_cycle_stage"]
+                    if "disputed_transactions" in resource:
+                        rep["disputed_transactions"] = resource["disputed_transactions"]
+                    case.investigator_report_json = rep
+                    await db.flush()
+
         elif event_type == "CUSTOMER.DISPUTE.RESOLVED":
             dispute_id = resource.get("dispute_id")
             if dispute_id:
@@ -196,15 +252,40 @@ async def ingest_webhook(
                 stmt = select(DisputeCase).where(DisputeCase.paypal_dispute_id == str(dispute_id))
                 case = (await db.execute(stmt)).scalar_one_or_none()
                 if case:
-                    outcome = (resource.get("dispute_outcome") or {}).get(
-                        "outcome_code", "RESOLVED_BUYER_FAVOR"
+                    outcome_info = resource.get("dispute_outcome") or {}
+                    out_code = (outcome_info.get("outcome_code") or "").upper()
+                    out_reason = (outcome_info.get("outcome_reason") or "").upper()
+                    fund_movements = resource.get("fund_movements") or []
+                    hold_released = any(
+                        m.get("party") == "RECEIVER"
+                        and m.get("type") == "CREDIT"
+                        and m.get("reason") == "HOLD_RELEASED"
+                        for m in fund_movements
+                    )
+                    is_seller = (
+                        "SELLER" in out_code
+                        or "CANCEL" in out_code
+                        or "BUYER_CANCELLED" in out_reason
+                        or hold_released
                     )
                     case.status = (
                         DisputeCaseStatus.RESOLVED_SELLER_FAVOR
-                        if "SELLER" in outcome.upper()
+                        if is_seller
                         else DisputeCaseStatus.RESOLVED_BUYER_FAVOR
                     )
+                    case.adjudication_outcome = (
+                        out_code or out_reason or ("SELLER_FAVOR" if is_seller else "BUYER_FAVOR")
+                    )
                     case.resolved_at = datetime.now(UTC)
+
+                    rep = dict(case.investigator_report_json or {})
+                    if "messages" in resource and resource["messages"]:
+                        rep["dispute_messages"] = resource["messages"]
+                    if "dispute_outcome" in resource:
+                        rep["dispute_outcome"] = resource["dispute_outcome"]
+                    if "fund_movements" in resource:
+                        rep["fund_movements"] = resource["fund_movements"]
+                    case.investigator_report_json = rep
                     await db.flush()
 
     event.processed_at = datetime.now(UTC)

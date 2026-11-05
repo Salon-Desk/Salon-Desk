@@ -38,6 +38,17 @@ export interface DisputeInvestigatorReport {
   ledger_error?: string | null
   terminal_ledger_hash: string
   transcript_excerpt?: DisputeTranscriptExcerpt[]
+  dispute_messages?: Array<{
+    posted_by?: string
+    content?: string
+    time_posted?: string
+  }>
+  dispute_life_cycle_stage?: string
+  disputed_service?: string
+  dispute_outcome?: {
+    outcome_code?: string
+    outcome_reason?: string
+  }
 }
 
 export interface DisputeCase {
