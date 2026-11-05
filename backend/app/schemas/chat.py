@@ -17,6 +17,9 @@ class ChatRequest(BaseModel):
     org_id: UUID | None = Field(default=None, description="Optional org scope for semantic search")
     user_lat: float | None = Field(default=None, description="Client GPS latitude")
     user_lng: float | None = Field(default=None, description="Client GPS longitude")
+    client_timezone: str | None = Field(
+        default=None, description="IANA timezone of the client browser, e.g. Africa/Addis_Ababa"
+    )
     portal: AssistantPortal = Field(
         default="client",
         description="client = booking concierge; merchant/admin = system help & support",

@@ -1,6 +1,7 @@
 'use client'
 
 import { Scissors, Sparkles } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 import { ADMIN_DEMO_PERSONAS } from '@/app/admin/_constants/demo-personas'
 import { MERCHANT_DEMO_PERSONAS } from '@/app/merchant/_constants/demo-personas'
@@ -10,14 +11,24 @@ import { AuthViewTabs } from '@/components/auth/auth-view-tabs'
 import { DemoPersonasPanel } from '@/components/auth/demo-personas-panel'
 import { ForgotPasswordForm } from '@/components/auth/forgot-password-form'
 import { SignInForm } from '@/components/auth/sign-in-form'
+import { useBookingContext } from '@/hooks/use-booking-context'
 
 import { CLIENT_DEMO_PERSONAS } from '../_constants/demo-personas'
 import { ClientSignUpForm } from './ClientSignUpForm'
 
 export function ClientAuthModal() {
-  const { isOpen, view, setView, targetPortal } = useAuthModal()
+  const router = useRouter()
+  const { isOpen, view, setView, targetPortal, closeAuthModal } = useAuthModal()
+  const { draft, pending: bookingPending } = useBookingContext()
 
   if (!isOpen) return null
+
+  const handleContinueAsGuest = () => {
+    closeAuthModal()
+    if (draft.returnPath) {
+      router.push(draft.returnPath)
+    }
+  }
 
   // Hub exposes the three primary seeded logins: client, salon owner, admin.
   const isHub = targetPortal == null
@@ -80,6 +91,18 @@ export function ClientAuthModal() {
         <ForgotPasswordForm onBackToSignIn={() => setView('sign-in')} />
       )}
       {view === 'demo-personas' && <DemoPersonasPanel personas={demoPersonas} showJudgeDemo />}
+
+      {(bookingPending || draft.returnPath) && (
+        <div className="mt-4 pt-3 border-t border-slate-100 text-center">
+          <button
+            type="button"
+            onClick={handleContinueAsGuest}
+            className="text-xs font-semibold text-stone-600 hover:text-stone-900 underline transition cursor-pointer"
+          >
+            Continue configuring booking as guest &rarr;
+          </button>
+        </div>
+      )}
     </AuthModalShell>
   )
 }

@@ -161,8 +161,18 @@ export function OrganizationDetailPage({ orgId }: OrganizationDetailPageProps) {
 
   const handleBookService = (serviceId: string, stylistId?: string) => {
     const activeStylist = stylistId || (selectedStylistId !== 'all' ? selectedStylistId : undefined)
-    if (selectedServiceIds.includes(serviceId) && selectedServiceIds.length > 1) {
-      handleBookSelectedServices()
+    if (selectedServiceIds.length > 0) {
+      const combined = selectedServiceIds.includes(serviceId)
+        ? selectedServiceIds
+        : [...selectedServiceIds, serviceId]
+      const primaryId = combined[0]
+      const extras = combined.slice(1).join(',')
+      const extraParam = extras ? `&services=${extras}` : ''
+      const stylistParam = activeStylist ? `&stylist=${activeStylist}` : ''
+      const fullParams = `${extraParam}${stylistParam}`
+      router.push(
+        `/client/book/${primaryId}${fullParams ? `?${fullParams.replace(/^&/, '')}` : ''}`,
+      )
       return
     }
     const url = activeStylist

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, Numeric, String, text
@@ -99,6 +99,22 @@ class PaymentHold(TimestampedModel):
     organization = relationship("Organization")
     captures = relationship("PaymentCapture", back_populates="hold")
 
+    @property
+    def authorized_at(self) -> datetime:
+        val = getattr(self, "_authorized_at_val", None)
+        if val is not None:
+            return val
+        if self.created_at is not None:
+            return self.created_at
+        return datetime.now(UTC)
+
+    @authorized_at.setter
+    def authorized_at(self, val: datetime) -> None:
+        self._authorized_at_val = val
+
+
+AuthorizationHold = PaymentHold
+
 
 class PaymentCapture(BaseModel):
     __tablename__ = "payment_capture"
@@ -131,7 +147,7 @@ class PaymentCapture(BaseModel):
     paypal_debug_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     hold = relationship("PaymentHold", back_populates="captures")
-    booking = relationship("Booking")
+    booking = relationship("Booking", back_populates="payment_captures")
 
 
 class PaypalWebhookEvent(BaseModel):

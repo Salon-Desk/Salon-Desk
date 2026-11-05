@@ -158,6 +158,7 @@ const authSlice = createSlice({
       const portal = targetPortal || state.activeApp
       const orgId = organization_id || user.org_id || null
 
+      state.activeApp = portal
       state.portals[portal] = {
         user,
         token: access_token,
@@ -168,14 +169,12 @@ const authSlice = createSlice({
 
       savePortalAuthSession(portal, access_token, user)
 
-      if (portal === state.activeApp) {
-        state.user = user
-        state.token = access_token
-        state.organizationId = orgId
-        state.isAuthenticated = true
-        state.isLoading = false
-        state.didLogout = false
-      }
+      state.user = user
+      state.token = access_token
+      state.organizationId = orgId
+      state.isAuthenticated = true
+      state.isLoading = false
+      state.didLogout = false
     },
 
     setUser: (state, action: PayloadAction<SetUserPayload>) => {

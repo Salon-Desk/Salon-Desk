@@ -131,11 +131,15 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
       setOpen={(open) => {
         if (!open) onClose()
       }}
-      classNameContent="max-w-2xl p-0 overflow-hidden rounded-3xl"
-      classNameBody="p-0 max-h-[85vh] overflow-y-auto"
+      title={name}
+      description={description}
+      hideCloseButton={true}
+      classNameContent="max-w-2xl p-0 overflow-hidden rounded-3xl border-stone-200 shadow-2xl"
+      classNameBody="p-0 overflow-hidden flex flex-col h-[85vh] max-h-[85dvh] sm:h-[80vh] sm:max-h-[80dvh]"
       hideFooterBorder={true}
+      hideHeaderBorder={true}
     >
-      <div className="relative flex w-full flex-col overflow-hidden bg-white">
+      <div className="relative flex h-full w-full flex-col overflow-hidden bg-white">
         {/* Cover Photo Header */}
         <div className="relative h-48 w-full shrink-0 overflow-hidden bg-stone-100 sm:h-56">
           <Image
@@ -147,25 +151,25 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
             className="object-cover"
             sizes="(max-width: 640px) 100vw, 680px"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-950/90 via-stone-950/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/45 to-stone-950/20" />
 
-          {/* Close button */}
+          {/* Single Close button */}
           <button
             type="button"
             onClick={onClose}
             aria-label="Close details"
-            className="absolute top-4 right-4 z-20 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-stone-950/60 text-white backdrop-blur-md transition-colors hover:bg-stone-900"
+            className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 z-30 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-stone-950/60 text-white backdrop-blur-md transition-all hover:bg-stone-900 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
           >
             <X className="h-4 w-4" />
           </button>
 
           {/* Badges on Top Left */}
-          <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-1 font-bold text-[11px] text-stone-900 shadow-sm backdrop-blur-md">
+          <div className="absolute top-3.5 left-3.5 sm:top-4 sm:left-4 z-10 flex max-w-[calc(100%-4rem)] flex-wrap items-center gap-1.5 sm:gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 font-bold text-[10px] sm:text-[11px] text-stone-900 shadow-sm backdrop-blur-md">
               <Lock className="h-3 w-3 text-amber-700" />
-              <span>${holdAmount.toFixed(2)} Hold · $0 Today</span>
+              <span>{formatUsd(holdAmount)} Hold · $0 Today</span>
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-stone-950/60 px-2.5 py-1 font-semibold text-[11px] text-white backdrop-blur-md">
+            <span className="inline-flex items-center gap-1 rounded-full bg-stone-950/60 px-2.5 py-1 font-semibold text-[10px] sm:text-[11px] text-white backdrop-blur-md">
               <Clock className="h-3 w-3 text-amber-400" />
               <span>{formatDuration(durationMin)}</span>
             </span>
@@ -192,11 +196,11 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-stone-200 bg-stone-50/70 px-4 pt-1 sm:px-6">
+        <div className="flex shrink-0 border-b border-stone-200 bg-stone-50/80 px-4 sm:px-6 overflow-x-auto scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
-            className={`cursor-pointer border-b-2 px-4 py-2.5 font-bold text-xs transition-colors ${
+            className={`cursor-pointer border-b-2 -mb-px px-4 py-2.5 font-bold text-xs transition-colors whitespace-nowrap ${
               activeTab === 'overview'
                 ? 'border-amber-600 text-stone-950'
                 : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -207,7 +211,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
           <button
             type="button"
             onClick={() => setActiveTab('staff')}
-            className={`cursor-pointer border-b-2 px-4 py-2.5 font-bold text-xs transition-colors ${
+            className={`cursor-pointer border-b-2 -mb-px px-4 py-2.5 font-bold text-xs transition-colors whitespace-nowrap ${
               activeTab === 'staff'
                 ? 'border-amber-600 text-stone-950'
                 : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -218,7 +222,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
           <button
             type="button"
             onClick={() => setActiveTab('reviews')}
-            className={`cursor-pointer border-b-2 px-4 py-2.5 font-bold text-xs transition-colors ${
+            className={`cursor-pointer border-b-2 -mb-px px-4 py-2.5 font-bold text-xs transition-colors whitespace-nowrap ${
               activeTab === 'reviews'
                 ? 'border-amber-600 text-stone-950'
                 : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -229,7 +233,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-5 scrollbar-thin">
           {/* TAB 1: OVERVIEW & POLICY */}
           {activeTab === 'overview' && (
             <div className="space-y-5 animate-in fade-in duration-150">
@@ -433,24 +437,28 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
         </div>
 
         {/* Sticky Bottom Action Bar */}
-        <div className="flex items-center justify-between border-t border-stone-200 bg-stone-50/90 px-4 py-3.5 sm:px-6">
-          <div>
-            <span className="block text-[11px] text-stone-400 uppercase tracking-wider font-semibold">
+        <div className="shrink-0 flex items-center justify-between border-t border-stone-200 bg-stone-50/95 px-4 py-3 sm:px-6">
+          <div className="min-w-0 pr-3">
+            <span className="block text-[10px] sm:text-[11px] text-stone-400 uppercase tracking-wider font-semibold">
               Total Service
             </span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-extrabold text-stone-950">{formatUsd(price)}</span>
-              <span className="text-[11px] font-semibold text-emerald-700">· $0 due today</span>
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-lg sm:text-xl font-extrabold text-stone-950">
+                {formatUsd(price)}
+              </span>
+              <span className="text-[11px] font-semibold text-emerald-700 whitespace-nowrap">
+                · $0 due today
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <PrimaryButton
               type="button"
               variant="outline"
               size="sm"
               onClick={onClose}
-              className="h-10 cursor-pointer rounded-full border border-stone-200 bg-white px-4 font-semibold text-xs text-stone-700 hover:bg-stone-50 active:scale-[0.98]"
+              className="hidden sm:inline-flex h-9.5 cursor-pointer rounded-full border border-stone-200 bg-white px-4 font-semibold text-xs text-stone-700 hover:bg-stone-50 active:scale-[0.98]"
               fullWidth={false}
               title="Close"
             />
@@ -459,7 +467,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onBook }: Service
               variant="dark"
               size="sm"
               onClick={handleBookClick}
-              className="h-10 cursor-pointer rounded-full bg-stone-950 px-5 font-semibold text-xs text-white shadow-none transition-all hover:bg-amber-600 active:scale-[0.98] border-0"
+              className="h-9.5 cursor-pointer rounded-full bg-stone-950 px-4 sm:px-5 font-semibold text-xs text-white shadow-none transition-all hover:bg-amber-600 active:scale-[0.98] border-0"
               fullWidth={false}
             >
               <span className="flex items-center gap-1.5">

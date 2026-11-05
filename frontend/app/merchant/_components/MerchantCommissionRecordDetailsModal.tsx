@@ -91,22 +91,22 @@ export function MerchantCommissionRecordDetailsModal({
     <CustomResponsiveDialog
       open={open}
       setOpen={(isOpen) => !isOpen && onClose()}
+      classNameContent="sm:max-w-2xl w-full"
       title={
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700">
             <Receipt className="h-5 w-5" />
           </div>
-          <div>
-            <div className="text-base font-bold text-slate-900">
+          <div className="min-w-0 flex-1">
+            <div className="text-base font-bold text-slate-900 truncate">
               Appointment Payment & Fee Breakdown
             </div>
-            <div className="text-xs font-normal text-slate-500">
+            <div className="text-xs font-normal text-slate-500 truncate sm:whitespace-normal">
               Summary of client payment, your payout, and platform service fee
             </div>
           </div>
         </div>
       }
-      classNameContent="max-w-2xl"
     >
       <div className="space-y-4 p-1 sm:p-2">
         {/* 1. Non-Technical Human Status Explanation */}
@@ -235,15 +235,15 @@ export function MerchantCommissionRecordDetailsModal({
 
         {/* 4. Direct Appointment Link */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-slate-200/80 bg-gradient-to-r from-amber-50/40 via-white to-white p-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100/70 text-amber-800">
               <Calendar className="h-5 w-5" />
             </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900">
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-bold text-slate-900 truncate">
                 Connected Appointment Reference
               </div>
-              <div className="text-xs text-slate-500 font-mono">
+              <div className="text-xs text-slate-500 font-mono truncate">
                 Booking #{record.booking_id ? record.booking_id.slice(0, 8) : '—'}
               </div>
             </div>
@@ -263,14 +263,14 @@ export function MerchantCommissionRecordDetailsModal({
           <button
             type="button"
             onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
-            className="flex w-full items-center justify-between p-3.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100/60 transition-colors cursor-pointer"
+            className="flex w-full items-center justify-between p-3.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100/60 transition-colors cursor-pointer gap-2"
           >
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-slate-500" />
-              <span>Receipt & PayPal Reference Codes (for bookkeeping)</span>
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <CreditCard className="h-4 w-4 text-slate-500 shrink-0" />
+              <span className="truncate">Receipt & PayPal Reference Codes (for bookkeeping)</span>
             </div>
             <ChevronDown
-              className={`h-4 w-4 text-slate-400 transition-transform ${
+              className={`h-4 w-4 text-slate-400 shrink-0 transition-transform ${
                 showTechnicalDetails ? 'rotate-180' : ''
               }`}
             />
@@ -285,8 +285,8 @@ export function MerchantCommissionRecordDetailsModal({
 
               {/* PayPal Capture ID */}
               <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2.5">
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 block truncate">
                     PayPal Capture Transaction ID
                   </span>
                   <div className="font-mono text-xs font-semibold text-slate-800 truncate">
@@ -314,8 +314,8 @@ export function MerchantCommissionRecordDetailsModal({
 
               {/* Full Booking UUID */}
               <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2.5">
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 block truncate">
                     Full Booking System ID
                   </span>
                   <div className="font-mono text-xs text-slate-800 truncate">
@@ -343,8 +343,8 @@ export function MerchantCommissionRecordDetailsModal({
 
               {/* Ledger Record ID */}
               <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2.5">
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 block truncate">
                     Ledger Entry ID
                   </span>
                   <div className="font-mono text-xs text-slate-600 truncate">{record.id}</div>
@@ -371,8 +371,8 @@ export function MerchantCommissionRecordDetailsModal({
               {/* Commission Rule ID if present */}
               {commissionId && (
                 <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2.5">
-                  <div className="min-w-0">
-                    <span className="text-[10px] font-bold uppercase text-slate-400">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block truncate">
                       Commission Agreement Rule
                     </span>
                     <div className="font-mono text-xs text-slate-600 truncate">{commissionId}</div>

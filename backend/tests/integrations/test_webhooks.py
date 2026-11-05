@@ -8,6 +8,7 @@ from uuid import uuid4
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.core.database import get_db
 from app.main import create_app
 from app.models.enums import PaymentHoldStatus
 from app.models.payment import PaymentHold, PaypalWebhookEvent
@@ -18,6 +19,19 @@ from app.services.paypal_rest import PayPalRestClient
 @pytest.mark.asyncio
 async def test_webhook_ingest_stub_mode() -> None:
     app = create_app()
+    mock_db = AsyncMock()
+    mock_res = AsyncMock()
+    mock_res.scalar_one_or_none = lambda: None
+    mock_db.execute = AsyncMock(return_value=mock_res)
+    mock_db.add = MagicMock()
+    mock_db.flush = AsyncMock()
+    mock_db.commit = AsyncMock()
+
+    async def override_get_db():
+        yield mock_db
+
+    app.dependency_overrides[get_db] = override_get_db
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         resp = await client.post(

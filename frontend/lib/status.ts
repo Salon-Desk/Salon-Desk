@@ -15,6 +15,7 @@ export const HOLD_STATE_TONE: Record<HoldState, Tone> = {
   VOIDED: 'slate',
   PENDING: 'amber',
   PENDING_PAYMENT: 'amber',
+  REFUNDED: 'purple',
 }
 
 export const HOLD_STATE_LABEL: Record<HoldState, string> = {
@@ -25,6 +26,7 @@ export const HOLD_STATE_LABEL: Record<HoldState, string> = {
   VOIDED: 'Voided',
   PENDING: 'Payment Pending',
   PENDING_PAYMENT: 'Payment Pending',
+  REFUNDED: 'Refunded',
 }
 
 /** Compact labels for the appointment filter pills. */
@@ -36,6 +38,7 @@ export const HOLD_STATE_FILTER_LABEL: Record<HoldState, string> = {
   VOIDED: 'Voided',
   PENDING: 'Pending',
   PENDING_PAYMENT: 'Pending',
+  REFUNDED: 'Refunded',
 }
 
 export const HOLD_STATES = Object.keys(HOLD_STATE_TONE) as HoldState[]
@@ -45,7 +48,6 @@ export const LEDGER_ACTION_TONE: Record<LedgerAction, Tone> = {
   FULL_PAYMENT_CAPTURED: 'emerald',
   NO_SHOW_FEE_CAPTURED: 'rose',
   AUTHORIZATION_VOIDED: 'slate',
-  GOODWILL_PARTIAL_REFUND: 'purple',
   HONOR_PERIOD_REAUTHORIZED: 'sky',
 }
 

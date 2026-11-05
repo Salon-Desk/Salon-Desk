@@ -205,6 +205,16 @@ export function ClientCheckoutPage({
       return
     }
 
+    const maxBookingDate = new Date(Date.now() + 28 * 86400000)
+    if (new Date(startsAt).getTime() > maxBookingDate.getTime()) {
+      toast.error(
+        'Appointments with PayPal deposit holds can only be scheduled up to 28 days in advance.',
+        toastColor.error,
+      )
+      setStartsAt(null)
+      return
+    }
+
     if (phoneError || !clientPhone.trim()) {
       toast.error('Please enter a valid phone number before proceeding', toastColor.error)
       return
@@ -430,6 +440,23 @@ export function ClientCheckoutPage({
               PayPal approval was cancelled, so no hold was placed. Review your details and try
               again when you are ready.
             </p>
+          </div>
+        ) : !canCheckout ? (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 rounded-2xl border border-amber-200/80 bg-amber-50/70 px-4 py-3 text-xs text-amber-950">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+              <span>
+                Booking as guest. You can configure your services, stylist, and time below, and sign
+                in when authorizing hold.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => openAuthModal('sign-in', 'client')}
+              className="self-start sm:self-auto shrink-0 font-semibold text-amber-900 underline hover:text-amber-700 cursor-pointer"
+            >
+              Sign in now
+            </button>
           </div>
         ) : null
       }

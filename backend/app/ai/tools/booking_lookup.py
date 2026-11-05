@@ -42,7 +42,7 @@ def build_lookup_tools(
             settings_res = await db.execute(select(OrgSettings).where(OrgSettings.org_id == org.id))
             settings = settings_res.scalar_one_or_none()
             tz = settings.timezone if settings and settings.timezone else "UTC"
-            addr = settings.physical_address if settings else org.physical_address
+            addr = settings.physical_address if settings else None
             wh_formatted = (
                 format_working_hours(settings.working_hours)
                 if settings and settings.working_hours
@@ -93,7 +93,7 @@ def build_lookup_tools(
                         "name": s.name,
                         "organization_name": org.name,
                         "organization_picture": org.picture,
-                        "image_url": getattr(s, "image_url", None),
+                        "image_url": (s.images or {}).get("cover"),
                         "base_price": str(s.base_price),
                         "duration_minutes": s.duration_minutes,
                         "category_name": s.category.name if s.category else None,
@@ -163,12 +163,12 @@ def build_lookup_tools(
                     "name": service.name,
                     "organization_name": org.name if org else "Salon",
                     "organization_picture": org.picture if org else None,
-                    "image_url": getattr(service, "image_url", None),
+                    "image_url": (service.images or {}).get("cover"),
                     "base_price": str(service.base_price),
                     "duration_minutes": service.duration_minutes,
                     "category_name": service.category.name if service.category else None,
                     "description": service.description,
-                    "physical_address": org.physical_address if org else None,
+                    "physical_address": settings.physical_address if settings else None,
                 }
                 try:
                     res = on_discovery_results({"recommendations": [rec_card]})

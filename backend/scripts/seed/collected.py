@@ -28,9 +28,9 @@ PAYPAL_SANDBOX_MERCHANT_OVERRIDES: tuple[dict[str, str], ...] = (
     },
 )
 SOURCE_FILES = (
+    "united-states-top10-cities-salons.json",
     "ethiopia-addis-ababa-salons.json",
     "ethiopia-other-cities-salons.json",
-    "united-states-top10-cities-salons.json",
 )
 
 ORG_CATEGORY = {
@@ -92,73 +92,136 @@ DEFAULT_MENUS: dict[str, list[tuple[str, str, str, str, str, int]]] = {
         (
             "Hair",
             "Signature Haircut",
-            "Consultation, shampoo, cut, and finish.",
-            "48.00",
-            "800.00",
+            "Consultation, shampoo, precision cut, and finish.",
+            "55.00",
+            "55.00",
             60,
         ),
         (
             "Hair",
             "Blowout and Style",
-            "Wash, treatment, and round-brush finish.",
-            "55.00",
-            "900.00",
+            "Wash, conditioning treatment, and round-brush blowout.",
+            "48.00",
+            "48.00",
             45,
         ),
-        ("Color", "Root Touch-Up", "Regrowth color finished with a gloss.", "70.00", "1500.00", 75),
+        (
+            "Color",
+            "Root Touch-Up",
+            "Regrowth color finished with a high-gloss glaze.",
+            "75.00",
+            "75.00",
+            75,
+        ),
     ],
     "Barber": [
-        ("Barber", "Skin Fade", "Taper fade, blend, and edge lineup.", "32.00", "400.00", 40),
-        ("Barber", "Beard Sculpt", "Shape-up with hot towel and balm.", "22.00", "300.00", 30),
+        ("Barber", "Skin Fade", "Taper fade, blend, and sharp lineup.", "40.00", "40.00", 40),
+        (
+            "Barber",
+            "Beard Sculpt",
+            "Shape-up with hot towel and organic balm.",
+            "25.00",
+            "25.00",
+            30,
+        ),
         (
             "Barber",
             "Hot Towel Shave",
-            "Straight-razor shave and cold towel finish.",
+            "Straight-razor shave and cold eucalyptus towel finish.",
             "35.00",
-            "450.00",
+            "35.00",
             35,
         ),
     ],
     "Nails": [
-        ("Nails", "Gel Manicure", "Cuticle care, shape, and gel polish.", "35.00", "500.00", 45),
-        ("Nails", "Spa Pedicure", "Soak, exfoliation, massage, and polish.", "48.00", "700.00", 50),
-        ("Nails", "Gel Extensions", "Full soft-gel extension set.", "65.00", "1200.00", 75),
+        (
+            "Nails",
+            "Gel Manicure",
+            "Cuticle care, shape, and chip-free gel polish.",
+            "38.00",
+            "38.00",
+            45,
+        ),
+        (
+            "Nails",
+            "Spa Pedicure",
+            "Soak, exfoliation scrub, massage, and polish.",
+            "50.00",
+            "50.00",
+            50,
+        ),
+        ("Nails", "Gel Extensions", "Full soft-gel extension set.", "70.00", "70.00", 75),
     ],
     "Spa": [
-        ("Spa", "Swedish Massage", "Full-body relaxation massage.", "85.00", "1500.00", 60),
-        ("Spa", "Deep Tissue Massage", "Focused work for tight muscles.", "95.00", "1800.00", 60),
-        ("Spa", "Body Polish", "Exfoliation followed by a moisturizer.", "70.00", "1200.00", 50),
+        (
+            "Spa",
+            "Swedish Massage",
+            "Full-body relaxation massage with botanical oils.",
+            "85.00",
+            "85.00",
+            60,
+        ),
+        (
+            "Spa",
+            "Deep Tissue Massage",
+            "Focused tension relief for tight muscles.",
+            "95.00",
+            "95.00",
+            60,
+        ),
+        (
+            "Spa",
+            "Body Polish",
+            "Exfoliation followed by deep hydration moisturizer.",
+            "75.00",
+            "75.00",
+            50,
+        ),
     ],
     "Facial": [
         (
             "Facial",
             "Glow Facial",
-            "Cleanse, exfoliation, and hydrating mask.",
+            "Cleanse, enzyme exfoliation, and hydrating collagen mask.",
             "80.00",
-            "1400.00",
+            "80.00",
             50,
         ),
         (
             "Facial",
             "Acne Clarifying Facial",
-            "Extraction and calming treatment.",
+            "Extraction and calming botanical treatment.",
             "90.00",
-            "1600.00",
+            "90.00",
             60,
         ),
-        ("Facial", "Express Facial", "Cleanse, tone, and moisturizer.", "55.00", "900.00", 30),
+        (
+            "Facial",
+            "Express Facial",
+            "Cleanse, tone, and vitamin C moisturizer.",
+            "50.00",
+            "50.00",
+            30,
+        ),
     ],
     "Braids": [
         (
             "Braids",
             "Knotless Braids",
-            "Medium knotless braids with curled ends.",
-            "180.00",
-            "2500.00",
+            "Medium knotless braids with neat parted sections.",
+            "150.00",
+            "150.00",
             180,
         ),
-        ("Braids", "Cornrows", "Neat stitch cornrows.", "80.00", "900.00", 90),
-        ("Braids", "Twist Style", "Two-strand twists with scalp oil.", "120.00", "1500.00", 120),
+        ("Braids", "Cornrows", "Neat geometric stitch cornrows.", "70.00", "70.00", 90),
+        (
+            "Braids",
+            "Twist Style",
+            "Two-strand twists with organic scalp oil.",
+            "95.00",
+            "95.00",
+            120,
+        ),
     ],
     "Lashes & Brows": [
         (
@@ -166,30 +229,30 @@ DEFAULT_MENUS: dict[str, list[tuple[str, str, str, str, str, int]]] = {
             "Classic Lash Set",
             "Individual classic lash extensions.",
             "85.00",
-            "1200.00",
+            "85.00",
             90,
         ),
         (
             "Lashes & Brows",
             "Lash Fill",
             "Two-week fill for an existing set.",
-            "55.00",
-            "700.00",
-            60,
+            "50.00",
+            "50.00",
+            45,
         ),
-        ("Lashes & Brows", "Brow Lamination", "Brow lift, tint, and shape.", "60.00", "800.00", 45),
+        ("Lashes & Brows", "Brow Lamination", "Brow lift, tint, and shape.", "55.00", "55.00", 45),
     ],
     "Makeup": [
-        ("Makeup", "Event Glam", "Full-face makeup for an evening event.", "95.00", "1800.00", 60),
+        ("Makeup", "Event Glam", "Full-face makeup for an evening event.", "95.00", "95.00", 60),
         (
             "Makeup",
             "Bridal Makeup",
             "Long-wear bridal makeup with lashes.",
-            "150.00",
-            "3000.00",
+            "140.00",
+            "140.00",
             75,
         ),
-        ("Makeup", "Soft Day Makeup", "Natural makeup with brow grooming.", "70.00", "1200.00", 45),
+        ("Makeup", "Soft Day Makeup", "Natural makeup with brow grooming.", "65.00", "65.00", 45),
     ],
     "Wellness": [
         (
@@ -371,12 +434,19 @@ def _price(service: dict, category: str, currency: str) -> Decimal:
     raw = service.get("price")
     if raw not in (None, "", 0):
         try:
-            return _decimal(raw)
+            val = Decimal(str(raw))
+            # If price was in ETB (e.g. 500 - 3000) or unrealistically high for standard services
+            if val > Decimal("250"):
+                normalized = (val / Decimal("25")).quantize(Decimal("1.00"))
+                return max(Decimal("25.00"), min(Decimal("220.00"), normalized))
+            if val < Decimal("15"):
+                return Decimal("35.00")
+            return val.quantize(Decimal("0.01"))
         except (ArithmeticError, ValueError):
             pass
     menu = DEFAULT_MENUS.get(category) or DEFAULT_MENUS["Hair"]
-    usd, etb = menu[0][3], menu[0][4]
-    return _decimal(etb if currency == "ETB" else usd)
+    usd = menu[0][3]
+    return Decimal(usd).quantize(Decimal("0.01"))
 
 
 def _minutes(service: dict, category: str) -> int:

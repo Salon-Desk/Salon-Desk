@@ -20,8 +20,8 @@ def mock_booking() -> Booking:
     booking.org_id = uuid4()
     booking.stylist_id = uuid4()
     booking.status = BookingStatus.CONFIRMED
-    booking.starts_at = datetime(2026, 11, 1, 10, 0, tzinfo=UTC)
-    booking.ends_at = datetime(2026, 11, 1, 11, 0, tzinfo=UTC)
+    booking.starts_at = datetime.now(UTC) + timedelta(days=5)
+    booking.ends_at = booking.starts_at + timedelta(hours=1)
     booking.policy_snapshot_json = {"free_cancel_hours": 24}
     booking.total_price = Decimal("100.00")
 
@@ -39,7 +39,7 @@ async def test_reschedule_booking_success(mock_booking: Booking) -> None:
     mock_service.status = ServiceStatus.ACTIVE
     db.get.return_value = mock_service
 
-    new_starts = datetime(2026, 11, 2, 14, 0, tzinfo=UTC)
+    new_starts = datetime.now(UTC) + timedelta(days=6)
 
     with (
         patch(
@@ -69,7 +69,7 @@ async def test_reschedule_forbidden_when_slot_occupied(mock_booking: Booking) ->
     mock_service.status = ServiceStatus.ACTIVE
     db.get.return_value = mock_service
 
-    new_starts = datetime(2026, 11, 2, 14, 0, tzinfo=UTC)
+    new_starts = datetime.now(UTC) + timedelta(days=6)
 
     with patch(
         "app.services.booking_service.check_slot_available", new_callable=AsyncMock

@@ -1,6 +1,15 @@
 'use client'
 
-import { ArrowLeft, Compass, Loader2, MapPin, Search, Sparkles } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  Compass,
+  Loader2,
+  MapPin,
+  Search,
+  Sparkles,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
@@ -8,10 +17,12 @@ import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 import { CancelBookingDialog } from '@/app/client/_components/CancelBookingDialog'
+import { useAuthModal } from '@/components/auth/auth-context'
 import { EmptyState } from '@/components/empty'
 import { Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
 import { useGeolocation, useToast } from '@/hooks'
+import { useBookingContext } from '@/hooks/use-booking-context'
 import {
   useSearchableCatalogCategories,
   useSearchableCatalogOrganizations,
@@ -58,6 +69,7 @@ import { ClientHeader, type ClientTab } from './ClientHeader'
 import { ClientMyBookingsReviews } from './ClientMyBookingsReviews'
 import { ClientSalonFeedbackSection } from './ClientSalonFeedbackSection'
 import { ProtocolModal } from './ProtocolModal'
+import { RescheduleBookingDialog } from './RescheduleBookingDialog'
 import { ServiceCard } from './ServiceCard'
 
 const PAGE_SIZE = 6
@@ -92,6 +104,8 @@ export function ClientExperience({
   const isChatOpen = useSelector((state: RootState) => state.agentChat?.isOpen ?? false)
   const user = useSelector(userSelector)
   const isAuthenticated = useSelector(isAuthenticatedSelector)
+  const { openAuthModal } = useAuthModal()
+  const { saveDraft, pauseForAuth } = useBookingContext()
   const {
     coords: userCoords,
     status: geoStatus,
@@ -152,6 +166,7 @@ export function ClientExperience({
   const [protocolService, setProtocolService] = useState<SalonService | null>(null)
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null)
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null)
+  const [rescheduleTarget, setRescheduleTarget] = useState<Booking | null>(null)
   const [cancelSubmitting, setCancelSubmitting] = useState(false)
   const [isInputFocused, setIsInputFocused] = useState(false)
 
@@ -389,7 +404,23 @@ export function ClientExperience({
     }
     // Prefer live ISO timestamps; ignore demo labels like "Tomorrow · 2:00 PM".
     const liveSlot = slot && !Number.isNaN(Date.parse(slot)) ? slot : null
-    router.push(checkoutPath(catalog.id, { slot: liveSlot, stylist: stylist?.id }))
+    const targetPath = checkoutPath(catalog.id, { slot: liveSlot, stylist: stylist?.id })
+
+    if (!isAuthenticated || !isClientUser(user)) {
+      saveDraft({
+        orgId: catalog.organization_id,
+        serviceIds: [catalog.id],
+        startsAt: liveSlot ?? undefined,
+        stylistId: stylist?.id,
+        selectedServiceName: service.name,
+      })
+      pauseForAuth(targetPath)
+      openAuthModal('sign-in', 'client')
+      toast.info('Sign in to continue booking, or you can continue as guest.', toastColor.info)
+      return
+    }
+
+    router.push(targetPath)
   }
 
   const handleStartBooking = (service: SalonService) => {
@@ -470,6 +501,80 @@ export function ClientExperience({
     void browse.refetch()
   }
 
+  const isOrgFiltered = Boolean(effectiveOrgId)
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
+
+  useEffect(() => {
+    setSelectedServiceIds([])
+  }, [effectiveOrgId])
+
+  const selectedServicesList = useMemo(() => {
+    if (selectedServiceIds.length === 0) return []
+    const allServices = [
+      ...results.services,
+      ...browse.services,
+      ...popular.services,
+      ...nearby.services,
+    ]
+    return selectedServiceIds
+      .map((id) => allServices.find((s) => s.id === id))
+      .filter((s): s is SalonService => Boolean(s))
+  }, [selectedServiceIds, results.services, browse.services, popular.services, nearby.services])
+
+  const totalSelectedPrice = useMemo(
+    () => selectedServicesList.reduce((sum, s) => sum + (s.price || 0), 0),
+    [selectedServicesList],
+  )
+
+  const totalSelectedDuration = useMemo(
+    () => selectedServicesList.reduce((sum, s) => sum + (s.durationMin || 0), 0),
+    [selectedServicesList],
+  )
+
+  const handleToggleSelectService = (service: SalonService) => {
+    setSelectedServiceIds((prev) =>
+      prev.includes(service.id) ? prev.filter((id) => id !== service.id) : [...prev, service.id],
+    )
+  }
+
+  const handleBookMultipleServices = (specificIds?: string[]) => {
+    const idsToBook = specificIds && specificIds.length > 0 ? specificIds : selectedServiceIds
+    if (idsToBook.length === 0) return
+
+    const primaryId = idsToBook[0]
+    const extras = idsToBook.slice(1).join(',')
+    const extraParam = extras ? `&services=${extras}` : ''
+    const targetPath = `/client/book/${primaryId}${extraParam ? `?${extraParam.replace(/^&/, '')}` : ''}`
+
+    const primaryService = selectedServicesList.find((s) => s.id === primaryId)
+    const primaryName = primaryService?.name || 'Salon Service'
+
+    if (!isAuthenticated || !isClientUser(user)) {
+      saveDraft({
+        orgId: effectiveOrgId,
+        serviceIds: idsToBook,
+        selectedServiceName: primaryName,
+      })
+      pauseForAuth(targetPath)
+      openAuthModal('sign-in', 'client')
+      toast.info('Sign in to continue booking, or you can continue as guest.', toastColor.info)
+      return
+    }
+
+    router.push(targetPath)
+  }
+
+  const handleServiceCardQuickBook = (service: SalonService) => {
+    if (selectedServiceIds.length > 0) {
+      const combined = selectedServiceIds.includes(service.id)
+        ? selectedServiceIds
+        : [...selectedServiceIds, service.id]
+      handleBookMultipleServices(combined)
+      return
+    }
+    handleStartBooking(service)
+  }
+
   const renderCards = (services: SalonService[]) =>
     services.map((service) => (
       <ServiceCard
@@ -477,8 +582,11 @@ export function ClientExperience({
         service={service}
         viewMode={viewMode}
         onAskAi={handleAskAi}
-        onQuickBook={handleStartBooking}
+        onQuickBook={isOrgFiltered ? handleServiceCardQuickBook : handleStartBooking}
         onOpenProtocol={setProtocolService}
+        canSelectMultiple={isOrgFiltered}
+        isSelected={selectedServiceIds.includes(service.id)}
+        onToggleSelect={handleToggleSelectService}
       />
     ))
 
@@ -629,26 +737,54 @@ export function ClientExperience({
                       }}
                     />
                   ) : (
-                    <CatalogSection
-                      title="Matching Treatments"
-                      eyebrow="FILTERED DISCOVERIES"
-                      icon={<Search className="h-3 w-3 text-amber-700" />}
-                      tone="amber"
-                      subtitle={
-                        filterOrgId
-                          ? 'Services at this salon'
-                          : 'Customized to your active preferences'
-                      }
-                      totalCount={results.total}
-                      loadedCount={results.services.length}
-                      hasMore={results.hasMore}
-                      onShowMore={results.loadMore}
-                      isLoading={results.isInitialLoading}
-                      isLoadingMore={results.isLoadingMore}
-                      viewMode={viewMode}
-                    >
-                      {renderCards(results.services)}
-                    </CatalogSection>
+                    <>
+                      {effectiveOrgId && (
+                        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-200/90 bg-gradient-to-r from-amber-50/80 via-white to-amber-50/40 p-3.5 shadow-2xs">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-stone-950 font-bold text-xs">
+                              <Sparkles className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-stone-950">
+                                Treatments from{' '}
+                                {orgNameById.get(effectiveOrgId) || 'selected salon'}
+                              </p>
+                              <p className="text-[11px] text-stone-500">
+                                All treatments below are from this salon. Select multiple services
+                                with (+ Add) to book together in one appointment.
+                              </p>
+                            </div>
+                          </div>
+                          <Link
+                            href={`/client/org/${effectiveOrgId}`}
+                            className="inline-flex items-center gap-1 shrink-0 text-xs font-bold text-amber-800 hover:text-amber-950 hover:underline"
+                          >
+                            <span>Visit Salon Profile</span>
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </Link>
+                        </div>
+                      )}
+                      <CatalogSection
+                        title="Matching Treatments"
+                        eyebrow="FILTERED DISCOVERIES"
+                        icon={<Search className="h-3 w-3 text-amber-700" />}
+                        tone="amber"
+                        subtitle={
+                          effectiveOrgId
+                            ? `${orgNameById.get(effectiveOrgId) || 'Salon'} treatments · Multi-select available`
+                            : 'Customized to your active preferences'
+                        }
+                        totalCount={results.total}
+                        loadedCount={results.services.length}
+                        hasMore={results.hasMore}
+                        onShowMore={results.loadMore}
+                        isLoading={results.isInitialLoading}
+                        isLoadingMore={results.isLoadingMore}
+                        viewMode={viewMode}
+                      >
+                        {renderCards(results.services)}
+                      </CatalogSection>
+                    </>
                   )
                 ) : null}
 
@@ -793,6 +929,35 @@ export function ClientExperience({
               </>
             ) : null}
           </div>
+        ) : !isAuthenticated || !isClientUser(user) ? (
+          <div className="mx-auto my-12 max-w-md rounded-3xl border border-stone-200 bg-white p-8 text-center shadow-xs">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+              <Calendar className="h-7 w-7" />
+            </div>
+            <h2 className="font-serif text-2xl font-bold text-stone-900">
+              Sign in to view bookings
+            </h2>
+            <p className="mt-2 text-sm text-stone-500">
+              Your active appointment holds, confirmations, and past salon receipts are stored in
+              your client account.
+            </p>
+            <div className="mt-6 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => openAuthModal('sign-in', 'client')}
+                className="w-full rounded-full bg-stone-950 py-3 text-sm font-semibold text-white transition hover:bg-stone-800 cursor-pointer"
+              >
+                Sign In to SalonDesk
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('catalog')}
+                className="w-full rounded-full border border-stone-200 py-2.5 text-xs font-semibold text-stone-600 transition hover:bg-stone-50 cursor-pointer"
+              >
+                Browse Services
+              </button>
+            </div>
+          </div>
         ) : (
           <>
             {bookingsLoading ? (
@@ -822,6 +987,7 @@ export function ClientExperience({
                       }),
                     )
                   }}
+                  onReschedule={setRescheduleTarget}
                   searchQuery={myBookingsListing.displayParams.q}
                   onSearchChange={(value) => myBookingsListing.setParam('q', value)}
                   sortBy={myBookingsListing.displayParams.sort}
@@ -886,6 +1052,55 @@ export function ClientExperience({
           onConfirm={() => void handleConfirmCancelBooking()}
         />
       ) : null}
+
+      {rescheduleTarget ? (
+        <RescheduleBookingDialog
+          booking={rescheduleTarget}
+          isOpen={Boolean(rescheduleTarget)}
+          onClose={() => setRescheduleTarget(null)}
+          onSuccess={() => void refetchBookings()}
+        />
+      ) : null}
+
+      {/* Sticky Bottom Bar for Multiple Selected Services when viewing an organization */}
+      {isOrgFiltered && selectedServiceIds.length > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-amber-300/40 bg-stone-950/95 px-4 py-3.5 text-white shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-4 duration-200">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-xs font-semibold text-amber-400">
+                <span>
+                  {selectedServiceIds.length} service{selectedServiceIds.length > 1 ? 's' : ''}{' '}
+                  selected
+                </span>
+                <span>·</span>
+                <span className="text-white">${totalSelectedPrice.toFixed(2)}</span>
+                <span>·</span>
+                <span className="text-stone-300">{totalSelectedDuration}m total</span>
+              </p>
+              <p className="truncate text-[11px] text-stone-400">
+                {selectedServicesList.map((s) => s.name).join(', ')}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedServiceIds([])}
+                className="cursor-pointer rounded-full border border-stone-700 px-3 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:bg-stone-800 hover:text-white"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBookMultipleServices()}
+                className="cursor-pointer rounded-full bg-amber-500 px-5 py-2 text-xs font-bold text-stone-950 shadow-md transition-all hover:bg-amber-400 active:scale-[0.98]"
+              >
+                Book {selectedServiceIds.length} Service{selectedServiceIds.length > 1 ? 's' : ''}{' '}
+                ($0 hold) →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

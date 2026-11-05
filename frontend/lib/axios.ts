@@ -2,6 +2,7 @@ import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from 'axio
 
 import { type AppPortal, clearPortalAuthSession, getPortalAuthToken } from './authSession'
 import { NEXT_PUBLIC_BASE_URL } from './env'
+import { getItemFromLocalDb } from './localDb'
 
 const isServer = typeof window === 'undefined'
 const configuredApiUrl = (
@@ -50,6 +51,21 @@ export function detectPortal(): AppPortal {
   const path = window.location.pathname
   if (path.startsWith('/admin')) return 'admin'
   if (path.startsWith('/merchant') || path.startsWith('/org')) return 'merchant'
+
+  try {
+    const searchParams = new URLSearchParams(window.location.search)
+    const portalParam = searchParams.get('portal')
+    if (portalParam === 'admin' || portalParam === 'merchant' || portalParam === 'client') {
+      return portalParam
+    }
+  } catch {
+    // ignore
+  }
+
+  const stored = getItemFromLocalDb('current_app_portal')
+  if (stored === 'admin' || stored === 'merchant' || stored === 'client') {
+    return stored as AppPortal
+  }
   return 'client'
 }
 

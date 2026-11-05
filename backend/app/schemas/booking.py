@@ -31,7 +31,8 @@ class BookingCancelRequest(BaseModel):
 
 
 class BookingRescheduleRequest(BaseModel):
-    starts_at: datetime
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
     stylist_id: UUID | None = None
 
 
@@ -63,6 +64,11 @@ class AvailabilityOut(BaseModel):
     day: str
     open_windows: list[list[str]] = []
     slots: list[TimeSlot] = []
+    salon_hours: list[list[str]] = []
+    shift_windows: list[list[str]] = []
+    stylist_name: str | None = None
+    simultaneous_capacity: int = 1
+    service_duration_minutes: int | None = None
 
 
 class BookingServiceOut(ORMModel):
@@ -110,11 +116,15 @@ class BookingOut(ORMModel):
     hold_amount: Decimal | None = None
     captured_amount: Decimal | None = None
     honor_expires_at: datetime | None = None
+    hold_authorized_at: datetime | None = None
     reauthorization_count: int | None = None
     idempotency_key: str | None = None
     consent_hash: str | None = None
     consent_terms_version: str | None = None
     consent_signed_at: datetime | None = None
+    refund_id: str | None = None
+    refund_amount: Decimal | None = None
+    refund_status: str | None = None
 
 
 def _user_display_name(user) -> str | None:
@@ -162,6 +172,7 @@ def booking_to_out(booking) -> BookingOut:
     hold_amount = None
     captured_amount = None
     honor_expires_at = None
+    hold_authorized_at = None
     reauthorization_count = None
     idempotency_key = None
     if latest_hold:
@@ -175,6 +186,7 @@ def booking_to_out(booking) -> BookingOut:
         hold_amount = latest_hold.amount
         captured_amount = latest_hold.captured_amount
         honor_expires_at = latest_hold.honor_expires_at
+        hold_authorized_at = getattr(latest_hold, "authorized_at", None) or latest_hold.created_at
         reauthorization_count = latest_hold.reauthorization_count
         idempotency_key = latest_hold.idempotency_key
 
@@ -185,6 +197,19 @@ def booking_to_out(booking) -> BookingOut:
         consent_hash = latest_consent.terms_text_hash
         consent_terms_version = latest_consent.terms_version
         consent_signed_at = latest_consent.created_at
+
+    refund_id = None
+    refund_amount = None
+    refund_status = None
+    if booking.cancellation_fee_json and isinstance(booking.cancellation_fee_json, dict):
+        refund_id = booking.cancellation_fee_json.get("refund_id")
+        raw_refund_amt = booking.cancellation_fee_json.get("refund_amount")
+        if raw_refund_amt is not None:
+            try:
+                refund_amount = Decimal(str(raw_refund_amt))
+            except Exception:
+                refund_amount = None
+        refund_status = booking.cancellation_fee_json.get("refund_status")
 
     return BookingOut(
         id=booking.id,
@@ -221,9 +246,13 @@ def booking_to_out(booking) -> BookingOut:
         hold_amount=hold_amount,
         captured_amount=captured_amount,
         honor_expires_at=honor_expires_at,
+        hold_authorized_at=hold_authorized_at,
         reauthorization_count=reauthorization_count,
         idempotency_key=idempotency_key,
         consent_hash=consent_hash,
         consent_terms_version=consent_terms_version,
         consent_signed_at=consent_signed_at,
+        refund_id=refund_id,
+        refund_amount=refund_amount,
+        refund_status=refund_status,
     )

@@ -12,6 +12,7 @@ import type {
   LiveKitTokenRequest,
   LiveKitTokenResponse,
   PaymentHold,
+  RescheduleBookingRequest,
 } from '@/types/api-booking'
 import type {
   CatalogStaffMember,
@@ -313,11 +314,11 @@ export const clientApi = baseApi.injectEndpoints({
 
     rescheduleBooking: builder.mutation<
       ApiBooking,
-      { bookingId: string; body: { starts_at: string; stylist_id?: string | null } }
+      { bookingId: string; body: RescheduleBookingRequest }
     >({
       query: ({ bookingId, body }) => ({
         url: `/api/v1/bookings/${bookingId}/reschedule`,
-        method: 'POST',
+        method: 'PATCH',
         data: body,
       }),
       invalidatesTags: ['bookings'],

@@ -26,6 +26,8 @@ function formatDeadlineLabel(iso: string | null | undefined): string {
 /** Map backend booking status → demo HoldState used by UI badges/drawers. */
 export function mapBookingStatusToHoldState(status: string): HoldState {
   switch (status.toUpperCase()) {
+    case 'REFUNDED':
+      return 'REFUNDED'
     case 'COMPLETED':
       return 'CAPTURED'
     case 'CANCELLED':
@@ -88,6 +90,20 @@ export function mapApiBookingToUi(
     status = 'REAUTHORIZED'
   }
 
+  const refundId =
+    booking.refund_id || (booking.cancellation_fee_json?.refund_id as string | undefined)
+  const rawRefundAmt =
+    booking.refund_amount != null
+      ? booking.refund_amount
+      : booking.cancellation_fee_json?.refund_amount
+  const refundAmount = rawRefundAmt != null ? Number(rawRefundAmt) : null
+  const refundStatus =
+    booking.refund_status || (booking.cancellation_fee_json?.refund_status as string | undefined)
+
+  if (refundId || (refundAmount != null && refundAmount > 0)) {
+    status = 'REFUNDED'
+  }
+
   return {
     id: booking.id,
     clientName: extras?.clientName || booking.client_name || 'Client',
@@ -135,7 +151,15 @@ export function mapApiBookingToUi(
     createdAt: new Date(booking.created_at).toLocaleString(),
     settlementNote: booking.cancellation_reason || undefined,
     reauthorizationCount: booking.reauthorization_count ?? extras?.reauthorizationCount ?? 0,
+    refundId: refundId || null,
+    refundAmount: refundAmount != null && Number.isFinite(refundAmount) ? refundAmount : null,
+    refundStatus: refundStatus || null,
     organizationTimezone: booking.organization_timezone || null,
+    paymentHold: {
+      authorizedAt: booking.hold_authorized_at || booking.created_at,
+      createdAt: booking.created_at,
+    },
+    authorizedAt: booking.hold_authorized_at || booking.created_at,
   }
 }
 

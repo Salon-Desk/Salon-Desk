@@ -388,6 +388,7 @@ export function PayPalHoldCheckout({
                 serviceId={service.id}
                 durationMin={totalDurationMin}
                 stylistId={stylist.id === ANY_AVAILABLE_STYLIST.id ? null : stylist.id}
+                stylistName={stylistLabel}
                 salonTz={salonTz}
                 displayTz={displayTz}
                 timezoneOptions={timezoneOptions}

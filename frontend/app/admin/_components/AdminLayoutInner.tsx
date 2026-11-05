@@ -17,6 +17,7 @@ import {
   useGetAdminStaffQuery,
 } from '@/store/api/platformApi'
 import { logout, userSelector } from '@/store/authSlice'
+import { API_TAG_TYPES, baseApi } from '@/store/baseApi'
 import type { PlatformUser } from '@/types'
 
 import { getAdminTabFromPathname } from '../_constants/admin-nav'
@@ -41,6 +42,7 @@ export function AdminLayoutInner({ children }: { children: ReactNode }) {
 
   const handleLockSession = () => {
     dispatch(logout('admin'))
+    dispatch(baseApi.util.invalidateTags([...API_TAG_TYPES]))
   }
 
   return (

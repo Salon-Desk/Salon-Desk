@@ -17,7 +17,7 @@ import { useMemo, useState } from 'react'
 import { parseYmd, toYmd } from '@/lib/util/timezone'
 import { cn } from '@/lib/utils'
 
-export const BOOKING_WINDOW_DAYS = 90
+export const BOOKING_WINDOW_DAYS = 28
 export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export interface MonthCalendarProps {
@@ -29,7 +29,9 @@ export interface MonthCalendarProps {
 export function MonthCalendar({ selectedDay, todayYmd, onSelectDay }: MonthCalendarProps) {
   const selected = parseYmd(selectedDay)
   const today = parseYmd(todayYmd)
-  const lastBookable = addDays(today, BOOKING_WINDOW_DAYS)
+  const minDate = today
+  const maxDate = addDays(today, BOOKING_WINDOW_DAYS)
+  const lastBookable = maxDate
   const [month, setMonth] = useState(() => startOfMonth(selected))
 
   const days = useMemo(() => {
@@ -77,7 +79,7 @@ export function MonthCalendar({ selectedDay, todayYmd, onSelectDay }: MonthCalen
         ))}
         {days.map((day) => {
           const inMonth = isSameMonth(day, month)
-          const disabled = isBefore(day, today) || isAfter(day, lastBookable)
+          const disabled = isBefore(day, minDate) || isAfter(day, maxDate)
           const isSelected = isSameDay(day, selected)
           const isToday = isSameDay(day, today)
           return (
@@ -114,9 +116,10 @@ export function MonthCalendar({ selectedDay, todayYmd, onSelectDay }: MonthCalen
         })}
       </div>
 
-      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-stone-400">
+      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-stone-500">
         <span className="h-1 w-1 rounded-full bg-amber-500" />
-        Today · bookable up to {BOOKING_WINDOW_DAYS} days ahead
+        Reservations with deposit holds are available up to 28 days in advance to comply with PayPal
+        authorization limits.
       </p>
     </div>
   )
