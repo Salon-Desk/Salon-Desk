@@ -8,7 +8,9 @@ Roles:
 
 from __future__ import annotations
 
+import json
 import logging
+import re
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -277,7 +279,7 @@ class DisputeService:
             advocate_text = default_rebuttal
             advocate_text = default_rebuttal
 
-        # --- ROLE 3: SKEPTIC AGENT (Risk Scoring & Strategy Recommendation) ---
+        # --- ROLE 3: SKEPTIC AGENT (LLM Risk Scoring with Deterministic Cryptographic Bounds) ---
         has_capture = capture is not None or effective_amount <= booking.agreed_no_show_fee
         if consent_verified and chain_verified and has_capture:
             win_prob = 94
@@ -288,6 +290,38 @@ class DisputeService:
                 "bilingual acceptance transcript present, and captured fee is within agreed policy limits. "
                 "Recommend immediately submitting the cryptographic evidence dossier to PayPal."
             )
+            # Invoke LLM Skeptic for nuanced critique and bounded risk scoring
+            try:
+                llm = get_llm_service()
+                skeptic_prompt = (
+                    f"You are the Skeptic role in SalonDesk Dispute Counsel. Critically evaluate the seller's defense "
+                    f"for PayPal dispute case {dispute_id_clean} (${effective_amount} USD).\n"
+                    f"Cryptographic proofs: Ed25519 signature VERIFIED, SHA-256 ledger integrity VERIFIED ({entries_checked} entries).\n"
+                    f"Advocate defense rebuttal:\n{advocate_text[:400]}...\n\n"
+                    f"Provide a 2-sentence risk assessment critique and suggest a win probability between 90 and 96.\n"
+                    f'Format output as JSON: {{"win_probability": 94, "critique": "..."}}'
+                )
+                skeptic_resp = await llm.chat(
+                    [
+                        {
+                            "role": "system",
+                            "content": "You are a pragmatic, risk-averse legal analyst. Reply with JSON.",
+                        },
+                        {"role": "user", "content": skeptic_prompt},
+                    ],
+                    max_tokens=300,
+                )
+                if skeptic_resp:
+                    match = re.search(r"\{.*?\}", skeptic_resp, re.DOTALL)
+                    if match:
+                        parsed = json.loads(match.group(0))
+                        if "win_probability" in parsed:
+                            wp = int(parsed["win_probability"])
+                            win_prob = max(88, min(96, wp))
+                        if "critique" in parsed and len(str(parsed["critique"]).strip()) > 20:
+                            skeptic_critique = str(parsed["critique"]).strip()
+            except Exception as exc:
+                logger.debug(f"LLM Skeptic fallback to deterministic assessment: {exc}")
         else:
             win_prob = 60
             recommendation = DisputeRecommendation.MAKE_OFFER
@@ -297,6 +331,35 @@ class DisputeService:
                 f"ledger_chain_verified={chain_verified}. Win probability is marginal (60%). "
                 f"Recommend offering a 50% settlement (${recommended_offer:.2f}) to avoid standard dispute penalties."
             )
+            try:
+                llm = get_llm_service()
+                skeptic_prompt = (
+                    f"You are the Skeptic role in SalonDesk Dispute Counsel. The seller has incomplete cryptographic evidence: "
+                    f"consent_verified={consent_verified}, ledger_chain_verified={chain_verified}.\n"
+                    f"Provide a 2-sentence risk critique and suggest a win probability between 50 and 65.\n"
+                    f'Format output as JSON: {{"win_probability": 60, "critique": "..."}}'
+                )
+                skeptic_resp = await llm.chat(
+                    [
+                        {
+                            "role": "system",
+                            "content": "You are a pragmatic, risk-averse legal analyst. Reply with JSON.",
+                        },
+                        {"role": "user", "content": skeptic_prompt},
+                    ],
+                    max_tokens=300,
+                )
+                if skeptic_resp:
+                    match = re.search(r"\{.*?\}", skeptic_resp, re.DOTALL)
+                    if match:
+                        parsed = json.loads(match.group(0))
+                        if "win_probability" in parsed:
+                            wp = int(parsed["win_probability"])
+                            win_prob = max(50, min(65, wp))
+                        if "critique" in parsed and len(str(parsed["critique"]).strip()) > 20:
+                            skeptic_critique = str(parsed["critique"]).strip()
+            except Exception as exc:
+                logger.debug(f"LLM Skeptic fallback to deterministic assessment: {exc}")
 
         # Lookup or create DisputeCase
         dispute_id_clean = paypal_dispute_id or f"PP-D-{booking_id.hex[:8].upper()}-SANDBOX"

@@ -13,6 +13,8 @@ _DEFAULT_CORS_ORIGINS = [
     "http://localhost:3000",
     "http://localhost",
     "http://127.0.0.1:3000",
+    "https://salon-desk.onrender.com",
+    "http://salon-desk.onrender.com",
     "https://paypalai.hackathon.huludelala.com",
     "http://paypalai.hackathon.huludelala.com",
 ]
@@ -79,7 +81,7 @@ class Settings(BaseSettings):
         default_factory=lambda: list(_DEFAULT_CORS_ORIGINS)
     )
     # Optional regex for preview / hackathon subdomains (Starlette CORSMiddleware).
-    cors_origin_regex: str | None = r"https?://(.*\.)?huludelala\.com"
+    cors_origin_regex: str | None = r"https?://(.*\.)?(huludelala\.com|onrender\.com)"
 
     # PayPal
     paypal_client_id: str = ""
