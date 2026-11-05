@@ -19,6 +19,22 @@ from app.schemas.booking import AvailabilityOut, TimeSlot
 _WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 
+_WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+
+def _day_matches_shift_days(day: date, shift_days: list[str] | None) -> bool:
+    if shift_days is None:
+        shift_days = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+    if not shift_days:
+        return False
+    weekday_name = day.strftime("%A").lower()
+    weekday_abbr = _WEEKDAY_KEYS[day.weekday()]
+    return any(
+        d.lower().strip() == weekday_name or d.lower().strip().startswith(weekday_abbr)
+        for d in shift_days
+    )
+
+
 def resolve_org_timezone(name: str | None) -> ZoneInfo:
     try:
         return ZoneInfo((name or "UTC").strip() or "UTC")

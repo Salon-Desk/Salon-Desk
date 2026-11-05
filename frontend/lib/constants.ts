@@ -37,8 +37,8 @@ export const ROUTES = {
 
 export const FLAGSHIP_SALON = {
   id: 'org-1',
-  name: 'Crown & Blade Atelier (SoHo Flagship)',
-  shortName: 'Crown & Blade Atelier',
+  name: 'Selam Hair Studio',
+  shortName: 'Selam Hair Studio',
 } as const
 
 export type BuyerPersonaId = 'hana' | 'guest'
@@ -119,8 +119,8 @@ export const SANDBOX_CREDENTIALS = {
       email: 'merchent-two4113@business.example.com',
       password: 'G+!U0^6h',
       merchantId: 'VFP4W4G9ZGRHA',
-      salonName: 'Abi Beauty Salon',
-      portalOwnerEmail: 'owner@abibeautysalon.local',
+      salonName: 'Selam Hair Studio',
+      portalOwnerEmail: 'owner@selam.local',
     },
     {
       email: 'merchant330@business.example.com',
@@ -171,15 +171,15 @@ export const SANDBOX_CREDENTIALS = {
   merchantAccount: {
     email: 'merchent-two4113@business.example.com',
     password: 'G+!U0^6h',
-    salonName: 'Abi Beauty Salon',
+    salonName: 'Selam Hair Studio',
     merchantId: 'VFP4W4G9ZGRHA',
   },
   techStack: {
     framework: 'Next.js 16 App Router',
     paypalApi: 'PayPal Orders & Payments v2 (REST)',
-    paypalSdk: 'PayPal JS SDK v6 (@paypal/react-paypal-js)',
-    agentToolkit: 'PayPal Agent Toolkit 1.11.0',
-    aiEngine: 'Google Gemini 2.5 Flash',
+    paypalSdk: 'PayPal Orders v2 & Payments v2 REST Flow',
+    agentToolkit: 'Custom PayPal Agent Toolkit (Orders & Payments v2)',
+    aiEngine: 'LLM Multi-Provider (Groq / OpenAI / Ollama)',
   },
 } as const
 
