@@ -6,15 +6,16 @@ Monorepo for a multi-tenant salon booking demo: **FastAPI** (`backend/`) + **Nex
 | --- | --- |
 | [backend/AGENTS.md](backend/AGENTS.md) | FastAPI, SQLAlchemy, payments, AI/RAG, migrations, and tests |
 | [frontend/AGENTS.md](frontend/AGENTS.md) | Next.js App Router, Redux, portal UI conventions |
-| [Readme.md](Readme.md) | Human setup: Docker, seed, voice agent, make targets |
-| [PERMISSIONS_MAPPER.md](PERMISSIONS_MAPPER.md) | Actor roles, permissions matrix, and route/action access mapper |
+| [Readme.md](Readme.md) | Product overview, evaluator quick start, PayPal integrations, and documentation links |
+| [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md) | Local development, database seeding, test execution, and Make targets |
+| [docs/PERMISSIONS_MAPPER.md](docs/PERMISSIONS_MAPPER.md) | Actor roles, permissions matrix, and route/action access mapper |
 
 **English-only.** Do not add i18n, locale providers, translation dictionaries, or `_localization/` folders.
 
 ## Cross-cutting rules
 
 - **Commits**: only when the user asks; never force-push `main`; follow existing message style.
-- **Quality gate**: root Husky pre-commit runs frontend (`format`, `lint`, `typecheck`) and backend (Ruff, pytest) — see [Readme.md](Readme.md#lint-format--git-hooks).
+- **Quality gate**: root Husky pre-commit runs frontend (`format`, `lint`, `typecheck`) and backend (Ruff, pytest) — see [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md#7-testing--quality-gate).
 - **Env**: root `.env`; frontend public vars use `NEXT_PUBLIC_*`.
 - **Demo reset**: `POST /api/demo/reset` (backend); frontend toolbar uses Redux demo slice resets via `lib/sandbox/demo-reset.ts`.
 

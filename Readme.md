@@ -5,79 +5,78 @@
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-paypalai.hackathon.huludelala.com-brightgreen.svg)](https://paypalai.hackathon.huludelala.com)
 [![YouTube Demo](https://img.shields.io/badge/YouTube-2%3A42%20Walkthrough-red.svg)](https://youtu.be/to2uynlBQmE)
 
-> **PayPal AI Hackathon Submission**
-> AI-powered salon booking concierge + PayPal authorization holds that end salon no-show revenue losses without charging clients upfront.
+> **PayPal AI Hackathon Submission**  
+> AI booking concierge + PayPal authorization holds that end salon no-show revenue losses without charging clients upfront.
 
 ---
 
-## 1. The Problem
+## 1. The Problem & The Solution
 
-Independent stylists, barbers, and salon owners operate on razor-thin margins. According to industry data (Fresha, 2025), salons lose an average of **7% of their annual revenue** to no-shows and last-minute cancellations, causing a **56% operational schedule disruption**.
+Independent stylists and barbers lose an average of **7% of their annual revenue** to no-shows and late cancellations (Fresha, 2025), creating a **56% operational schedule disruption**. Traditional upfront deposits create high buyer friction, lost bookings, and chargeback risks.
 
-Traditional upfront non-refundable deposits create severe conversion friction:
-- **Clients hate paying in advance** before setting foot in the salon.
-- **Salons face chargebacks and refund disputes** when cancellations occur.
-- **Marketplace liability:** Holding client cash in escrow creates custody headaches.
+**SalonDesk solves this with "A Hold, Not a Charge":**
+
+```
+1. AI Booking & Hold      2. Service Completion        3. No-Show Settlement         4. Dispute Defense
+┌──────────────────┐      ┌────────────────────┐       ┌────────────────────┐        ┌──────────────────┐
+│ Client books via │      │ Client shows up:   │       │ Client no-shows:   │        │ If disputed:     │
+│ Voice/Chat AI.   │ ───► │ Full price is      │  OR   │ Only agreed fee    │  ───►  │ 3-agent counsel  │
+│ $0 debited; hold │      │ captured via       │       │ ($30) is captured; │        │ files signed PDF │
+│ via Orders v2.   │      │ final_capture=true │       │ balance voided.    │        │ dossier to PayPal│
+└──────────────────┘      └────────────────────┘       └────────────────────┘        └──────────────────┘
+```
+
+- **Zero Dollars Charged at Booking:** Clients authorize an authorization hold via PayPal Orders v2 (`intent="AUTHORIZE"`). No upfront payment is debited from their account.
+- **Fair Settlement:** If the client attends, the full service price is captured directly to the salon's merchant account (`final_capture=True`). If they no-show, only the policy-agreed fee (e.g. $30 on a $120 service) is captured; any remaining authorization is automatically voided.
+- **Waitlist Slot Rescue:** If an appointment is cancelled, the Slot Rescue engine refills the vacancy from the waitlist and waives or refunds the fee.
+- **Autonomous Dispute Counsel:** If a dispute is filed on PayPal, a 3-agent pipeline compiles an **Ed25519-signed, SHA-256 hash-chained PDF evidence dossier** and transmits formal defense directly to PayPal's Resolution Center.
+- **Measurable Economic Impact:** A stylist recovering just 4 no-shows a month at $30 saves **$1,440 per year**, all while giving clients a zero-friction, $0-down booking experience.
 
 ---
 
-## 2. The Solution: "A Hold, Not a Charge"
-
-SalonDesk introduces closed-loop authorization holds powered by **PayPal Orders v2** and **Agentic AI**:
-
-1. **$0 Charged at Booking**: Clients authorize a deposit hold via PayPal Orders v2 (`intent="AUTHORIZE"`). No funds leave their bank account up front.
-2. **Deterministic Settlement**:
-   - **Client Shows Up (`mark-show`)**: Full service price is captured directly into the salon's PayPal merchant account (`final_capture=True`).
-   - **Client No-Shows (`mark-no-show`)**: Only the agreed no-show fee (e.g. $30 on a $120 service) is captured; remaining authorization is immediately voided.
-   - **Timely Cancellation**: Cardholder hold is voided with zero fees.
-3. **Waitlist Slot Rescue**: If an appointment is cancelled, the Slot Rescue agent automatically offers the open window to waitlisted clients. If refilled, the cancellation fee is waived or refunded.
-4. **Autonomous Dispute Counsel**: When a client files a dispute, a 3-agent pipeline compiles an **Ed25519-signed, SHA-256 hash-chained PDF evidence dossier** and submits formal defense directly to PayPal's Resolution Center.
-
----
-
-## 3. Try It in 60 Seconds (Judge Quick Start)
+## 2. Try It in 60 Seconds (Judge Quick Start)
 
 Hosted Prototype URL: **[https://paypalai.hackathon.huludelala.com](https://paypalai.hackathon.huludelala.com)**
 
-### Demo Logins (All share password: `Password123!`)
+### Demo Accounts (Shared Password: `Password123!`)
 
-| Role | Email | Purpose / View |
+| Portal / Role | Email | Experience |
 |---|---|---|
-| **Platform Admin** | `admin@salondesk.local` | Platform overview, commission tracking, organization taxonomy |
-| **Salon Owner** | `owner@selam.local` | **Selam Hair Studio** merchant console, calendar, appointment settlement, dispute drawer |
-| **Receptionist** | `reception@selam.local` | Front-desk check-in and scheduling |
-| **Stylist** | `stylist1@selam.local` | Stylist schedule and assigned bookings (Selam Haile) |
-| **Client** | `abebe07@personal.example.com` | Client app: AI booking chat, service exploration, booking history |
+| **Salon Owner** | `owner@selam.local` | **Selam Hair Studio** merchant console: live calendar, appointment settlements, dispute drawer |
+| **Stylist** | `stylist1@selam.local` | Stylist schedule view and assigned bookings (Selam Haile) |
+| **Receptionist** | `reception@selam.local` | Front-desk scheduling and check-in desk |
+| **Client** | `abebe07@personal.example.com` | Client app: AI voice/chat booking, salon discovery, booking history |
+| **Platform Admin** | `admin@salondesk.local` | Platform console: commission ledger, salon taxonomy, approvals |
 
-### PayPal Sandbox Buyer Login (Use in PayPal checkout popups)
+### PayPal Sandbox Buyer Login (For PayPal Checkout Popups)
 
 - **Buyer Email:** `abebe07@personal.example.com`
 - **Buyer Password:** `,S7W{C-b`
 - **Secondary Buyer:** `ailurophile99@personal.example.com` / `RKd4)RGo`
 
 > [!TIP]
-> **One-Click Reset**: Click the **Reset Demo** button in the top navigation bar, or send `POST https://paypalai.hackathon.huludelala.com/api/demo/reset` at any time to return the database to a pristine demo state.
+> **One-Click Sandbox Reset:** Click the **Reset Demo** button in the header toolbar, or send `POST https://paypalai.hackathon.huludelala.com/api/demo/reset` to restore a clean demo state at any time. Enable browser pop-ups for PayPal Sandbox authorization windows.
 
 ---
 
-## 4. How We Use PayPal
+## 3. How We Use PayPal
 
-SalonDesk goes far beyond simple checkout buttons. We implement the complete lifecycle of PayPal Orders v2, Payments v2, Webhooks, and Disputes v1:
+SalonDesk implements the complete lifecycle of PayPal Orders v2, Payments v2, Webhooks, and Disputes v1:
 
-| Capability | PayPal API & Method | Repository File | Implementation Details |
+| Capability | PayPal API & Method | Repository File | What It Does |
 |---|---|---|---|
 | **Deposit Authorization** | `POST /v2/checkout/orders` (`intent: AUTHORIZE`) | [`backend/app/services/paypal_rest.py`](backend/app/services/paypal_rest.py) | Places an authorization hold with payee merchant ID, brand context, and `NO_SHIPPING`. Zero upfront charge. |
-| **Partial & Full Capture** | `POST /v2/payments/authorizations/{id}/capture` | [`backend/app/services/capture_service.py`](backend/app/services/capture_service.py) | Executes `final_capture: true` to capture service price or policy-agreed no-show fee and release remaining hold. |
-| **Hold Reauthorization** | `POST /v2/payments/authorizations/{id}/reauthorize` | [`backend/app/tasks/hold_expiration.py`](backend/app/tasks/hold_expiration.py) | Scheduled task monitors the 3-day PayPal honor window and renews active holds before expiration. |
+| **Partial & Full Capture** | `POST /v2/payments/authorizations/{id}/capture` | [`backend/app/services/capture_service.py`](backend/app/services/capture_service.py) | Executes `final_capture: true` to capture service price or policy-agreed fee and release remaining hold. |
+| **Hold Reauthorization** | `POST /v2/payments/authorizations/{id}/reauthorize` | [`backend/app/tasks/hold_expiration.py`](backend/app/tasks/hold_expiration.py) | Monitors the 3-day PayPal honor window and renews active holds before expiration. |
 | **Hold Void** | `POST /v2/payments/authorizations/{id}/void` | [`backend/app/services/booking_service.py`](backend/app/services/booking_service.py) | Instantly voids holds upon free cancellation or slot rescue waiver. |
 | **Idempotency Defense** | `PayPal-Request-Id` | [`backend/app/services/paypal_helpers.py`](backend/app/services/paypal_helpers.py) | Unique hash per state transition prevents duplicate authorizations or accidental double-captures. |
 | **Webhook Verification** | `POST /v1/notifications/verify-webhook-signature` | [`backend/app/services/paypal_webhooks.py`](backend/app/services/paypal_webhooks.py) | Validates asymmetric PayPal signatures with transmission IDs and cert URLs before processing lifecycle events. |
 | **Dispute Defense Evidence** | `POST /v1/customer/disputes/{id}/provide-evidence` | [`backend/app/services/dispute_service.py`](backend/app/services/dispute_service.py) | Formally transmits the generated legal rebuttal and cryptographic dossier to the PayPal Resolution Center. |
-| **Agent Commerce Toolkit** | Orders v2 & Payments v2 Runner | [`backend/app/services/paypal_toolkit.py`](backend/app/services/paypal_toolkit.py) | Agent tooling interface with amount ceiling bounds ($0.50–$250) and prohibited autonomous action firewalls. |
+| **Agent Commerce Toolkit** | Custom Orders v2 & Payments v2 Runner | [`backend/app/services/paypal_toolkit.py`](backend/app/services/paypal_toolkit.py) | Agent tooling interface with amount ceiling bounds ($0.50–$250) and prohibited autonomous action firewalls. |
 
 ---
 
-## 5. Tools Disclosure (AI Architecture)
+## 4. Tools Disclosure (AI Architecture)
 
 In accordance with Hackathon Official Rules §4, below is the complete disclosure of AI models and tools utilized:
 
@@ -94,11 +93,12 @@ In accordance with Hackathon Official Rules §4, below is the complete disclosur
 
 ---
 
-## 6. Safety: "AI Proposes; Code and PayPal Decide"
+## 5. Safety: "AI Proposes; Code and PayPal Decide"
 
 SalonDesk strictly adheres to defensive fintech design principles:
 
 - **Prohibited Autonomous Tools (`BLOCKED_AGENT_TOOLS`)**: The AI agent is explicitly prevented from executing `accept_dispute_claim`. Dispute concessions require human staff authorization.
+- **Direct Merchant Settlement (Non-Custodial)**: Client funds flow directly into the salon’s PayPal merchant account (`payee.merchant_id`), preventing marketplace escrow liability.
 - **Deposit & Capture Ceilings**:
   - Deposit ceiling: Deposits are capped at 50% of total service price (`MAX_DEPOSIT_FRACTION = 0.50`).
   - Capture ceiling: A merchant cannot capture more than the agreed no-show fee locked at booking creation.
@@ -108,91 +108,48 @@ SalonDesk strictly adheres to defensive fintech design principles:
 
 ---
 
-## 7. What We Built During the Hackathon
+## 6. What We Built During the Hackathon
 
 - **Initial Commit:** October 14, 2026 (after the Hackathon start date of October 1, 2026).
-- **100% of the codebase**—FastAPI backend, Next.js frontend, PayPal integrations, pgvector RAG, LiveKit voice worker, and automated dispute counsel—was authored during the hackathon period.
+- **100% Original Hackathon Code:** FastAPI backend, Next.js frontend, PayPal integrations, pgvector RAG, LiveKit voice worker, and automated dispute counsel were authored during the hackathon period.
 - **Automated Test Suite:** **235 passing tests** across API, domain services, crypto verification, and PayPal lifecycle integrations.
 
 ---
 
-## 8. Local Development & Testing
+## 7. Fast Local Run (3 Commands)
 
-### Prerequisites
-- Node.js 20+ and `pnpm`
-- Python 3.11+ and `uv`
-- Docker (for PostgreSQL with `pgvector`)
+If you have Docker installed, start the local environment:
 
-### 1. Start Database & Dependencies
 ```bash
+# 1. Environment & Database
 cp .env.example .env
 docker compose up -d db
+make seed
+
+# 2. Start Servers
+cd backend && uv run fastapi dev app/main.py   # Terminal 1: Backend API (http://127.0.0.1:8000)
+cd frontend && pnpm dev                         # Terminal 2: Next.js Frontend (http://localhost:3000)
 ```
 
-### 2. Install & Seed
-```bash
-# Backend setup
-cd backend
-uv sync --group dev
-uv run python -m scripts.seed --clear
-
-# Frontend setup
-cd ../frontend
-pnpm install
-```
-
-### 3. Run Development Servers
-```bash
-# Terminal 1: Backend API (port 8000)
-cd backend && uv run fastapi dev app/main.py
-
-# Terminal 2: Next.js Frontend (port 3000)
-cd frontend && pnpm dev
-
-# Terminal 3 (Optional): LiveKit Voice Agent
-cd backend && uv run python agent.py start
-```
-
-### 4. Run Test Suite
-```bash
-# Backend pytest suite (235 tests)
-cd backend && uv run pytest -v
-
-# Code quality checks
-cd backend && uv run ruff check . && uv run ruff format --check .
-cd ../frontend && pnpm typecheck && pnpm lint
-```
+> For step-by-step installation without Docker, native PostgreSQL configuration, environment variable options, test runner commands, and VPS deployment, see the [**Local Development & Setup Guide**](docs/LOCAL_SETUP.md).
 
 ---
 
-## 9. Project Structure
+## 8. Deep-Dive Documentation
 
-```
-Salon-Desk/
-├── backend/
-│   ├── app/
-│   │   ├── ai/            # RAG, LLM providers, LiveKit voice agent, agent tools
-│   │   ├── api/v1/        # Endpoints: auth, catalog, bookings, orgs, settlements, disputes
-│   │   ├── core/          # Database, crypto (Ed25519), config, security firewalls
-│   │   ├── models/        # SQLAlchemy ORM models (ledger, policy, bookings, disputes)
-│   │   ├── schemas/       # Pydantic v2 validation schemas
-│   │   ├── services/      # PayPal REST, capture, dispute counsel, slot rescue, ledger
-│   │   └── tasks/         # Celery/background tasks (hold expiration, sync)
-│   ├── scripts/           # Seeding, pgvector ingestion
-│   └── tests/             # 235 unit and integration tests
-├── frontend/
-│   ├── app/               # Next.js 16 App Router (Client, Merchant, Admin portals)
-│   ├── components/        # UI components, dispute drawer, chat widget, sandbox modal
-│   ├── lib/               # Mappers, constants, sandbox personas
-│   └── store/             # Redux Toolkit & RTK Query API client slices
-├── docs/                  # Architecture specs, dispute lifecycle guides, permissions matrix
-├── .github/workflows/     # GitHub Actions CI suite
-└── docker-compose.yml     # Container orchestration
-```
+For detailed architectural specifications, lifecycle guides, and development documentation:
+
+| Document | Focus & Highlights |
+|---|---|
+| 🛠️ [**Local Development & Setup Guide**](docs/LOCAL_SETUP.md) | Full setup with/without Docker, environment variables, seeding CLI, 235-test pytest runner, VPS deployment, and Make targets. |
+| ⚖️ [**Dispute Flow & Lifecycle Guide**](docs/DISPUTE_FLOW.md) | End-to-end PayPal Disputes v1 defense walkthrough, 3-role agent counsel, and court-ready PDF dossier. |
+| 🎙️ [**Voice Concierge & Semantic RAG**](docs/VOICE_AGENT_RAG.md) | LiveKit RTC + Deepgram voice worker architecture, Ollama `all-minilm` embeddings, and pgvector ingestion. |
+| 📡 [**API Catalog & Integrations**](docs/API_AND_INTEGRATIONS.md) | REST endpoint catalog, Postman collection (`postman/collection.json`), and PayPal webhook simulation. |
+| 🔐 [**Permissions & Access Control Matrix**](docs/PERMISSIONS_MAPPER.md) | Role-based permission guardrails across Client, Merchant, and Admin portals. |
 
 ---
 
-## 10. Team & License
+## 9. Team & License
 
-Built with care for the PayPal AI Hackathon by the **SalonDesk Team**.
+Built with care for the PayPal AI Hackathon by the **SalonDesk Team**.  
 Licensed under the [Apache License 2.0](LICENSE).
