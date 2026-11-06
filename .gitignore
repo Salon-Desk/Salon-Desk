@@ -1,7 +1,7 @@
 .env
 .env.vps
-temp
-docs
+temp/
+
 
 # OpenAPI / Postman generator scratch (tempfile is used; keep these out if created locally)
 *.openapi.tmp.json

@@ -593,7 +593,83 @@ def build_organizations() -> list[dict]:
     """Return organization rows in the shape ``seed_organizations`` inserts."""
     definitions: list[dict] = []
     used_slugs: set[str] = set()
-    for index, row in enumerate(_load_rows()):
+
+    # 1. Flagship demo salon: Selam Hair Studio (featured in demo video and dispute counsel tests)
+    used_slugs.add("selam")
+    definitions.append(
+        {
+            "name": "Selam Hair Studio",
+            "description": "Premier hair braiding and styling studio in Bole, Addis Ababa. Specializing in precision box braids, twists, and luxury scalp treatments.",
+            "picture": _cover(0),
+            "address": "Bole Medhanialem, Edna Mall Rd, Addis Ababa, Ethiopia",
+            "lat": Decimal("8.9984123"),
+            "lng": Decimal("38.7865123"),
+            "timezone": "Africa/Addis_Ababa",
+            "currency": "USD",
+            "owner_email": "owner@selam.local",
+            "owner_name": ("Selam", "Haile"),
+            "owner_phone": "+251911234567",
+            "owner_picture": _avatar(0),
+            "reception_email": "reception@selam.local",
+            "reception_name": ("Kidist", "Alemu"),
+            "reception_phone": "+251911234568",
+            "reception_picture": _avatar(1),
+            "stylists": [
+                (
+                    "stylist1@selam.local",
+                    ("Selam", "Haile"),
+                    "+251911234569",
+                    _avatar(0),
+                ),
+                (
+                    "stylist2@selam.local",
+                    ("Meron", "Tadesse"),
+                    "+251911234570",
+                    _avatar(3),
+                ),
+            ],
+            "merchant_id": PAYPAL_SANDBOX_MERCHANT_OVERRIDES[0]["merchant_id"],
+            "merchant_email": PAYPAL_SANDBOX_MERCHANT_OVERRIDES[0]["merchant_email"],
+            "services": [
+                (
+                    "Braids",
+                    "Box Braids",
+                    "Signature clean-part box braids with premium extensions and scalp protection.",
+                    Decimal("55.00"),
+                    180,
+                    _cover(1),
+                ),
+                (
+                    "Hair",
+                    "Signature Silk Press & Treatment",
+                    "Deep conditioning steam treatment, blowout, and precision silk press.",
+                    Decimal("65.00"),
+                    75,
+                    _cover(2),
+                ),
+                (
+                    "Braids",
+                    "Knotless Braids",
+                    "Lightweight, tension-free knotless braiding styled to perfection.",
+                    Decimal("140.00"),
+                    210,
+                    _cover(3),
+                ),
+            ],
+        }
+    )
+
+    all_rows = _load_rows()
+    # Prioritize Lovely Beauty Spa to be second (merchant 2 override)
+    lovely_rows = [
+        r for r in all_rows if (r.get("name") or "").strip().lower() == "lovely beauty spa"
+    ]
+    other_rows = [
+        r for r in all_rows if (r.get("name") or "").strip().lower() != "lovely beauty spa"
+    ]
+    ordered_rows = lovely_rows + other_rows
+
+    for index, row in enumerate(ordered_rows, start=1):
         ethiopia = row.get("country") == "Ethiopia"
         base_slug = _slug(row.get("name") or "salon")
         slug = base_slug
@@ -608,43 +684,42 @@ def build_organizations() -> list[dict]:
         org_category = row.get("category") or "beauty_salon"
         phone = _phone(row.get("phone"), index, ethiopia=ethiopia)
         lat, lng = _coordinates(row, index)
-        definitions.append(
-            {
-                "name": _clip(row.get("name"), 255) or f"Salon {index + 1}",
-                "description": _description(row),
-                "picture": _cover(index),
-                "address": _address(row),
-                "lat": lat,
-                "lng": lng,
-                "timezone": _timezone(row),
-                "currency": currency,
-                "owner_email": f"owner@{slug}.local",
-                "owner_name": owner,
-                "owner_phone": phone,
-                "owner_picture": _avatar(index),
-                "reception_email": f"reception@{slug}.local",
-                "reception_name": reception,
-                "reception_phone": _phone(None, index + 1000, ethiopia=ethiopia),
-                "reception_picture": _avatar(index + 1),
-                "stylists": [
-                    (
-                        f"stylist1@{slug}.local",
-                        stylist_a,
-                        _phone(None, index + 2000, ethiopia=ethiopia),
-                        _avatar(index + 2),
-                    ),
-                    (
-                        f"stylist2@{slug}.local",
-                        stylist_b,
-                        _phone(None, index + 3000, ethiopia=ethiopia),
-                        _avatar(index + 3),
-                    ),
-                ],
-                "merchant_id": f"DEMO-{index + 1:04d}-{slug.upper()}"[:100],
-                "merchant_email": f"payments@{slug}.local",
-                "services": _services(row, org_category, currency, index),
-            }
-        )
+        org_dict = {
+            "name": _clip(row.get("name"), 255) or f"Salon {index + 1}",
+            "description": _description(row),
+            "picture": _cover(index),
+            "address": _address(row),
+            "lat": lat,
+            "lng": lng,
+            "timezone": _timezone(row),
+            "currency": currency,
+            "owner_email": f"owner@{slug}.local",
+            "owner_name": owner,
+            "owner_phone": phone,
+            "owner_picture": _avatar(index),
+            "reception_email": f"reception@{slug}.local",
+            "reception_name": reception,
+            "reception_phone": _phone(None, index + 1000, ethiopia=ethiopia),
+            "reception_picture": _avatar(index + 1),
+            "stylists": [
+                (
+                    f"stylist1@{slug}.local",
+                    stylist_a,
+                    _phone(None, index + 2000, ethiopia=ethiopia),
+                    _avatar(index + 2),
+                ),
+                (
+                    f"stylist2@{slug}.local",
+                    stylist_b,
+                    _phone(None, index + 3000, ethiopia=ethiopia),
+                    _avatar(index + 3),
+                ),
+            ],
+            "merchant_id": f"DEMO-{index + 1:04d}-{slug.upper()}"[:100],
+            "merchant_email": f"payments@{slug}.local",
+            "services": _services(row, org_category, currency, index),
+        }
         if index < len(PAYPAL_SANDBOX_MERCHANT_OVERRIDES):
-            definitions[-1].update(PAYPAL_SANDBOX_MERCHANT_OVERRIDES[index])
+            org_dict.update(PAYPAL_SANDBOX_MERCHANT_OVERRIDES[index])
+        definitions.append(org_dict)
     return definitions

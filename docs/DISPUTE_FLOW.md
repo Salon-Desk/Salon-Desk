@@ -3,13 +3,10 @@
 This document provides a comprehensive, step-by-step architectural and operational guide to the SalonDesk dispute flow — from client appointment booking and cryptographic consent to PayPal chargeback ingestion, AI defense generation, and dispute resolution.
 
 > [!NOTE]
-> **Important Architectural Note: Removal of Goodwill Partial Refunds & Automated Settlement Offers**
-> In previous demo mockups, SalonDesk featured an automated internal settlement dialog ("Make 50% Settlement Offer"). This feature has been **permanently removed**. 
+> **Non-Custodial Architecture & Official PayPal Resolution Center Workflow**
+> SalonDesk operates on a **direct merchant settlement** model: funds flow directly between the client and the salon's PayPal merchant account (`payee.merchant_id`), eliminating platform escrow liability.
 > 
-> **Why?**
-> 1. **Non-Custodial Architecture:** SalonDesk does **not** custody or hold customer or salon funds. Funds flow directly between the client's payment card/account and the salon's PayPal merchant account.
-> 2. **PayPal Dispute Compliance:** For service businesses, PayPal disputes (inquiry stage `PP-R-...` and claim stage `PP-D-...`) require the seller to submit service fulfillment proof directly via PayPal's Resolution Center. Programmatic partial refund offers can be rejected by PayPal's API with `403 ACTION_NOT_ALLOWED` during early inquiry stages.
-> 3. **AI Copilot Approach:** Instead of executing premature automated concessions, SalonDesk provides an **Interactive AI Dispute Copilot** that equips the merchant with verified cryptographic evidence, tracking references, and formatted legal defense statements to win their case on PayPal.
+> When a client disputes a captured no-show fee, official PayPal dispute processing requires formal service fulfillment proof submitted to the PayPal Resolution Center. SalonDesk's **Autonomous AI Dispute Counsel & Copilot** verifies digital Ed25519 terms consent, validates the SHA-256 financial audit chain, and drafts court-ready legal evidence dossiers to help merchants successfully defend their earned revenue.
 
 ---
 
@@ -71,9 +68,8 @@ flowchart TD
 1. The client notices the \$25.00 fee on their card statement and goes to PayPal to dispute the charge, selecting reason:
    * **"MERCHANDISE_OR_SERVICE_NOT_RECEIVED"**
    * Client Note: *"I was charged a $25.00 fee... I never received the service. I am requesting a full refund."*
-2. **No Fake Internal Chargebacks:**
-   * In the client web application (`/client`), the client cannot trigger a fake in-app dispute.
-   * Clicking *"Dispute Charge"* displays the client's official **PayPal Transaction ID** and provides a direct link to the **PayPal Resolution Center**, ensuring all disputes follow official financial channels.
+2. **Official Financial Channels Only:**
+   * In the client web application (`/client`), clicking *"Dispute Charge"* displays the client's official **PayPal Transaction ID** and provides a direct link to the **PayPal Resolution Center**, ensuring all disputes follow official financial channels rather than simulated in-app bypasses.
 
 ---
 
@@ -98,7 +94,7 @@ flowchart TD
 ---
 
 ### Stage 7: Merchant AI Dispute Copilot
-The salon owner opens `/merchant/disputes` and views the **Dispute Counsel Drawer**. Instead of obsolete "Make Offer" or "Auto-Submit" buttons, the drawer functions as an interactive **AI Copilot** guiding the merchant through PayPal's exact *"Provide tracking information"* form:
+The salon owner opens `/merchant/disputes` and views the **Dispute Counsel Drawer**. The drawer functions as an interactive **AI Copilot** guiding the merchant through PayPal's exact *"Provide tracking information"* form:
 
 | PayPal Form Field | What to Enter / Select | SalonDesk Copilot Assistant |
 | :--- | :--- | :--- |
@@ -145,16 +141,15 @@ The drawer also displays:
 
 ---
 
-## 2. Key Architectural Decisions Summary
+## 2. Core Architectural Pillars
 
-### Why Goodwill Settlement Offers Were Removed
-| Aspect | Old Approach (Deprecated) | Current Production Architecture |
-| :--- | :--- | :--- |
-| **Settlement Offers** | In-app "Make Offer ($12.50)" dialog attempting automated partial refunds. | **Removed.** SalonDesk is non-custodial and does not execute financial concessions. |
-| **Client Chargeback** | Fake simulated in-app modal with `setTimeout`. | **Removed.** Replaced with transaction details and direct guidance to PayPal's Resolution Center. |
-| **Merchant Actions** | Automated API calls that returned `403 ACTION_NOT_ALLOWED` during PayPal inquiry stage. | **AI Dispute Copilot:** Interactive step-by-step guidance matching PayPal's fulfillment forms with 1-click copy tools. |
-| **Legal Defense Format** | Verbose markdown tables with broken asterisks and truncated text. | Clean, structured 5-section legal rebuttal fitting PayPal's 2,000-character plain-text message limit. |
-| **Cryptographic Auditing** | Ephemeral keys on restart leading to unverified signatures. | Persistent Ed25519 signing keys with sequential per-booking SHA-256 ledger verification (94% win probability). |
+| Architectural Pillar | Implementation & Design Guarantees |
+| :--- | :--- |
+| **Direct Merchant Settlement** | SalonDesk never holds or custodies client or salon funds. Payments flow directly to the merchant's PayPal account (`payee.merchant_id`), eliminating escrow liability. |
+| **Official PayPal Resolution Center** | Disputes follow authentic PayPal financial channels (`CUSTOMER.DISPUTE.*`). Merchants are guided through official PayPal resolution workflows with verified transaction data. |
+| **Interactive AI Dispute Copilot** | Equips salon owners with 1-click copy tools for tracking numbers, service fulfillment notes, and plain-text statements optimized for PayPal forms. |
+| **Constrained Legal Rebuttal** | Generates a structured 5-section legal rebuttal strictly conforming to PayPal's 2,000-character plain-text message limit without Markdown formatting artifacts. |
+| **Cryptographic Proof Chain** | Persistent Ed25519 key signing of client policy agreement and unbroken SHA-256 hash chaining across financial ledger events guarantee tamper-evident records. |
 
 ---
 
