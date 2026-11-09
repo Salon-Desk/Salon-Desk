@@ -161,6 +161,8 @@ async def list_booking_waitlist(
 ) -> list[WaitlistEntryOut]:
     """List eligible waitlist candidates waiting for a slot at this salon."""
     try:
+        booking = await booking_service.get_booking(db, booking_id)
+        _assert_org_booking(user, booking)
         service = SlotRescueService()
         entries = await service.list_waitlist_candidates(db, booking_id=booking_id)
         return [WaitlistEntryOut.model_validate(e) for e in entries]

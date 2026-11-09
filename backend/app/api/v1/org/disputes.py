@@ -97,6 +97,15 @@ async def get_or_create_dispute_for_booking(
 ) -> DisputeCaseOut:
     """Get active Dispute Counsel dossier for a booking or initialize it."""
     try:
+        booking = await db.get(Booking, booking_id)
+        if not booking:
+            raise NotFoundError(f"Booking {booking_id} not found")
+        if (
+            user.role not in {UserRole.PLATFORM_ADMIN, UserRole.PLATFORM_STAFF}
+            and booking.org_id != user.org_id
+        ):
+            raise ForbiddenError("You do not have access to this booking's dispute")
+
         stmt = select(DisputeCase).where(DisputeCase.booking_id == booking_id)
         existing = (await db.execute(stmt)).scalar_one_or_none()
         if existing:
@@ -141,6 +150,15 @@ async def simulate_dispute_chargeback(
 ) -> DisputeCaseOut:
     """Simulate a CUSTOMER.DISPUTE.CREATED chargeback and run the 3-role AI pipeline."""
     try:
+        booking = await db.get(Booking, booking_id)
+        if not booking:
+            raise NotFoundError(f"Booking {booking_id} not found")
+        if (
+            user.role not in {UserRole.PLATFORM_ADMIN, UserRole.PLATFORM_STAFF}
+            and booking.org_id != user.org_id
+        ):
+            raise ForbiddenError("You do not have access to simulate a dispute for this booking")
+
         service = DisputeService()
         case = await service.run_dispute_counsel_analysis(
             db,

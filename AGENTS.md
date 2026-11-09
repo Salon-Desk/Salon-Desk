@@ -39,7 +39,6 @@ app/
   models/                SQLAlchemy (incl. policy.py, ledger/payment splits)
   services/              Domain services (booking, payment, auth, …); some shims to app.ai
   tasks/                 Background jobs (hold expiration, knowledge sync)
-  scripts/               Shims → prefer backend/scripts/ for CLI entrypoints
 scripts/                 seed, ingest_knowledge, t6_sandbox_runner
 tests/                   api/, services/, integrations/
 ```
@@ -63,7 +62,7 @@ All mounted under `/api/v1` unless noted.
 | `/webhooks` | External callbacks |
 | `/demo` | Non-prod demo reset |
 
-**LLM providers** live in `app/ai/llm/` (`GroqLLMService`, `OllamaLLMService`, `OpenAILLMService`). Select via `LLM_PROVIDER` in `.env`. Legacy imports under `app/services/llm/` may re-export — prefer `app.ai.llm`.
+**LLM providers** live in `app/ai/llm/` (`GroqLLMService`, `OllamaLLMService`, `OpenAILLMService`). Select via `LLM_PROVIDER` in `.env`.
 
 **Voice worker**: `cd backend && uv run python agent.py start` (or `make voice-agent`).
 
