@@ -1,7 +1,7 @@
 'use client'
 
 import type { FormEvent, ReactNode } from 'react'
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
 import { useMerchantStore, useToast } from '@/hooks'
 import { createSequentialId } from '@/lib/ids'
@@ -14,7 +14,6 @@ import {
   type ServiceFormState,
   type StaffFormState,
 } from '../_constants/merchant-forms'
-import { useMerchantSettlement } from '../_hooks/use-merchant-settlement'
 
 export interface MerchantContextValue {
   state: MerchantConsoleState
@@ -24,8 +23,6 @@ export interface MerchantContextValue {
   capturedRevenue: number
   noShowRecovered: number
   pendingChangeRequests: number
-  isSettlementProcessing: boolean
-  idempotencyToast: string | null
   toastMessage: string | null
   dismissToast: () => void
 
@@ -83,7 +80,6 @@ export interface MerchantContextValue {
   setIsMobileSidebarOpen: (open: boolean) => void
 
   // Actions
-  settlement: ReturnType<typeof useMerchantSettlement>
   handleSignIn: () => void
   handleLockSession: () => void
   handleToggleDrift: () => void
@@ -95,10 +91,7 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
   const { state, setState } = useMerchantStore()
   const { message: toastMessage, show: showToast, dismiss: dismissToast } = useToast(3800)
 
-  const [idempotencyToast, setIdempotencyToast] = useState<string | null>(null)
-
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
-  const [isSettlementProcessing, setIsSettlementProcessing] = useState(false)
   const [inspectConsentBooking, setInspectConsentBooking] = useState<Booking | null>(null)
 
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false)
@@ -119,24 +112,6 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     noShowFee: 30,
   })
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
-
-  const showIdempotencyNotice = useCallback((msg: string) => {
-    setIdempotencyToast(msg)
-    window.setTimeout(() => setIdempotencyToast(null), 4500)
-  }, [])
-
-  const onBookingSettled = useCallback((booking: Booking | null) => {
-    setSelectedBooking(booking)
-  }, [])
-
-  const settlement = useMerchantSettlement({
-    setState,
-    isSettlementProcessing,
-    setIsSettlementProcessing,
-    showToast,
-    showIdempotencyNotice,
-    onBookingSettled,
-  })
 
   const activeHolds = useMemo(
     () => state.bookings.filter((b) => b.status === 'HELD' || b.status === 'REAUTHORIZED'),
@@ -440,8 +415,6 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     capturedRevenue,
     noShowRecovered,
     pendingChangeRequests,
-    isSettlementProcessing,
-    idempotencyToast,
     toastMessage,
     dismissToast,
 
@@ -493,7 +466,6 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     isMobileSidebarOpen,
     setIsMobileSidebarOpen,
 
-    settlement,
     handleSignIn,
     handleLockSession,
     handleToggleDrift,

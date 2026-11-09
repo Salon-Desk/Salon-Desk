@@ -1,6 +1,5 @@
 'use client'
 
-import { ShieldCheck } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { type ReactNode, useEffect, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -40,13 +39,14 @@ import { logout, userSelector } from '@/store/authSlice'
 import { API_TAG_TYPES, baseApi } from '@/store/baseApi'
 
 import { useMerchantContext } from '../_context/MerchantContext'
+import { useSettlementActions } from '../_hooks/use-settlement-actions'
 import { getMerchantTabFromPathname } from '../_types/merchant-types'
 import { ConsentModal } from './ConsentModal'
 import { MerchantHeader } from './MerchantHeader'
 import { MerchantSidebar } from './MerchantSidebar'
 import { PaypalChangeModal } from './PaypalChangeModal'
 import { PolicyChangeModal } from './PolicyChangeModal'
-import { SettlementDialog } from './SettlementDialog'
+import { SettlementDrawer } from './SettlementDrawer'
 
 interface MerchantLayoutInnerProps {
   children: ReactNode
@@ -107,11 +107,9 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
   const {
     state,
     toastMessage,
-    idempotencyToast,
 
     selectedBooking,
     setSelectedBooking,
-    isSettlementProcessing,
     inspectConsentBooking,
     setInspectConsentBooking,
 
@@ -122,12 +120,17 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
     setIsChangePolicyOpen,
     policyForm,
 
-    settlement,
-    handleToggleDrift,
-
     isMobileSidebarOpen,
     setIsMobileSidebarOpen,
   } = useMerchantContext()
+
+  const {
+    handleMarkShow,
+    handleMarkNoShow,
+    handleCancelAndVoid,
+    handleReauthorizeHold,
+    isSettlementProcessing,
+  } = useSettlementActions()
 
   // Show toast when toastMessage changes
   useEffect(() => {
@@ -135,16 +138,6 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
       toast.success(toastMessage, toastColor.success)
     }
   }, [toastMessage])
-
-  // Show idempotency toast when it changes
-  useEffect(() => {
-    if (idempotencyToast) {
-      toast(idempotencyToast, {
-        icon: <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-400" />,
-        className: 'border-emerald-500/50 bg-emerald-950/90 text-emerald-200',
-      })
-    }
-  }, [idempotencyToast])
 
   const ownerDisplayName =
     [user?.profile?.first_name, user?.profile?.last_name].filter(Boolean).join(' ') ||
@@ -190,10 +183,7 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
         header={
           <MerchantHeader
             activeTab={currentTab}
-            lastReconciledAt={state.lastReconciledAt}
-            simulatedDrift={state.simulatedDrift}
             onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
-            onToggleDrift={handleToggleDrift}
           />
         }
       >
@@ -211,14 +201,18 @@ export function MerchantLayoutInner({ children }: MerchantLayoutInnerProps) {
       </ConsoleShell>
 
       {selectedBooking ? (
-        <SettlementDialog
+        <SettlementDrawer
           booking={selectedBooking}
           isSettlementProcessing={isSettlementProcessing}
           onClose={() => setSelectedBooking(null)}
-          onMarkShow={settlement.handleMarkShow}
-          onMarkNoShow={settlement.handleMarkNoShow}
-          onCancelAndVoid={settlement.handleCancelAndVoid}
-          onReauthorizeHold={settlement.handleReauthorizeHold}
+          onMarkShow={(b) => void handleMarkShow(b, () => setSelectedBooking(null))}
+          onMarkNoShow={(b) => void handleMarkNoShow(b, () => setSelectedBooking(null))}
+          onCancelAndVoid={(b) => void handleCancelAndVoid(b, () => setSelectedBooking(null))}
+          onReauthorizeHold={(b) =>
+            void handleReauthorizeHold(b, (updated) => {
+              if (updated) setSelectedBooking(updated)
+            })
+          }
         />
       ) : null}
 

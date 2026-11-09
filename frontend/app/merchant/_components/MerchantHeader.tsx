@@ -14,10 +14,7 @@ import {
 
 interface MerchantHeaderProps {
   activeTab?: MerchantTab
-  lastReconciledAt?: string
-  simulatedDrift?: boolean
   onOpenMobileSidebar: () => void
-  onToggleDrift?: () => void
 }
 
 export function MerchantHeader({
