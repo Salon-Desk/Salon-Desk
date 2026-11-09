@@ -262,6 +262,7 @@ async def ensure_schema(engine: AsyncEngine, *, recreate: bool = False) -> None:
 
 async def clear_database(session: AsyncSession) -> None:
     """Wipe all application tables (PostgreSQL TRUNCATE CASCADE)."""
+    reset_allocated_handles()
     tables = list(Base.metadata.sorted_tables)
     if not tables:
         logger.warning("No tables registered on metadata; nothing to clear")
@@ -270,6 +271,14 @@ async def clear_database(session: AsyncSession) -> None:
     await session.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
     await session.commit()
     logger.info("Cleared %s tables", len(tables))
+
+
+_allocated_handles: set[str] = set()
+
+
+def reset_allocated_handles() -> None:
+    """Reset the set of handles allocated during seeding."""
+    _allocated_handles.clear()
 
 
 def build_user(
@@ -290,15 +299,35 @@ def build_user(
         status=UserStatus.ACTIVE,
         org_id=org_id,
     )
-    clean_handle = (
-        handle or email.split("@")[0].replace(".", "_").replace("+", "_").replace("-", "_")
-    ).lower()
+    if handle:
+        base_handle = handle.strip().lstrip("@").lower()
+    else:
+        local_part, _, domain_part = email.lower().partition("@")
+        local = local_part.replace(".", "_").replace("+", "_").replace("-", "_")
+        domain_slug = (
+            domain_part.split(".")[0].replace(".", "_").replace("-", "_") if domain_part else ""
+        )
+        if domain_slug and domain_slug not in {"example", "salondesk"}:
+            base_handle = f"{local}_{domain_slug}"
+        else:
+            base_handle = local
+
+    base_handle = base_handle[:64]
+    candidate = base_handle
+    counter = 1
+    while candidate in _allocated_handles:
+        suffix = f"_{counter}"
+        candidate = f"{base_handle[: 64 - len(suffix)]}{suffix}"
+        counter += 1
+
+    _allocated_handles.add(candidate)
+
     user.profile = Profile(
         first_name=first_name,
         last_name=last_name,
         phone=phone,
         picture=picture,
-        handle=clean_handle,
+        handle=candidate,
     )
     return user
 

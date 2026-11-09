@@ -41,7 +41,14 @@ from .constants import (
     PRIMARY_DEMO_CLIENT_EMAIL,
     SECONDARY_DEMO_CLIENT_EMAIL,
 )
-from .helpers import CoverAllocator, already_seeded, build_user, clear_database, ensure_schema
+from .helpers import (
+    CoverAllocator,
+    already_seeded,
+    build_user,
+    clear_database,
+    ensure_schema,
+    reset_allocated_handles,
+)
 from .images import AVATAR_IMAGES
 
 logger = logging.getLogger("seed")
@@ -523,6 +530,7 @@ async def run_seed(
         eff_limit_services = limit_services if limit_services is not None else 100
 
     try:
+        reset_allocated_handles()
         # --clear drops + recreates tables so model changes (e.g. booking snapshots) apply.
         # Truncate alone cannot add columns; create_all also skips existing tables.
         await ensure_schema(engine, recreate=clear)
