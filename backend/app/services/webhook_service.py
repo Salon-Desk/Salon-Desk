@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.enums import PaymentHoldStatus
 from app.models.payment import PaymentCapture, PaymentHold, PaypalWebhookEvent
 from app.services.ledger_service import append_ledger
+from app.services.sandbox.simulation import normalize_simulator_webhook
 
 _HOLD_EVENT_TYPES = {
     "PAYMENT.AUTHORIZATION.VOIDED",
@@ -25,18 +26,7 @@ async def ingest_webhook(
     resource: dict,
     verification_status: str = "VERIFIED",
 ) -> PaypalWebhookEvent:
-    # If this is the static PayPal Webhook Simulator event, allow multiple test triggers
-    # by generating a unique simulator event ID and dispute ID for each trigger
-    is_simulator_event = paypal_event_id.startswith("WH-4M0448861G563140B-") or str(
-        resource.get("dispute_id", "")
-    ).startswith("PP-000-042-663-135")
-    if is_simulator_event:
-        import uuid
-
-        paypal_event_id = f"WH-SIM-{uuid.uuid4().hex[:8].upper()}"
-        if resource.get("dispute_id") == "PP-000-042-663-135":
-            resource = dict(resource)
-            resource["dispute_id"] = f"PP-000-{uuid.uuid4().hex[:6].upper()}-SIM"
+    paypal_event_id, resource = normalize_simulator_webhook(paypal_event_id, resource)
 
     existing = await db.execute(
         select(PaypalWebhookEvent).where(PaypalWebhookEvent.paypal_event_id == paypal_event_id)

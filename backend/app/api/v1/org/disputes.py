@@ -6,13 +6,14 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Response
-from sqlalchemy import or_, select
+from sqlalchemy import select
 
 from app.api.deps import DbSession, OptionalUser, OrgMember
+from app.core.config import get_settings
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.models.booking import Booking
 from app.models.dispute import DisputeCase
-from app.models.enums import DisputeCaseStatus, UserRole
+from app.models.enums import UserRole
 from app.models.organization import Organization
 from app.schemas.dispute import (
     DisputeAdjudicateRequest,
@@ -28,53 +29,23 @@ from app.services.pdf_evidence_generator import generate_dispute_evidence_pdf
 router = APIRouter(prefix="/disputes", tags=["org-disputes"])
 
 
-async def _resolve_dispute_case(db: DbSession, dispute_id: str | UUID) -> DisputeCase:
-    """Helper to locate DisputeCase by UUID primary key or paypal_dispute_id."""
-    if isinstance(dispute_id, UUID):
-        stmt = select(DisputeCase).where(DisputeCase.id == dispute_id)
-    else:
-        try:
-            parsed_uuid = UUID(str(dispute_id))
-            stmt = select(DisputeCase).where(
-                or_(DisputeCase.id == parsed_uuid, DisputeCase.paypal_dispute_id == str(dispute_id))
-            )
-        except ValueError:
-            stmt = select(DisputeCase).where(DisputeCase.paypal_dispute_id == str(dispute_id))
-
-    res = await db.execute(stmt)
-    case = res.scalar_one_or_none()
-    if not case:
-        raise NotFoundError(f"Dispute {dispute_id} not found")
-    return case
-
-
 @router.get("", response_model=DisputeListResponse)
 async def list_disputes(user: OrgMember, db: DbSession) -> DisputeListResponse:
     """List disputes for the current salon organization along with summary KPIs."""
-    stmt = select(DisputeCase).order_by(DisputeCase.created_at.desc())
-    if user.role not in {UserRole.PLATFORM_ADMIN, UserRole.PLATFORM_STAFF}:
-        stmt = stmt.where(DisputeCase.org_id == user.org_id)
-
-    res = await db.execute(stmt)
-    cases = list(res.scalars().all())
-
-    total_disputes = len(cases)
-    disputed_volume = sum((c.dispute_amount for c in cases), Decimal("0.00"))
-    ready_count = sum(1 for c in cases if c.status == DisputeCaseStatus.EVIDENCE_READY)
-    seller_favor_count = sum(
-        1 for c in cases if c.status == DisputeCaseStatus.RESOLVED_SELLER_FAVOR
+    org_id = (
+        None if user.role in {UserRole.PLATFORM_ADMIN, UserRole.PLATFORM_STAFF} else user.org_id
     )
-    probs = [c.skeptic_win_probability for c in cases if c.skeptic_win_probability is not None]
-    avg_prob = int(sum(probs) / len(probs)) if probs else 0
+    service = DisputeService()
+    cases, kpis = await service.list_for_org(db, org_id=org_id)
 
     return DisputeListResponse(
         items=[DisputeCaseOut.model_validate(c) for c in cases],
         kpis=DisputeKPIs(
-            total_disputes=total_disputes,
-            disputed_volume_usd=disputed_volume,
-            evidence_ready_count=ready_count,
-            resolved_seller_favor_count=seller_favor_count,
-            average_win_probability=avg_prob,
+            total_disputes=kpis["total_disputes"],
+            disputed_volume_usd=kpis["disputed_volume_usd"],
+            evidence_ready_count=kpis["evidence_ready_count"],
+            resolved_seller_favor_count=kpis["resolved_seller_favor_count"],
+            average_win_probability=kpis["average_win_probability"],
         ),
     )
 
@@ -115,7 +86,8 @@ async def get_dispute(
     db: DbSession,
 ) -> DisputeCaseOut:
     """Get dispute details by UUID or PayPal dispute ID."""
-    case = await _resolve_dispute_case(db, dispute_id)
+    service = DisputeService()
+    case = await service.get_case(db, dispute_id)
     if (
         user.role not in {UserRole.PLATFORM_ADMIN, UserRole.PLATFORM_STAFF}
         and case.org_id != user.org_id
@@ -133,6 +105,9 @@ async def simulate_dispute_chargeback(
     db: DbSession,
 ) -> DisputeCaseOut:
     """Simulate a CUSTOMER.DISPUTE.CREATED chargeback and run the 3-role AI pipeline."""
+    if get_settings().environment == "production":
+        raise ForbiddenError("Dispute simulation is not permitted in production environments.")
+
     booking = await db.get(Booking, booking_id)
     if not booking:
         raise NotFoundError(f"Booking {booking_id} not found")
@@ -160,8 +135,8 @@ async def submit_dispute_evidence(
     db: DbSession,
 ) -> DisputeCaseOut:
     """HITL Execution: Approve and file cryptographic multipart PDF dossier to PayPal."""
-    case = await _resolve_dispute_case(db, dispute_id)
     service = DisputeService()
+    case = await service.get_case(db, dispute_id)
     updated = await service.submit_dispute_defense(
         db,
         dispute_case_id=case.id,
@@ -179,8 +154,8 @@ async def make_dispute_settlement_offer(
     db: DbSession,
 ) -> DisputeCaseOut:
     """HITL Execution: Submit partial refund settlement offer to the cardholder."""
-    case = await _resolve_dispute_case(db, dispute_id)
     service = DisputeService()
+    case = await service.get_case(db, dispute_id)
     updated = await service.submit_dispute_offer(
         db,
         dispute_case_id=case.id,
@@ -200,8 +175,11 @@ async def adjudicate_sandbox_dispute(
     db: DbSession,
 ) -> DisputeCaseOut:
     """Adjudicate dispute in PayPal sandbox (SELLER_FAVOR or BUYER_FAVOR)."""
-    case = await _resolve_dispute_case(db, dispute_id)
+    if get_settings().environment == "production":
+        raise ForbiddenError("Sandbox adjudication is not permitted in production environments.")
+
     service = DisputeService()
+    case = await service.get_case(db, dispute_id)
     updated = await service.adjudicate_sandbox_dispute(
         db,
         dispute_case_id=case.id,
@@ -219,7 +197,8 @@ async def get_dispute_evidence_pdf(
     user: OptionalUser = None,
 ) -> Response:
     """Generate and download/preview the cryptographic dispute PDF dossier."""
-    case = await _resolve_dispute_case(db, dispute_id)
+    service = DisputeService()
+    case = await service.get_case(db, dispute_id)
     if (
         user
         and user.role not in {UserRole.PLATFORM_ADMIN, UserRole.PLATFORM_STAFF}

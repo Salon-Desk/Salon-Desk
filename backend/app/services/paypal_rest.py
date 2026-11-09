@@ -478,7 +478,8 @@ class PayPalRestClient:
             async with httpx.AsyncClient(timeout=10.0) as http:
                 resp = await http.get(url, headers=headers)
                 return resp.headers.get("paypal-debug-id") or f"dbg-{uuid.uuid4().hex[:12]}"
-        except Exception:
+        except (httpx.HTTPError, PayPalAPIError) as exc:
+            logger.info("Sandbox probe fallback to simulated debug ID: %s", exc)
             return f"sim-dbg-{uuid.uuid4().hex[:12]}"
 
     async def list_disputes(
@@ -578,7 +579,11 @@ class PayPalRestClient:
                     "paypal_debug_id": debug_id,
                     "mode": "hybrid_sandbox_verified",
                 }
-        except Exception:
+        except (httpx.HTTPError, PayPalAPIError) as exc:
+            logger.warning(
+                "PayPal dispute evidence submission failed (%s), falling back to hybrid verification",
+                exc,
+            )
             debug_id = await self._live_sandbox_probe()
             return {
                 "status": "UNDER_REVIEW",
@@ -630,7 +635,11 @@ class PayPalRestClient:
                 "paypal_debug_id": debug_id,
                 "mode": "live",
             }
-        except Exception:
+        except (httpx.HTTPError, PayPalAPIError) as exc:
+            logger.warning(
+                "PayPal dispute offer submission failed (%s), falling back to hybrid verification",
+                exc,
+            )
             debug_id = await self._live_sandbox_probe()
             return {
                 "status": "OFFER_MADE",
@@ -668,7 +677,11 @@ class PayPalRestClient:
                 "paypal_debug_id": debug_id,
                 "mode": "live",
             }
-        except Exception:
+        except (httpx.HTTPError, PayPalAPIError) as exc:
+            logger.warning(
+                "PayPal sandbox require-evidence failed (%s), falling back to hybrid verification",
+                exc,
+            )
             debug_id = await self._live_sandbox_probe()
             return {
                 "status": "WAITING_FOR_SELLER_RESPONSE",
@@ -716,7 +729,11 @@ class PayPalRestClient:
                 "paypal_debug_id": debug_id,
                 "mode": "live",
             }
-        except Exception:
+        except (httpx.HTTPError, PayPalAPIError) as exc:
+            logger.warning(
+                "PayPal sandbox adjudicate failed (%s), falling back to hybrid verification",
+                exc,
+            )
             debug_id = await self._live_sandbox_probe()
             return {
                 "status": "RESOLVED_SELLER_FAVOR"

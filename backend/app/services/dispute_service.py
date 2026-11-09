@@ -16,7 +16,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.llm import get_llm_service
@@ -59,6 +59,57 @@ DEFAULT_BILINGUAL_EXHIBIT = DEFAULT_TRANSCRIPT_EXHIBIT
 class DisputeService:
     def __init__(self, rest_client: PayPalRestClient | None = None) -> None:
         self.paypal_client = rest_client or PayPalRestClient()
+
+    async def get_case(self, db: AsyncSession, dispute_id: str | UUID) -> DisputeCase:
+        """Resolve a DisputeCase by UUID primary key or paypal_dispute_id."""
+        if isinstance(dispute_id, UUID):
+            stmt = select(DisputeCase).where(DisputeCase.id == dispute_id)
+        else:
+            try:
+                parsed_uuid = UUID(str(dispute_id))
+                stmt = select(DisputeCase).where(
+                    or_(
+                        DisputeCase.id == parsed_uuid,
+                        DisputeCase.paypal_dispute_id == str(dispute_id),
+                    )
+                )
+            except ValueError:
+                stmt = select(DisputeCase).where(DisputeCase.paypal_dispute_id == str(dispute_id))
+
+        res = await db.execute(stmt)
+        case = res.scalar_one_or_none()
+        if not case:
+            raise NotFoundError(f"Dispute {dispute_id} not found")
+        return case
+
+    async def list_for_org(
+        self, db: AsyncSession, org_id: UUID | None = None
+    ) -> tuple[list[DisputeCase], dict[str, Any]]:
+        """List disputes for an organization (or all organizations) with aggregate KPIs."""
+        stmt = select(DisputeCase).order_by(DisputeCase.created_at.desc())
+        if org_id is not None:
+            stmt = stmt.where(DisputeCase.org_id == org_id)
+
+        res = await db.execute(stmt)
+        cases = list(res.scalars().all())
+
+        total_disputes = len(cases)
+        disputed_volume = sum((c.dispute_amount for c in cases), Decimal("0.00"))
+        ready_count = sum(1 for c in cases if c.status == DisputeCaseStatus.EVIDENCE_READY)
+        seller_favor_count = sum(
+            1 for c in cases if c.status == DisputeCaseStatus.RESOLVED_SELLER_FAVOR
+        )
+        probs = [c.skeptic_win_probability for c in cases if c.skeptic_win_probability is not None]
+        avg_prob = int(sum(probs) / len(probs)) if probs else 0
+
+        kpis = {
+            "total_disputes": total_disputes,
+            "disputed_volume_usd": disputed_volume,
+            "evidence_ready_count": ready_count,
+            "resolved_seller_favor_count": seller_favor_count,
+            "average_win_probability": avg_prob,
+        }
+        return cases, kpis
 
     async def run_dispute_counsel_analysis(
         self,
@@ -118,7 +169,7 @@ class DisputeService:
                 consent_verified = verify_consent_signature(
                     consent.signed_payload, consent.signature_b64
                 )
-            except Exception as exc:
+            except (ValueError, TypeError) as exc:
                 logger.warning("Error checking consent signature for %s: %s", booking_id, exc)
                 consent_verified = False
             # When consent record is stored with valid signature in database

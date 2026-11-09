@@ -8,6 +8,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.crypto import chain_hash, sha256_hex, sign_message, verify_signature
@@ -71,7 +72,7 @@ async def append_ledger(
     try:
         if db.bind and db.bind.dialect.name == "postgresql":
             await db.execute(text(f"SELECT pg_advisory_xact_lock({_LEDGER_ADVISORY_LOCK_ID})"))
-    except Exception:
+    except (SQLAlchemyError, AttributeError):
         pass
 
     previous = await _latest_ledger_hash(db)

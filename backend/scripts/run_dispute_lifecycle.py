@@ -10,10 +10,10 @@ and sandbox-simulator lifecycle on a target dispute:
 
 Usage:
   # List all sandbox disputes:
-  cd backend && uv run python -m scripts.test_dispute_lifecycle
+  cd backend && uv run python -m scripts.run_dispute_lifecycle
 
   # Run full lifecycle on a specific dispute:
-  cd backend && uv run python -m scripts.test_dispute_lifecycle --dispute-id PP-D-12345
+  cd backend && uv run python -m scripts.run_dispute_lifecycle --dispute-id PP-D-12345
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger("test_dispute_lifecycle")
+logger = logging.getLogger("run_dispute_lifecycle")
 
 # Minimal valid 1-page PDF (conforming to ISO 32000-1 / PDF-1.4 standard)
 MINIMAL_VALID_PDF_BYTES = (

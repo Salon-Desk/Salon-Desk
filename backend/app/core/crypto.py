@@ -3,6 +3,7 @@ import logging
 from base64 import b64decode, b64encode
 from functools import lru_cache
 
+from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
@@ -59,7 +60,7 @@ def verify_signature(
     try:
         public_key.verify(b64decode(signature_b64), message)
         return True
-    except Exception:
+    except (InvalidSignature, ValueError):
         return False
 
 
