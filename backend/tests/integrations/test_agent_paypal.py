@@ -1,4 +1,4 @@
-"""Unit and integration tests for T9 AI Agent PayPal integration and security restrictions."""
+"""Unit and integration tests for AI Agent PayPal integration and security restrictions."""
 
 import uuid
 from decimal import Decimal
@@ -14,7 +14,7 @@ from app.services.paypal_toolkit import (
 
 
 @pytest.mark.asyncio
-async def test_t9_create_order_security_ceiling() -> None:
+async def test_agent_create_order_security_ceiling() -> None:
     runner = PayPalToolkitRunner()
     client_id = uuid.uuid4()
 
@@ -45,7 +45,7 @@ async def test_t9_create_order_security_ceiling() -> None:
 
 
 @pytest.mark.asyncio
-async def test_t9_create_order_requires_auth() -> None:
+async def test_agent_create_order_requires_auth() -> None:
     runner = PayPalToolkitRunner()
     with pytest.raises(ForbiddenError, match="Authentication required"):
         await runner.create_order(
@@ -56,7 +56,7 @@ async def test_t9_create_order_requires_auth() -> None:
 
 
 @pytest.mark.asyncio
-async def test_t9_create_order_stub_success() -> None:
+async def test_agent_create_order_stub_success() -> None:
     runner = PayPalToolkitRunner()
     client_id = uuid.uuid4()
     res = await runner.create_order(
@@ -71,7 +71,7 @@ async def test_t9_create_order_stub_success() -> None:
 
 
 @pytest.mark.asyncio
-async def test_t9_pay_order_stub_success() -> None:
+async def test_agent_pay_order_stub_success() -> None:
     runner = PayPalToolkitRunner()
     client_id = uuid.uuid4()
     res = await runner.pay_order(
@@ -83,7 +83,7 @@ async def test_t9_pay_order_stub_success() -> None:
 
 
 @pytest.mark.asyncio
-async def test_t9_run_natural_language_agent() -> None:
+async def test_agent_run_natural_language_agent() -> None:
     runner = PayPalToolkitRunner()
     user = User(
         id=uuid.uuid4(),
@@ -108,7 +108,7 @@ async def test_t9_run_natural_language_agent() -> None:
 
 
 @pytest.mark.asyncio
-async def test_t9_authorize_hold_and_void() -> None:
+async def test_agent_authorize_hold_and_void() -> None:
     runner = PayPalToolkitRunner()
     client_id = uuid.uuid4()
 
@@ -133,7 +133,7 @@ async def test_t9_authorize_hold_and_void() -> None:
 
 
 @pytest.mark.asyncio
-async def test_t9_blocked_agent_tools_firewall() -> None:
+async def test_agent_blocked_agent_tools_firewall() -> None:
     runner = PayPalToolkitRunner()
     with pytest.raises(PolicyViolationException, match="prohibited by SalonDesk policy"):
         await runner.accept_dispute_claim(dispute_id="PP-D-12345")

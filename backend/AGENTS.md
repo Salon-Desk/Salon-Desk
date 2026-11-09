@@ -80,6 +80,7 @@ These rules are part of the product contract and must remain enforced in service
 
 - Booking authorizes a PayPal hold; it does not charge the client at booking time.
 - A completed service captures the full allowed amount. A no-show or late cancellation captures only the frozen agreed fee. A free cancellation voids the hold.
+- **Refilled Chair Guarantee (Sole Intentional Refund Path):** When a late cancellation or no-show fee is captured, but AI Slot Rescue (`SlotRescueService`) successfully refills the appointment from the waitlist, SalonDesk refunds the captured fee to the original client via PayPal. General customer refunding outside of slot rescue is intentionally prohibited.
 - Policy terms, commissions, agreed fees, and cancellation deadlines are snapshotted at booking creation. Later configuration changes must not alter existing bookings.
 - State transitions must pass the policy engine. Capture amounts cannot exceed the remaining authorization or the applicable agreed fee.
 - Financial and consent events must continue through the audit ledger and its integrity checks.

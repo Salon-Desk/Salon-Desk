@@ -221,7 +221,7 @@ async def seed_dispute_and_waitlist(session: AsyncSession, org_data_list: list[d
     service = primary["services"][0]
     stylist = primary["stylists"][0]
 
-    from app.services.dispute_service import DEFAULT_BILINGUAL_EXHIBIT
+    from app.services.dispute_service import DEFAULT_TRANSCRIPT_EXHIBIT
     from app.services.ledger_service import append_ledger
 
     from .factories import build_consent_signature
@@ -371,7 +371,7 @@ async def seed_dispute_and_waitlist(session: AsyncSession, org_data_list: list[d
         "ledger_entries_checked": 1,
         "ledger_error": None,
         "terminal_ledger_hash": "CHAIN_SEALED",
-        "transcript_excerpt": DEFAULT_BILINGUAL_EXHIBIT,
+        "transcript_excerpt": DEFAULT_TRANSCRIPT_EXHIBIT,
     }
 
     dispute_case = DisputeCase(
@@ -386,12 +386,12 @@ async def seed_dispute_and_waitlist(session: AsyncSession, org_data_list: list[d
         consent_verified=True,
         ledger_chain_verified=True,
         ledger_entries_checked=1,
-        transcript_excerpt_json=DEFAULT_BILINGUAL_EXHIBIT,
+        transcript_excerpt_json=DEFAULT_TRANSCRIPT_EXHIBIT,
         investigator_report_json=investigator_report,
         advocate_rebuttal_text=rebuttal_text,
         skeptic_win_probability=94,
         skeptic_critique=(
-            "Strong defense. Valid Ed25519 signature, unbroken SHA-256 ledger chain, clear bilingual transcript "
+            "Strong defense. Valid Ed25519 signature, unbroken SHA-256 ledger chain, clear transcript "
             "evidence, and captured amount is within the agreed fee ceiling. High probability of seller favor adjudication."
         ),
         recommended_action=DisputeRecommendation.FILE_EVIDENCE,

@@ -1,4 +1,4 @@
-"""PayPal Agent Toolkit & T9 checkout runner with security restrictions."""
+"""PayPal Agent Runner with official tool mappings and security restrictions."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ def assert_tool_allowed(tool_name: str) -> None:
 
 
 class PayPalToolkitRunner:
-    """T9 AI agent checkout runner for PayPal Orders v2 (intent=CAPTURE) and refunds."""
+    """Autonomous AI agent runner for PayPal Orders v2 and slot rescue refunds."""
 
     def __init__(self, rest_client: PayPalRestClient | None = None) -> None:
         self.client = rest_client or PayPalRestClient()
@@ -52,7 +52,7 @@ class PayPalToolkitRunner:
         currency: str = "USD",
         db: AsyncSession | None = None,
     ) -> dict[str, Any]:
-        """T9 Agent create_order with strict ceiling and auth restrictions."""
+        """Autonomous agent create_order with strict ceiling and auth restrictions."""
         if not client_id:
             raise ForbiddenError("Authentication required to create a checkout order")
 
@@ -72,7 +72,7 @@ class PayPalToolkitRunner:
             )
 
         base = self.settings.frontend_base_url.rstrip("/")
-        req_id = f"t9-create-{client_id}-{uuid.uuid4().hex[:12]}"
+        req_id = f"agent-create-{client_id}-{uuid.uuid4().hex[:12]}"
         return_url = f"{base}/client/paypal/return?intent=capture&client_id={client_id}"
         cancel_url = f"{base}/client/book?paypal=cancelled"
 
@@ -89,7 +89,7 @@ class PayPalToolkitRunner:
         if db is not None:
             await append_ledger(
                 db,
-                event_type="T9_AGENT_ORDER_CREATED",
+                event_type="AGENT_ORDER_CREATED",
                 payload={
                     "client_id": str(client_id),
                     "service_name": service_name,
@@ -112,7 +112,7 @@ class PayPalToolkitRunner:
         currency: str = "USD",
         db: AsyncSession | None = None,
     ) -> dict[str, Any]:
-        """T9 Agent authorize_hold: creates an Orders v2 authorization hold (intent=AUTHORIZE)."""
+        """Autonomous agent authorize_hold: creates an Orders v2 authorization hold (intent=AUTHORIZE)."""
         assert_tool_allowed("authorize_hold")
         if not client_id:
             raise ForbiddenError("Authentication required to place an authorization hold")
@@ -133,7 +133,7 @@ class PayPalToolkitRunner:
             )
 
         base = self.settings.frontend_base_url.rstrip("/")
-        req_id = f"t9-auth-{client_id}-{uuid.uuid4().hex[:12]}"
+        req_id = f"agent-auth-{client_id}-{uuid.uuid4().hex[:12]}"
         return_url = f"{base}/client/paypal/return?intent=authorize&client_id={client_id}"
         cancel_url = f"{base}/client/book?paypal=cancelled"
 
@@ -149,7 +149,7 @@ class PayPalToolkitRunner:
         if db is not None:
             await append_ledger(
                 db,
-                event_type="T9_AGENT_HOLD_AUTHORIZED",
+                event_type="AGENT_HOLD_AUTHORIZED",
                 payload={
                     "client_id": str(client_id),
                     "service_name": service_name,
@@ -171,7 +171,7 @@ class PayPalToolkitRunner:
         reason: str | None = None,
         db: AsyncSession | None = None,
     ) -> dict[str, Any]:
-        """T9 Agent void_hold: voids an active PayPal authorization hold."""
+        """Autonomous agent void_hold: voids an active PayPal authorization hold."""
         assert_tool_allowed("void_hold")
         if not client_id:
             raise ForbiddenError("Authentication required to void a hold")
@@ -180,7 +180,7 @@ class PayPalToolkitRunner:
         if not auth_id_clean:
             raise PolicyViolationException("Valid authorization_id is required")
 
-        req_id = f"t9-void-{auth_id_clean}-{uuid.uuid4().hex[:8]}"
+        req_id = f"agent-void-{auth_id_clean}-{uuid.uuid4().hex[:8]}"
         res = await self.client.void_authorization(
             authorization_id=auth_id_clean,
             paypal_request_id=req_id,
@@ -189,7 +189,7 @@ class PayPalToolkitRunner:
         if db is not None:
             await append_ledger(
                 db,
-                event_type="T9_AGENT_HOLD_VOIDED",
+                event_type="AGENT_HOLD_VOIDED",
                 payload={
                     "client_id": str(client_id),
                     "authorization_id": auth_id_clean,
@@ -215,7 +215,7 @@ class PayPalToolkitRunner:
         client_id: UUID,
         db: AsyncSession | None = None,
     ) -> dict[str, Any]:
-        """T9 Agent pay_order: captures buyer-approved order with status guards."""
+        """Autonomous agent pay_order: captures buyer-approved order with status guards."""
         if not client_id:
             raise ForbiddenError("Authentication required to capture an order")
 
@@ -237,13 +237,13 @@ class PayPalToolkitRunner:
                 "already_completed": True,
             }
 
-        req_id = f"t9-pay-{order_id}"
+        req_id = f"agent-pay-{order_id}"
         res = await self.client.capture_order(order_id=order_id, paypal_request_id=req_id)
 
         if db is not None:
             await append_ledger(
                 db,
-                event_type="T9_AGENT_ORDER_CAPTURED",
+                event_type="AGENT_ORDER_CAPTURED",
                 payload={
                     "client_id": str(client_id),
                     "order_id": order_id,
@@ -255,7 +255,7 @@ class PayPalToolkitRunner:
         return res
 
     async def get_order(self, *, order_id: str) -> dict[str, Any]:
-        """T9 Agent get_order: read current status and amounts."""
+        """Autonomous agent get_order: read current status and amounts."""
         order_id = str(order_id).strip()
         if not order_id:
             raise PolicyViolationException("Valid order_id is required")
@@ -270,7 +270,7 @@ class PayPalToolkitRunner:
         staff_id: UUID | None = None,
         db: AsyncSession | None = None,
     ) -> dict[str, Any]:
-        """T2/T9 Refund helper: issues partial or full refund on a capture."""
+        """Slot rescue refund helper: issues refund on a captured fee when chair is refilled."""
         capture_id = str(capture_id).strip()
         if not capture_id:
             raise PolicyViolationException("Valid capture_id is required")
@@ -278,7 +278,7 @@ class PayPalToolkitRunner:
         if amount is not None and amount <= Decimal("0.00"):
             raise PolicyViolationException("Refund amount must be greater than zero")
 
-        req_id = f"t9-refund-{capture_id}-{uuid.uuid4().hex[:8]}"
+        req_id = f"agent-refund-{capture_id}-{uuid.uuid4().hex[:8]}"
         res = await self.client.create_refund(
             capture_id=capture_id,
             amount=amount,
@@ -289,7 +289,7 @@ class PayPalToolkitRunner:
         if db is not None:
             await append_ledger(
                 db,
-                event_type="T9_AGENT_REFUND_ISSUED",
+                event_type="AGENT_REFUND_ISSUED",
                 payload={
                     "staff_id": str(staff_id) if staff_id else None,
                     "capture_id": capture_id,
@@ -311,7 +311,7 @@ class PayPalToolkitRunner:
         staff_id: UUID | None = None,
         db: AsyncSession | None = None,
     ) -> dict[str, Any]:
-        """T2/T9 Refund helper: issues partial or full refund on a capture."""
+        """Slot rescue refund helper: issues refund on a captured fee when chair is refilled."""
         return await self.refund_order(
             capture_id=capture_id,
             amount=amount,
@@ -326,13 +326,13 @@ class PayPalToolkitRunner:
         page_size: int = 10,
         db: AsyncSession | None = None,
     ) -> dict[str, Any]:
-        """T9 Agent list_disputes: inspect sandbox/live PayPal disputes."""
+        """Autonomous agent list_disputes: inspect sandbox/live PayPal disputes."""
         assert_tool_allowed("list_disputes")
         res = await self.client.list_disputes(page_size=page_size)
         if db is not None:
             await append_ledger(
                 db,
-                event_type="T9_AGENT_DISPUTE_INSPECTED",
+                event_type="AGENT_DISPUTE_INSPECTED",
                 payload={
                     "action": "list_disputes",
                     "page_size": page_size,
@@ -347,7 +347,7 @@ class PayPalToolkitRunner:
         dispute_id: str,
         db: AsyncSession | None = None,
     ) -> dict[str, Any]:
-        """T9 Agent get_dispute: inspect a specific PayPal dispute."""
+        """Autonomous agent get_dispute: inspect a specific PayPal dispute."""
         assert_tool_allowed("get_dispute")
         dispute_id_clean = str(dispute_id).strip()
         if not dispute_id_clean:
@@ -356,7 +356,7 @@ class PayPalToolkitRunner:
         if db is not None:
             await append_ledger(
                 db,
-                event_type="T9_AGENT_DISPUTE_INSPECTED",
+                event_type="AGENT_DISPUTE_INSPECTED",
                 payload={
                     "action": "get_dispute",
                     "dispute_id": dispute_id_clean,
@@ -372,7 +372,7 @@ class PayPalToolkitRunner:
         user: User | None = None,
         db: AsyncSession | None = None,
     ) -> dict[str, Any]:
-        """Parse natural language command into secure T9 agent actions."""
+        """Parse natural language command into secure autonomous agent actions."""
         prompt_clean = prompt.strip()
         if not prompt_clean:
             return {"status": "error", "message": "Empty prompt"}

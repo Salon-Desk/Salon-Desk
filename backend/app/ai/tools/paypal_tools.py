@@ -1,4 +1,4 @@
-"""T9 AI agent tools for PayPal checkout, status inspection, and capture."""
+"""AI agent tools for PayPal checkout, status inspection, and capture."""
 
 from __future__ import annotations
 
@@ -91,7 +91,7 @@ async def handle_paypal_agent_chat(
 def build_paypal_agent_tools(
     session_factory: async_sessionmaker[AsyncSession],
 ) -> list:
-    """Return LiveKit ``@function_tool`` callables for T9 PayPal agent actions."""
+    """Return LiveKit ``@function_tool`` callables for PayPal agent actions."""
     try:
         from livekit.agents import function_tool
     except ImportError:  # pragma: no cover

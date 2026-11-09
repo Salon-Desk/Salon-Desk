@@ -57,3 +57,18 @@ Supported PayPal webhook events:
 - `CUSTOMER.DISPUTE.UPDATED`
 - `CUSTOMER.DISPUTE.RESOLVED`
 
+---
+
+## 4. Deposit Holds vs. Refilled Chair Refunds (Slot Rescue Guarantee)
+
+SalonDesk operates on a **"Hold, Not a Charge"** policy:
+1. **At Booking Time**: Deposits are zero-dollar upfront holds (`intent: AUTHORIZE`). No funds are transferred from the client.
+2. **On Attendance (`/settlements/{id}/mark-show`)**: The salon converts the hold into a full ticket capture (`final_capture: true`).
+3. **On Absence (`/settlements/{id}/mark-no-show`)**: The salon captures only the frozen agreed no-show fee (e.g., $30.00).
+4. **On Free Cancellation**: The authorization hold is immediately voided with zero cost to the client.
+
+### The Sole Intentional Refund Path: "Refilled Chair Guarantee"
+The **only** intentional refund code path in the entire system is the AI Slot Rescue feature (`SlotRescueService`). When an unexcused late cancellation or no-show occurs and the fee is captured, the salon's AI Slot Rescue engine autonomously contacts eligible waitlist clients. If a replacement client accepts and refills the vacated chair, SalonDesk invokes `POST /v1/payments/captures/{capture_id}/refund` via PayPal to reimburse the original client's fee.
+
+This turns what would otherwise be a bitter customer loss into positive customer goodwill, preserving salon revenue while protecting client trust.
+

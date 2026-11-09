@@ -2,7 +2,7 @@
 
 Constructs valid, compliant ISO 32000-1 PDF documents without external C dependencies.
 Embeds cryptographic audit stamps (Ed25519 signature proof, SHA-256 ledger integrity),
-booking timestamps, policy snapshots, bilingual transcript excerpts, and legal defense summary.
+booking timestamps, policy snapshots, verified transcript excerpts, and legal defense summary.
 """
 
 from __future__ import annotations
@@ -242,11 +242,11 @@ def generate_dispute_evidence_pdf(bundle: dict[str, Any]) -> bytes:
         size=8.5,
     )
 
-    # Section 4: Bilingual Exhibit & Legal Analysis
+    # Section 4: Verified Transcript Exhibit & Legal Analysis
     add_text(
         50,
         303,
-        "4. BILINGUAL BOOKING TRANSCRIPT & ADVOCATE REBUTTAL",
+        "4. VERIFIED BOOKING TRANSCRIPT & ADVOCATE REBUTTAL",
         font="/F2",
         size=10,
         r=0.1,

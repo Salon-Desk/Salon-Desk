@@ -119,7 +119,7 @@ class DisputeService:
                     consent.signed_payload, consent.signature_b64
                 )
             except Exception as exc:
-                logger.warning(f"Error checking consent signature for {booking_id}: {exc}")
+                logger.warning("Error checking consent signature for %s: %s", booking_id, exc)
                 consent_verified = False
             # When consent record is stored with valid signature in database
             if not consent_verified and consent.signature_b64:
@@ -275,8 +275,7 @@ class DisputeService:
                     text += "\n• Digital Signature: Signed and sealed via Ed25519 cryptographic keypair."
                 advocate_text = text
         except Exception as exc:
-            logger.info(f"LLM Advocate generated template fallback due to: {exc}")
-            advocate_text = default_rebuttal
+            logger.info("LLM Advocate generated template fallback due to: %s", exc)
             advocate_text = default_rebuttal
 
         # --- ROLE 3: SKEPTIC AGENT (LLM Risk Scoring with Deterministic Cryptographic Bounds) ---
@@ -287,7 +286,7 @@ class DisputeService:
             recommended_offer = None
             skeptic_critique = (
                 "Case is exceptionally strong. Ed25519 signature verified, SHA-256 ledger integrity verified, "
-                "bilingual acceptance transcript present, and captured fee is within agreed policy limits. "
+                "verified terms acceptance record present, and captured fee is within agreed policy limits. "
                 "Recommend immediately submitting the cryptographic evidence dossier to PayPal."
             )
             # Invoke LLM Skeptic for nuanced critique and bounded risk scoring
@@ -321,7 +320,7 @@ class DisputeService:
                         if "critique" in parsed and len(str(parsed["critique"]).strip()) > 20:
                             skeptic_critique = str(parsed["critique"]).strip()
             except Exception as exc:
-                logger.debug(f"LLM Skeptic fallback to deterministic assessment: {exc}")
+                logger.debug("LLM Skeptic fallback to deterministic assessment: %s", exc)
         else:
             win_prob = 60
             recommendation = DisputeRecommendation.MAKE_OFFER
@@ -359,7 +358,7 @@ class DisputeService:
                         if "critique" in parsed and len(str(parsed["critique"]).strip()) > 20:
                             skeptic_critique = str(parsed["critique"]).strip()
             except Exception as exc:
-                logger.debug(f"LLM Skeptic fallback to deterministic assessment: {exc}")
+                logger.debug("LLM Skeptic fallback to deterministic assessment: %s", exc)
 
         # Lookup or create DisputeCase
         dispute_id_clean = paypal_dispute_id or f"PP-D-{booking_id.hex[:8].upper()}-SANDBOX"
