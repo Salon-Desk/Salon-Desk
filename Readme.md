@@ -141,6 +141,34 @@ SalonDesk strictly adheres to defensive fintech design principles:
 - Python 3.11+ and `uv`
 - Docker (for PostgreSQL with `pgvector`)
 
+### LLM & Ollama Options (Local vs. Remote VPS)
+
+SalonDesk supports pluggable LLM and embedding providers (`LLM_PROVIDER=groq|openai|ollama|deepseek`). For Ollama and RAG vector embeddings (`all-minilm`), you can choose between a zero-storage remote endpoint or a local daemon:
+
+- **Option A: Hosted Remote Ollama (Recommended for `Dockerfile.render` or Lightweight Dev)**:
+  As seen in [`Dockerfile.render`](Dockerfile.render), Render web services do not bundle an internal Ollama daemon to keep container sizes lean and avoid server memory limits. Instead of downloading multi-gigabyte models that consume large local disk space, you can point your environment to our hosted VPS Ollama endpoint (available through late November 2026):
+  ```env
+  OLLAMA_MODEL=qwen3.5:4b
+  OLLAMA_BASE_URL=https://ollama.vps.huludelala.com/v1
+  OLLAMA_HOST=https://ollama.vps.huludelala.com
+  ```
+
+- **Option B: Local Ollama Daemon**:
+  If you have sufficient disk storage and prefer running models offline locally:
+  ```bash
+  ollama pull all-minilm    # Embeddings for semantic RAG
+  ollama pull llama3.2:1b   # Or qwen3.5:4b
+  ```
+  And configure in `.env`:
+  ```env
+  OLLAMA_MODEL=llama3.2:1b
+  OLLAMA_BASE_URL=http://localhost:11434/v1
+  OLLAMA_HOST=http://localhost:11434
+  ```
+
+- **Option C: Cloud LLM Providers**:
+  Set `LLM_PROVIDER=groq` with `GROQ_API_KEY` (or `LLM_PROVIDER=openai`) in `.env` for cloud-hosted inference.
+
 ### 1. Start Database & Dependencies
 ```bash
 cp .env.example .env

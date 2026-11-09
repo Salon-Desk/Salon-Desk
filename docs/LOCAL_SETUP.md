@@ -31,6 +31,34 @@ Key environment variables:
 - `PAYPAL_WEBHOOK_ID`: Webhook ID registered in PayPal Developer Dashboard.
 - `LLM_PROVIDER`: `groq` | `openai` | `ollama` (configure corresponding API keys).
 
+#### LLM & Ollama Configuration (Local vs. Remote VPS)
+
+SalonDesk provides flexible choices for LLM inference and semantic RAG embeddings (`all-minilm`):
+
+- **Option A: Hosted Remote Ollama (Recommended for `Dockerfile.render` or Low-Storage Dev)**  
+  In production containers like Render ([`Dockerfile.render`](../Dockerfile.render)), no local Ollama service is bundled in order to keep container image size minimal and stay within memory limits. Instead of pulling large multi-gigabyte models locally that take substantial disk storage, you can point to the hosted remote endpoint (available through late November 2026):
+  ```env
+  OLLAMA_MODEL=qwen3.5:4b
+  OLLAMA_BASE_URL=https://ollama.vps.huludelala.com/v1
+  OLLAMA_HOST=https://ollama.vps.huludelala.com
+  ```
+
+- **Option B: Local Ollama Daemon**  
+  If you have sufficient local disk storage and prefer running offline models locally on your machine:
+  ```bash
+  ollama pull all-minilm    # Embeddings for RAG (384-d)
+  ollama pull llama3.2:1b   # Or qwen3.5:4b
+  ```
+  And set in `.env`:
+  ```env
+  OLLAMA_MODEL=llama3.2:1b
+  OLLAMA_BASE_URL=http://localhost:11434/v1
+  OLLAMA_HOST=http://localhost:11434
+  ```
+
+- **Option C: Cloud LLM Providers**  
+  Set `LLM_PROVIDER=groq` with `GROQ_API_KEY` or `LLM_PROVIDER=openai` with `OPENAI_API_KEY` in `.env`.
+
 ### Frontend `.env`
 Copy the frontend example:
 ```bash
