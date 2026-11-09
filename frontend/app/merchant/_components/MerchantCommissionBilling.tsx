@@ -14,6 +14,7 @@ import {
   Search,
   ShieldCheck,
   Sliders,
+  Sparkles,
   Wallet,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -22,6 +23,7 @@ import { toast } from 'sonner'
 
 import { PrimaryButton } from '@/components/button'
 import { EmptyState } from '@/components/empty/EmptyState'
+import { AgGridFinancialLedgerTable } from '@/components/table/AgGridFinancialLedgerTable'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
 import { PageHeader } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
@@ -57,6 +59,7 @@ export function MerchantCommissionBilling() {
 
   const [inspectingRecord, setInspectingRecord] = useState<CommissionRecord | null>(null)
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null)
+  const [ledgerViewMode, setLedgerViewMode] = useState<'ag-grid' | 'standard'>('ag-grid')
 
   // API Queries & Mutations
   const {
@@ -406,20 +409,60 @@ export function MerchantCommissionBilling() {
               </button>
             </div>
           ) : (
-            <div className="rounded-2xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden">
-              <BasicDataGridTable
-                data={filteredRecords}
-                columns={recordColumns}
-                isLoading={recordsLoading}
-                refetch={() => void refetchRecords()}
-                showPagination={filteredRecords.length > 10}
-                showSearch={false}
-                showItemsPerPage={false}
-                showColumnSelector
-                showActions={false}
-                tableClassName="border-slate-100"
-                headerClassName="bg-slate-50/80 text-slate-700"
-              />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/90 p-1 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setLedgerViewMode('ag-grid')}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer',
+                      ledgerViewMode === 'ag-grid'
+                        ? 'bg-white text-slate-900 shadow-2xs'
+                        : 'text-slate-500 hover:text-slate-900',
+                    )}
+                  >
+                    <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                    <span>AG Grid Ledger (Sponsor Prize)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLedgerViewMode('standard')}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer',
+                      ledgerViewMode === 'standard'
+                        ? 'bg-white text-slate-900 shadow-2xs'
+                        : 'text-slate-500 hover:text-slate-900',
+                    )}
+                  >
+                    <span>Standard Table</span>
+                  </button>
+                </div>
+              </div>
+
+              {ledgerViewMode === 'ag-grid' ? (
+                <AgGridFinancialLedgerTable
+                  data={filteredRecords}
+                  isLoading={recordsLoading}
+                  onInspectRecord={setInspectingRecord}
+                />
+              ) : (
+                <div className="rounded-2xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden">
+                  <BasicDataGridTable
+                    data={filteredRecords}
+                    columns={recordColumns}
+                    isLoading={recordsLoading}
+                    refetch={() => void refetchRecords()}
+                    showPagination={filteredRecords.length > 10}
+                    showSearch={false}
+                    showItemsPerPage={false}
+                    showColumnSelector
+                    showActions={false}
+                    tableClassName="border-slate-100"
+                    headerClassName="bg-slate-50/80 text-slate-700"
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -1,0 +1,100 @@
+1
+00:00:01,000 --> 00:00:05,200
+Every year, independent hair salons and barbers lose 7% of their annual revenue to no-shows.
+
+2
+00:00:05,500 --> 00:00:09,800
+When a client fails to arrive for a three-hour appointment, that stylist's chair sits empty.
+
+3
+00:00:10,000 --> 00:00:14,200
+Traditional non-refundable deposits scare honest clients away before they ever set foot in the door.
+
+4
+00:00:14,500 --> 00:00:18,500
+Introducing SalonDesk: A hold, not a charge.
+
+5
+00:00:19,000 --> 00:00:23,800
+Powered by PayPal Orders v2, PayPal JS SDK, and deterministic agentic AI.
+
+6
+00:00:24,200 --> 00:00:28,800
+At booking, zero dollars are charged. Instead, an authorization hold locks the agreed deposit.
+
+7
+00:00:29,000 --> 00:00:33,000
+If the client shows up, the full service fee is captured directly to the salon's account.
+
+8
+00:00:33,500 --> 00:00:38,000
+If they cancel on time, the hold is voided with zero friction and zero fees.
+
+9
+00:00:38,500 --> 00:00:44,000
+And if they no-show, only the pre-agreed no-show fee is captured; the remainder is instantly released.
+
+10
+00:00:44,500 --> 00:00:49,500
+Clients discover salons through our real-time LiveKit full-duplex voice concierge or semantic text chat.
+
+11
+00:00:50,000 --> 00:00:55,000
+Checkout embeds native PayPal Smart Buttons with intent set to authorize.
+
+12
+00:00:55,500 --> 00:01:03,000
+Every consent is digitally signed with an Ed25519 keypair and chained into an immutable SHA-256 ledger.
+
+13
+00:01:03,500 --> 00:01:10,000
+On the merchant side, salon owners manage appointments using high-density AG Grid Community interactive tables.
+
+14
+00:01:10,500 --> 00:01:16,500
+Owners filter holds in real time and inspect cryptographically verified financial audit records.
+
+15
+00:01:17,000 --> 00:01:23,000
+When a dispute occurs, our three-agent Dispute Counsel springs into action.
+
+16
+00:01:23,500 --> 00:01:29,000
+The Investigator verifies digital signatures and cryptographic block integrity.
+
+17
+00:01:29,500 --> 00:01:35,000
+The Advocate drafts a formal five-point legal rebuttal tailored for PayPal Resolution Center limits.
+
+18
+00:01:35,500 --> 00:01:42,000
+And the Skeptic identifies evidence vulnerabilities and bounds win probability between eighty-eight and ninety-six percent.
+
+19
+00:01:42,500 --> 00:01:49,000
+A court-ready PDF evidence dossier is automatically generated and submitted directly to PayPal.
+
+20
+00:01:49,500 --> 00:01:56,000
+Our philosophy is simple: AI proposes; code and PayPal decide.
+
+21
+00:01:56,500 --> 00:02:04,000
+Strict safety firewalls prevent autonomous concessions, while hard amount ceilings protect buyers and sellers alike.
+
+22
+00:02:04,500 --> 00:02:11,000
+Judges can test every feature in under sixty seconds using our one-click Judge Mode toolbar.
+
+23
+00:02:11,500 --> 00:02:18,000
+Switch between Client, Salon Owner, and Admin personas with pre-configured PayPal sandbox credentials.
+
+24
+00:02:18,500 --> 00:02:25,000
+Try it now at paypalai.hackathon.huludelala.com.
+
+25
+00:02:25,500 --> 00:02:40,000
+SalonDesk: empowering independent stylists with agentic commerce and trusted PayPal authorization holds.
+

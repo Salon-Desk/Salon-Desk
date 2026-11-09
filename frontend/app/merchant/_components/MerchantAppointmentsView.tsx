@@ -1,10 +1,11 @@
 'use client'
 
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck, Sparkles } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { PrimaryButton } from '@/components/button'
+import { AgGridAppointmentsTable } from '@/components/table/AgGridAppointmentsTable'
 import { BasicDataGridTable } from '@/components/table/BasicDataGridTable'
 import { QueryStateView } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
@@ -15,6 +16,7 @@ import {
   MerchantAppointmentsListParamsSchema,
 } from '@/lib/listing-params/merchant-appointments-list-params'
 import { mapApiBookingToUi } from '@/lib/mappers/booking'
+import { cn } from '@/lib/utils'
 import { useGetMyOrgBookingsQuery } from '@/store/api/orgApi'
 import type { Booking } from '@/types'
 
@@ -58,6 +60,7 @@ export function MerchantAppointmentsView() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [inspectConsentBooking, setInspectConsentBooking] = useState<Booking | null>(null)
+  const [tableViewMode, setTableViewMode] = useState<'ag-grid' | 'standard'>('ag-grid')
 
   useAgentUiActions({
     onFilterHolds: () => setParams({ holdStatus: 'HELD', page: 1 }),
@@ -181,60 +184,104 @@ export function MerchantAppointmentsView() {
         />
       )}
 
-      {/* BasicDataGridTable */}
+      {/* Appointments Data Table: AG Grid (Sponsor Prize) vs Standard Table */}
       {!isError && (
-        <div className="min-w-0">
-          <BasicDataGridTable
-            data={paginatedAppointments}
-            columns={bookingColumns}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            itemsPerPage={pageSize}
-            onPageChange={(page) => setParam('page', page)}
-            onItemPerPageChange={(size) => setParams({ limit: size, page: 1 })}
-            isFetching={isLoading}
-            refetch={() => void refetch()}
-            showSearch={false}
-            showPagination={true}
-            showItemsPerPage={true}
-            showColumnSelector
-            showActions={true}
-            renderRowActions={(b) => {
-              const isSettled =
-                b.status === 'CAPTURED' ||
-                b.status === 'NO_SHOW_CAPTURED' ||
-                b.status === 'VOIDED' ||
-                b.status === 'REFUNDED'
+        <div className="space-y-3 min-w-0">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/90 p-1 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setTableViewMode('ag-grid')}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer',
+                  tableViewMode === 'ag-grid'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900',
+                )}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                <span>AG Grid View (Sponsor Prize)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTableViewMode('standard')}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer',
+                  tableViewMode === 'standard'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900',
+                )}
+              >
+                <span>Standard Table</span>
+              </button>
+            </div>
+          </div>
 
-              return (
-                <div className="flex items-center justify-end gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleInspectConsent(b)}
-                    className="cursor-pointer rounded-lg border border-slate-200/70 bg-white p-1.5 text-slate-400 transition-all hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700"
-                    title="Inspect PayPal Authorization Consent Receipt"
-                  >
-                    <ShieldCheck className="h-4 w-4" />
-                  </button>
+          {tableViewMode === 'ag-grid' ? (
+            <AgGridAppointmentsTable
+              data={paginatedAppointments}
+              isLoading={isLoading}
+              onInspectConsent={handleInspectConsent}
+              onSettle={handleSettle}
+              onMarkShow={handleMarkShow}
+              onMarkNoShow={handleMarkNoShow}
+              isSettlementProcessing={isSettlementProcessing}
+              onCopy={handleCopy}
+              copiedId={copiedId}
+            />
+          ) : (
+            <BasicDataGridTable
+              data={paginatedAppointments}
+              columns={bookingColumns}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={pageSize}
+              onPageChange={(page) => setParam('page', page)}
+              onItemPerPageChange={(size) => setParams({ limit: size, page: 1 })}
+              isFetching={isLoading}
+              refetch={() => void refetch()}
+              showSearch={false}
+              showPagination={true}
+              showItemsPerPage={true}
+              showColumnSelector
+              showActions={true}
+              renderRowActions={(b) => {
+                const isSettled =
+                  b.status === 'CAPTURED' ||
+                  b.status === 'NO_SHOW_CAPTURED' ||
+                  b.status === 'VOIDED' ||
+                  b.status === 'REFUNDED'
 
-                  <PrimaryButton
-                    title={isSettled ? 'Details' : 'Settle'}
-                    size="sm"
-                    fullWidth={false}
-                    className={`h-8 cursor-pointer rounded-lg px-3 text-xs font-semibold ${
-                      isSettled
-                        ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                    }`}
-                    onClick={() => handleSettle(b)}
-                  />
-                </div>
-              )
-            }}
-            tableClassName="border-amber-100/80"
-            headerClassName="bg-amber-50/35"
-          />
+                return (
+                  <div className="flex items-center justify-end gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleInspectConsent(b)}
+                      className="cursor-pointer rounded-lg border border-slate-200/70 bg-white p-1.5 text-slate-400 transition-all hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-700"
+                      title="Inspect PayPal Authorization Consent Receipt"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                    </button>
+
+                    <PrimaryButton
+                      title={isSettled ? 'Details' : 'Settle'}
+                      size="sm"
+                      fullWidth={false}
+                      className={`h-8 cursor-pointer rounded-lg px-3 text-xs font-semibold ${
+                        isSettled
+                          ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      }`}
+                      onClick={() => handleSettle(b)}
+                    />
+                  </div>
+                )
+              }}
+              tableClassName="border-amber-100/80"
+              headerClassName="bg-amber-50/35"
+            />
+          )}
         </div>
       )}
 

@@ -22,6 +22,8 @@
     "@paypal/react-paypal-js": "^10.6.1",
     "@reduxjs/toolkit": "^2.13.0",
     "@tanstack/react-table": "^8.21.3",
+    "ag-grid-community": "^36.3.0",
+    "ag-grid-react": "^36.3.0",
     "axios": "^1.20.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
