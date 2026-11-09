@@ -45,6 +45,18 @@ def _hold_out(hold: PaymentHold, approval_url: str | None = None) -> PaymentHold
     return out
 
 
+@router.get("/config")
+async def get_payment_config() -> dict[str, str]:
+    """Return public PayPal client credentials for in-page JS SDK v6 integration."""
+    settings = get_settings()
+    return {
+        "client_id": settings.paypal_client_id or "sb",
+        "currency": "USD",
+        "environment": "sandbox" if "sandbox" in settings.paypal_api_base.lower() else "production",
+        "intent": "authorize",
+    }
+
+
 @router.post(
     "/holds",
     response_model=PaymentHoldOut,

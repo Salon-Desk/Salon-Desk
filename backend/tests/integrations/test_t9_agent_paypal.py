@@ -105,3 +105,45 @@ async def test_t9_run_natural_language_agent() -> None:
     assert pay_out["status"] == "success"
     assert pay_out["action"] == "pay_order"
     assert pay_out["order_id"] == order_id
+
+
+@pytest.mark.asyncio
+async def test_t9_authorize_hold_and_void() -> None:
+    runner = PayPalToolkitRunner()
+    client_id = uuid.uuid4()
+
+    # 1. Authorize hold with security ceilings
+    res = await runner.authorize_hold(
+        amount=Decimal("30.00"),
+        service_name="Braids hold",
+        client_id=client_id,
+    )
+    assert res["status"] == "CREATED"
+    assert "STUB-" in res["order_id"]
+    assert "token=" in res["approval_url"]
+
+    # 2. Void authorization
+    void_res = await runner.void_hold(
+        authorization_id="STUB-AUTH-12345",
+        client_id=client_id,
+        reason="Free cancellation within policy",
+    )
+    assert void_res["status"] == "VOIDED"
+    assert void_res["authorization_id"] == "STUB-AUTH-12345"
+
+
+@pytest.mark.asyncio
+async def test_t9_blocked_agent_tools_firewall() -> None:
+    runner = PayPalToolkitRunner()
+    with pytest.raises(PolicyViolationException, match="prohibited by SalonDesk policy"):
+        await runner.accept_dispute_claim(dispute_id="PP-D-12345")
+
+
+def test_paypal_mcp_tool_schemas() -> None:
+    from app.ai.tools.paypal_tools import PAYPAL_MCP_TOOL_SCHEMAS
+
+    names = {tool["name"] for tool in PAYPAL_MCP_TOOL_SCHEMAS}
+    assert "paypal_authorize_appointment_hold" in names
+    assert "paypal_capture_settlement" in names
+    assert "paypal_void_hold" in names
+    assert "paypal_get_dispute_status" in names

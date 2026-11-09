@@ -78,6 +78,8 @@ export interface PayPalHoldCheckoutProps {
   phoneError?: string
   /** Banner rendered above the wizard, e.g. after a cancelled PayPal approval. */
   notice?: ReactNode
+  /** In-page PayPal JS SDK v6 buttons rendered in review step */
+  smartButtons?: ReactNode
   onSelectStylist: (staff: StaffMember) => void
   onSelectStartsAt: (iso: string | null) => void
   onApprove: () => void
@@ -106,6 +108,7 @@ export function PayPalHoldCheckout({
   onClientPhoneChange,
   phoneError,
   notice,
+  smartButtons,
   onSelectStylist,
   onSelectStartsAt,
   onApprove,
@@ -428,6 +431,7 @@ export function PayPalHoldCheckout({
                 clientPhone={clientPhone}
                 onClientPhoneChange={onClientPhoneChange}
                 phoneError={phoneError}
+                smartButtons={smartButtons}
               />
             )}
           </section>

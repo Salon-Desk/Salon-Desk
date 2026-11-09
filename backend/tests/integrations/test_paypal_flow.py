@@ -75,3 +75,21 @@ async def test_reauthorize_authorization_stub() -> None:
     result = await client.reauthorize_authorization(authorization_id="auth-1")
     assert result["status"] == "CREATED"
     assert result["authorization_id"]
+
+
+@pytest.mark.asyncio
+async def test_payments_config_endpoint() -> None:
+    from httpx import ASGITransport, AsyncClient
+
+    from app.main import create_app
+
+    app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        resp = await ac.get("/api/v1/payments/config")
+        assert resp.status_code == 200
+        res = resp.json()
+        payload = res.get("data", res)
+        assert "client_id" in payload
+        assert payload["currency"] == "USD"
+        assert payload["intent"] == "authorize"

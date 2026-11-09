@@ -103,6 +103,111 @@ class PayPalToolkitRunner:
 
         return res
 
+    async def authorize_hold(
+        self,
+        *,
+        amount: Decimal,
+        service_name: str,
+        client_id: UUID,
+        currency: str = "USD",
+        db: AsyncSession | None = None,
+    ) -> dict[str, Any]:
+        """T9 Agent authorize_hold: creates an Orders v2 authorization hold (intent=AUTHORIZE)."""
+        assert_tool_allowed("authorize_hold")
+        if not client_id:
+            raise ForbiddenError("Authentication required to place an authorization hold")
+
+        currency_clean = (currency or "USD").upper().strip()
+        if currency_clean not in ALLOWED_CURRENCIES:
+            raise PolicyViolationException(
+                f"Currency {currency_clean} is not supported. Allowed: {', '.join(ALLOWED_CURRENCIES)}"
+            )
+
+        if amount < MIN_TRANSACTION_AMOUNT:
+            raise PolicyViolationException(
+                f"Amount ${amount:.2f} is below minimum allowed deposit of ${MIN_TRANSACTION_AMOUNT:.2f}"
+            )
+        if amount > MAX_TRANSACTION_AMOUNT:
+            raise PolicyViolationException(
+                f"Amount ${amount:.2f} exceeds security ceiling limit of ${MAX_TRANSACTION_AMOUNT:.2f}"
+            )
+
+        base = self.settings.frontend_base_url.rstrip("/")
+        req_id = f"t9-auth-{client_id}-{uuid.uuid4().hex[:12]}"
+        return_url = f"{base}/client/paypal/return?intent=authorize&client_id={client_id}"
+        cancel_url = f"{base}/client/book?paypal=cancelled"
+
+        res = await self.client.create_authorize_order(
+            amount=amount,
+            currency=currency_clean,
+            return_url=return_url,
+            cancel_url=cancel_url,
+            reference_id=str(client_id),
+            paypal_request_id=req_id,
+        )
+
+        if db is not None:
+            await append_ledger(
+                db,
+                event_type="T9_AGENT_HOLD_AUTHORIZED",
+                payload={
+                    "client_id": str(client_id),
+                    "service_name": service_name,
+                    "order_id": res.get("order_id"),
+                    "amount": str(amount),
+                    "currency": currency_clean,
+                },
+                amount=amount,
+                currency=currency_clean,
+            )
+
+        return res
+
+    async def void_hold(
+        self,
+        *,
+        authorization_id: str,
+        client_id: UUID,
+        reason: str | None = None,
+        db: AsyncSession | None = None,
+    ) -> dict[str, Any]:
+        """T9 Agent void_hold: voids an active PayPal authorization hold."""
+        assert_tool_allowed("void_hold")
+        if not client_id:
+            raise ForbiddenError("Authentication required to void a hold")
+
+        auth_id_clean = str(authorization_id).strip()
+        if not auth_id_clean:
+            raise PolicyViolationException("Valid authorization_id is required")
+
+        req_id = f"t9-void-{auth_id_clean}-{uuid.uuid4().hex[:8]}"
+        res = await self.client.void_authorization(
+            authorization_id=auth_id_clean,
+            paypal_request_id=req_id,
+        )
+
+        if db is not None:
+            await append_ledger(
+                db,
+                event_type="T9_AGENT_HOLD_VOIDED",
+                payload={
+                    "client_id": str(client_id),
+                    "authorization_id": auth_id_clean,
+                    "reason": reason or "Client cancelled or slot rescued",
+                },
+            )
+
+        return {"authorization_id": auth_id_clean, **res}
+
+    async def accept_dispute_claim(
+        self,
+        *,
+        dispute_id: str,
+        db: AsyncSession | None = None,
+    ) -> None:
+        """Prohibited autonomous action: accepting dispute claims requires staff authorization."""
+        assert_tool_allowed("accept_dispute_claim")
+
     async def pay_order(
         self,
         *,

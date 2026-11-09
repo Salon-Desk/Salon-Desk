@@ -1,7 +1,7 @@
 'use client'
 
 import { AlertCircle, Lock, PencilLine, Phone, ShieldCheck, Users } from 'lucide-react'
-import { type MouseEvent, useState } from 'react'
+import { type MouseEvent, type ReactNode, useState } from 'react'
 
 import { ANY_AVAILABLE_STYLIST } from '@/lib/data/catalog'
 import { formatDuration, formatUsd } from '@/lib/format'
@@ -35,6 +35,7 @@ export interface CheckoutReviewProps {
   clientPhone?: string
   onClientPhoneChange?: (phone: string) => void
   phoneError?: string
+  smartButtons?: ReactNode
 }
 
 export function CheckoutReview({
@@ -60,6 +61,7 @@ export function CheckoutReview({
   clientPhone,
   onClientPhoneChange,
   phoneError,
+  smartButtons,
 }: CheckoutReviewProps) {
   const [openDoc, setOpenDoc] = useState<LegalDoc | null>(null)
   const endsAt = startsAt
@@ -329,6 +331,8 @@ export function CheckoutReview({
           </p>
         ) : null}
       </section>
+
+      {smartButtons ? <section className="pt-1">{smartButtons}</section> : null}
 
       {openDoc ? <LegalDialog doc={openDoc} onClose={() => setOpenDoc(null)} /> : null}
     </div>

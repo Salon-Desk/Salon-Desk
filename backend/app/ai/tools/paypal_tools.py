@@ -228,4 +228,206 @@ def build_paypal_agent_tools(
             except SalonDeskError as exc:
                 return json.dumps({"status": "error", "message": exc.message})
 
-    return [create_paypal_checkout_order, check_paypal_order_status, capture_paypal_order]
+    @function_tool()
+    async def authorize_appointment_hold(
+        amount: float,
+        service_name: str = "Salon Hold",
+        client_email: str | None = None,
+    ) -> str:
+        """Place a PayPal authorization hold (intent=AUTHORIZE) for an appointment.
+
+        $0 is charged today. Use when client says: 'place a $30 hold for my braids appointment'
+        or 'authorize deposit hold'.
+        """
+        async with session_factory() as db:
+            client: User | None = None
+            if client_email:
+                res = await db.execute(
+                    select(User).where(User.email == client_email.strip().lower()).limit(1)
+                )
+                client = res.scalar_one_or_none()
+
+            if client is None:
+                res = await db.execute(
+                    select(User)
+                    .where(User.email == PRIMARY_DEMO_CLIENT_EMAIL, User.role == UserRole.CLIENT)
+                    .limit(1)
+                )
+                client = res.scalar_one_or_none()
+
+            if client is None:
+                return json.dumps(
+                    {
+                        "status": "error",
+                        "message": "User must be authenticated to authorize a PayPal hold.",
+                    }
+                )
+
+            amount_dec = Decimal(str(round(amount, 2)))
+            runner = PayPalToolkitRunner()
+            try:
+                out = await runner.authorize_hold(
+                    amount=amount_dec,
+                    service_name=service_name,
+                    client_id=client.id,
+                    currency="USD",
+                    db=db,
+                )
+                await db.commit()
+                return json.dumps(
+                    {
+                        "status": "success",
+                        "order_id": out.get("order_id"),
+                        "amount": str(amount_dec),
+                        "approval_url": out.get("approval_url"),
+                        "message": (
+                            f"Placed PayPal authorization hold {out.get('order_id')} for ${amount_dec:.2f}. "
+                            f"Approve hold at: {out.get('approval_url')}"
+                        ),
+                    }
+                )
+            except SalonDeskError as exc:
+                return json.dumps({"status": "error", "message": exc.message})
+
+    @function_tool()
+    async def void_expired_hold(
+        authorization_id: str,
+        client_email: str | None = None,
+    ) -> str:
+        """Void an active PayPal authorization hold upon cancellation or slot refill.
+
+        Use when a booking is cancelled within the free cancellation window or refilled by waitlist.
+        """
+        async with session_factory() as db:
+            client: User | None = None
+            if client_email:
+                res = await db.execute(
+                    select(User).where(User.email == client_email.strip().lower()).limit(1)
+                )
+                client = res.scalar_one_or_none()
+
+            if client is None:
+                res = await db.execute(
+                    select(User)
+                    .where(User.email == PRIMARY_DEMO_CLIENT_EMAIL, User.role == UserRole.CLIENT)
+                    .limit(1)
+                )
+                client = res.scalar_one_or_none()
+
+            if client is None:
+                return json.dumps(
+                    {
+                        "status": "error",
+                        "message": "User must be authenticated to void a hold.",
+                    }
+                )
+
+            runner = PayPalToolkitRunner()
+            try:
+                await runner.void_hold(
+                    authorization_id=authorization_id,
+                    client_id=client.id,
+                    db=db,
+                )
+                await db.commit()
+                return json.dumps(
+                    {
+                        "status": "success",
+                        "authorization_id": authorization_id,
+                        "message": f"Authorization hold {authorization_id} has been voided with zero fee.",
+                    }
+                )
+            except SalonDeskError as exc:
+                return json.dumps({"status": "error", "message": exc.message})
+
+    @function_tool()
+    async def get_dispute_status(dispute_id: str) -> str:
+        """Inspect the current status and amounts of a PayPal dispute.
+
+        Use when merchant or client asks: 'What is the status of dispute <DISPUTE_ID>?'
+        """
+        runner = PayPalToolkitRunner()
+        try:
+            data = await runner.get_dispute(dispute_id=dispute_id)
+            st = data.get("status", "UNKNOWN")
+            amt = data.get("dispute_amount", {}).get("value", "0.00")
+            return json.dumps(
+                {
+                    "status": "success",
+                    "dispute_id": dispute_id,
+                    "dispute_status": st,
+                    "amount": amt,
+                    "message": f"Dispute {dispute_id} is currently {st} for ${amt} USD.",
+                }
+            )
+        except SalonDeskError as exc:
+            return json.dumps({"status": "error", "message": exc.message})
+
+    return [
+        create_paypal_checkout_order,
+        authorize_appointment_hold,
+        void_expired_hold,
+        check_paypal_order_status,
+        capture_paypal_order,
+        get_dispute_status,
+    ]
+
+
+PAYPAL_MCP_TOOL_SCHEMAS = [
+    {
+        "name": "paypal_authorize_appointment_hold",
+        "description": "Place an Orders v2 authorization hold (intent=AUTHORIZE) for a salon appointment ($0 charged upfront).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "description": "Deposit hold amount in USD ($0.50-$250.00)",
+                },
+                "service_name": {
+                    "type": "string",
+                    "description": "Name of salon service being booked",
+                },
+                "client_email": {"type": "string", "description": "Client email address"},
+            },
+            "required": ["amount"],
+        },
+    },
+    {
+        "name": "paypal_capture_settlement",
+        "description": "Execute final capture on a client authorization hold (mark-show full service or mark-no-show policy fee).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "order_id": {"type": "string", "description": "PayPal order identifier"},
+                "client_email": {"type": "string", "description": "Client email address"},
+            },
+            "required": ["order_id"],
+        },
+    },
+    {
+        "name": "paypal_void_hold",
+        "description": "Void an authorization hold with zero fee upon free cancellation or slot rescue.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "authorization_id": {
+                    "type": "string",
+                    "description": "PayPal authorization identifier",
+                },
+            },
+            "required": ["authorization_id"],
+        },
+    },
+    {
+        "name": "paypal_get_dispute_status",
+        "description": "Query Disputes v1 status, lifecycle phase, and dispute amount from PayPal Resolution Center.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "dispute_id": {"type": "string", "description": "PayPal dispute identifier"},
+            },
+            "required": ["dispute_id"],
+        },
+    },
+]

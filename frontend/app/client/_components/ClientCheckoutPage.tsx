@@ -17,6 +17,7 @@ import { buildClientOrgStaffQueryArg } from '@/lib/listing-params/client-org-sta
 import { mapApiBookingToUi, mapCatalogServiceToSalonService } from '@/lib/mappers/booking'
 import { mapCatalogStaffToUi } from '@/lib/mappers/staff'
 import {
+  useCompletePaymentHoldMutation,
   useCreateBookingConsentMutation,
   useCreateBookingMutation,
   useCreatePaymentHoldMutation,
@@ -27,9 +28,11 @@ import {
 import { useUpdateProfileMutation } from '@/store/api/sharedApi'
 import { isAuthenticatedSelector, isClientUser, userSelector } from '@/store/authSlice'
 import type { Booking, SalonService, StaffMember } from '@/types'
+import type { ApiBooking, PaymentHold } from '@/types/api-booking'
 
 import { CHECKOUT_TERMS_VERSION } from '../_constants/checkout-legal'
 import { type AuthStep, PayPalHoldCheckout } from './PayPalHoldCheckout'
+import { PayPalSmartHoldButtons, type PrepareHoldResult } from './PayPalSmartHoldButtons'
 
 /** Remembers the checkout URL so a cancelled PayPal approval can land back on it. */
 export const LAST_CHECKOUT_STORAGE_KEY = 'salondesk:last-checkout'
@@ -144,11 +147,18 @@ export function ClientCheckoutPage({
   )
   const [step, setStep] = useState<AuthStep>('review')
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null)
+  const [activeBooking, setActiveBooking] = useState<ApiBooking | null>(null)
 
   const [createBooking] = useCreateBookingMutation()
   const [createConsent] = useCreateBookingConsentMutation()
   const [createHold] = useCreatePaymentHoldMutation()
+  const [completeHold] = useCompletePaymentHoldMutation()
   const [updateProfile] = useUpdateProfileMutation()
+
+  const holdAmountEstimate = useMemo(() => {
+    const baseServicePrice = selectedServices.reduce((sum, s) => sum + s.price, 0)
+    return baseServicePrice * Math.max(1, partySize)
+  }, [selectedServices, partySize])
 
   const stylist = pickedStylist
 
@@ -190,10 +200,13 @@ export function ClientCheckoutPage({
     setPickedStylist(findStylist(initialStylistId, staffOptions))
   }, [initialStylistId, staffOptions])
 
-  const handleApprove = async () => {
+  const prepareBookingAndHold = async (): Promise<{
+    booking: ApiBooking
+    hold: PaymentHold
+  } | null> => {
     if (!catalog || !service || !startsAt) {
       toast.error('Select an available day and time slot first', toastColor.error)
-      return
+      return null
     }
 
     if (new Date(startsAt).getTime() <= Date.now()) {
@@ -202,7 +215,7 @@ export function ClientCheckoutPage({
         toastColor.error,
       )
       setStartsAt(null)
-      return
+      return null
     }
 
     const maxBookingDate = new Date(Date.now() + 28 * 86400000)
@@ -212,17 +225,17 @@ export function ClientCheckoutPage({
         toastColor.error,
       )
       setStartsAt(null)
-      return
+      return null
     }
 
     if (phoneError || !clientPhone.trim()) {
       toast.error('Please enter a valid phone number before proceeding', toastColor.error)
-      return
+      return null
     }
 
     if (partySize < 1 || partySize > 10) {
       toast.error('Party size must be between 1 and 10 guests', toastColor.error)
-      return
+      return null
     }
 
     const allServiceIds = selectedServices.map((s) => s.id)
@@ -241,7 +254,7 @@ export function ClientCheckoutPage({
       pauseForAuth(returnPath)
       openAuthModal('sign-in', 'client')
       toast.info('Sign in to authorize your hold — your selection is saved.', toastColor.info)
-      return
+      return null
     }
 
     if (!user?.profile?.phone && clientPhone.trim()) {
@@ -311,39 +324,8 @@ export function ClientCheckoutPage({
         currency: 'USD',
       }).unwrap()
 
-      // PayPal AUTHORIZE requires buyer approval — redirect to the approval link.
-      if (hold.approval_url && hold.status === 'PENDING') {
-        setStep('awaiting_paypal')
-        try {
-          window.sessionStorage.setItem(LAST_CHECKOUT_STORAGE_KEY, returnPath)
-        } catch {
-          // Storage can be unavailable (private mode); cancel then falls back to the catalog.
-        }
-        window.location.assign(hold.approval_url)
-        return
-      }
-
-      setConfirmedBooking(
-        mapApiBookingToUi(booking, {
-          clientName:
-            user?.name ||
-            [user?.first_name, user?.last_name].filter(Boolean).join(' ') ||
-            user?.email ||
-            'You',
-          salonName: catalog.organization_name || 'Salon',
-          serviceName: service.name,
-          stylistName: stylist.name,
-          paypalAuthId: hold.latest_authorization_id || hold.parent_authorization_id,
-          honorExpiresAt: hold.honor_expires_at,
-          reauthorizationCount: hold.reauthorization_count,
-          holdStatus: hold.status,
-        }),
-      )
-      setStep('success')
-      toast.success(
-        `Booking confirmed with a PayPal hold of $${holdAmount.toFixed(2)}. $0 charged today.`,
-        toastColor.success,
-      )
+      setActiveBooking(booking)
+      return { booking, hold }
     } catch (err: unknown) {
       setStep('review')
       const errorObj = err as {
@@ -370,7 +352,95 @@ export function ClientCheckoutPage({
       } else {
         toast.error(message, toastColor.error)
       }
+      return null
     }
+  }
+
+  const handleFallbackRedirect = (approvalUrl: string) => {
+    setStep('awaiting_paypal')
+    const returnPath = checkoutPath(serviceId, { slot: startsAt, stylist: stylist.id })
+    try {
+      window.sessionStorage.setItem(LAST_CHECKOUT_STORAGE_KEY, returnPath)
+    } catch {
+      // Storage unavailable in private browsing
+    }
+    window.location.assign(approvalUrl)
+  }
+
+  const handleSmartPrepareHold = async (): Promise<PrepareHoldResult | null> => {
+    const res = await prepareBookingAndHold()
+    if (!res) return null
+    return {
+      holdId: res.hold.id,
+      paypalOrderId: res.hold.paypal_order_id || res.hold.id,
+      approvalUrl: res.hold.approval_url || '',
+    }
+  }
+
+  const handleSmartCompleteHold = async (holdId: string, orderToken: string): Promise<void> => {
+    const completed = await completeHold({
+      holdId,
+      body: { paypal_order_token: orderToken },
+    }).unwrap()
+
+    const targetBooking = activeBooking
+    if (!targetBooking) return
+
+    setConfirmedBooking(
+      mapApiBookingToUi(targetBooking, {
+        clientName:
+          user?.name ||
+          [user?.first_name, user?.last_name].filter(Boolean).join(' ') ||
+          user?.email ||
+          'You',
+        salonName: catalog?.organization_name || 'Salon',
+        serviceName: service?.name || catalog?.name || 'Service',
+        stylistName: stylist?.name || 'Stylist',
+        paypalAuthId: completed.latest_authorization_id || completed.parent_authorization_id,
+        honorExpiresAt: completed.honor_expires_at,
+        reauthorizationCount: completed.reauthorization_count,
+        holdStatus: completed.status,
+      }),
+    )
+    setStep('success')
+    const holdAmount = Number(targetBooking.agreed_hold_amount ?? targetBooking.total_price) || 0
+    toast.success(
+      `Booking confirmed with a PayPal hold of $${holdAmount.toFixed(2)}. $0 charged today.`,
+      toastColor.success,
+    )
+  }
+
+  const handleApprove = async () => {
+    const res = await prepareBookingAndHold()
+    if (!res) return
+
+    if (res.hold.approval_url && res.hold.status === 'PENDING') {
+      handleFallbackRedirect(res.hold.approval_url)
+      return
+    }
+
+    setConfirmedBooking(
+      mapApiBookingToUi(res.booking, {
+        clientName:
+          user?.name ||
+          [user?.first_name, user?.last_name].filter(Boolean).join(' ') ||
+          user?.email ||
+          'You',
+        salonName: catalog?.organization_name || 'Salon',
+        serviceName: service?.name || catalog?.name || 'Service',
+        stylistName: stylist?.name || 'Stylist',
+        paypalAuthId: res.hold.latest_authorization_id || res.hold.parent_authorization_id,
+        honorExpiresAt: res.hold.honor_expires_at,
+        reauthorizationCount: res.hold.reauthorization_count,
+        holdStatus: res.hold.status,
+      }),
+    )
+    setStep('success')
+    const holdAmount = Number(res.booking.agreed_hold_amount ?? res.booking.total_price) || 0
+    toast.success(
+      `Booking confirmed with a PayPal hold of $${holdAmount.toFixed(2)}. $0 charged today.`,
+      toastColor.success,
+    )
   }
 
   if (isLoading) {
@@ -432,6 +502,15 @@ export function ClientCheckoutPage({
       clientPhone={clientPhone}
       onClientPhoneChange={setClientPhone}
       phoneError={phoneError}
+      smartButtons={
+        <PayPalSmartHoldButtons
+          holdAmount={holdAmountEstimate}
+          disabled={!canCheckout || Boolean(phoneError) || !clientPhone.trim()}
+          onPrepareHold={handleSmartPrepareHold}
+          onCompleteHold={handleSmartCompleteHold}
+          onFallbackRedirect={handleFallbackRedirect}
+        />
+      }
       notice={
         paypalCancelled ? (
           <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

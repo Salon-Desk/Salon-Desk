@@ -333,6 +333,17 @@ export const clientApi = baseApi.injectEndpoints({
       invalidatesTags: ['payments', 'bookings'],
     }),
 
+    getPaymentConfig: builder.query<
+      { client_id: string; currency: string; environment: string; intent: string },
+      void
+    >({
+      query: () => ({
+        url: '/api/v1/payments/config',
+        method: 'GET',
+      }),
+      providesTags: ['payments'],
+    }),
+
     completePaymentHold: builder.mutation<
       PaymentHold,
       { holdId: string; body?: CompleteHoldRequest }
@@ -386,6 +397,7 @@ export const {
   useCancelBookingMutation,
   useRescheduleBookingMutation,
   useCreatePaymentHoldMutation,
+  useGetPaymentConfigQuery,
   useCompletePaymentHoldMutation,
   useClientConciergeChatMutation,
   useCreateLiveKitTokenMutation,
