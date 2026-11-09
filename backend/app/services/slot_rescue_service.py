@@ -17,17 +17,28 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError
+from app.core.config import get_settings
+from app.core.exceptions import NotFoundError, PolicyViolationException
 from app.models.booking import Booking, WaitlistEntry
-from app.models.enums import BookingStatus, PaymentHoldStatus, WaitlistStatus
+from app.models.enums import BookingStatus, WaitlistStatus
+from app.models.ledger import LedgerEntry
 from app.models.payment import PaymentCapture, PaymentHold
 from app.models.user import User
 from app.services.hold_service import void_hold
 from app.services.ledger_service import append_ledger
 from app.services.paypal_toolkit import PayPalToolkitRunner
-from app.services.policy_engine import assert_can_settle, evaluate_slot_rescue
+from app.services.policy_engine import (
+    SLOT_RESCUE_ELIGIBLE_STATUSES,
+    assert_can_settle,
+    evaluate_slot_rescue,
+)
 
 logger = logging.getLogger("salondesk.slot_rescue")
+
+SLOT_RESCUE_LEDGER_EVENT = "SLOT_RESCUED_FEE_WAIVED"
+CAPTURE_STATUS_REFUNDED = "REFUNDED"
+# Capture statuses that no longer represent money the salon is holding.
+_SETTLED_CAPTURE_STATUSES = frozenset({CAPTURE_STATUS_REFUNDED, "VOIDED"})
 
 
 class SlotRescueService:
@@ -73,6 +84,29 @@ class SlotRescueService:
         if actor_user:
             assert_can_settle(actor_user.role, actor_user.org_id, booking.org_id)
 
+        if booking.status not in SLOT_RESCUE_ELIGIBLE_STATUSES:
+            raise PolicyViolationException(
+                "Slot Rescue only applies to no-show or cancelled bookings "
+                f"(booking is {booking.status.value}).",
+                code="SLOT_RESCUE_NOT_ELIGIBLE",
+                status_code=409,
+            )
+
+        already_rescued = await db.execute(
+            select(LedgerEntry.id)
+            .where(
+                LedgerEntry.booking_id == booking.id,
+                LedgerEntry.event_type == SLOT_RESCUE_LEDGER_EVENT,
+            )
+            .limit(1)
+        )
+        if already_rescued.scalar_one_or_none() is not None:
+            raise PolicyViolationException(
+                "This slot has already been rescued.",
+                code="SLOT_ALREADY_RESCUED",
+                status_code=409,
+            )
+
         # 2. Fetch hold and captures
         h_stmt = (
             select(PaymentHold)
@@ -89,22 +123,31 @@ class SlotRescueService:
             .order_by(PaymentCapture.created_at.desc())
         )
         cap_res = await db.execute(cap_stmt)
-        captures = list(cap_res.scalars().all())
-        captured_amount = sum((c.amount for c in captures), Decimal("0.00"))
-        latest_capture = captures[0] if captures else None
+        refundable_captures = [
+            c for c in cap_res.scalars().all() if c.status not in _SETTLED_CAPTURE_STATUSES
+        ]
+        captured_amount = sum((c.amount for c in refundable_captures), Decimal("0.00"))
 
-        # 3. Locate or instantiate waitlist candidate
+        # 3. Locate waitlist candidate (must belong to this salon and still be waiting)
         waitlist_entry: WaitlistEntry | None = None
         if waitlist_entry_id:
             waitlist_entry = await db.get(WaitlistEntry, waitlist_entry_id)
-            if not waitlist_entry:
+            if not waitlist_entry or waitlist_entry.org_id != booking.org_id:
                 raise NotFoundError(f"Waitlist entry {waitlist_entry_id} not found")
+            if waitlist_entry.status != WaitlistStatus.WAITING:
+                raise PolicyViolationException(
+                    "Waitlist entry is no longer waiting.",
+                    code="WAITLIST_ENTRY_UNAVAILABLE",
+                    status_code=409,
+                )
         else:
             candidates = await self.list_waitlist_candidates(db, booking_id=booking_id)
             if candidates:
                 waitlist_entry = candidates[0]
-            else:
-                # Create default demo candidate if waitlist queue is empty
+            elif get_settings().environment.strip().lower() != "production":
+                # Sandbox demo only: seed a stand-in candidate so the flow can be shown
+                # end-to-end on an empty waitlist.
+                logger.info("Slot Rescue: empty waitlist, using sandbox demo candidate")
                 waitlist_entry = WaitlistEntry(
                     org_id=booking.org_id,
                     service_id=booking.service_id,
@@ -116,6 +159,12 @@ class SlotRescueService:
                 )
                 db.add(waitlist_entry)
                 await db.flush()
+            else:
+                raise PolicyViolationException(
+                    "No waitlist candidate is available to refill this slot.",
+                    code="WAITLIST_EMPTY",
+                    status_code=409,
+                )
 
         # 4. Evaluate Referee Decision
         decision = evaluate_slot_rescue(
@@ -162,18 +211,21 @@ class SlotRescueService:
         if action == "VOID_HOLD":
             voided = await void_hold(db, booking=booking)
             paypal_result = {"status": "VOIDED", "hold_id": str(voided.id) if voided else None}
-        elif action == "REFUND_CAPTURE" and latest_capture:
-            cap_id = latest_capture.paypal_capture_id or str(latest_capture.id)
-            paypal_result = await self.toolkit.create_refund(
-                capture_id=cap_id,
-                amount=refund_amount,
-                reason="Slot Rescue: chair refilled by waitlist client",
-                staff_id=actor_user.id if actor_user else None,
-                db=db,
-            )
-            # Update capture record if applicable
-            latest_capture.status = PaymentHoldStatus.VOIDED
+        elif action == "REFUND_CAPTURE":
+            refunds: list[dict[str, Any]] = []
+            for capture in refundable_captures:
+                cap_id = capture.paypal_capture_id or str(capture.id)
+                refund = await self.toolkit.create_refund(
+                    capture_id=cap_id,
+                    amount=capture.amount,
+                    reason="Slot Rescue: chair refilled by waitlist client",
+                    staff_id=actor_user.id if actor_user else None,
+                    db=db,
+                )
+                capture.status = CAPTURE_STATUS_REFUNDED
+                refunds.append({"capture_id": cap_id, **refund})
             await db.flush()
+            paypal_result = refunds[0] if len(refunds) == 1 else {"refunds": refunds}
 
         # 7. Create replacement confirmed booking on the chair
         replacement_booking = Booking(
@@ -202,7 +254,7 @@ class SlotRescueService:
         # 9. Append to tamper-evident ledger
         await append_ledger(
             db,
-            event_type="SLOT_RESCUED_FEE_WAIVED",
+            event_type=SLOT_RESCUE_LEDGER_EVENT,
             org_id=booking.org_id,
             booking_id=booking.id,
             hold_id=hold.id if hold else None,

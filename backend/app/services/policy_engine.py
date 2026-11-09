@@ -250,27 +250,35 @@ def assert_can_reschedule(
         )
 
 
+SLOT_RESCUE_ELIGIBLE_STATUSES = frozenset({BookingStatus.NO_SHOW, BookingStatus.CANCELLED})
+
+
 def evaluate_slot_rescue(
     original_booking_status: BookingStatus,
     hold_status: PaymentHoldStatus | None,
     agreed_no_show_fee: Decimal,
     captured_amount: Decimal,
 ) -> dict[str, Any]:
-    """Deterministic referee deciding whether to void authorization hold or refund captured fee on slot rescue."""
-    if captured_amount > Decimal("0.00") and (
-        original_booking_status in {BookingStatus.NO_SHOW, BookingStatus.CANCELLED}
-        or hold_status in {PaymentHoldStatus.CAPTURED, PaymentHoldStatus.PARTIALLY_CAPTURED}
-    ):
+    """Deterministic referee deciding whether to void the hold or refund the captured fee.
+
+    Only vacated chairs (no-show or cancellation) qualify. ``captured_amount`` must be the
+    fee still held by the salon, excluding captures that were already refunded.
+    """
+    if original_booking_status not in SLOT_RESCUE_ELIGIBLE_STATUSES:
+        return {
+            "action": "NOOP",
+            "waived_amount": Decimal("0.00"),
+            "refund_amount": Decimal("0.00"),
+        }
+
+    if captured_amount > Decimal("0.00"):
         return {
             "action": "REFUND_CAPTURE",
             "waived_amount": captured_amount,
             "refund_amount": captured_amount,
         }
 
-    if hold_status in {
-        PaymentHoldStatus.AUTHORIZED,
-        PaymentHoldStatus.REAUTHORIZED,
-    } and captured_amount == Decimal("0.00"):
+    if hold_status in {PaymentHoldStatus.AUTHORIZED, PaymentHoldStatus.REAUTHORIZED}:
         return {
             "action": "VOID_HOLD",
             "waived_amount": agreed_no_show_fee,

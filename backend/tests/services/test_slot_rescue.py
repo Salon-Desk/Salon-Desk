@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 
+from app.core.exceptions import NotFoundError, PolicyViolationException
 from app.models.booking import Booking, WaitlistEntry
 from app.models.enums import (
     BookingStatus,
@@ -270,3 +272,190 @@ async def test_execute_slot_rescue_refund_capture_flow() -> None:
         staff_id=actor_user.id,
         db=db,
     )
+
+
+# --- Regression tests: eligibility, idempotency, tenant scope, refunded captures ---
+
+
+def test_evaluate_slot_rescue_never_refunds_completed_booking() -> None:
+    decision = evaluate_slot_rescue(
+        original_booking_status=BookingStatus.COMPLETED,
+        hold_status=PaymentHoldStatus.CAPTURED,
+        agreed_no_show_fee=Decimal("30.00"),
+        captured_amount=Decimal("120.00"),
+    )
+    assert decision["action"] == "NOOP"
+    assert decision["refund_amount"] == Decimal("0.00")
+
+
+def _rescue_fixture(
+    *,
+    status: BookingStatus = BookingStatus.NO_SHOW,
+    captures: list[PaymentCapture] | None = None,
+    waitlist: list[WaitlistEntry] | None = None,
+    already_rescued: bool = False,
+):
+    org_id = uuid4()
+    booking = Booking(
+        id=uuid4(),
+        org_id=org_id,
+        stylist_id=uuid4(),
+        client_id=uuid4(),
+        status=status,
+        total_price=Decimal("120.00"),
+        agreed_hold_amount=Decimal("30.00"),
+        agreed_no_show_fee=Decimal("30.00"),
+        agreed_late_cancel_fee=Decimal("30.00"),
+        free_cancel_deadline_at=datetime.now(UTC) - timedelta(hours=24),
+        policy_snapshot_json={},
+        commission_snapshot={},
+        starts_at=datetime.now(UTC),
+        ends_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    if captures is None:
+        captures = [
+            PaymentCapture(
+                id=uuid4(),
+                booking_id=booking.id,
+                hold_id=uuid4(),
+                amount=Decimal("30.00"),
+                currency="USD",
+                capture_type=PaymentCaptureType.NO_SHOW_FEE,
+                status="COMPLETED",
+                paypal_capture_id="CAP-1",
+            )
+        ]
+    if waitlist is None:
+        waitlist = [
+            WaitlistEntry(
+                id=uuid4(),
+                org_id=org_id,
+                service_id=uuid4(),
+                client_name="Meron Alemu",
+                client_email="meron@example.et",
+                preferred_starts_at=booking.starts_at,
+                status=WaitlistStatus.WAITING,
+            )
+        ]
+    entries = {e.id: e for e in waitlist}
+
+    db = AsyncMock()
+
+    async def mock_get(model, pk):
+        if model is Booking and pk == booking.id:
+            return booking
+        if model is WaitlistEntry:
+            return entries.get(pk)
+        return None
+
+    async def mock_execute(stmt):
+        stmt_str = str(stmt)
+        result = MagicMock()
+        result.scalar_one_or_none.return_value = None
+        result.scalars.return_value.all.return_value = []
+        if "FROM payment_capture" in stmt_str:
+            result.scalars.return_value.all.return_value = captures
+        elif "FROM waitlist_entry" in stmt_str:
+            result.scalars.return_value.all.return_value = waitlist
+        elif "FROM ledger_entry" in stmt_str and "event_type" in stmt_str and already_rescued:
+            result.scalar_one_or_none.return_value = uuid4()
+        return result
+
+    db.get = AsyncMock(side_effect=mock_get)
+    db.execute = AsyncMock(side_effect=mock_execute)
+    db.flush = AsyncMock()
+    db.add = MagicMock()
+
+    toolkit = AsyncMock()
+    toolkit.create_refund.return_value = {"status": "COMPLETED", "refund_id": "REF-1"}
+    return booking, captures, waitlist, db, toolkit
+
+
+@pytest.mark.asyncio
+async def test_rescue_rejects_completed_booking_without_refund() -> None:
+    booking, _, _, db, toolkit = _rescue_fixture(status=BookingStatus.COMPLETED)
+    with pytest.raises(PolicyViolationException) as exc:
+        await SlotRescueService(toolkit_runner=toolkit).execute_slot_rescue(
+            db, booking_id=booking.id
+        )
+    assert exc.value.code == "SLOT_RESCUE_NOT_ELIGIBLE"
+    toolkit.create_refund.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_rescue_is_not_repeatable() -> None:
+    booking, _, _, db, toolkit = _rescue_fixture(already_rescued=True)
+    with pytest.raises(PolicyViolationException) as exc:
+        await SlotRescueService(toolkit_runner=toolkit).execute_slot_rescue(
+            db, booking_id=booking.id
+        )
+    assert exc.value.code == "SLOT_ALREADY_RESCUED"
+    toolkit.create_refund.assert_not_awaited()
+    db.add.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_rescue_marks_capture_refunded_and_skips_refunded_captures() -> None:
+    booking, captures, _, db, toolkit = _rescue_fixture()
+    res = await SlotRescueService(toolkit_runner=toolkit).execute_slot_rescue(
+        db, booking_id=booking.id
+    )
+    assert res["action"] == "REFUND_CAPTURE"
+    assert captures[0].status == "REFUNDED"
+    toolkit.create_refund.assert_awaited_once()
+
+    # A capture that is already refunded is not money the salon holds any more.
+    booking2, _, _, db2, toolkit2 = _rescue_fixture(
+        captures=[
+            PaymentCapture(
+                id=uuid4(),
+                booking_id=uuid4(),
+                hold_id=uuid4(),
+                amount=Decimal("30.00"),
+                currency="USD",
+                capture_type=PaymentCaptureType.NO_SHOW_FEE,
+                status="REFUNDED",
+                paypal_capture_id="CAP-2",
+            )
+        ]
+    )
+    res2 = await SlotRescueService(toolkit_runner=toolkit2).execute_slot_rescue(
+        db2, booking_id=booking2.id
+    )
+    assert res2["action"] == "NOOP"
+    toolkit2.create_refund.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_rescue_rejects_waitlist_entry_from_another_salon() -> None:
+    foreign_entry = WaitlistEntry(
+        id=uuid4(),
+        org_id=uuid4(),
+        service_id=uuid4(),
+        client_name="Other Salon Client",
+        client_email="other@example.et",
+        preferred_starts_at=datetime.now(UTC),
+        status=WaitlistStatus.WAITING,
+    )
+    booking, _, _, db, toolkit = _rescue_fixture(waitlist=[foreign_entry])
+    with pytest.raises(NotFoundError):
+        await SlotRescueService(toolkit_runner=toolkit).execute_slot_rescue(
+            db, booking_id=booking.id, waitlist_entry_id=foreign_entry.id
+        )
+    toolkit.create_refund.assert_not_awaited()
+    assert foreign_entry.status == WaitlistStatus.WAITING
+
+
+@pytest.mark.asyncio
+async def test_rescue_with_empty_waitlist_fails_in_production(monkeypatch) -> None:
+    booking, _, _, db, toolkit = _rescue_fixture(waitlist=[])
+    monkeypatch.setattr(
+        "app.services.slot_rescue_service.get_settings",
+        lambda: SimpleNamespace(environment="production"),
+    )
+    with pytest.raises(PolicyViolationException) as exc:
+        await SlotRescueService(toolkit_runner=toolkit).execute_slot_rescue(
+            db, booking_id=booking.id
+        )
+    assert exc.value.code == "WAITLIST_EMPTY"
+    toolkit.create_refund.assert_not_awaited()

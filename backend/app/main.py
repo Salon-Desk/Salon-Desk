@@ -21,6 +21,8 @@ from app.core.exceptions import (
     UnauthorizedError,
 )
 from app.core.response import error
+from app.services.paypal_errors import PayPalAPIError
+from app.services.paypal_rest import close_paypal_http_client
 from app.tasks.booking_reminders import run_booking_reminder_loop
 from app.tasks.hold_expiration import run_hold_expiration_loop
 
@@ -35,6 +37,7 @@ async def lifespan(_application: FastAPI):
         hold_task.cancel()
         reminder_task.cancel()
         await asyncio.gather(hold_task, reminder_task, return_exceptions=True)
+        await close_paypal_http_client()
 
 
 def create_app() -> FastAPI:
@@ -169,6 +172,17 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=status_code,
             content=error(code=exc.code or "POLICY_VIOLATION", message=exc.message).model_dump(),
+        )
+
+    @application.exception_handler(PayPalAPIError)
+    async def paypal_error_handler(_request: Request, exc: PayPalAPIError) -> JSONResponse:
+        return JSONResponse(
+            status_code=502,
+            content=error(
+                code="PAYPAL_ERROR",
+                message=exc.message,
+                details={"paypal_status": exc.status_code, "paypal_debug_id": exc.debug_id},
+            ).model_dump(),
         )
 
     @application.exception_handler(SalonDeskError)

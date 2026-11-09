@@ -278,7 +278,8 @@ class PayPalToolkitRunner:
         if amount is not None and amount <= Decimal("0.00"):
             raise PolicyViolationException("Refund amount must be greater than zero")
 
-        req_id = f"agent-refund-{capture_id}-{uuid.uuid4().hex[:8]}"
+        # Deterministic key: a retried refund on the same capture/amount is a PayPal no-op.
+        req_id = f"agent-refund-{capture_id}-{amount if amount is not None else 'full'}"
         res = await self.client.create_refund(
             capture_id=capture_id,
             amount=amount,
