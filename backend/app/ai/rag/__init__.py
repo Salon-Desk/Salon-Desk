@@ -37,6 +37,7 @@ from .recommendations import (
     wants_more_recommendations,
 )
 from .search import search_chunks
+from .service import retrieve_context
 from .utils import build_search_query, haversine_km
 
 __all__ = [
@@ -59,17 +60,18 @@ __all__ = [
     "build_voice_rag_instruction",
     "build_chat_system_prompt",
     "format_context_text",
-    "greeting_reply_for_portal",
+    "search_chunks",
+    "search_nearby_services",
+    "search_services_by_keywords",
+    "hydrate_service_recommendations",
+    "hydrate_organization_recommendations",
+    "fill_recommendations_from_organizations",
+    "select_recommendations",
+    "recommendation_limit_for",
+    "wants_more_recommendations",
     "haversine_km",
     "build_search_query",
     "persona_for_portal",
-    "select_recommendations",
-    "wants_more_recommendations",
-    "recommendation_limit_for",
-    "search_chunks",
-    "hydrate_service_recommendations",
-    "hydrate_organization_recommendations",
-    "search_nearby_services",
-    "search_services_by_keywords",
-    "fill_recommendations_from_organizations",
+    "greeting_reply_for_portal",
+    "retrieve_context",
 ]

@@ -11,6 +11,7 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "typecheck": "tsc --noEmit",
+    "types:generate": "cd ../backend && uv run python scripts/export_openapi.py && cd ../frontend && openapi-typescript ../backend/openapi.json -o types/api.generated.ts",
     "lint-staged": "lint-staged",
     "validate": "pnpm format && pnpm lint && pnpm typecheck"
   },
@@ -63,6 +64,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-simple-import-sort": "^14.0.0",
     "eslint-plugin-unused-imports": "^4.4.1",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.9.10",
     "tailwindcss": "^4",
     "typescript": "^5"

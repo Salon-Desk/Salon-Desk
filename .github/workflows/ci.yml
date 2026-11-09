@@ -51,7 +51,7 @@ jobs:
           uv run ruff check .
           uv run ruff format --check .
 
-      - name: Run Pytest Suite (235 tests)
+      - name: Run Pytest Suite
         env:
           DATABASE_URL: postgresql+asyncpg://salondesk:password@localhost:5432/salondesk_test
           SECRET_KEY: ci-test-secret-key-at-least-32-chars-long
@@ -79,6 +79,11 @@ jobs:
         run: |
           cd frontend
           pnpm install --frozen-lockfile
+
+      - name: Frontend Format Check
+        run: |
+          cd frontend
+          pnpm format
 
       - name: Frontend Typecheck
         run: |
