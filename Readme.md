@@ -1,7 +1,7 @@
 # SalonDesk — A Hold, Not a Charge
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-[![CI Suite](https://img.shields.io/badge/CI%20Suite-239%20passed-success.svg)](.github/workflows/ci.yml)
+[![CI Suite](https://img.shields.io/badge/CI%20Suite-251%20passed-success.svg)](.github/workflows/ci.yml)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-paypalai.hackathon.huludelala.com-brightgreen.svg)](https://paypalai.hackathon.huludelala.com)
 [![YouTube Demo](https://img.shields.io/badge/YouTube-2%3A42%20Walkthrough-red.svg)](https://youtu.be/to2uynlBQmE)
 [![AG Grid](https://img.shields.io/badge/AG%20Grid-v36%20Community-blue.svg)](https://www.ag-grid.com)
@@ -130,7 +130,7 @@ SalonDesk strictly adheres to defensive fintech design principles:
 
 - **Initial Commit:** October 14, 2026 (after the Hackathon start date of October 1, 2026).
 - **100% of the codebase**—FastAPI backend, Next.js frontend, PayPal integrations (Orders v2, Payments v2, Webhooks, in-page `@paypal/react-paypal-js`), AG Grid Community tables, pgvector RAG, LiveKit voice worker, and automated dispute counsel—was authored during the hackathon period.
-- **Automated Test Suite:** **239 passing tests** across API, domain services, crypto verification, and PayPal lifecycle integrations.
+- **Automated Test Suite:** **251 passing tests** across API, domain services, crypto verification, and PayPal lifecycle integrations.
 
 ---
 
@@ -173,7 +173,7 @@ cd backend && uv run python agent.py start
 
 ### 4. Run Test Suite
 ```bash
-# Backend pytest suite (239 tests)
+# Backend pytest suite (251 tests)
 cd backend && uv run pytest -v
 
 # Code quality checks
@@ -195,9 +195,9 @@ Salon-Desk/
 │   │   ├── models/        # SQLAlchemy ORM models (ledger, policy, bookings, disputes)
 │   │   ├── schemas/       # Pydantic v2 validation schemas
 │   │   ├── services/      # PayPal REST, capture, dispute counsel, slot rescue, ledger
-│   │   └── tasks/         # Celery/background tasks (hold expiration, sync)
-│   ├── scripts/           # Seeding, pgvector ingestion
-│   └── tests/             # 235 unit and integration tests
+│   │   └── tasks/         # Background tasks (hold expiration, webhook outbox, sync)
+│   ├── scripts/           # Seeding, pgvector ingestion, openapi export
+│   └── tests/             # 251 unit and integration tests
 ├── frontend/
 │   ├── app/               # Next.js 16 App Router (Client, Merchant, Admin portals)
 │   ├── components/        # UI components, dispute drawer, chat widget, sandbox modal
