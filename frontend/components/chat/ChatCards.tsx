@@ -97,7 +97,7 @@ export function StylistCard({
 /**
  * Service recommendation card rendered inside assistant turn.
  */
-export function ServiceCard({
+export function ChatServiceCard({
   service,
   onSelect,
   index,
@@ -159,6 +159,8 @@ export function ServiceCard({
     </button>
   )
 }
+
+export const ServiceCard = ChatServiceCard
 
 /**
  * Organization recommendation card rendered when user asks for salons/spas.

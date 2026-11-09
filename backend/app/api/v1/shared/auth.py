@@ -22,10 +22,6 @@ from app.services import auth_service
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _user_out(user) -> UserOut:
-    return UserOut.model_validate(user)
-
-
 @router.post("/sign-up", response_model=TokenResponse)
 async def sign_up(body: SignUpRequest, db: DbSession) -> TokenResponse:
     try:
@@ -33,7 +29,7 @@ async def sign_up(body: SignUpRequest, db: DbSession) -> TokenResponse:
     except ForbiddenError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, detail=exc.message) from exc
     token = auth_service.issue_token(user)
-    return TokenResponse(access_token=token, user=_user_out(user))
+    return TokenResponse(access_token=token, user=UserOut.from_user(user))
 
 
 @router.post("/sign-up/org-owner", response_model=OrgOwnerSignUpResponse)
@@ -45,7 +41,7 @@ async def sign_up_org_owner(body: OrgOwnerSignUpRequest, db: DbSession) -> OrgOw
     token = auth_service.issue_token(user)
     return OrgOwnerSignUpResponse(
         access_token=token,
-        user=_user_out(user),
+        user=UserOut.from_user(user),
         organization_id=org.id,
     )
 
@@ -59,7 +55,7 @@ async def sign_in(body: SignInRequest, db: DbSession) -> TokenResponse:
     except ForbiddenError as exc:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail=exc.message) from exc
     token = auth_service.issue_token(user)
-    return TokenResponse(access_token=token, user=_user_out(user))
+    return TokenResponse(access_token=token, user=UserOut.from_user(user))
 
 
 @router.post("/forgot-password", response_model=ForgotPasswordResponse)
@@ -100,4 +96,4 @@ async def resend_verification(body: ResendVerificationRequest, db: DbSession) ->
 async def judge_demo_auth(db: DbSession) -> TokenResponse:
     user = await auth_service.ensure_demo_user(db)
     token = auth_service.issue_token(user)
-    return TokenResponse(access_token=token, user=_user_out(user))
+    return TokenResponse(access_token=token, user=UserOut.from_user(user))

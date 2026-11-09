@@ -1,296 +1,332 @@
 'use client'
 
 import { addDays, format } from 'date-fns'
-import {
-  AlertTriangle,
-  Calendar as CalendarIcon,
-  Check,
-  Clock,
-  Loader2,
-  Sparkles,
-  User,
-} from 'lucide-react'
-import Image from 'next/image'
-import React, { useMemo, useState } from 'react'
+import { AlertTriangle, Calendar, Clock, Lock, ShieldCheck, User, Users } from 'lucide-react'
+import React, { useId, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { PrimaryButton } from '@/components/button'
 import { CustomResponsiveDialog } from '@/components/dialog/CustomResponsiveDialog'
 import { toastColor } from '@/constant/toast-color'
-import { formatBookingRef } from '@/lib/format'
-import { shouldUnoptimizedImage } from '@/lib/util/remoteImage'
-import { useGetBookingAvailabilityQuery, useRescheduleBookingMutation } from '@/store/api/clientApi'
+import { formatUsd } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { useGetCatalogOrgStaffQuery, useRescheduleBookingMutation } from '@/store/api/clientApi'
+import { useRescheduleOrgBookingMutation } from '@/store/api/orgApi'
 import type { Booking } from '@/types'
 import type { ApiBooking } from '@/types/api-booking'
 
-interface RescheduleBookingDialogProps {
+export interface RescheduleBookingDialogProps {
   booking: Booking
-  open: boolean
+  isOpen?: boolean
+  open?: boolean
   onClose: () => void
-  onSuccess?: (updated: ApiBooking) => void
+  isOrg?: boolean
+  onSuccess?: (updatedBooking: ApiBooking) => void
 }
 
 export function RescheduleBookingDialog({
   booking,
+  isOpen,
   open,
   onClose,
+  isOrg = false,
   onSuccess,
 }: RescheduleBookingDialogProps) {
+  const isDialogVisible = open ?? isOpen ?? false
+  const dateInputId = useId()
+  const stylistSelectId = useId()
+  const [mountNowMs] = useState(() => Date.now())
+
+  // 1. Cutoff Window Calculation
+  const cutoffHours = useMemo(() => {
+    const raw = booking.policySnapshot?.reschedule_cutoff_hours
+    return typeof raw === 'number' ? raw : 4.0
+  }, [booking.policySnapshot])
+
+  const { isWithinCutoff, hoursUntilStart } = useMemo(() => {
+    if (!booking.startsAt) {
+      return { isWithinCutoff: false, hoursUntilStart: 999 }
+    }
+    const startsAtMs = new Date(booking.startsAt).getTime()
+    const diffHours = (startsAtMs - mountNowMs) / (1000 * 60 * 60)
+    return {
+      isWithinCutoff: diffHours < cutoffHours && diffHours >= -1,
+      hoursUntilStart: diffHours,
+    }
+  }, [booking.startsAt, cutoffHours, mountNowMs])
+
+  // Initial form values
+  const defaultDateTime = useMemo(() => {
+    if (booking.startsAt) {
+      try {
+        const d = new Date(booking.startsAt)
+        // Convert to local YYYY-MM-DDTHH:mm
+        const offset = d.getTimezoneOffset() * 60000
+        return new Date(d.getTime() - offset).toISOString().slice(0, 16)
+      } catch {
+        return ''
+      }
+    }
+    return ''
+  }, [booking.startsAt])
+
+  const [selectedDateTime, setSelectedDateTime] = useState<string>(defaultDateTime)
+  const [selectedStylistId, setSelectedStylistId] = useState<string>(booking.stylistId || '')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Staff query for salon
+  const { data: staffData, isLoading: isLoadingStaff } = useGetCatalogOrgStaffQuery(
+    booking.salonId,
+    { skip: !booking.salonId },
+  )
+  const staffMembers = staffData?.items ?? []
+
+  // Mutations for client and org
+  const [rescheduleClient, { isLoading: isClientSubmitting }] = useRescheduleBookingMutation()
+  const [rescheduleOrg, { isLoading: isOrgSubmitting }] = useRescheduleOrgBookingMutation()
+
+  const isSubmitting = isClientSubmitting || isOrgSubmitting
+
+  // Minimum allowed date (now in local time format)
+  const minDateTime = useMemo(() => {
+    const now = new Date(mountNowMs)
+    const offset = now.getTimezoneOffset() * 60000
+    return new Date(now.getTime() - offset).toISOString().slice(0, 16)
+  }, [mountNowMs])
+
+  // Allowable reschedule window based on hold creation / authorization date (max 28 days)
   const holdAuthorizedAt = useMemo(() => {
     const raw = booking.paymentHold?.authorizedAt || booking.authorizedAt || booking.createdAt
-    if (!raw) return new Date()
+    if (!raw) return new Date(mountNowMs)
     const d = new Date(raw)
-    return Number.isNaN(d.getTime()) ? new Date() : d
-  }, [booking])
+    return Number.isNaN(d.getTime()) ? new Date(mountNowMs) : d
+  }, [booking, mountNowMs])
 
   const rescheduleMaxDate = useMemo(() => addDays(holdAuthorizedAt, 28), [holdAuthorizedAt])
 
-  // Generate selectable days up to the 28-day reschedule ceiling
-  const availableDays = useMemo(() => {
-    const days: { dateStr: string; label: string; weekday: string; isToday: boolean }[] = []
-    const now = new Date()
-    for (let i = 0; i < 28; i++) {
-      const d = new Date()
-      d.setDate(now.getDate() + i)
-      if (d.getTime() > rescheduleMaxDate.getTime() + 86400000) {
-        break
-      }
-      const dateStr = d.toISOString().split('T')[0]
-      const weekday = d.toLocaleDateString(undefined, { weekday: 'short' })
-      const label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-      days.push({
-        dateStr,
-        label,
-        weekday,
-        isToday: i === 0,
-      })
-    }
-    return days
+  const maxDateTime = useMemo(() => {
+    const offset = rescheduleMaxDate.getTimezoneOffset() * 60000
+    return new Date(rescheduleMaxDate.getTime() - offset).toISOString().slice(0, 16)
   }, [rescheduleMaxDate])
 
-  const [selectedDay, setSelectedDay] = useState<string>(availableDays[0]?.dateStr ?? '')
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
-
-  const {
-    data: availability,
-    isLoading: isAvailabilityLoading,
-    isFetching: isAvailabilityFetching,
-  } = useGetBookingAvailabilityQuery(
-    {
-      service_id: booking.serviceId,
-      day: selectedDay,
-      slot_minutes: Math.max(15, booking.durationMin || 30),
-    },
-    { skip: !booking.serviceId || !selectedDay || !open },
-  )
-
-  const [rescheduleBooking, { isLoading: isRescheduling }] = useRescheduleBookingMutation()
-
   const isPastMaxCutoff = useMemo(() => {
-    if (!selectedSlot) return false
-    const d = new Date(selectedSlot)
+    if (!selectedDateTime) return false
+    const d = new Date(selectedDateTime)
     return !Number.isNaN(d.getTime()) && d.getTime() > rescheduleMaxDate.getTime()
-  }, [selectedSlot, rescheduleMaxDate])
+  }, [selectedDateTime, rescheduleMaxDate])
 
-  const handleConfirm = async () => {
-    if (!selectedSlot) {
-      toast.error('Please select a time slot to reschedule', toastColor.error)
+  // Check if anything actually changed
+  const hasChanges = useMemo(() => {
+    const timeChanged = selectedDateTime && selectedDateTime !== defaultDateTime
+    const stylistChanged = selectedStylistId !== (booking.stylistId || '')
+    return Boolean(timeChanged || stylistChanged)
+  }, [selectedDateTime, defaultDateTime, selectedStylistId, booking.stylistId])
+
+  const canSubmit = !isSubmitting && hasChanges && (isOrg || !isWithinCutoff) && !isPastMaxCutoff
+
+  const handleSubmit = async () => {
+    setErrorMessage(null)
+
+    if (!hasChanges) {
+      toast.info('No changes were made to time or stylist.', toastColor.info)
+      onClose()
       return
     }
 
     if (isPastMaxCutoff) {
-      toast.error(
-        `Reschedule Limit: This deposit hold expires on ${format(rescheduleMaxDate, 'MMM d, yyyy')} (29 days from booking). To schedule beyond this date, please release this hold and book a new appointment.`,
-        toastColor.error,
+      setErrorMessage(
+        `Cannot reschedule past ${format(rescheduleMaxDate, 'MMM d, yyyy')}. PayPal authorization holds expire 29 days from the original booking date. For dates further out, please cancel and create a new reservation.`,
       )
       return
     }
 
-    try {
-      const updated = await rescheduleBooking({
-        bookingId: booking.id,
-        body: {
-          starts_at: selectedSlot,
-          stylist_id: booking.stylistId || null,
-        },
-      }).unwrap()
+    let isoStartsAt: string | null = null
+    let isoEndsAt: string | null = null
 
-      toast.success('Appointment rescheduled successfully!', toastColor.success)
-      onSuccess?.(updated)
+    if (selectedDateTime && selectedDateTime !== defaultDateTime) {
+      const newStartDate = new Date(selectedDateTime)
+      isoStartsAt = newStartDate.toISOString()
+
+      // Keep original appointment duration if available
+      const durationMin = booking.durationMin || 60
+      const newEndDate = new Date(newStartDate.getTime() + durationMin * 60 * 1000)
+      isoEndsAt = newEndDate.toISOString()
+    }
+
+    const targetStylistId =
+      selectedStylistId !== (booking.stylistId || '') ? selectedStylistId || null : undefined
+
+    try {
+      let updatedBooking: ApiBooking
+      if (isOrg) {
+        updatedBooking = await rescheduleOrgBookingPayload({
+          bookingId: booking.id,
+          body: {
+            starts_at: isoStartsAt,
+            ends_at: isoEndsAt,
+            stylist_id: targetStylistId,
+          },
+        })
+      } else {
+        updatedBooking = await rescheduleClient({
+          bookingId: booking.id,
+          body: {
+            starts_at: isoStartsAt,
+            ends_at: isoEndsAt,
+            stylist_id: targetStylistId,
+          },
+        }).unwrap()
+      }
+
+      toast.success(
+        'Appointment successfully modified! Your deposit hold has been transferred.',
+        toastColor.success,
+      )
+      onSuccess?.(updatedBooking)
       onClose()
     } catch (err: unknown) {
-      const message =
+      const detail =
         (err as { data?: { detail?: string } })?.data?.detail ||
         (err as Error)?.message ||
-        'Failed to reschedule appointment'
-      toast.error(message, toastColor.error)
+        'Failed to reschedule appointment. Please check availability.'
+      setErrorMessage(detail)
+      toast.error(detail, toastColor.error)
     }
   }
 
-  const selectedSlotFormatted = useMemo(() => {
-    if (!selectedSlot) return null
-    const d = new Date(selectedSlot)
-    return d.toLocaleString(undefined, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    })
-  }, [selectedSlot])
-
-  const slots = availability?.slots ?? []
-  const hasAvailableSlots = slots.some((s) => s.available)
+  const rescheduleOrgBookingPayload = async (args: {
+    bookingId: string
+    body: { starts_at: string | null; ends_at: string | null; stylist_id?: string | null }
+  }) => {
+    return await rescheduleOrg(args).unwrap()
+  }
 
   return (
     <CustomResponsiveDialog
-      open={open}
-      setOpen={(isOpen) => {
-        if (!isOpen) onClose()
+      open={isDialogVisible}
+      setOpen={(openState) => {
+        if (!openState) onClose()
       }}
       header={
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <CalendarIcon className="h-4 w-4 text-amber-600" />
-            <h3 className="font-serif text-lg font-normal text-stone-950 sm:text-xl">
-              Reschedule Appointment
+            <Calendar className="h-5 w-5 text-amber-700" />
+            <h3 className="font-serif text-lg font-bold text-stone-900">
+              Reschedule / Change Stylist
             </h3>
           </div>
-          <p className="text-xs text-stone-500">
-            {booking.serviceName} · {booking.salonName} ({formatBookingRef(booking.id)})
+          <p className="text-stone-500 text-xs">
+            Modify appointment schedule or reassign your stylist with automatic deposit hold
+            preservation.
           </p>
         </div>
       }
       footer={
-        <div className="flex w-full items-center gap-3">
-          <button
-            type="button"
+        <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row w-full sm:w-auto">
+          <PrimaryButton
+            variant="ghost"
+            size="sm"
+            className="h-10 cursor-pointer rounded-full px-4 text-xs sm:text-sm font-semibold transition-colors hover:bg-stone-100 text-stone-700"
             onClick={onClose}
-            disabled={isRescheduling}
-            className="h-11 flex-1 cursor-pointer rounded-full border border-stone-200 bg-white text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 sm:text-sm"
-          >
-            Cancel
-          </button>
+            isDisabled={isSubmitting}
+            title="Keep Current Booking"
+            fullWidth={false}
+          />
           <PrimaryButton
             variant="dark"
             size="sm"
-            onClick={handleConfirm}
-            isDisabled={!selectedSlot || isRescheduling}
-            className="h-11 flex-1 cursor-pointer rounded-full text-xs font-semibold sm:text-sm"
-            title={isRescheduling ? 'Rescheduling…' : 'Confirm New Time'}
+            className="h-10 cursor-pointer rounded-full px-5 text-xs sm:text-sm font-semibold transition-all active:scale-[0.98]"
+            onClick={handleSubmit}
+            isDisabled={!canSubmit}
+            isLoading={isSubmitting}
+            title={isSubmitting ? 'Updating...' : 'Confirm Modifications'}
+            fullWidth={false}
           />
         </div>
       }
     >
-      <div className="space-y-6 py-1">
-        {/* Current appointment info banner */}
-        <div className="rounded-2xl border border-stone-200/70 bg-stone-50/80 p-3.5 text-xs text-stone-700">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-stone-500 uppercase tracking-wider text-[10px]">
-              Current Time
-            </span>
-            <span className="font-mono text-[11px] text-stone-400">{booking.durationMin} mins</span>
+      <div className="space-y-4 py-1">
+        {/* Error alert banner */}
+        {errorMessage && (
+          <div className="flex items-start gap-2.5 rounded-2xl border border-rose-200 bg-rose-50/90 p-3.5 text-xs text-rose-950">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+            <p className="font-medium">{errorMessage}</p>
           </div>
-          <div className="mt-1 flex items-center gap-1.5 font-medium text-stone-900">
-            <Clock className="h-3.5 w-3.5 text-amber-600" />
-            <span>{booking.appointmentTime}</span>
-          </div>
-          <div className="mt-2 flex items-center gap-2 pt-2 border-t border-stone-200/50 text-[11px] text-stone-500">
-            {booking.stylistPicture ? (
-              <Image
-                src={booking.stylistPicture}
-                alt=""
-                width={16}
-                height={16}
-                unoptimized={shouldUnoptimizedImage(booking.stylistPicture)}
-                className="h-4 w-4 rounded-full object-cover"
-              />
-            ) : (
-              <User className="h-3.5 w-3.5 text-stone-400" />
-            )}
-            <span>With {booking.stylistName}</span>
-          </div>
-        </div>
+        )}
 
-        {/* Date Selector Pills */}
-        <div>
-          <label className="mb-2 block text-xs font-semibold text-stone-800">Select New Date</label>
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {availableDays.map((d) => {
-              const isSelected = selectedDay === d.dateStr
-              return (
-                <button
-                  key={d.dateStr}
-                  type="button"
-                  onClick={() => {
-                    setSelectedDay(d.dateStr)
-                    setSelectedSlot(null)
-                  }}
-                  className={`flex shrink-0 flex-col items-center rounded-2xl border px-3 py-2 text-center transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-amber-600 bg-amber-50/90 text-amber-950 font-semibold shadow-xs ring-1 ring-amber-600/30'
-                      : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300 hover:bg-stone-50'
-                  }`}
-                >
-                  <span className="text-[10px] uppercase tracking-wider">{d.weekday}</span>
-                  <span className="text-xs font-bold">{d.label}</span>
-                </button>
-              )
-            })}
+        {/* Time Restriction Cutoff Banner */}
+        {isWithinCutoff && !isOrg ? (
+          <div className="flex items-start gap-2.5 rounded-2xl border border-rose-200 bg-rose-50/90 p-3.5 text-xs text-rose-950">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+            <div>
+              <p className="font-semibold text-rose-900">Self-Service Rescheduling Window Closed</p>
+              <p className="mt-1 leading-relaxed text-rose-800">
+                Rescheduling or changing stylists is restricted within {cutoffHours} hours of your
+                appointment start time (starts in {Math.max(0, hoursUntilStart).toFixed(1)}h).
+                Please call {booking.salonName || 'the salon'} directly to arrange immediate
+                adjustments.
+              </p>
+            </div>
           </div>
-        </div>
-
-        {/* Time Slot Picker */}
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <label className="text-xs font-semibold text-stone-800">Select Available Slot</label>
-            {isAvailabilityFetching && (
-              <span className="flex items-center gap-1 text-[11px] text-amber-700">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Checking live availability…
+        ) : isWithinCutoff && isOrg ? (
+          <div className="flex items-start gap-2.5 rounded-2xl border border-sky-200 bg-sky-50/80 p-3 text-xs text-sky-950">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-sky-600 mt-0.5" />
+            <div>
+              <span className="font-semibold text-sky-900">Staff Override Authorized:</span>
+              <span className="ml-1 text-sky-800">
+                You are modifying this appointment within the salon&apos;s {cutoffHours}-hour cutoff
+                window on behalf of the client.
               </span>
-            )}
+            </div>
           </div>
+        ) : null}
 
-          {isAvailabilityLoading ? (
-            <div className="flex h-36 items-center justify-center rounded-2xl border border-dashed border-stone-200 bg-stone-50/50">
-              <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
-            </div>
-          ) : !hasAvailableSlots ? (
-            <div className="rounded-2xl border border-stone-200/80 bg-stone-50/60 p-6 text-center text-xs text-stone-500">
-              <Sparkles className="mx-auto mb-1.5 h-4 w-4 text-stone-400" />
-              No openings available on this date. Please pick another day above.
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 max-h-56 overflow-y-auto pr-1">
-              {slots.map((slot) => {
-                const isSelected = selectedSlot === slot.starts_at
-                const timeLabel = new Date(slot.starts_at).toLocaleTimeString(undefined, {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })
+        {/* Existing Appointment Summary Card */}
+        <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-3.5 text-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-stone-900">{booking.serviceName}</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-800">
+              <Lock className="h-3 w-3 text-amber-600" />
+              <span>Held {formatUsd(booking.holdAmount)}</span>
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-stone-500">
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5 text-stone-400" />
+              <span>Current: {booking.appointmentTime}</span>
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <User className="h-3.5 w-3.5 text-stone-400" />
+              <span>Stylist: {booking.stylistName || 'Any Available'}</span>
+            </span>
+          </div>
+        </div>
 
-                return (
-                  <button
-                    key={slot.starts_at}
-                    type="button"
-                    disabled={!slot.available}
-                    onClick={() => setSelectedSlot(slot.starts_at)}
-                    className={`flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-medium transition-all ${
-                      isSelected
-                        ? 'border-amber-600 bg-amber-600 text-white shadow-xs font-semibold'
-                        : slot.available
-                          ? 'border-stone-200 bg-white text-stone-800 hover:border-amber-400 hover:bg-amber-50/40 cursor-pointer'
-                          : 'border-stone-100 bg-stone-50 text-stone-300 line-through cursor-not-allowed'
-                    }`}
-                  >
-                    {isSelected && <Check className="h-3.5 w-3.5 shrink-0" />}
-                    <span>{timeLabel}</span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
+        {/* Date & Time Selector */}
+        <div className="space-y-1.5">
+          <label htmlFor={dateInputId} className="block text-xs font-semibold text-stone-900">
+            New Appointment Date & Time
+          </label>
+          <div className="relative">
+            <input
+              id={dateInputId}
+              type="datetime-local"
+              value={selectedDateTime}
+              min={minDateTime}
+              max={maxDateTime}
+              onChange={(e) => setSelectedDateTime(e.target.value)}
+              disabled={isSubmitting || (!isOrg && isWithinCutoff)}
+              className={cn(
+                'w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-stone-900 shadow-xs transition-colors',
+                'focus:border-stone-900 focus:outline-hidden focus:ring-1 focus:ring-stone-900',
+                'disabled:bg-stone-100 disabled:text-stone-400 disabled:cursor-not-allowed',
+                isPastMaxCutoff && 'border-amber-500 bg-amber-50/40 text-amber-950',
+              )}
+            />
+          </div>
+          <p className="text-[11px] text-stone-500">
+            Estimated duration: {booking.durationMin || 60} mins based on your selected service.
+          </p>
         </div>
 
         {/* PayPal 29-Day Hard Ceiling Reschedule Warning Banner */}
@@ -308,22 +344,57 @@ export function RescheduleBookingDialog({
           </div>
         )}
 
-        {/* Selected Slot Confirmation Preview */}
-        {selectedSlotFormatted && (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-xs text-emerald-950">
-            <span className="font-semibold text-emerald-800 uppercase tracking-wider text-[10px] block mb-1">
-              New Appointment Slot
-            </span>
-            <div className="flex items-center gap-2 font-bold text-emerald-900 text-sm">
-              <CalendarIcon className="h-4 w-4 text-emerald-700" />
-              <span>{selectedSlotFormatted}</span>
+        {/* Stylist Selector */}
+        <div className="space-y-1.5">
+          <label htmlFor={stylistSelectId} className="block text-xs font-semibold text-stone-900">
+            Assign Stylist
+          </label>
+          {isLoadingStaff ? (
+            <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 p-2.5 text-xs text-stone-500">
+              <Users className="h-4 w-4 animate-spin text-stone-400" />
+              <span>Loading available stylists...</span>
             </div>
-            <p className="mt-1 text-[11px] text-emerald-800/80">
-              Your $0 PayPal authorization hold remains unchanged. Free cancellation deadline
-              recalculates based on your new appointment time.
-            </p>
+          ) : (
+            <select
+              id={stylistSelectId}
+              value={selectedStylistId}
+              onChange={(e) => setSelectedStylistId(e.target.value)}
+              disabled={isSubmitting || (!isOrg && isWithinCutoff)}
+              className={cn(
+                'w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-stone-900 shadow-xs transition-colors',
+                'focus:border-stone-900 focus:outline-hidden focus:ring-1 focus:ring-stone-900',
+                'disabled:bg-stone-100 disabled:text-stone-400 disabled:cursor-not-allowed',
+              )}
+            >
+              <option value="">Any Available Stylist</option>
+              {staffMembers.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.display_name} {member.role ? `(${member.role})` : ''}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {/* PayPal Hold & Fintech Explanatory Banner */}
+        <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-3.5 text-xs text-emerald-950 space-y-2">
+          <div className="flex items-center gap-2 font-semibold text-emerald-900">
+            <ShieldCheck className="h-4 w-4 text-emerald-700" />
+            <span>Fintech Hold Guarantee: $0 Charged Today</span>
           </div>
-        )}
+          <p className="leading-relaxed text-emerald-800 text-[11px]">
+            Your PayPal authorization hold of{' '}
+            <strong className="text-emerald-950 font-bold">{formatUsd(booking.holdAmount)}</strong>{' '}
+            automatically transfers to your new appointment slot. Settlement routes to the
+            organization&apos;s verified PayPal merchant account at checkout. No new charge or
+            double authorization is initiated.
+          </p>
+          <p className="leading-relaxed text-stone-600 text-[11px] pt-1 border-t border-emerald-200/50">
+            <strong>Duration & Price Guardrail:</strong> If you add services or extend duration
+            exceeding your original hold ceiling ({formatUsd(booking.holdAmount)}), the remaining
+            balance is settled in-person at checkout.
+          </p>
+        </div>
       </div>
     </CustomResponsiveDialog>
   )

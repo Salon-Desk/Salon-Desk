@@ -37,6 +37,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { renderPageNumbers } from '@/components/ui/pagination'
 import {
   Table,
   TableBody,
@@ -53,7 +54,6 @@ import type { DataGridProps } from '@/types/table'
 import PrimaryButton from '../button/PrimaryButton'
 import { RefreshButton } from '../button/RefreshButton'
 import EmptyState from '../empty/EmptyState'
-import { renderPageNumbers } from './Pagination'
 
 type RowWithAvatar = {
   avatar?: string

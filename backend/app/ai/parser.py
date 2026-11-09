@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import json
-import re
 from datetime import datetime
 
+from app.ai.json_utils import extract_json as _extract_json
 from app.ai.llm import BaseLLMService, LLMError, get_fallback_llm_service
 from app.schemas.ai import SlotParseResult
 
@@ -61,20 +60,3 @@ class AISlotParser:
             notes=data.get("notes"),
             confidence=confidence_f,
         )
-
-
-def _extract_json(text: str) -> dict | None:
-    text = text.strip()
-    try:
-        parsed = json.loads(text)
-        return parsed if isinstance(parsed, dict) else None
-    except json.JSONDecodeError:
-        pass
-    match = re.search(r"\{[\s\S]*\}", text)
-    if not match:
-        return None
-    try:
-        parsed = json.loads(match.group(0))
-        return parsed if isinstance(parsed, dict) else None
-    except json.JSONDecodeError:
-        return None

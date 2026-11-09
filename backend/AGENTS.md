@@ -67,6 +67,7 @@ tests/
 ## Domain and service rules
 
 - Put reusable workflows in `app/services/`; keep pure policy calculations and transition checks deterministic and independently testable.
+- **Payment Facade:** `app/services/payment_service.py` serves as the canonical domain facade coordinating booking holds, full/fee captures, voids, reauthorizations, and refund workflows across `booking_service`, `paypal_rest`, and audit ledger splits. Routers and background tasks should invoke operations via this facade rather than orchestrating raw PayPal primitives directly.
 - Use domain exceptions from `app/core/exceptions.py` for service-layer failures. Routers translate them when endpoint-specific status mapping is needed.
 - Use async SQLAlchemy APIs only: `AsyncSession`, `select`, `await db.execute`, `await db.flush`, and explicit eager loading such as `selectinload`.
 - Request-scoped sessions commit or roll back in `get_db`. Services normally flush and return; commit inside a service only when the established workflow requires an independent transaction boundary.

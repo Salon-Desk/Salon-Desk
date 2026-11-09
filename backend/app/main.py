@@ -157,8 +157,17 @@ def create_app() -> FastAPI:
 
     @application.exception_handler(PolicyViolationException)
     async def policy_handler(_request: Request, exc: PolicyViolationException) -> JSONResponse:
+        status_code = getattr(exc, "status_code", 400)
+        is_422_candidate = getattr(exc, "code", None) in {
+            "REAUTHORIZATION_TOO_SOON",
+            "HOLD_EXPIRED",
+            "RESCHEDULE_LIMIT_EXCEEDED",
+            "BOOKING_HORIZON_EXCEEDED",
+        } or ("reschedule" in exc.message.lower() or "deposit holds" in exc.message.lower())
+        if status_code != 422 and is_422_candidate:
+            status_code = 422
         return JSONResponse(
-            status_code=getattr(exc, "status_code", 400),
+            status_code=status_code,
             content=error(code=exc.code or "POLICY_VIOLATION", message=exc.message).model_dump(),
         )
 

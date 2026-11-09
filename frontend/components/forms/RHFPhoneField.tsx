@@ -34,6 +34,12 @@ type CombinedProps = RHFPhoneFieldProps & Omit<React.InputHTMLAttributes<HTMLInp
 
 type ItiInstance = NonNullable<ReturnType<IntlTelInputRef['getInstance']>>
 
+interface WindowWithItiGlobals extends Window {
+  intlTelInputGlobals?: {
+    getInstance: (id: number) => ItiInstance | undefined
+  }
+}
+
 const getAllItiInstances = (): ItiInstance[] => {
   const instances: ItiInstance[] = []
   document
@@ -43,8 +49,9 @@ const getAllItiInstances = (): ItiInstance[] => {
       if (!id) {
         return
       }
-      // @ts-expect-error — ITI global registry
-      const instance = window.intlTelInputGlobals?.getInstance(Number(id))
+      const instance = (window as unknown as WindowWithItiGlobals).intlTelInputGlobals?.getInstance(
+        Number(id),
+      )
       if (instance) {
         instances.push(instance)
       }

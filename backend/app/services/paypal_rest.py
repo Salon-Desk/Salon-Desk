@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import time
 import uuid
 from decimal import Decimal
 from typing import Any
@@ -37,8 +39,38 @@ __all__ = [
     "PayPalRestClient",
     "_raise_for_paypal",
     "assert_can_reauthorize_hold",
+    "close_paypal_http_client",
+    "get_paypal_http_client",
     "is_paypal_merchant_id",
 ]
+
+_token_cache: dict[str, Any] = {
+    "token": "",
+    "expires_at": 0.0,
+}
+_token_lock = asyncio.Lock()
+_http_client: httpx.AsyncClient | None = None
+_client_lock = asyncio.Lock()
+
+
+async def get_paypal_http_client(timeout: float = 30.0) -> httpx.AsyncClient:
+    """Return shared AsyncClient instance for connection pooling across requests."""
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        async with _client_lock:
+            if _http_client is None or _http_client.is_closed:
+                _http_client = httpx.AsyncClient(timeout=timeout)
+    return _http_client
+
+
+async def close_paypal_http_client() -> None:
+    """Close the shared client on shutdown."""
+    global _http_client
+    if _http_client is not None and not _http_client.is_closed:
+        async with _client_lock:
+            if _http_client is not None and not _http_client.is_closed:
+                await _http_client.aclose()
+                _http_client = None
 
 
 class PayPalRestClient:
@@ -52,14 +84,30 @@ class PayPalRestClient:
     async def _access_token(self) -> str:
         if not self.configured:
             return ""
-        resp = await self._request(
-            "POST",
-            "/v1/oauth2/token",
-            form={"grant_type": "client_credentials"},
-            auth=(self.settings.paypal_client_id, self.settings.paypal_client_secret),
-            accept_only=True,
-        )
-        return str(resp.json()["access_token"])
+
+        now = time.monotonic()
+        if _token_cache["token"] and now < _token_cache["expires_at"]:
+            return str(_token_cache["token"])
+
+        async with _token_lock:
+            now = time.monotonic()
+            if _token_cache["token"] and now < _token_cache["expires_at"]:
+                return str(_token_cache["token"])
+
+            resp = await self._request(
+                "POST",
+                "/v1/oauth2/token",
+                form={"grant_type": "client_credentials"},
+                auth=(self.settings.paypal_client_id, self.settings.paypal_client_secret),
+                accept_only=True,
+            )
+            data = resp.json()
+            token = str(data["access_token"])
+            expires_in = float(data.get("expires_in", 3600))
+            safe_ttl = max(10.0, expires_in - 60.0)
+            _token_cache["token"] = token
+            _token_cache["expires_at"] = time.monotonic() + safe_ttl
+            return token
 
     async def _request(
         self,
@@ -84,18 +132,18 @@ class PayPalRestClient:
             headers = build_http_headers(token, request_id)
             if prefer:
                 headers["Prefer"] = "return=representation"
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            send = client.get if method.upper() == "GET" else client.post
-            kwargs: dict = {"headers": headers}
-            if auth is not None:
-                kwargs["auth"] = auth
-            if body is not None:
-                kwargs["json"] = body
-            if form is not None:
-                kwargs["data"] = form
-            if params is not None:
-                kwargs["params"] = params
-            response = await send(url, **kwargs)
+        client = await get_paypal_http_client(timeout=timeout)
+        send = client.get if method.upper() == "GET" else client.post
+        kwargs: dict = {"headers": headers}
+        if auth is not None:
+            kwargs["auth"] = auth
+        if body is not None:
+            kwargs["json"] = body
+        if form is not None:
+            kwargs["data"] = form
+        if params is not None:
+            kwargs["params"] = params
+        response = await send(url, **kwargs)
         _raise_for_paypal(response)
         return response
 

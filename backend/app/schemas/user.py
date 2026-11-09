@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 import email_validator
@@ -40,6 +43,10 @@ class UserOut(ORMModel):
     created_at: datetime
     profile: ProfileOut | None = None
     category_ids: list[UUID] = []
+
+    @classmethod
+    def from_user(cls, user: Any) -> UserOut:
+        return cls.model_validate(user)
 
 
 class EmployeeCreate(BaseModel):

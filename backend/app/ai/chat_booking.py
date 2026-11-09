@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import json
 import logging
 import re
 from datetime import UTC, date, datetime, timedelta
@@ -15,6 +14,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.ai.json_utils import extract_json as _extract_json
 from app.ai.llm import BaseLLMService, LLMError
 from app.ai.tools.booking_helpers import get_organization_stylists, resolve_stylist
 from app.core.exceptions import ForbiddenError
@@ -152,23 +152,6 @@ def mentions_booking(message: str, history: list[ChatMessage] | None = None) -> 
                 return True
 
     return False
-
-
-def _extract_json(text: str) -> dict[str, Any] | None:
-    text = text.strip()
-    try:
-        data = json.loads(text)
-        return data if isinstance(data, dict) else None
-    except json.JSONDecodeError:
-        pass
-    match = re.search(r"\{[\s\S]*\}", text)
-    if not match:
-        return None
-    try:
-        data = json.loads(match.group(0))
-        return data if isinstance(data, dict) else None
-    except json.JSONDecodeError:
-        return None
 
 
 def _parse_starts_at(

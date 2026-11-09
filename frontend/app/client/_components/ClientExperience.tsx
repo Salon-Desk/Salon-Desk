@@ -18,6 +18,7 @@ import { toast } from 'sonner'
 
 import { CancelBookingDialog } from '@/app/client/_components/CancelBookingDialog'
 import { useAuthModal } from '@/components/auth/auth-context'
+import { RescheduleBookingDialog } from '@/components/dialog'
 import { EmptyState } from '@/components/empty'
 import { Toast } from '@/components/ui'
 import { toastColor } from '@/constant/toast-color'
@@ -69,7 +70,6 @@ import { ClientHeader, type ClientTab } from './ClientHeader'
 import { ClientMyBookingsReviews } from './ClientMyBookingsReviews'
 import { ClientSalonFeedbackSection } from './ClientSalonFeedbackSection'
 import { ProtocolModal } from './ProtocolModal'
-import { RescheduleBookingDialog } from './RescheduleBookingDialog'
 import { ServiceCard } from './ServiceCard'
 
 const PAGE_SIZE = 6

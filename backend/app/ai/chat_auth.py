@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
-import re
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.json_utils import extract_json as _extract_json
 from app.ai.llm import BaseLLMService, LLMError
 from app.ai.support_actions import AgentUiAction
 from app.core.exceptions import ForbiddenError, UnauthorizedError
@@ -32,23 +30,6 @@ Rules:
 - "signup": user wants to sign up / register / create an account, or is answering a prompt for signup details.
 - "none": regular salon questions, booking inquiries, or general chat.
 """
-
-
-def _extract_json(text: str) -> dict[str, Any] | None:
-    text = text.strip()
-    try:
-        data = json.loads(text)
-        return data if isinstance(data, dict) else None
-    except json.JSONDecodeError:
-        pass
-    match = re.search(r"\{[\s\S]*\}", text)
-    if not match:
-        return None
-    try:
-        data = json.loads(match.group(0))
-        return data if isinstance(data, dict) else None
-    except json.JSONDecodeError:
-        return None
 
 
 async def try_handle_chat_auth(

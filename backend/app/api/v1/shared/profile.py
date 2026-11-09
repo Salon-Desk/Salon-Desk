@@ -12,14 +12,10 @@ from app.services.storage_service import StorageUnavailableError, storage_servic
 router = APIRouter(prefix="/auth", tags=["profile"])
 
 
-def _user_out(user) -> UserOut:
-    return UserOut.model_validate(user)
-
-
 @router.get("/me", response_model=MeResponse)
 async def me(user: CurrentUser) -> MeResponse:
     profile = ProfileOut.model_validate(user.profile) if user.profile else None
-    return MeResponse(user=_user_out(user), profile=profile)
+    return MeResponse(user=UserOut.from_user(user), profile=profile)
 
 
 @router.get("/me/profile", response_model=ProfileOut)

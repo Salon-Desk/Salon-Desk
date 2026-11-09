@@ -11,10 +11,6 @@ from app.services import auth_service
 router = APIRouter(prefix="/organizations", tags=["org-onboarding"])
 
 
-def _user_out(user) -> UserOut:
-    return UserOut.model_validate(user)
-
-
 @router.post("/sign-up", response_model=OrgOwnerSignUpResponse, status_code=status.HTTP_201_CREATED)
 async def sign_up_org_owner(body: OrgOwnerSignUpRequest, db: DbSession) -> OrgOwnerSignUpResponse:
     try:
@@ -24,6 +20,6 @@ async def sign_up_org_owner(body: OrgOwnerSignUpRequest, db: DbSession) -> OrgOw
     token = auth_service.issue_token(user)
     return OrgOwnerSignUpResponse(
         access_token=token,
-        user=_user_out(user),
+        user=UserOut.from_user(user),
         organization_id=org.id,
     )

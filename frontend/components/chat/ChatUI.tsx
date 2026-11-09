@@ -45,6 +45,7 @@ export interface ChatMessageItem {
 
 export {
   AuthPromptCard,
+  ChatServiceCard,
   ConfirmedBookingCard,
   OrganizationCard,
   ServiceCard,
@@ -55,9 +56,9 @@ export { RichText } from './RichText'
 
 import {
   AuthPromptCard,
+  ChatServiceCard,
   ConfirmedBookingCard,
   OrganizationCard,
-  ServiceCard,
   StylistCard,
 } from './ChatCards'
 import { ConciergeAvatar } from './ChatPanelShell'
@@ -536,7 +537,7 @@ export function ChatConversation<T extends ChatMessageItem = ChatMessageItem>({
                       </button>
                     </div>
                     {effectiveRecs.map((rec, recIdx) => (
-                      <ServiceCard
+                      <ChatServiceCard
                         key={rec.serviceId}
                         service={rec}
                         index={effectiveRecs.length > 1 ? recIdx + 1 : undefined}
