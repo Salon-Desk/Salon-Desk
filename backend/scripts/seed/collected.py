@@ -633,9 +633,9 @@ def build_organizations() -> list[dict]:
             "services": [
                 (
                     "Braids",
-                    "Box Braids",
-                    "Signature clean-part box braids with premium extensions and scalp protection.",
-                    Decimal("55.00"),
+                    "Signature Box Braids",
+                    "Signature clean-part box braids with premium extensions, precision parting, and organic scalp oil.",
+                    Decimal("120.00"),
                     180,
                     _cover(1),
                 ),
